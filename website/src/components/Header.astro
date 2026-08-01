@@ -4,11 +4,9 @@ const path = Astro.url.pathname;
 const links = [
   { href: '/docs/quick-start', label: 'Docs', match: '/docs' },
   { href: '/demo', label: 'Inspector', match: '/demo' },
-  { href: '/docs/edf-format', label: 'The format', match: '/docs/edf-format' },
 ];
 
-// Longest matching prefix wins, so /docs/edf-format highlights "The format" rather than
-// lighting up "Docs" as well.
+// Longest matching prefix wins, so a more specific link never lights up a broader one too.
 const best = links
   .filter((link) => path.startsWith(link.match))
   .sort((a, b) => b.match.length - a.match.length)[0];

@@ -52,15 +52,11 @@ const grouped = SECTIONS.map((section) => ({
     margin: var(--s-3) 0 0;
     display: flex;
     flex-direction: column;
-    /* A hairline rail ties a section's items together and gives the active marker
-       something to sit against. */
-    border-left: 1px solid var(--rule-soft);
   }
 
   .group a {
     display: block;
     padding: 0.3rem var(--s-4);
-    margin-left: -1px;
     border-left: 1px solid transparent;
     font-size: var(--t-sm);
     line-height: 1.45;

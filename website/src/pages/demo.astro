@@ -7,12 +7,10 @@ import Base from '../layouts/Base.astro';
   description="Open an EDF, EDF+, BDF or BDF+ file and read its header, channels, events and waveforms — entirely in your browser, with nothing uploaded."
 >
   <section class="page intro">
-    <p class="eyebrow">Local inspector</p>
     <h1>Open a recording.</h1>
     <p class="lead">
-      Everything below runs in this tab. There is no upload, because there is no server —
-      edfcore parses the bytes in the browser, which is the same reason it is usable for
-      clinical and research data at all.
+      Nothing is uploaded. edfcore parses the file in this tab, which is the same reason it
+      is usable for clinical and research data at all.
     </p>
   </section>
 
@@ -29,7 +27,7 @@ import Base from '../layouts/Base.astro';
             stroke-linecap="round"
             stroke-linejoin="round"></path>
         </svg>
-        <p class="dz-title">Drop an EDF, EDF+, BDF or BDF+ file here</p>
+        <p class="dz-title">Drop an EDF or BDF file here</p>
         <p class="dz-sub">
           <button class="link-btn" type="button" id="browse">choose a file</button>
           <span aria-hidden="true"> &middot; </span>
@@ -54,7 +52,6 @@ import Base from '../layouts/Base.astro';
 
     <div class="panel viewer">
       <div class="panel-head">
-        <p class="eyebrow">Signals</p>
         <div class="controls">
           <label class="ctl">
             <span>Window</span>
@@ -98,7 +95,6 @@ import Base from '../layouts/Base.astro';
     </div>
 
     <div class="panel">
-      <div class="panel-head"><p class="eyebrow">Header</p></div>
       <div class="scroll-x">
         <table class="fields">
           <thead>
@@ -370,7 +366,7 @@ import Base from '../layouts/Base.astro';
       .map(
         (s: EdfSignal) => `<tr${s.kind === 'annotations' ? ' class="ann"' : ''}>
           <td class="tnum">${s.index}</td>
-          <td>${escapeHtml(s.label)}${s.kind === 'annotations' ? ' <span class="tag">annotations</span>' : ''}</td>
+          <td>${escapeHtml(s.label)}${s.kind === 'annotations' ? '' : ''}</td>
           <td>${escapeHtml(s.physicalDimension.trim() || '—')}</td>
           <td class="tnum">${s.sampleRateHz === undefined ? '—' : `${fmt(s.sampleRateHz)} Hz`}</td>
           <td class="tnum">${s.samplesPerRecord}</td>
@@ -446,10 +442,12 @@ import Base from '../layouts/Base.astro';
   // ---------------------------------------------------------------- the scope
 
   const LANE_H = 92;
+  /** Reserved strip at the top of the canvas for event labels. */
+  const EVENT_BAND = 18;
 
   function resize() {
     const lanes = Math.max(1, selected.length);
-    const cssHeight = lanes * LANE_H + 28;
+    const cssHeight = EVENT_BAND + lanes * LANE_H + 28;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const width = scope.getBoundingClientRect().width;
     scope.style.height = `${cssHeight}px`;
@@ -511,7 +509,7 @@ import Base from '../layouts/Base.astro';
     selected.forEach((signalIndex, lane) => {
       const signal = recording?.header.signals[signalIndex];
       if (!signal) return;
-      const top = lane * LANE_H + 14;
+      const top = EVENT_BAND + lane * LANE_H + 14;
       const mid = top + LANE_H / 2 - 7;
 
       // Baseline and lane divider, kept recessive so the trace owns the ink.
@@ -610,7 +608,7 @@ import Base from '../layouts/Base.astro';
       let row = 0;
       while (row < labelRows.length && chipX < (labelRows[row] ?? 0)) row += 1;
       labelRows[row] = chipX + textWidth + 8;
-      const chipY = 2 + row * 13;
+      const chipY = 1 + row * 13;
 
       ctx.globalAlpha = 1;
       ctx.fillStyle = surface;

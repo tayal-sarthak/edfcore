@@ -53,12 +53,12 @@ const gaps = [
 >
   <section class="hero">
     <div class="page">
-      <p class="eyebrow reveal">EDF &middot; EDF+ &middot; BDF &middot; BDF+</p>
-      <h1 class="reveal">Bytes in.<br />Microvolts out.</h1>
+      <h1 class="reveal">Read EDF files<br />in JavaScript.</h1>
       <p class="lede reveal">
-        edfcore reads EEG, sleep and other biosignal recordings in the browser and in Node.
-        It gives you real random access into multi-hour files, event times that compare
-        exactly, and — when a file is wrong — an error that names the byte.
+        edfcore opens EDF, EDF+, BDF and BDF+ recordings — EEG, sleep studies, ECG — in the
+        browser and in Node. Read any ten seconds of a twelve-hour file without loading the
+        rest of it, and get a clear error when a file is wrong instead of quietly wrong
+        numbers.
       </p>
 
       <div class="actions reveal">
@@ -69,10 +69,7 @@ const gaps = [
         <a class="btn" href="/demo">Open the inspector</a>
       </div>
 
-      <p class="note reveal">
-        Zero runtime dependencies. Works on a plain origin, with no build step required and no
-        server involved.
-      </p>
+      <p class="note reveal">Zero dependencies. TypeScript types included. MIT licensed.</p>
     </div>
   </section>
 
@@ -88,11 +85,6 @@ const gaps = [
           Opening a file reads the header and nothing else; it never scans, and it never
           materialises a recording you did not ask for.
         </p>
-        <p class="reveal measure">
-          Every chunk reports <code>byteLength</code> — the bytes actually read — because one
-          channel still costs a whole record. Making that visible is more useful than hiding
-          it.
-        </p>
       </div>
       <CodeBlock code={readExample} lang="ts" caption="Reading a window in the browser" />
     </div>
@@ -100,7 +92,6 @@ const gaps = [
 
   <section class="band band-inset">
     <div class="page">
-      <p class="eyebrow reveal">Why it exists</p>
       <h2 class="reveal">The JavaScript ecosystem for EDF was, until now, mostly a warning.</h2>
       <p class="reveal measure lede-2">
         Python has excellent tooling for these formats. JavaScript did not, and the gap is not
@@ -110,7 +101,7 @@ const gaps = [
       <div class="scroll-x reveal">
         <table class="gaps">
           <thead>
-            <tr><th scope="col">Capability</th><th scope="col">State of the art before edfcore</th></tr>
+            <tr><th scope="col">Capability</th><th scope="col">Before edfcore</th></tr>
           </thead>
           <tbody>
             {
@@ -126,12 +117,10 @@ const gaps = [
       </div>
 
       <p class="reveal measure aside">
-        The honest consequence is that people building EEG viewers do not reach for an EDF
-        package at all — they hand-roll a parser and reproduce the same bugs. edfcore exists to
-        end that, not to displace an incumbent. The strongest prior art,
-        <a href="https://github.com/epicurrents/edf-reader" rel="noopener"
-          >@epicurrents/edf-reader</a
-        >, is genuinely good and worth using if you want a whole viewer framework.
+        The strongest prior art is <a
+          href="https://github.com/epicurrents/edf-reader"
+          rel="noopener">@epicurrents/edf-reader</a
+        >, worth using if you want a whole viewer framework.
         <a href="/docs/comparison">The full comparison is here.</a>
       </p>
     </div>
@@ -140,7 +129,6 @@ const gaps = [
   <section class="band">
     <div class="page split split-reverse">
       <div>
-        <p class="eyebrow reveal">When the bytes are wrong</p>
         <h2 class="reveal">It refuses to invent data.</h2>
         <p class="reveal measure">
           One rule decides everything: if edfcore cannot continue without making something up,
@@ -158,7 +146,7 @@ const gaps = [
       <CodeBlock
         code={diagnosticExample}
         lang="ts"
-        caption="Diagnostics are values, not log lines"
+        caption="Diagnostics on the result"
       />
     </div>
   </section>
@@ -166,7 +154,6 @@ const gaps = [
   <section class="band band-inset">
     <div class="page split">
       <div>
-        <p class="eyebrow reveal">Gaps are structural</p>
         <h2 class="reveal">A recording that stopped and restarted says so.</h2>
         <p class="reveal measure">
           Sleep and long-term-monitoring studies are routinely discontinuous. Most readers
@@ -179,7 +166,7 @@ const gaps = [
           one and it would break on the first real sleep study.
         </p>
       </div>
-      <CodeBlock code={gapExample} lang="ts" caption="EDF+D, handled honestly" />
+      <CodeBlock code={gapExample} lang="ts" caption="Reading a discontinuous file" />
     </div>
   </section>
 
@@ -341,7 +328,6 @@ const gaps = [
 
   .band-inset {
     background: var(--bg-sunken);
-    border-block: 1px solid var(--rule-soft);
   }
 
   .split {

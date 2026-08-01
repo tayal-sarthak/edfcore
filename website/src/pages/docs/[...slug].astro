@@ -27,7 +27,6 @@ const outline = headings.filter((heading) => heading.depth === 2 || heading.dept
 
     <article class="doc">
       <header>
-        <p class="eyebrow">{entry.data.section}</p>
         <h1>{entry.data.title}</h1>
         <p class="lead">{entry.data.lead ?? entry.data.description}</p>
       </header>
@@ -37,7 +36,7 @@ const outline = headings.filter((heading) => heading.depth === 2 || heading.dept
     </article>
 
     {
-      outline.length > 1 && (
+      outline.length >= 4 && (
         <aside class="outline">
           <p class="eyebrow">On this page</p>
           <ul>
@@ -231,8 +230,6 @@ const outline = headings.filter((heading) => heading.depth === 2 || heading.dept
     font-family: var(--font-mono);
     font-size: var(--t-xs);
     font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
     color: var(--text-muted);
     border-bottom-color: var(--rule);
     white-space: nowrap;

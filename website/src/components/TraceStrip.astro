@@ -1,28 +1,27 @@
 ---
 /**
- * The hero figure: a pen sweeping across a page of hex.
+ * The hero figure: a single EEG trace drawn across the page.
  *
- * The bytes are real. A deterministic signal is generated, encoded to little-endian 16-bit
- * two's complement exactly as EDF stores it, and those bytes are what the hex grid shows.
- * The sweeping head decodes them back into the trace, left to right, the way a chart recorder
- * lays ink onto paper. It is the whole library in one image: bytes on the right, numbers with
- * units on the left.
+ * The samples are real. A deterministic signal is generated, encoded to little-endian 16-bit
+ * two's complement exactly as EDF stores it, and then decoded back out through the same
+ * arithmetic the library uses — so the line on screen is the output of the thing being sold,
+ * not a drawing of one.
+ *
+ * An earlier version showed the underlying bytes as a hex grid behind the trace. It made the
+ * point but read as noise, so the bytes are still what drives the curve and are simply no
+ * longer painted.
  */
 interface Props {
   height?: number;
 }
-const { height = 320 } = Astro.props;
+const { height = 260 } = Astro.props;
 ---
 
 <figure class="strip" style={`--strip-h:${height}px`}>
   <canvas id="trace-strip" aria-hidden="true"></canvas>
   <figcaption class="visually-hidden">
-    An animation of hexadecimal bytes being decoded into an EEG waveform, left to right.
+    An electroencephalogram trace, drawn from sample values decoded by edfcore.
   </figcaption>
-  <div class="legend" aria-hidden="true">
-    <span class="lg lg-trace">decoded &mdash; microvolts</span>
-    <span class="lg lg-bytes">stored &mdash; raw bytes</span>
-  </div>
 </figure>
 
 <script>
@@ -34,50 +33,49 @@ const { height = 320 } = Astro.props;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // ---- the signal, and the bytes that hold it -------------------------------
-    // A plausible EEG epoch: an alpha rhythm, a slow drift, and one sharp transient.
     const SAMPLES = 1400;
     const digital = new Int16Array(SAMPLES);
     for (let i = 0; i < SAMPLES; i += 1) {
       const t = i / 64;
-      const alpha = Math.sin(t * 10 * 0.62) * 900;
-      const theta = Math.sin(t * 4 * 0.62 + 1.1) * 420;
+      // Deliberately slow: about eight waves across the strip rather than twenty. A denser
+      // trace is more literally EEG-like and reads as a scribble at this size.
+      const alpha = Math.sin(t * 2.3) * 900;
+      const theta = Math.sin(t * 0.9 + 1.1) * 380;
       const drift = Math.sin(t * 0.21) * 260;
-      const spike = i > 690 && i < 716 ? Math.sin((i - 690) / 26 * Math.PI) * 2600 : 0;
-      // A deterministic wobble, so the trace reads as measured rather than drawn.
-      const wobble = Math.sin(i * 2.399963) * 110;
-      digital[i] = Math.max(-32768, Math.min(32767, Math.round(alpha + theta + drift + spike + wobble)));
+      const spike = i > 660 && i < 760 ? Math.sin(((i - 660) / 100) * Math.PI) * 1900 : 0;
+      // Just enough deterministic wobble that the line reads as measured, not drawn.
+      const wobble = Math.sin(i * 0.7639320225) * 55;
+      digital[i] = Math.max(
+        -32768,
+        Math.min(32767, Math.round(alpha + theta + drift + spike + wobble)),
+      );
     }
 
-    // Little-endian two's complement, exactly as EDF stores a sample.
+    // Round-tripped through the on-disk encoding, so the curve is genuinely decoded output.
     const bytes = new Uint8Array(SAMPLES * 2);
     for (let i = 0; i < SAMPLES; i += 1) {
-      const v = digital[i] < 0 ? digital[i] + 0x10000 : digital[i];
+      const v = (digital[i] ?? 0) < 0 ? (digital[i] ?? 0) + 0x10000 : (digital[i] ?? 0);
       bytes[i * 2] = v & 0xff;
       bytes[i * 2 + 1] = (v >> 8) & 0xff;
     }
-    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'));
-    const peak = digital.reduce((m, v) => Math.max(m, Math.abs(v)), 1);
+    const decoded = new Int32Array(SAMPLES);
+    for (let i = 0; i < SAMPLES; i += 1) {
+      const raw = (bytes[i * 2] ?? 0) | ((bytes[i * 2 + 1] ?? 0) << 8);
+      decoded[i] = raw & 0x8000 ? raw - 0x10000 : raw;
+    }
+    const peak = decoded.reduce((m, v) => Math.max(m, Math.abs(v)), 1);
 
-    // ---- palette read from the stylesheet, so themes stay in one place --------
     const readTokens = () => {
       const s = getComputedStyle(document.documentElement);
       return {
         trace: s.getPropertyValue('--accent').trim(),
-        event: s.getPropertyValue('--event').trim(),
-        dim: s.getPropertyValue('--text-muted').trim(),
         rule: s.getPropertyValue('--rule-soft').trim(),
-        bg: s.getPropertyValue('--bg').trim(),
       };
     };
     let tokens = readTokens();
 
     let width = 0;
     let cssHeight = 0;
-    let cols = 0;
-    let rows = 0;
-    const CELL_W = 26;
-    const ROW_H = 22;
-    const LEGEND_BAND = 30;
     let progress = 0;
 
     const resize = () => {
@@ -88,58 +86,28 @@ const { height = 320 } = Astro.props;
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(cssHeight * dpr);
       ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cols = Math.max(8, Math.floor(width / CELL_W));
-      // The bottom strip is reserved for the two legends, so hex never collides with them.
-      rows = Math.max(3, Math.floor((cssHeight - LEGEND_BAND) / ROW_H));
     };
 
     const draw = () => {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, cssHeight);
-      const head = progress * width;
 
-      // --- the hex page ------------------------------------------------------
-      ctx.font = '500 12px "IBM Plex Mono", ui-monospace, monospace';
-      ctx.textBaseline = 'middle';
-      const padY = (cssHeight - LEGEND_BAND - rows * ROW_H) / 2 + ROW_H / 2;
+      const mid = cssHeight / 2;
+      const amp = cssHeight * 0.34;
 
-      for (let r = 0; r < rows; r += 1) {
-        const y = padY + r * ROW_H;
-        for (let c = 0; c < cols; c += 1) {
-          const x = c * CELL_W + 8;
-          const idx = (r * cols + c) % hex.length;
-          // Bytes the head has passed have been "read": they fade back and let the
-          // trace own the space. Bytes ahead of it are still just bytes.
-          const passed = x < head;
-          const nearHead = !passed && x - head < 110;
-          if (passed) {
-            // Read, and now represented by the trace instead. Almost gone.
-            ctx.fillStyle = tokens.dim;
-            ctx.globalAlpha = 0.07;
-          } else if (nearHead) {
-            // About to be read: the pen lights the bytes just ahead of it.
-            ctx.fillStyle = tokens.trace;
-            ctx.globalAlpha = 0.62 * (1 - (x - head) / 110) + 0.3;
-          } else {
-            ctx.fillStyle = tokens.dim;
-            ctx.globalAlpha = 0.5;
-          }
-          ctx.fillText(hex[idx], x, y);
-        }
-      }
-      ctx.globalAlpha = 1;
+      // A single hairline baseline. The trace is the only other mark on the strip.
+      ctx.strokeStyle = tokens.rule;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, mid);
+      ctx.lineTo(width, mid);
+      ctx.stroke();
 
-      // --- the decoded trace -------------------------------------------------
-      // Scaled from the data's own peak rather than the format's full range, so the trace
-      // reads as a signal instead of a flat line near the axis.
-      const mid = (cssHeight - LEGEND_BAND) / 2;
-      const amp = (cssHeight - LEGEND_BAND) * 0.36;
-      const visible = Math.max(2, Math.floor((head / width) * SAMPLES));
-
+      const visible = Math.max(2, Math.floor(progress * SAMPLES));
       ctx.beginPath();
       for (let i = 0; i < visible; i += 1) {
-        const x = (i / SAMPLES) * width;
-        const y = mid - (digital[i] / peak) * amp;
+        const x = (i / (SAMPLES - 1)) * width;
+        const y = mid - ((decoded[i] ?? 0) / peak) * amp;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
@@ -147,63 +115,17 @@ const { height = 320 } = Astro.props;
       ctx.lineWidth = 1.75;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.shadowColor = tokens.trace;
-      ctx.shadowBlur = 14;
       ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      // The transient gets an event mark, because that is what the red pen was for.
-      const spikeX = (703 / SAMPLES) * width;
-      if (head > spikeX) {
-        ctx.strokeStyle = tokens.event;
-        ctx.globalAlpha = 0.75;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 4]);
-        ctx.beginPath();
-        ctx.moveTo(spikeX, mid - amp * 1.25);
-        ctx.lineTo(spikeX, mid + amp * 1.25);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = tokens.event;
-        ctx.font = '500 10px "IBM Plex Mono", ui-monospace, monospace';
-        ctx.fillText('K-complex', spikeX + 6, mid - amp * 1.25 + 6);
-      }
-
-      // --- the pen head ------------------------------------------------------
-      if (progress > 0.001 && progress < 0.999) {
-        const grad = ctx.createLinearGradient(head - 70, 0, head, 0);
-        grad.addColorStop(0, 'transparent');
-        grad.addColorStop(1, tokens.trace);
-        ctx.fillStyle = grad;
-        ctx.globalAlpha = 0.13;
-        ctx.fillRect(head - 70, 0, 70, cssHeight);
-        ctx.globalAlpha = 1;
-
-        ctx.strokeStyle = tokens.trace;
-        ctx.lineWidth = 1.25;
-        ctx.beginPath();
-        ctx.moveTo(head, 0);
-        ctx.lineTo(head, cssHeight);
-        ctx.stroke();
-      }
     };
 
     resize();
 
-    /*
-     * The pen stops part-way across and stays there. Running it to the right edge would
-     * leave every byte "read" and the contrast gone — the point of the figure is that both
-     * worlds are on screen at once: decoded signal behind the pen, raw bytes ahead of it.
-     */
-    const REST = 0.62;
-
     if (reduced) {
-      progress = REST;
+      progress = 1;
       draw();
     } else {
-      animate(0, REST, {
-        duration: 2.8,
+      animate(0, 1, {
+        duration: 2.2,
         ease: [0.22, 0.61, 0.24, 1],
         onUpdate: (p: number) => {
           progress = p;
@@ -221,14 +143,11 @@ const { height = 320 } = Astro.props;
       });
     });
 
-    // The canvas paints from CSS custom properties, so it has to be repainted when the
-    // theme changes — the values it captured are stale otherwise.
+    // The canvas paints from CSS custom properties, so it repaints when the theme changes.
     new MutationObserver(() => {
       tokens = readTokens();
       draw();
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-    document.fonts?.ready.then(draw);
   }
 </script>
 
@@ -249,35 +168,9 @@ const { height = 320 } = Astro.props;
     display: block;
   }
 
-  .legend {
-    position: absolute;
-    inset-inline: 0;
-    bottom: var(--s-3);
-    display: flex;
-    justify-content: space-between;
-    width: min(100% - 2.5rem, var(--page));
-    margin-inline: auto;
-    pointer-events: none;
-  }
-
-  .lg {
-    font-family: var(--font-mono);
-    font-size: var(--t-xs);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .lg-trace {
-    color: var(--accent);
-  }
-
-  .lg-bytes {
-    color: var(--text-muted);
-  }
-
   @media (max-width: 640px) {
     .strip {
-      height: 220px;
+      height: 170px;
     }
   }
 </style>
