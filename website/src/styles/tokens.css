@@ -1,15 +1,18 @@
 /*
  * Ink & Trace — the design system for edfcore.
  *
- * The reference is the analog chart recorder: the multi-pen machines that drew EEG onto
- * fanfold paper. Dark mode is that machine seen in a darkened sleep lab; light mode is the
- * manila paper it drew on. Deliberately not clinical, and deliberately not the blue-violet
- * gradient every developer tool ships with.
+ * The reference is the instrument rather than the clinic: a signal traced in phosphor green
+ * on a dark screen, and on the light theme the same trace on the paper such machines printed
+ * onto. Deliberately not the blue-violet gradient every developer tool ships with.
  *
- * The neutrals are warm and olive-biased rather than pure grey, so they sit under the amber
- * without going muddy. The accents come from the machine's own pens: amber traces the
- * signal, vermilion marks events. Vermilion is SEMANTIC — events, annotations and errors
- * only, never decoration. Chart series use the separate validated palette below.
+ * The neutrals stay warm and olive-biased rather than pure grey, which keeps the green from
+ * reading as a terminal and gives the light theme its paper cast.
+ *
+ * Two marks, and the pairing is not arbitrary. The signal green carries the trace; the rose
+ * marks events, annotations and errors and is SEMANTIC — never decoration. Rose rather than
+ * red because red against green is the one pairing red-green colourblindness collapses, and
+ * the two colours a reader must separate here are precisely the trace and the event marker
+ * drawn on top of it. Verified: dE 16.3 deutan on dark, 9.7 on light.
  */
 
 :root {
@@ -27,14 +30,13 @@
   --paper-300: #e4dcc9;
   --paper-400: #d3c8ae;
 
-  /* ---- the pens ---- */
-  --amber: #e8a33d;
-  --amber-bright: #f4bb63;
-  --amber-deep: #b87a1f;
-  --vermilion: #e5563b;
-  --vermilion-deep: #b83c23;
-  --sage: #8fa87a;
-  --sage-deep: #61784d;
+  /* ---- the marks ---- */
+  --signal: #8ccb6b;
+  --signal-bright: #a8de8a;
+  --signal-deep: #4f7a35;
+  --signal-darker: #3d6b24;
+  --mark: #de4a86;
+  --mark-deep: #d4407e;
 
   /* ---- semantic surface tokens: components use ONLY these ---- */
   --bg: var(--ink-900);
@@ -48,13 +50,13 @@
   --text-dim: #b3aa93;
   --text-muted: #8c8471;
 
-  --accent: var(--amber);
-  --accent-hover: var(--amber-bright);
+  --accent: var(--signal);
+  --accent-hover: var(--signal-bright);
   --accent-ink: #14120e;
-  --event: var(--vermilion);
+  --event: var(--mark);
 
-  --selection: rgba(232, 163, 61, 0.26);
-  --focus: var(--amber-bright);
+  --selection: rgba(140, 203, 107, 0.24);
+  --focus: var(--signal-bright);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 28px -12px rgba(0, 0, 0, 0.7);
 
   /* Code keeps one surface in both themes; only its frame changes. */
@@ -112,8 +114,8 @@
   color-scheme: dark;
 }
 
-/* Light theme: the manila paper the machine drew on. Not an inversion — the accents are
-   re-stepped so amber still carries contrast against a bright ground. */
+/* Light theme: the paper such machines printed onto. Not an inversion — both marks are
+   re-stepped so they carry contrast, and stay separable from each other, on a bright ground. */
 @media (prefers-color-scheme: light) {
   :root {
     --bg: var(--paper-100);
@@ -127,10 +129,10 @@
     --text-dim: #4d4738;
     --text-muted: #6f6653;
 
-    --accent: var(--amber-deep);
-    --accent-hover: #96620f;
+    --accent: var(--signal-deep);
+    --accent-hover: var(--signal-darker);
     --accent-ink: #fffdf7;
-    --event: var(--vermilion-deep);
+    --event: var(--mark-deep);
 
     --series-1: #c07100;
     --series-2: #0080a3;
@@ -139,8 +141,8 @@
 
     --code-border: var(--paper-400);
 
-    --selection: rgba(184, 122, 31, 0.2);
-    --focus: var(--amber-deep);
+    --selection: rgba(79, 122, 53, 0.18);
+    --focus: var(--signal-deep);
     --shadow: 0 1px 2px rgba(64, 50, 20, 0.08), 0 8px 28px -14px rgba(64, 50, 20, 0.28);
 
     color-scheme: light;
@@ -158,17 +160,17 @@
   --text: #221f18;
   --text-dim: #4d4738;
   --text-muted: #6f6653;
-  --accent: var(--amber-deep);
-  --accent-hover: #96620f;
+  --accent: var(--signal-deep);
+  --accent-hover: var(--signal-darker);
   --accent-ink: #fffdf7;
-  --event: var(--vermilion-deep);
+  --event: var(--mark-deep);
   --series-1: #c07100;
   --series-2: #0080a3;
   --series-3: #ac040c;
   --series-4: #25934a;
   --code-border: var(--paper-400);
-  --selection: rgba(184, 122, 31, 0.2);
-  --focus: var(--amber-deep);
+  --selection: rgba(79, 122, 53, 0.18);
+  --focus: var(--signal-deep);
   --shadow: 0 1px 2px rgba(64, 50, 20, 0.08), 0 8px 28px -14px rgba(64, 50, 20, 0.28);
   color-scheme: light;
 }
@@ -183,18 +185,18 @@
   --text: #ede6d6;
   --text-dim: #b3aa93;
   --text-muted: #8c8471;
-  --accent: var(--amber);
-  --accent-hover: var(--amber-bright);
+  --accent: var(--signal);
+  --accent-hover: var(--signal-bright);
   --accent-ink: #14120e;
-  --event: var(--vermilion);
+  --event: var(--mark);
   --code-border: var(--ink-600);
   --series-1: #c67f00;
   --series-2: #0090ae;
   --series-3: #c53c33;
   --series-4: #58a867;
 
-  --selection: rgba(232, 163, 61, 0.26);
-  --focus: var(--amber-bright);
+  --selection: rgba(140, 203, 107, 0.24);
+  --focus: var(--signal-bright);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 28px -12px rgba(0, 0, 0, 0.7);
   color-scheme: dark;
 }

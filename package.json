@@ -28,7 +28,7 @@
   "bugs": {
     "url": "https://github.com/tayal-sarthak/edfcore/issues"
   },
-  "homepage": "https://github.com/tayal-sarthak/edfcore#readme",
+  "homepage": "https://edfcore.vercel.app",
   "type": "module",
   "sideEffects": false,
   "files": [
