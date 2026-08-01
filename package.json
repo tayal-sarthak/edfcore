@@ -72,7 +72,6 @@
     "prepublishOnly": "npm run check && npm run build"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }

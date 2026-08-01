@@ -43,5 +43,11 @@ jobs:
           npx --yes publint@latest --strict
           npx --yes @arethetypeswrong/cli@latest --pack . --profile esm-only
 
+      # --provenance lives here rather than in publishConfig on purpose. In publishConfig it
+      # applies to every publish, including one run by hand, and a laptop has no OIDC token to
+      # sign with — so an ordinary `npm publish` fails with no useful explanation. Keeping the
+      # flag on the CI step means provenance is attested when CI publishes, and publishing by
+      # hand still works. Requires `npm trust github edfcore --file publish.yml --repo <owner>/<repo>`,
+      # which can only be configured once the package exists on the registry.
       - name: Publish
-        run: npm publish --access public
+        run: npm publish --access public --provenance
