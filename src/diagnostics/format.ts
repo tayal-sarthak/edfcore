@@ -1,0 +1,143 @@
+/**
+ * Rendering diagnostics for humans.
+ *
+ * Layer 1. Layout only: by the message contract a diagnostic's own message already names the
+ * field, the raw bytes as written, the rule and the next step, so this module adds structure —
+ * severity marker, code, location, the bytes as hex — and invents no wording.
+ *
+ * Output is deterministic and asserted as such: no locale-sensitive number or date formatting,
+ * no iteration over an unordered collection, and no ANSI escapes unless `color` is requested.
+ */
+
+import type { EdfDiagnostic, EdfSeverity } from '../types.js';
+
+export interface FormatDiagnosticsOptions {
+  readonly color?: boolean;
+  readonly maxItems?: number;
+}
+
+const INDENT = '  ';
+
+/** A report is a summary, not a hex dump; longer runs are elided with a count. */
+const MAX_RAW_BYTES_SHOWN = 24;
+
+const ANSI_RESET = '\u001b[0m';
+const ANSI_DIM = '\u001b[2m';
+
+const SEVERITY_COLORS: Readonly<Record<EdfSeverity, string>> = {
+  error: '\u001b[31m',
+  warning: '\u001b[33m',
+  info: '\u001b[36m',
+};
+
+/**
+ * A multi-line report, one block per diagnostic. Returns `''` for an empty list so the result
+ * can be concatenated into a larger report without a stray blank line.
+ */
+export function formatDiagnostics(
+  diagnostics: readonly EdfDiagnostic[],
+  options?: FormatDiagnosticsOptions,
+): string {
+  const color = options?.color === true;
+  const shown = resolveLimit(options?.maxItems, diagnostics.length);
+  const lines: string[] = [];
+
+  for (let i = 0; i < shown; i++) {
+    const diagnostic = diagnostics[i];
+    // i < shown <= diagnostics.length, so this only satisfies noUncheckedIndexedAccess.
+    if (diagnostic === undefined) continue;
+    appendDiagnostic(lines, diagnostic, color);
+  }
+
+  const hidden = diagnostics.length - shown;
+  if (hidden > 0) lines.push(paint(`... and ${hidden} more`, ANSI_DIM, color));
+
+  return lines.join('\n');
+}
+
+function resolveLimit(maxItems: number | undefined, total: number): number {
+  if (maxItems === undefined || !Number.isFinite(maxItems)) return total;
+  return Math.max(0, Math.min(total, Math.floor(maxItems)));
+}
+
+function appendDiagnostic(lines: string[], diagnostic: EdfDiagnostic, color: boolean): void {
+  const marker = paint(
+    `${diagnostic.severity} [${diagnostic.code}]`,
+    SEVERITY_COLORS[diagnostic.severity],
+    color,
+  );
+
+  const messageLines = diagnostic.message.split('\n');
+  const first = messageLines[0] ?? '';
+  lines.push(`${marker} ${first}`.trimEnd());
+  for (let i = 1; i < messageLines.length; i++) {
+    const line = messageLines[i];
+    if (line === undefined) continue;
+    lines.push(`${INDENT}${line.trim()}`);
+  }
+
+  const location = locationOf(diagnostic);
+  if (location !== undefined) detail(lines, location, color);
+  if (diagnostic.raw !== undefined) detail(lines, `raw: ${quote(diagnostic.raw)}`, color);
+  if (diagnostic.rawBytes !== undefined && diagnostic.rawBytes.length > 0) {
+    detail(lines, `bytes: ${hexDump(diagnostic.rawBytes)}`, color);
+  }
+  if (diagnostic.expected !== undefined) detail(lines, `expected: ${diagnostic.expected}`, color);
+  if (diagnostic.actual !== undefined) detail(lines, `actual: ${diagnostic.actual}`, color);
+  if (diagnostic.specReference !== undefined) {
+    detail(lines, `spec: ${diagnostic.specReference}`, color);
+  }
+}
+
+function detail(lines: string[], text: string, color: boolean): void {
+  lines.push(`${INDENT}${paint(text, ANSI_DIM, color)}`);
+}
+
+function locationOf(diagnostic: EdfDiagnostic): string | undefined {
+  const parts: string[] = [];
+  if (diagnostic.byteOffset !== undefined) {
+    parts.push(
+      diagnostic.byteLength === undefined
+        ? `byte offset ${diagnostic.byteOffset}`
+        : `byte offset ${diagnostic.byteOffset} (${diagnostic.byteLength} bytes)`,
+    );
+  }
+  if (diagnostic.field !== undefined) parts.push(diagnostic.field);
+  if (diagnostic.signalIndex !== undefined) parts.push(`signal ${diagnostic.signalIndex}`);
+  if (diagnostic.recordIndex !== undefined) parts.push(`record ${diagnostic.recordIndex}`);
+  return parts.length === 0 ? undefined : `at ${parts.join(', ')}`;
+}
+
+/** `30 20 20 20  |0   |`. Built byte by byte — TextDecoder is banned outside `src/tal/`. */
+function hexDump(bytes: Uint8Array): string {
+  const shown = bytes.subarray(0, MAX_RAW_BYTES_SHOWN);
+  const hex: string[] = [];
+  let ascii = '';
+  for (const byte of shown) {
+    hex.push(byte.toString(16).padStart(2, '0'));
+    ascii += isPrintableAscii(byte) ? String.fromCharCode(byte) : '.';
+  }
+  const elided = bytes.length - shown.length;
+  return `${hex.join(' ')}  |${ascii}|${elided > 0 ? ` +${elided} more` : ''}`;
+}
+
+function isPrintableAscii(byte: number): boolean {
+  return byte >= 0x20 && byte <= 0x7e;
+}
+
+/** Keeps every entry on one line: control and non-ASCII characters become escapes, not bytes. */
+function quote(value: string): string {
+  let out = '"';
+  for (const char of value) {
+    const code = char.codePointAt(0) ?? 0;
+    if (char === '"' || char === '\\') out += `\\${char}`;
+    else if (isPrintableAscii(code)) out += char;
+    else if (code <= 0xff) out += `\\x${code.toString(16).padStart(2, '0')}`;
+    else out += `\\u{${code.toString(16)}}`;
+  }
+  return `${out}"`;
+}
+
+function paint(text: string, color: string, enabled: boolean): string {
+  return enabled ? `${color}${text}${ANSI_RESET}` : text;
+}

@@ -1,0 +1,75 @@
+{
+  "name": "edfcore",
+  "version": "0.1.0",
+  "description": "Modern, typed, zero-dependency reader for EDF, EDF+, BDF and BDF+ biosignal files. Works in browsers and Node with true random access.",
+  "keywords": [
+    "edf",
+    "edf+",
+    "bdf",
+    "bdf+",
+    "eeg",
+    "ecg",
+    "emg",
+    "polysomnography",
+    "sleep",
+    "biosignal",
+    "european-data-format",
+    "neuroscience",
+    "neurotech",
+    "parser",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Sarthak Tayal",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tayal-sarthak/edfcore.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tayal-sarthak/edfcore/issues"
+  },
+  "homepage": "https://github.com/tayal-sarthak/edfcore#readme",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./validate": {
+      "types": "./dist/validate.d.ts",
+      "default": "./dist/validate.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.6",
+    "@types/node": "^26.1.2",
+    "fast-check": "4.9.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "check": "npm run lint && npm run typecheck && npm run test"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
