@@ -1,7 +1,7 @@
 # edfcore
 
-Read EDF, EDF+, BDF and BDF+ biosignal files in TypeScript — in the browser and in Node, with
-real random access and no dependencies.
+edfcore reads EDF, EDF+, BDF and BDF+ biosignal files in TypeScript, in the browser and in
+Node. Real random access, no dependencies.
 
 ```bash
 npm install edfcore
@@ -58,38 +58,35 @@ for (const event of annotations) {
 }
 ```
 
-> **Status: 0.1.0, early — but checked against real files.** Alongside 1,100+ tests on
-> generated fixtures, edfcore is verified against public corpora it did not author: the
-> EDF, EDF+ and 24-bit BDF+ test files from teuniz.net, and PhysioNet's sleep-edfx — a real
-> 22-hour polysomnography recording and its sleep-staging file. Those checks are numeric, not
-> just "it parsed": channels labelled `sine 8.5 Hz` decode to 8.5 Hz at their stated
-> amplitude, the 24-bit and 16-bit paths agree on identical signals, and the rectal
-> temperature channel of a real recording reads 37 °C. Run them yourself with
+> **Status: 0.1.0, early.** edfcore runs 1,100+ tests on generated fixtures, and it's checked
+> against public corpora it didn't author: the EDF, EDF+ and 24-bit BDF+ test files from
+> teuniz.net, and PhysioNet's sleep-edfx (a real 22-hour polysomnography recording and its
+> sleep-staging file). Those checks are numeric. Channels labelled `sine 8.5 Hz` decode to
+> 8.5 Hz at their stated amplitude, the 24-bit and 16-bit paths agree on identical signals,
+> and the rectal temperature channel of a real recording reads 37 °C. Run them with
 > `npm run corpus:fetch && npm test`.
 >
-> Still outstanding: a golden-value harness comparing edfcore's float64 output against
-> pyEDFlib and MNE element by element. Until that exists, no claim of numeric parity with
-> those readers ships. Treat the API as still able to move. See [Roadmap](#roadmap).
+> One thing is missing: a golden-value harness comparing edfcore's float64 output against
+> pyEDFlib and MNE element by element. Until it exists, edfcore claims no numeric parity with
+> those readers. The API can still move. See [Roadmap](#roadmap).
 
 ---
 
 ## When to use edfcore, and when not to
 
-**Use it when** you need to read EDF, EDF+, BDF or BDF+ in JavaScript or TypeScript: a
-browser-based EEG or sleep viewer, an Electron desktop tool, a Node data pipeline, a research
-upload portal that must not send recordings to a server, or any case where you want real types
-and errors that tell you which byte was wrong.
+**Use it when** you need to read EDF, EDF+, BDF or BDF+ in JavaScript or TypeScript. That
+covers browser-based EEG and sleep viewers, Electron desktop tools, Node data pipelines, and
+research upload portals that must not send recordings to a server.
 
 **Use something else when:**
 
 - **You are already in Python.** pyEDFlib and MNE are mature, validated against enormous
-  amounts of real data, and have years of clinical use behind them. Do not port a working
-  Python pipeline to JavaScript for the sake of it.
+  amounts of real data, and have years of clinical use behind them. Don't port a working Python
+  pipeline to JavaScript for the sake of it.
 - **You want a whole viewer stack.** [`@epicurrents/edf-reader`](https://github.com/epicurrents/edf-reader)
   is strong prior art and arrives with an EEG application framework attached.
 - **You need analysis, not file access.** edfcore does not filter, resample, re-reference,
-  build montages, run ICA, reject artifacts, or detect events, and it never will — those are
-  permanent non-goals, not gaps.
+  build montages, run ICA, reject artifacts, or detect events. Those are permanent non-goals.
 - **You need to *write* EDF.** edfcore is read-only through 1.0.
 
 ---
@@ -97,37 +94,34 @@ and errors that tell you which byte was wrong.
 ## Why this exists
 
 EDF is the standard container for EEG, sleep studies, ECG and EMG. Python has excellent tooling
-for it. JavaScript did not, and the gap is not subtle — surveying every EDF package on npm as of
-mid-2026:
+for it. JavaScript didn't. This is every EDF package on npm, surveyed in mid-2026:
 
-| | state of the art |
+| | Before edfcore |
 |---|---|
 | TypeScript types | No standalone reader ships them |
 | Random access | Nothing published does byte-range reads; a 24 h study is loaded whole or not at all |
-| BDF (24-bit) | No published package can read it — BioSemi hardware has no JS support |
+| BDF (24-bit) | No published package can read it. BioSemi hardware has no JS support |
 | EDF+D (gaps) | Unsupported or, worse, decoded as if contiguous, producing a silently wrong timeline |
 | Errors | `console.warn` and `null`, or bare thrown strings; nothing typed or located |
-| Header validation | Essentially none — no size checks, no degenerate-range checks |
+| Header validation | Essentially none. No size checks, no degenerate-range checks |
 
-The result is that people building EEG viewers don't use an EDF package at all. They hand-roll a
-parser, and reproduce the same bugs.
+So people building EEG viewers don't reach for an EDF package. They hand-roll a parser and
+reproduce the same bugs.
 
-edfcore is the boring infrastructure that should have existed: parse the format correctly, expose
-it honestly, and be loud when the bytes are wrong.
-
-**Prior art worth knowing about.** [`@epicurrents/edf-reader`](https://github.com/epicurrents/edf-reader)
-is the strongest existing implementation — genuine TAL parsing, real partial reads, BDF support.
-It is a plugin inside an EEG application framework, so it arrives with that framework attached. If
-you want a whole viewer stack, use it. edfcore's pitch is different: a small, standalone,
-dependency-free, fully typed file-format library you can drop into any project.
+The strongest existing implementation is
+[`@epicurrents/edf-reader`](https://github.com/epicurrents/edf-reader): real TAL parsing, real
+partial reads, BDF support. It's a plugin inside an EEG application framework, so it arrives
+with that framework attached. Use it if you want a whole viewer stack. edfcore is a small,
+standalone, dependency-free file-format library you can drop into any project.
 
 ---
 
 ## Design in one page
 
-**It never invents data.** If edfcore cannot proceed without making something up, it throws. If it
-can proceed truthfully, it records a diagnostic on the result. There is no third option, and
-nothing is ever written to the console.
+**A bad file either throws or reports itself.** One rule decides which. If edfcore can't
+continue without inventing something, it throws. If it can continue on what the file says, it
+records a diagnostic on the result. There's no third option, and nothing is written to the
+console.
 
 ```ts
 const recording = await openEdf(source);
@@ -139,42 +133,40 @@ for (const d of recording.header.diagnostics) {
 Every diagnostic carries the field, the byte offset, the raw bytes as written, the spec clause it
 violates, and what to do next. Pass `{ strict: true }` and the first one throws instead.
 
-**Digital and physical are two functions, not a flag.** `chunk.signals[i].digital` is an
-`Int32Array` of raw stored values; `toPhysical(signal, digital)` returns a `Float64Array` in the
-signal's own units. An option that changes a return type is a bug waiting to happen, and `Float32`
-would cost a quarter of a quantisation step on 24-bit BDF.
+**Digital and physical are two functions.** `chunk.signals[i].digital` is an `Int32Array` of
+the values as stored. `toPhysical(signal, digital)` returns a `Float64Array` in the signal's own
+units. There's no `{ physical: true }` option, because it would change the return type, and no
+`Float32` output (it costs about a quarter of a quantisation step on 24-bit BDF).
 
-**Scaling can be refused.** When a header declares `digitalMinimum === digitalMaximum`, there is no
-scale — the reference C implementation quietly substitutes a gain of 1 and hands back ADC counts
-labelled as microvolts. edfcore sets `signal.scale` to `undefined` instead, so `toPhysical` throws
-and `strictNullChecks` makes the mistake unrepresentable. `decodeDigital` keeps working.
+**Scaling can be refused.** A header that declares `digitalMinimum === digitalMaximum` defines
+no scale: the gain is a division by zero. edfcore sets `signal.scale` to `undefined`, so
+`toPhysical` throws and `strictNullChecks` catches the call you didn't guard. `decodeDigital`
+keeps working. EDFlib substitutes a gain of 1 here and returns ADC counts labelled as microvolts.
 
-**Different sample rates stay different.** An EDF file can hold EEG at 256 Hz, ECG at 512 Hz and
-temperature at 1 Hz. edfcore never pretends one universal rate exists. Sample indexing uses
-`samplesPerRecord`, never a floating-point rate, and `sampleRateHz` is `undefined` when the record
-duration is zero (which is legal).
+**Sample rates stay per-signal.** An EDF file can hold EEG at 256 Hz, ECG at 512 Hz and
+temperature at 1 Hz. There's no recording-wide rate. Sample indexing uses `samplesPerRecord`
+rather than a floating-point rate, and `sampleRateHz` is `undefined` when the record duration is
+zero (which is legal EDF).
 
-**Time is compared in exact ticks.** Annotation onsets are parsed digit-by-digit into `bigint`
-hundred-nanosecond ticks, never through `parseFloat`. Float equality on event times is how ERP
-alignment silently breaks.
+**Event times are exact.** Annotation onsets are parsed digit by digit into `bigint`
+hundred-nanosecond ticks, not through `parseFloat`. Compare `onsetTicks`, not the float.
 
-**Gaps are structural, not optional.** `readWindow` always returns an *array* of chunks — one per
-contiguous run — even for a continuous file. A window that falls inside a gap returns `[]`. There
-is no gap-filling and no option to enable it, because if two shapes existed, people would write
-against the easy one and it would misbehave on the first discontinuous recording.
+**Gaps are structural.** `readWindow` always returns an array of chunks, one per contiguous
+run, including for continuous files. A window that falls inside a gap returns `[]`. There's no
+gap-filling and no option to enable it.
 
-**No `Date`.** EDF stores local time at the patient with no timezone, so a `Date` silently applies
-the reader's zone and is worst exactly at DST boundaries. You get `EdfCalendarDate` and
-`EdfClockTime`, plus `formatStartTimeNaive()` for a zone-free ISO-like string.
+**No `Date`.** EDF stores local time at the patient with no timezone, and a `Date` would apply
+the reader's zone instead. You get `EdfCalendarDate` and `EdfClockTime`, plus
+`formatStartTimeNaive()` for a zone-free ISO-like string.
 
 ---
 
 ## Reading data
 
-The unit of I/O is the **record range**, never the channel range. EDF interleaves every channel
-within each data record, so there is no cheap single-channel read — asking for one channel over a
-window still reads the records that contain it. edfcore makes that visible rather than hiding it:
-`chunk.byteLength` is the bytes actually read.
+The unit of I/O is the **record range**, not the channel range. EDF interleaves every channel
+inside each data record, so there's no cheap single-channel read: asking for one channel over a
+window still reads the records containing it. `chunk.byteLength` reports the bytes actually
+read.
 
 ```ts
 import { openEdf, readWindow, resolveTimeWindow } from 'edfcore';
@@ -182,7 +174,7 @@ import { fileSource } from 'edfcore/node';
 
 const recording = await openEdf(await fileSource('./overnight.edf'));
 
-// Audit the cost before paying it — resolveTimeWindow is pure and does no I/O.
+// resolveTimeWindow is pure and does no I/O, so you can audit the cost first.
 const ranges = resolveTimeWindow(recording.timeline, recording.index, 3600, 30);
 
 const chunks = await readWindow(recording, {
@@ -192,10 +184,9 @@ const chunks = await readWindow(recording, {
 });
 ```
 
-Chunks are record-aligned and may be slightly wider than requested. `trimToWindow()` narrows them
-to a sample-exact window using integer arithmetic on `(record, sampleWithinRecord)` — not
-`round(t * rate)`, which is the rounding error consumers introduce when a library makes them do it
-themselves.
+Chunks are record-aligned and may be slightly wider than requested. `trimToWindow()` narrows
+them to a sample-exact window using integer arithmetic on `(record, sampleWithinRecord)` rather
+than `round(t * rate)`.
 
 ### Sources
 
@@ -203,9 +194,9 @@ One interface, four adapters, all universal:
 
 ```ts
 byteSource(arrayBufferOrUint8Array)
-blobSource(fileOrBlob)                    // structural — no DOM types required
+blobSource(fileOrBlob)                    // structural, no DOM types required
 httpSource(url, { headers })              // HTTP Range requests
-cachedSource(inner, { blockBytes })       // the only caching, opt-in and removable
+cachedSource(inner, { blockBytes })       // the only caching, opt-in
 ```
 
 and from `edfcore/node`:
@@ -215,14 +206,14 @@ fileSource('./recording.edf')
 fileHandleSource(handle, byteLength)
 ```
 
-Bring your own by implementing `ByteSource` — three members. The contract is *exactly `length`
-bytes or reject*, and edfcore verifies it on every call, including on sources you supplied.
+Bring your own by implementing `ByteSource`, which has three members. The contract is *exactly
+`length` bytes or reject*, and edfcore verifies it on every call, including on sources you
+supplied.
 
 ### Discontinuous recordings
 
-Opening a file never scans it. For EDF+D that means the index starts out `'probed'` — record 0 and
-the last record only — and it will **refuse** to map a timestamp to a record across an unmapped
-gap rather than guess:
+Opening a file never scans it. For EDF+D the index starts out `'probed'`, meaning record 0 and
+the last record only. It throws rather than map a timestamp to a record across an unmapped gap:
 
 ```ts
 const index = await buildRecordIndex(recording, { onProgress: (done, total) => … });
@@ -233,8 +224,8 @@ index.segments;   // EdfSegment[] — only defined once coverage is complete
 index.gaps;       // EdfGap[]
 ```
 
-`segments` is `undefined` while coverage is `'probed'` by design: no property is allowed to read
-as "continuous" before anything has checked.
+`segments` is `undefined` while coverage is `'probed'`, so no property reads as
+"continuous" before anything has checked.
 
 ### Triage
 
@@ -250,11 +241,10 @@ console.log(formatDiagnostics(diagnostics));
 
 ## What it deliberately does not do
 
-edfcore is a file-format library. It is not an EEG analysis framework, and the following are
-permanent non-goals, not missing features: filtering, resampling, re-referencing, montages, ICA,
-artifact rejection, bad-channel detection, spectral analysis, event detection, channel-type
-inference from labels, unit normalisation to SI volts, and anything involving AI or a network
-service.
+edfcore is a file-format library. It is not an EEG analysis framework. These are permanent non-goals: filtering, resampling,
+re-referencing, montages, ICA, artifact rejection, bad-channel detection, spectral analysis,
+event detection, channel-type inference from labels, unit normalisation to SI volts, and
+anything involving AI or a network service.
 
 Writing EDF is out of scope through 1.0. Producing a *correct* file is a much larger normative
 commitment than tolerating an incorrect one, and a subtly non-conformant writer would undermine
@@ -285,32 +275,31 @@ pyEDFlib and MNE. Until that harness exists this README makes no numerical-inter
 will not make one that a test did not produce.
 
 **Later, additive.** Min/max envelope decimation as its own type. The `edffloat` logarithmic
-inverse transform, opt-in (currently detected and refused, never silently applied). BioSemi
+inverse transform, opt-in (currently detected and rejected). BioSemi
 Status-byte helpers. JSR publication.
 
 ---
 
 ## Documentation
 
-The full documentation site lives in [`website/`](website/) — an Astro build with nineteen
-pages, plus a **local inspector** that opens an EDF file and shows its header, channels, events
-and waveforms entirely in your browser, with nothing uploaded.
+The full documentation site lives in [`website/`](website/), an Astro build with twenty pages.
+It includes a **local inspector** that opens an EDF file and shows its header, channels, events
+and waveforms in your browser, with nothing uploaded.
 
 ```bash
 npm install --prefix website
 npm run dev --prefix website
 ```
 
-Start with **Concepts**, which is the mental model the rest of the API follows from. Then the
-guides (reading signals, physical values, annotations, discontinuous recordings, diagnostics,
-data sources, large files, validation), the API reference, and the background pages — including
-a standalone primer on the EDF format itself.
+Start with **Concepts**, which is the mental model the rest of the API follows from. Then the guides (reading signals, physical values, annotations, discontinuous recordings,
+diagnostics, data sources, large files, validation), the API reference, and the background
+pages. Those include a standalone primer on the EDF format itself.
 
 ### Deploying the site
 
-[`vercel.json`](vercel.json) is set up so that linking this repository to Vercel just works —
-**leave the Root Directory as the repository root** and do not pick a framework preset. The
-build compiles the library first (the site imports `edfcore` from the parent package) and then
+[`vercel.json`](vercel.json) is set up so linking this repository to Vercel works as is.
+**Leave the Root Directory as the repository root** and don't pick a framework preset. The
+build compiles the library first (the site imports `edfcore` from the parent package), then
 builds the site into `website/dist`.
 
 Nothing needs configuring for URLs: Astro reads Vercel's own production-domain variable, so the
@@ -319,11 +308,11 @@ at it, set `SITE_URL` to that origin in the project's environment variables.
 
 **Design decisions** — why the API is shaped the way it is, including the choices that look
 like bugs and are not (the pinned scaling expression, `readWindow` always returning an array,
-`scale` being `undefined` rather than fabricated) — are documented on the site under
+`scale` being `undefined` rather than fabricated) are documented on the site under
 *Background → Design decisions*.
 
-- [`tests/README.md`](tests/README.md) — how the suite builds every fixture in memory, and why
-  no binaries are committed.
+- [`tests/README.md`](tests/README.md) covers how the suite builds every fixture in memory,
+  and why no binaries are committed.
 
 ## License
 

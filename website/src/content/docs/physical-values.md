@@ -1,12 +1,12 @@
 ---
 title: Physical values
-description: Convert digital sample counts into the signal's own units with toPhysical, and understand the cases where edfcore refuses to convert at all.
+description: Convert digital sample counts into the signal's own units with toPhysical, and handle the signals that have no usable scale.
 section: "Guides"
 order: 2
-lead: A chunk hands you the integers the file stores. Turning those into microvolts is a separate call, because it can fail — and when it fails, guessing a gain would produce numbers that look perfectly ordinary and are wrong.
+lead: A chunk hands you the integers the file stores. Turning those into microvolts is a separate call, because the conversion can fail. This page covers the scale, the three unit fields, and the conditions that leave a signal without a gain.
 ---
 
-## Two functions, not a flag
+## `toPhysical`
 
 `chunk.signals[i].digital` is an `Int32Array` of the values as stored. `toPhysical` returns a
 `Float64Array` in the signal's declared units:
@@ -24,9 +24,8 @@ const [chunk] = await readWindow(recording, {
 const microvolts = toPhysical(fp1, chunk.signals[0].digital);
 ```
 
-There is no `{ physical: true }` option, because an option that changes the return type is a bug
-waiting to be written. There is also no fused "read as physical" call: conversion can throw for
-reasons the read cannot, and keeping them separate is what makes that visible.
+There's no `{ physical: true }` option and no fused "read as physical" call. Conversion throws
+for reasons the read cannot, so the two stay separate.
 
 `toPhysical` takes any `ArrayLike<number>`, so it works on a trimmed chunk signal, on a raw
 `decodeDigital` result, or on a plain array.
@@ -49,13 +48,12 @@ fp1.scale;  // { bitValue: 0.015259021896696421, offset: 0.5 }
             // from -500..500 uV over -32768..32767
 ```
 
-### Why this form and not the better one
+### The EDFlib expression
 
-The textbook expression `physicalMinimum + (digital - digitalMinimum) * gain` is numerically
-*better* — fewer operations away from the endpoints, less cancellation — and edfcore
-deliberately does not use it. The form above is EDFlib's, kept verbatim, so that edfcore's
-float64 output can be compared bit for bit against pyEDFlib and EDFlib rather than
-approximately.
+The form above is EDFlib's, kept verbatim, so edfcore's float64 output can be compared bit for
+bit against pyEDFlib and EDFlib rather than approximately. The textbook expression
+`physicalMinimum + (digital - digitalMinimum) * gain` is numerically *better* (fewer operations
+away from the endpoints, less cancellation). edfcore does not use it.
 
 The two forms agree at the endpoints and disagree in the last place elsewhere:
 
@@ -70,38 +68,32 @@ The two forms agree at the endpoints and disagree in the last place elsewhere:
 −32768..32767 is not symmetric about zero, so neither is the map.)
 
 For this range the two forms produce a different float64 for 37,144 of the 65,536 possible
-sample values — 57 % of them. The largest disagreement is 8.5e-14 µV, which is 5.6e-12 of one
-quantisation step: about eleven orders of magnitude below the smallest difference the amplifier
-can express, and therefore invisible in any measurement. It is perfectly visible in a
-golden-value comparison, which is exactly the point — if the expression ever drifts, the
-comparison should fail rather than round itself into agreement.
+sample values (57 % of them). The largest disagreement is 8.5e-14 µV, which is 5.6e-12 of one
+quantisation step. That's about eleven orders of magnitude below the smallest difference the
+amplifier can express, so it's invisible in any measurement. It is visible in a golden-value
+comparison, so a drift in the expression fails the comparison rather than rounding itself into
+agreement.
 
 > **Note**
-> edfcore is 0.1 and the cross-implementation harness that would *prove* bit-parity against
-> pyEDFlib and MNE has not been built yet. What is true today is that the expression is EDFlib's
-> verbatim and is pinned by tests against fixed golden values. Treat "bit-identical to pyEDFlib"
-> as the design intent, not as a measured claim. The same caution applies to every description of
-> EDFlib's behaviour on this page: they come from edfcore's design notes, not from a comparison
-> run in this repository.
+> edfcore is 0.1, and the cross-implementation harness that proves bit-parity against pyEDFlib
+> and MNE hasn't been built yet. Today the expression is EDFlib's verbatim and is pinned by tests
+> against fixed golden values. Treat "bit-identical to pyEDFlib" as the design intent, not as a
+> measured claim. The same caution applies to every description of EDFlib's behaviour on this
+> page: they come from edfcore's design notes rather than a comparison run in this repository.
 
 ### Float64, always
 
-The output is a `Float64Array` and there is no `Float32` option. Float32 carries 24 significand
-bits and a BDF sample is a 24-bit integer, so a scaled BDF sample does not fit. On a
-−500..500 µV BDF channel the float32 rounding error reaches **0.26 of a quantisation step** —
-a quarter of the smallest difference the amplifier can express, injected by the library that was
-supposed to be reporting it. Halving the memory is not worth that.
+The output is a `Float64Array`, and there's no `Float32` option. Float32 carries 24 significand
+bits and a BDF sample is a 24-bit integer, so a scaled BDF sample doesn't fit. On a
+−500..500 µV BDF channel the float32 rounding error reaches **0.26 of a quantisation step**,
+a quarter of the smallest difference the amplifier can express.
 
-If you need float32 for a GPU buffer, convert at the boundary where you can see the cost, not in
-the library that owns the numbers.
+If you need float32 for a GPU buffer, convert at the boundary where you can see the cost.
 
-## Units are reported, never converted
+## Units
 
 edfcore does not normalise units. It never turns microvolts into volts, millimetres of mercury
-into pascals, or anything else. Unit inference is where readers guess, and a guess about scale is
-a wrong number with a plausible magnitude.
-
-Three fields describe the unit, and they differ deliberately:
+into pascals, or anything else. Three fields describe the unit:
 
 | field | value for a `µV` channel | what it is |
 |---|---|---|
@@ -109,14 +101,13 @@ Three fields describe the unit, and they differ deliberately:
 | `signal.physicalDimension` | `"µV"` | the same text with the EDF padding removed, nothing else changed |
 | `signal.unit` | `"uV"` | normalised for comparison: every encoding of micro becomes `u` |
 
-Display `physicalDimension`. Compare against `unit`. The normalisation exists because micro has
-several spellings that all mean the same thing — U+00B5 MICRO SIGN, U+03BC GREEK SMALL LETTER
-MU, and a raw `0xB5` header byte, which Latin-1 decodes to the first — so a reader that
-string-compares against `'uV'` will reject files it should accept. `unit` collapses all of them
-to `u` and changes nothing else: case stays meaningful, `mV` is not `MV`, and no unit is ever
-rewritten into another.
+Display `physicalDimension`. Compare against `unit`. Micro has several spellings that all mean
+the same thing (U+00B5 MICRO SIGN, U+03BC GREEK SMALL LETTER MU, and a raw `0xB5` header byte).
+Latin-1 decodes that byte to the first of them. A reader that string-compares against `'uV'`
+alone will reject files it should accept. `unit` collapses all of them to `u` and changes nothing
+else: case stays meaningful, `mV` is not `MV`, and no unit is ever rewritten into another.
 
-Converting is your call, and it is one line:
+Converting is your call, and it's one line:
 
 ```ts
 const microvolts = toPhysical(fp1, chunk.signals[0].digital);
@@ -127,15 +118,14 @@ if (fp1.unit !== 'uV') {
 const volts = Float64Array.from(microvolts, (v) => v * 1e-6);
 ```
 
-Note the check. The library will not do this conversion for you, so the factor you write is only
-correct if the unit is what you assumed — and on a file you did not produce, that is worth
-asserting rather than hoping.
+Note the check. The factor you write is only correct if the unit is what you assumed, so assert
+it on any file you didn't produce.
 
-## Negative gain is legal and is never "fixed"
+## Negative gain
 
-A signal may declare `physicalMinimum > physicalMaximum`. That is not corruption: it is how a
-negative amplifier gain is written, and the EDF FAQ sanctions it. `bitValue` comes out negative
-and the map works exactly as it should:
+A signal may declare `physicalMinimum > physicalMaximum`. That's how a negative amplifier gain is
+written, and the EDF FAQ sanctions it. `bitValue` comes out negative and the map works as
+written:
 
 ```ts
 // physicalMinimum 500, physicalMaximum -500, over -32768..32767
@@ -145,14 +135,12 @@ toPhysical(inverted, new Int32Array([-32768, 0, 32767]));
 // Float64Array [ 500, -0.007629510948348211, -500 ]
 ```
 
-edfcore never swaps the two fields to make them look tidy. Swapping them flips the polarity of
-every sample in the channel, and a polarity-flipped EEG is a clinically wrong result that looks
-completely normal — the traces still have the right amplitude, the right frequency content and
-the right artifacts. Nothing downstream would catch it.
+edfcore never swaps the two fields. Swapping them flips the polarity of every sample in the
+channel. A polarity-flipped EEG is a clinically wrong result that looks completely normal: the
+traces still have the right amplitude, the right frequency content and the right artifacts.
 
-You still get told. `header.diagnostics` carries an `INVERTED_PHYSICAL_RANGE` entry at `info`
-severity naming the signal, the raw bytes, the byte offset, and the spec clause. On a
-one-signal file it reads:
+`header.diagnostics` carries an `INVERTED_PHYSICAL_RANGE` entry at `info` severity naming the
+signal, the raw bytes, the byte offset, and the spec clause. On a one-signal file it reads:
 
 ```
 signal 0 "Inv" declares physicalMinimum 500 greater than physicalMaximum -500
@@ -161,53 +149,46 @@ signal 0 "Inv" declares physicalMinimum 500 greater than physicalMaximum -500
 the two, because a silent polarity flip is a clinically wrong result that looks normal.
 ```
 
-## When there is no scale
+## Signals with no scale
 
-`signal.scale` is `EdfScale | undefined`, and `undefined` means edfcore found no defensible way
-to compute a gain. `toPhysical` on such a signal throws `EdfScalingError`. Because the type is
-`| undefined`, `strictNullChecks` makes the case hard to ignore at the point where you would have
-written the bug.
+`signal.scale` is `EdfScale | undefined`. `undefined` means edfcore found no usable way to
+compute a gain, and `toPhysical` on such a signal throws `EdfScalingError`. The `| undefined` in
+the type means `strictNullChecks` surfaces the case at compile time.
 
 Four conditions produce it, checked in this order:
 
-| `error.code` | condition | why it is refused |
+| `error.code` | condition | reason |
 |---|---|---|
 | `DEGENERATE_DIGITAL_RANGE` | `digitalMinimum === digitalMaximum` | the gain is a division by zero |
 | `DEGENERATE_PHYSICAL_RANGE` | `physicalMinimum === physicalMaximum` | every sample would map to one value |
 | `INVERTED_DIGITAL_RANGE` | `digitalMinimum > digitalMaximum` | no sanctioned meaning, unlike the physical case |
 | `LOG_TRANSFORMED_CHANNEL` | `physicalDimension` is exactly `"Filtered"` | the samples are log-compressed, so a linear map is wrong by orders of magnitude |
 
-The first is the one that matters most in practice. It is a common header defect, and EDFlib's
-answer to it is to substitute a gain of 1 — which hands back ADC counts labelled as microvolts,
-a number that is wrong by whatever the real gain was and carries no sign that anything happened.
-edfcore sets `scale` to `undefined` instead, so the mistake becomes a type error before it
-becomes a plot.
+The first is the most common header defect in practice. EDFlib substitutes a gain of 1 here and
+returns ADC counts labelled as microvolts. edfcore sets `scale` to `undefined`.
 
-`INVERTED_DIGITAL_RANGE` is refused where `INVERTED_PHYSICAL_RANGE` is accepted, and the
-asymmetry is intentional. An inverted physical range has a documented meaning; an inverted
-digital range does not, so edfcore cannot tell whether the writer swapped two fields or inverted
-the samples, and either interpretation would be a guess.
+`INVERTED_DIGITAL_RANGE` throws where `INVERTED_PHYSICAL_RANGE` is accepted. An inverted physical
+range has a documented meaning; an inverted digital range does not. Nothing in the file says
+whether the writer swapped two fields or inverted the samples.
 
 `LOG_TRANSFORMED_CHANNEL` follows the EDF `edffloat` convention, where a physical dimension of
-exactly `Filtered` marks a logarithmically transformed channel. edfcore detects it and refuses
-rather than applying an inverse transform it cannot verify.
+exactly `Filtered` marks a logarithmically transformed channel. edfcore detects it and leaves
+`scale` undefined rather than applying an inverse transform it can't verify.
 
 Each condition also appears in `header.diagnostics` at parse time, at `error` severity, with the
-byte offset and the raw field text — so you can report the problem before anyone calls
-`toPhysical`.
+byte offset and the raw field text. You can report the problem before anyone calls `toPhysical`.
 
 > **Note**
 > A fifth, rarer condition exists: four finite fields whose *derived* pair is not usable, such as
 > a physical range that underflows or overflows float64 against the digital range. The header
-> reports it as `DEGENERATE_PHYSICAL_RANGE`; the error thrown later by `toPhysical` carries
-> `SCALE_UNAVAILABLE`, because `toPhysical` re-derives the cause from the signal alone and this
-> one is not one of the four it can re-derive. Naming no cause was judged better than naming the
-> wrong one.
+> reports it as `DEGENERATE_PHYSICAL_RANGE`. The error thrown later by `toPhysical` carries
+> `SCALE_UNAVAILABLE`, because `toPhysical` re-derives the cause from the signal alone and can't
+> re-derive this one.
 
 ### Digital data still works
 
-This is the point of separating the two functions. A signal with no scale is not unreadable — its
-samples are perfectly good integers, and only their interpretation in physical units is missing:
+A signal with no scale is still readable. Its samples are ordinary integers, and only their
+interpretation in physical units is missing:
 
 ```ts
 import { decodeDigital, getSignal, isEdfError, readRecordBytes } from 'edfcore';
@@ -230,8 +211,8 @@ try {
 ```
 
 Use `isEdfError` plus `edfErrorKind` rather than `instanceof`. `instanceof` is false across a
-realm boundary — an iframe, a worker, two copies of the package in one dependency tree — and this
-is exactly the kind of check that silently stops working when someone adds a web worker.
+realm boundary (an iframe, a worker, two copies of the package in one dependency tree). It stops
+working the day someone adds a web worker.
 
 The thrown message names the signal, the reason, every raw field as written, the spec clause, and
 what to do next:
@@ -245,12 +226,12 @@ physical maximum "500     ", physical dimension "uV      ". EDF+ additional spec
 this signal; edfcore will not invent a gain.
 ```
 
-## Out-of-range samples are reported, not clamped
+## Out-of-range samples
 
 A file can contain samples outside the digital range its own header declares. edfcore decodes
 them as they are and converts them as they are. It never clamps on read.
 
-The count comes free, because it is taken in the same pass that decodes:
+The count is taken in the same pass that decodes:
 
 ```ts
 // A signal declaring -100..100 digital, holding samples at -500 and +500.
@@ -267,22 +248,21 @@ chunk.signals[0].outOfDigitalRangeCount;  // 2
 ```
 
 A non-zero count means **the declared range is wrong, not that the samples are**. The samples are
-what the amplifier wrote; the header field is a claim about them that has turned out to be false.
-Clamping would destroy the evidence and hand back a flattened signal that looks like saturation.
-The count is the cue to go and look at the header. When you want the whole file rather than one
-window's tally, `validateRecording(recording, { scanSamples: true })` from `edfcore/validate`
-fills `report.signalStats` with the observed digital minimum and maximum per signal. That reads
-every record, so it is a deliberate call and not something a window read does behind your back.
+what the amplifier wrote. The header field is a claim about them that has turned out to be false,
+so the count is the cue to go and look at the header.
 
-The comparison uses `min` and `max` of the two declared bounds rather than the pair as written,
-so a file with an inverted digital range does not report every sample as out of range, which
-would say nothing about the samples.
+For the whole file rather than one window's tally,
+`validateRecording(recording, { scanSamples: true })` from `edfcore/validate` fills
+`report.signalStats` with the observed digital minimum and maximum per signal. That call reads
+every record. No window read does it for you.
+
+The comparison uses `min` and `max` of the two declared bounds rather than the pair as written.
+A file with an inverted digital range therefore does not report every sample as out of range.
 
 ### Reproducing a clamping reader
 
-EDFlib clamps silently when it loads samples. When you are cross-validating edfcore's output
-against a library that does, `clampToDigitalRange` reproduces that behaviour as an explicit,
-post-hoc step:
+EDFlib clamps when it loads samples. `clampToDigitalRange` reproduces that behaviour as an
+explicit, post-hoc step, for cross-validating edfcore's output against a reader that does:
 
 ```ts
 import { clampToDigitalRange } from 'edfcore';
@@ -294,15 +274,14 @@ toPhysical(narrow, clamped);   // now matches the clamping reader
 ```
 
 Nothing on the read path calls it. It clamps to `[min(digMin, digMax), max(digMin, digMax)]`
-rather than to `[digMin, digMax]`, because on an inverted declaration the naive bounds are an
-empty interval that would collapse every sample onto a single value. Like the other allocating
-primitives it takes an `out` array for reuse.
+rather than to `[digMin, digMax]`. On an inverted declaration the naive bounds are an empty
+interval that collapses every sample onto a single value. Like the other allocating primitives,
+it takes an `out` array for reuse.
 
 ## Where to go next
 
-- [Reading signals](/docs/reading-signals) — selecting channels and turning a time window into
+- [Reading signals](/docs/reading-signals): selecting channels and turning a time window into
   samples.
-- [Large files](/docs/large-files) — what conversion costs in memory, and why the budget refuses
-  before it allocates.
-- [Validation](/docs/validation) — the conformance sweep, including the observed digital range of
+- [Large files](/docs/large-files): what conversion costs in memory, and the allocation budget.
+- [Validation](/docs/validation): the conformance sweep, including the observed digital range of
   every signal across the whole file.

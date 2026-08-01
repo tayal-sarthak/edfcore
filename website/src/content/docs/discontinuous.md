@@ -1,20 +1,20 @@
 ---
 title: Discontinuous recordings
-description: Detect gaps in an EDF+D file, build a complete record index, and read across a discontinuity without inventing a timeline.
+description: Detect gaps in an EDF+D file, build a complete record index, and read across a discontinuity.
 section: Guides
 order: 5
-lead: An EDF+D recording has holes in it, and the only place the true start of each record is written down is inside the file. This page covers how edfcore finds those holes, what it refuses to answer until it has, and how to read a window that spans one.
+lead: An EDF+D recording has holes in it, and the only place the true start of each record is written down is inside the file. This page covers how edfcore finds those holes, which calls throw until it has, and how to read a window that spans one.
 ---
 
 ## What a discontinuity is
 
-A data record in EDF is a fixed slice of time — one second, thirty seconds, whatever the header
-declares. In a continuous recording, record *r* begins at `startOffset + r × recordDuration`, and
-that is arithmetic: you can compute which record holds any instant without touching the file.
+A data record in EDF is a fixed slice of time (one second, thirty seconds, whatever the header
+declares). In a continuous recording, record *r* begins at `startOffset + r × recordDuration`.
+That's arithmetic: you can compute which record holds any instant without touching the file.
 
-In a discontinuous recording it is not. The records are still fixed-length, and they are still
+In a discontinuous recording it isn't. The records are still fixed-length, and they are still
 stored back to back on disk, but the time between two adjacent records can be anything. The true
-start of each record is *stored*, in that record's timekeeping TAL, and the only way to know where
+start of each record is *stored*, in that record's timekeeping TAL. The only way to know where
 record 3 sits on the time axis is to read record 3.
 
 ```text
@@ -26,14 +26,14 @@ byte offset  768  1400  2032   │            │  2664  3296  3928
 This happens constantly in practice. A sleep study where the amplifier was disconnected for a
 bathroom break. Long-term epilepsy monitoring where the recorder only saves the minutes around a
 detected event and drops the hours between them. A telemetry system that reconnected after a
-dropout. None of these are corrupt files — EDF+D exists precisely so a writer can say "there is a
-hole here" rather than silently concatenating the two halves.
+dropout. None of these are corrupt files. EDF+D exists so a writer can mark a hole rather than
+concatenating the two halves.
 
 Reading such a file as if it were contiguous puts record 3 at t = 3 s when it truly starts at
 t = 13 s. Nothing throws, the waveform looks fine, and every event you align against it is ten
-seconds out. That is the failure this page exists to prevent.
+seconds out.
 
-## Detecting it
+## Detecting a gap
 
 Two header fields, and one comparison on the timeline:
 
@@ -51,13 +51,13 @@ recording.timeline.coveredSeconds;     //  6 — the sum of the record durations
 ```
 
 `variant` is the reserved field's marker, one of `EDF`, `EDF+C`, `EDF+D`, `BDF`, `BDF+C`, `BDF+D`.
-`continuity` collapses that to the only distinction that changes how you read: `'continuous'` for
-plain EDF, BDF, EDF+C and BDF+C, `'discontinuous'` for the two `+D` variants.
+`continuity` collapses that to the distinction that changes how you read. It's `'continuous'` for
+plain EDF, BDF, EDF+C and BDF+C, and `'discontinuous'` for the two `+D` variants.
 
-`spanSeconds` and `coveredSeconds` are computed independently — one from the two ends of the
-recording, the other from `recordCount × recordDuration` — so their being equal is a real statement
-rather than an identity. When they differ, the difference is time that lies inside the recording
-and that no record covers: ten seconds, in the file above.
+`spanSeconds` and `coveredSeconds` are computed independently, one from the two ends of the
+recording and the other from `recordCount × recordDuration`. Their being equal is a real statement
+rather than an identity. When they differ, the difference is time that sits inside the recording
+and that no record covers (ten seconds, in the file above).
 
 > **Warning**
 > `EDF+C` is a claim the writer made, not a fact the format enforces, and files marked continuous
@@ -66,11 +66,11 @@ and that no record covers: ten seconds, in the file above.
 > reports `DISCONTINUITY_IN_CONTINUOUS_FILE` and the calls below behave exactly as they would on
 > an EDF+D file.
 
-## Opening a file gives you a *probed* index
+## The probed index
 
-`openEdf` never scans. On an EDF+ or BDF+ file it reads the header in two ranges and then probes
-exactly two records — the first and the last — for their timekeeping onsets. Four reads, whatever
-the file size:
+`openEdf` never scans. On an EDF+ or BDF+ file it reads the header in two ranges, then probes
+exactly two records (the first and the last) for their timekeeping onsets. Four reads, whatever the
+file size:
 
 ```text
 { offset:    0, length: 256 }   the fixed header
@@ -80,11 +80,11 @@ the file size:
 ```
 
 Two probes detect any **net** drift of the timeline, which is what `spanSeconds ≠ coveredSeconds`
-above is reporting. They are not a proof of contiguity: a gap that an overlap elsewhere cancels
+above is reporting. They aren't a proof of contiguity: a gap that an overlap elsewhere cancels
 exactly leaves both ends where a contiguous file would put them. Only reading every onset can rule
 that out.
 
-So the index `openEdf` hands back admits what it does not know:
+The index `openEdf` hands back marks what it hasn't checked:
 
 ```ts
 recording.index.coverage;   // 'probed'
@@ -94,17 +94,15 @@ recording.index.recordCount;
 ```
 
 `segments` and `gaps` are `undefined`, not `[]`. An empty array would read as "this recording has
-no gaps", and nobody has checked. No property on a probed index is allowed to say something that
-has not been verified — that rule is why the fields are declared
-`readonly segments: readonly EdfSegment[] | undefined` and why `strictNullChecks` makes you deal
-with it.
+no gaps", and nobody has checked. The fields are declared
+`readonly segments: readonly EdfSegment[] | undefined`, so `strictNullChecks` makes you deal with
+it.
 
-A file with no annotations signal at all — plain EDF or BDF — is probed **zero** times. Without a
+A file with no annotations signal at all (plain EDF or BDF) is probed **zero** times. Without a
 timekeeping TAL there are no per-record onsets on disk, so record *r* starts at
-`r × recordDuration` by definition, and reading data would answer a question the bytes do not
-contain.
+`r × recordDuration` by definition.
 
-### The refusal
+### Time windows on a probed index
 
 Ask a probed index to map seconds to records on a file that has a gap, and it throws instead of
 guessing:
@@ -117,20 +115,13 @@ await readWindow(recording, { startSeconds: 0, durationSeconds: 20, signalIndice
 // and pass the index it returns, or locate the window with index.locate(seconds).
 ```
 
-That is a plain `RangeError`, not an `EdfError` — `isEdfError` returns `false` for it — because
-nothing is wrong with the file. You asked a question that cannot be answered from what has been
-read.
+That's a plain `RangeError` rather than an `EdfError`, and `isEdfError` returns `false` for it.
+Nothing is wrong with the file. The question can't be answered from what has been read.
 
-The alternative is what most EDF readers do: assume `onset(r) = r × recordDuration`, return a
-record range, and be wrong by the length of the gap for every record after it. That produces a
-timeline that is silently, plausibly incorrect — a viewer that scrolls smoothly to the wrong
-place, an epoch that lands on the wrong side of an arousal. There is no error to catch and no
-symptom to notice. Refusing is the only behaviour that cannot produce it.
+### `locate`
 
-### `locate` still works
-
-The refusal is specific to mapping a *window* to records without knowing the onsets.
-`index.locate(seconds)` answers the same kind of question exactly, by paying for it:
+The throw is specific to mapping a *window* to records without knowing the onsets.
+`index.locate(seconds)` answers the same kind of question exactly, and pays for it in reads:
 
 ```ts
 await recording.index.locate(13.5);
@@ -140,7 +131,7 @@ await recording.index.locate(5);
 // undefined — that instant is inside the gap
 ```
 
-It is a binary search over the record onsets, which are monotonic, so it costs `O(log recordCount)`
+It's a binary search over the record onsets, which are monotonic, so it costs `O(log recordCount)`
 one-record reads on a probed index. Every onset it reads is memoised, so a second `locate` nearby
 usually costs nothing:
 
@@ -149,9 +140,9 @@ locate(13.5)  →  3 reads   (records 0 and 5 were already memoised by openEdf)
 locate(13.9)  →  0 reads
 ```
 
-`undefined` means the instant is in a gap or outside the recording — never that the lookup failed.
-Monotonicity is verified at every pair the search actually observes; a violation is fatal
-(`TIMELINE_NOT_MONOTONIC`) rather than silently returning a plausible record.
+`undefined` means the instant is in a gap or outside the recording, never that the lookup failed.
+Monotonicity is verified at every pair the search actually observes. A violation is fatal
+(`TIMELINE_NOT_MONOTONIC`) rather than a plausible record.
 
 ## Building the complete index
 
@@ -168,18 +159,17 @@ index.coverage;  // 'complete'
 ```
 
 This is the only function in edfcore that reads the whole file, and it is never called implicitly.
-It reads in bounded chunks — at most about 4 MiB in flight, or less if you lower
-`maxMaterializeBytes` — so memory stays flat whatever the file size, and `onProgress` fires once
-per chunk with the number of records finished. It is the one operation in the library whose cost is
-proportional to the file, which is exactly why it takes a progress callback.
+It reads in bounded chunks (at most about 4 MiB in flight, or less if you lower
+`maxMaterializeBytes`), so memory stays flat whatever the file size. `onProgress` fires once per
+chunk with the number of records finished. Its cost is proportional to the file, which is why it
+takes a progress callback.
 
 A file with no annotations signal is not scanned at all: its onsets are arithmetic. `onProgress` is
 still called once, with the traversal complete, so your progress bar finishes.
 
-Two things it deliberately does not do. It returns no diagnostics — an `EdfRecordIndex` is a
-structural answer, and `validateRecording` from `edfcore/validate` is the call that reports on a
-traversal. And it still throws `TIMELINE_NOT_MONOTONIC` if record onsets go backwards anywhere in
-the file, because no index built over those onsets would mean anything.
+It returns no diagnostics. An `EdfRecordIndex` is a structural answer, and `validateRecording` from
+`edfcore/validate` is the call that reports on a traversal. It still throws
+`TIMELINE_NOT_MONOTONIC` if record onsets go backwards anywhere in the file.
 
 `EdfRecording` is a plain struct, so you use the result by rebuilding one:
 
@@ -204,16 +194,16 @@ index.gaps;
 ```
 
 A segment is a maximal run of records with no gap inside it. Segments cover every record exactly
-once and are in time order, and there is one gap between each adjacent pair, so
+once and are in time order. There's one gap between each adjacent pair, so
 `gaps.length === segments.length - 1` for any file that has records.
 
 The boundary rule is one comparison: a new segment starts wherever
-`onset[r] !== onset[r - 1] + recordDurationTicks`, **in exact ticks**. Not "differs by more than an
-epsilon" — a float tolerance is how a one-sample overlap becomes invisible.
+`onset[r] !== onset[r - 1] + recordDurationTicks`, **in exact ticks**. A float tolerance hides a
+one-sample overlap.
 
 Every second here is elapsed recording time, measured from the start of record 0, the same axis
 `chunk.startSeconds` and `readWindow`'s bounds use. A gap's `durationSeconds` is
-`endSeconds - startSeconds`; a negative one would mean records overlap in time, which is a spacing
+`endSeconds - startSeconds`. A negative one means records overlap in time, which is a spacing
 violation the [validation sweep](/docs/diagnostics) reports.
 
 ## Reading across a gap
@@ -235,13 +225,11 @@ chunks[1].startSeconds;                     // 13
 chunks[1].precededByGap.durationSeconds;    // 10
 ```
 
-It always returns an array, including on a continuous file where it always has exactly one element.
-If there were two shapes — a bare chunk when it is simple, an array when it is not — every consumer
-would write against the first and misbehave on the first gapped recording they met.
+It always returns an array, including on a continuous file, where it always has exactly one
+element.
 
-Nothing is ever filled in. There is no gap-fill and no option to enable one, because the samples
-during a gap do not exist and any value edfcore put there would be indistinguishable from data. A
-window that falls entirely inside a gap returns an empty array:
+There is no gap-fill and no option to enable one. The samples during a gap do not exist. A window
+that falls entirely inside a gap returns an empty array:
 
 ```ts
 await readWindow(located, { startSeconds: 5, durationSeconds: 3, signalIndices: [signal.index] });
@@ -250,18 +238,17 @@ await readWindow(located, { startSeconds: 5, durationSeconds: 3, signalIndices: 
 
 `[]` means "no samples exist in that interval", never that the read failed.
 
-`precededByGap` is the `EdfGap` sitting immediately before a chunk's first record, and it is
-`undefined` whenever the index is still `'probed'` — again, that is not a claim that there is no
-gap, only that nobody has read the onsets in between.
+`precededByGap` is the `EdfGap` sitting immediately before a chunk's first record. It's `undefined`
+whenever the index is still `'probed'`, which means nobody has read the onsets in between.
 
-Runs are read one after another rather than concurrently, so the request pattern you observe is
-the one `readWindow` issued, in order, with no burst you did not ask for. Concurrency over a
-`ByteSource` belongs to the source — `httpSource` takes `maxConcurrency` — not here.
+Runs are read one after another rather than concurrently, so the request pattern you observe is the
+one `readWindow` issued, in order. Concurrency over a `ByteSource` belongs to the source
+(`httpSource` takes `maxConcurrency`).
 
-### `readRecords` will happily straddle one
+### `readRecords` across a gap
 
-`readRecords` takes a record range, so it never refuses: you named the records, and a gap between
-them cannot surprise you. But note what `durationSeconds` then means:
+`readRecords` takes a record range, so it never throws on a gap: you named the records. Note what
+`durationSeconds` then means:
 
 ```ts
 const chunk = await readRecords(located, {
@@ -275,8 +262,8 @@ chunk.signals[0].sampleCount;    // 512 — two records' worth of samples
 ```
 
 Twelve seconds of span, two seconds of data. The samples in that chunk are not a uniform grid, and
-`trimToWindow` — which assumes one contiguous run — must not be applied to it. Use `readWindow`
-when you want time-aligned samples, and `readRecords` when you want specific records.
+`trimToWindow` assumes one contiguous run. Do not apply it to a chunk that straddles a gap. Use
+`readWindow` when you want time-aligned samples, and `readRecords` when you want specific records.
 
 ## The whole flow
 
@@ -342,16 +329,16 @@ await index.locate(13.5);  // { recordIndex: 3, recordStartSeconds: 13, offsetIn
 ```
 
 Step 2 is the shape worth copying. Building a complete index over a continuous file is a full
-traversal that tells you what you already knew, so gate it on the two-probe verdict — which
-`openEdf` gave you for free — and keep the probed index otherwise. `readWindow` works fine against
-a probed index on a file whose span and coverage agree.
+traversal that tells you what you already knew. Gate it on the two-probe verdict that `openEdf`
+gave you for free, and keep the probed index otherwise. `readWindow` works against a probed index
+on a file whose span and coverage agree.
 
 ## Where to go next
 
-- [Annotations](/docs/annotations) — the timekeeping TALs that every onset on this page came from,
+- [Annotations](/docs/annotations): the timekeeping TALs that every onset on this page came from,
   and how to place an event on a signal's sample grid.
-- [Large files](/docs/large-files) — the read pattern of every call, and how to measure it on your
+- [Large files](/docs/large-files): the read pattern of every call, and how to measure it on your
   own file.
-- [Diagnostics](/docs/diagnostics) — `DISCONTINUITY_IN_CONTINUOUS_FILE`,
+- [Diagnostics](/docs/diagnostics): `DISCONTINUITY_IN_CONTINUOUS_FILE`,
   `RECORD_ONSET_SPACING_VIOLATION`, `TIMELINE_NOT_MONOTONIC`, and the conformance sweep that finds
   them all in one traversal.

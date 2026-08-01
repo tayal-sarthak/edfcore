@@ -1,22 +1,21 @@
 ---
 title: Types
-description: Every public data shape in edfcore — the header model, the time axis, chunks and annotations, and the result objects — with each field's type and meaning.
+description: Every public data shape in edfcore (the header model, the time axis, chunks and annotations, and the result objects) with each field's type and meaning.
 section: Reference
 order: 4
 lead: All of these live in one file, src/types.ts, and none of them emits runtime code. Import them with `import type { EdfHeader } from 'edfcore'` and they disappear at build time.
 ---
 
-## Two conventions run through every shape
+## Conventions
 
 **A field that may be absent is `T | undefined`, and the key is always there.** Optional (`?`) is
-reserved for options *you* pass in. Reading a result never requires knowing whether a key exists,
-so `header.startTime.resolvedDate` is safe to touch on a file that has no readable date — it is
-`undefined`, not missing.
+reserved for options *you* pass in. Reading a result never requires knowing whether a key exists. On
+a file with no readable date, `header.startTime.resolvedDate` is `undefined` rather than missing.
 
 **Anything checkable against the file is exposed twice**, as the parsed value and as the raw bytes
 it came from. `signal.digitalMinimum` is `-2048`; `signal.raw.digitalMinimum` is `'-2048   '`, with
-the padding intact. edfcore never destroys evidence, because a header field that disagrees with
-what edfcore made of it is exactly the thing you need to see when a file misbehaves.
+the padding intact. A header field that disagrees with what edfcore made of it is what you need to
+see when a file misbehaves, so both stay on the object.
 
 ## The header model
 
@@ -71,7 +70,7 @@ try {
 `signals[i].index === i`. Pass `dataSignalIndices` when you want samples: an annotations channel
 holds TAL text, and decoding it as samples produces numbers that look exactly like a signal.
 
-### Declared and computed, side by side
+### Declared and computed values
 
 Two pairs ship both numbers, and in both cases edfcore uses the computed one:
 
@@ -84,10 +83,10 @@ header.declaredRecordCount;       // 6 — verbatim, may be -1
 header.recordCountSource;         // 'headerField'
 ```
 
-The header byte count is a derived quantity that the writer also had to write down, so a mismatch
-means the writer's arithmetic and edfcore's disagree — and every signal offset in the file depends
-on that arithmetic. edfcore takes the computed value, records `HEADER_SIZE_MISMATCH`, and leaves
-the declared value on the header so you can see which writer produced it.
+The header byte count is derived, and the writer also had to write it down. A mismatch means the
+writer's arithmetic and edfcore's disagree, and every signal offset in the file depends on that
+arithmetic. edfcore takes the computed value, records `HEADER_SIZE_MISMATCH`, and leaves the
+declared value on the header so you can see which writer produced it.
 
 `recordCount` is the more common one. A writer that streams to disk and never gets to close the
 file leaves `-1` in the field, which is legal and explicitly means "count the file yourself". When
@@ -101,10 +100,10 @@ same substitution happens for a truncated file, with `TRUNCATED_FILE` instead.
 type EdfVariant = 'EDF' | 'EDF+C' | 'EDF+D' | 'BDF' | 'BDF+C' | 'BDF+D';
 ```
 
-The family — EDF or BDF, and therefore 2 or 3 bytes per sample — comes from the 8-byte version
-block at offset 0 and from nothing else. EDF+ deliberately keeps that block as `'0       '` so
-legacy readers still open the file, so the `+C`/`+D` part comes from the reserved field at offset
-192 instead. BDF's version block is not ASCII at all: byte 0 is `0xFF`, followed by `'BIOSEMI'`.
+The family (EDF or BDF, and therefore 2 or 3 bytes per sample) comes from the 8-byte version block
+at offset 0 and from nothing else. EDF+ keeps that block as `'0       '` so legacy readers still
+open the file, so the `+C`/`+D` part comes from the reserved field at offset 192 instead. BDF's
+version block is not ASCII at all: byte 0 is `0xFF`, followed by `'BIOSEMI'`.
 
 ### EdfSignal
 
@@ -145,23 +144,22 @@ signal.raw.digitalMinimum; // '-2048   '
 
 Three of these repay a second look.
 
-`physicalMaximum` below `physicalMinimum` is legal: it encodes a negative amplifier gain, the EDF
-FAQ sanctions it, and edfcore never swaps the two, because swapping them is a silent polarity
-flip. You get `INVERTED_PHYSICAL_RANGE` at `info` severity and a scale that maps the file's
+`physicalMaximum` below `physicalMinimum` is legal: it encodes a negative amplifier gain, and the
+EDF FAQ sanctions it. edfcore never swaps the two, because swapping them inverts the signal's
+polarity. You get `INVERTED_PHYSICAL_RANGE` at `info` severity and a scale that maps the file's
 intent.
 
-`sampleRateHz` is derived and `samplesPerRecord` is not. A record duration of `0` is legal in
-EDF+, which makes a sample rate meaningless — hence `undefined` rather than `Infinity` — while
-`samplesPerRecord` is always there and is what every offset in the file is computed from. Index by
+`sampleRateHz` is derived and `samplesPerRecord` is not. A record duration of `0` is legal in EDF+,
+which makes a sample rate meaningless (hence `undefined` rather than `Infinity`).
+`samplesPerRecord` is always there, and every offset in the file is computed from it. Index by
 `samplesPerRecord`.
 
-`unit` exists only so you can compare units without deciding what the file meant. `'µV'`, `'μV'`
-and `'uV'` all normalise to `'uV'`; nothing else is touched, case is meaningful (`mV` is not `MV`),
-and edfcore never converts to SI volts. When you want to print what the file said, print
-`physicalDimension`.
+`unit` exists so you can compare units without deciding what the file meant. `'µV'`, `'μV'` and
+`'uV'` all normalise to `'uV'`. Nothing else is touched, case is meaningful (`mV` is not `MV`), and
+edfcore does not convert to SI volts. To print what the file said, print `physicalDimension`.
 
 An annotations signal carries the same fields, but they describe a text region rather than a
-channel: `scale` is `undefined`, `unit` is `''`, and `recordByteLength` is the size of the TAL
+channel. `scale` is `undefined`, `unit` is `''`, and `recordByteLength` is the size of the TAL
 region in that record.
 
 ### EdfScale
@@ -173,20 +171,19 @@ interface EdfScale {
 }
 ```
 
-The conversion is `physical = bitValue * (offset + digital)`. That is EDFlib's exact expression,
-kept verbatim to target float64 bit-parity with pyEDFlib rather than rewritten into the numerically
-better form, so the same file gives the same doubles in both libraries.
+The conversion is `physical = bitValue * (offset + digital)`. That's EDFlib's exact expression,
+kept verbatim rather than rewritten into the numerically better form. It targets float64 bit-parity
+with pyEDFlib, so the same file gives the same doubles in both libraries.
 
-`scale` is `undefined` when the declared ranges do not define a usable gain — a degenerate or
+`scale` is `undefined` when the declared ranges do not define a usable gain: a degenerate or
 inverted digital range, a degenerate physical range, or a log-transformed channel. `decodeDigital`
-keeps working on such a signal and `toPhysical` throws `EdfScalingError`. See
+keeps working on such a signal, and `toPhysical` throws `EdfScalingError`. See
 [physical values](/docs/physical-values) for the whole story.
 
 ### EdfStartTime, EdfCalendarDate, EdfClockTime
 
-EDF records local time at the patient with no timezone, so edfcore never produces a `Date`: a
-`Date` silently applies the reader's zone, and it is worst exactly at a DST boundary. You get
-plain fields instead.
+EDF records local time at the patient with no timezone, so edfcore never produces a `Date`. You get
+plain fields instead. [Design decisions](/docs/design-decisions) has the reasoning.
 
 ```ts
 import { formatStartTimeNaive } from 'edfcore';
@@ -215,8 +212,8 @@ formatStartTimeNaive(startTime);  // '2002-03-02T22:30:00.000'
 `recordingIdDate` wins when both are readable, because it is the only unambiguous four-digit year
 and the only way past 2084. The two-digit header field resolves `85`–`99` to 1985–1999 and `00`–`84`
 to 2000–2084, which is why nearly every EDF file carries `DATE_CLIPPED_TO_1985_2084`. If the two
-fields name different days you get `DATE_FIELDS_DISAGREE`, both values stay on the object, and
-edfcore picks no winner beyond telling you which one it used.
+fields name different days you get `DATE_FIELDS_DISAGREE`. Both values stay on the object, and
+`dateSource` says which one was used.
 
 ```ts
 interface EdfCalendarDate {
@@ -232,13 +229,13 @@ interface EdfClockTime {
 }
 ```
 
-The `month` is 1-based. It is the single most likely thing to go wrong when you hand these numbers
+The `month` is 1-based. It's the single most likely thing to go wrong when you hand these numbers
 to a `Date` constructor, which is 0-based.
 
 ### EdfPatientId and EdfRecordingId
 
 Both fields are 80 bytes of free text in plain EDF and a defined subfield grammar in EDF+. edfcore
-parses the grammar, tells you whether it fitted, and keeps the raw text either way.
+parses the grammar, reports whether it fitted, and keeps the raw text either way.
 
 | `EdfPatientId` | type | meaning |
 |---|---|---|
@@ -260,16 +257,15 @@ parses the grammar, tells you whether it fitted, and keeps the raw text either w
 | `equipmentCode` | `string \| undefined` | what recorded it |
 | `extraSubfields` | `readonly string[]` | anything past the fifth |
 
-A subfield that the grammar could not place is `undefined` rather than guessed, and
-`conformant: false` does not mean unreadable — it means the text is not in the EDF+ shape, which is
-normal for plain EDF and is why the conformance checks in
-[`edfcore/validate`](/docs/api-validate) skip these two fields entirely for non-`+` files.
+A subfield that the grammar could not place is `undefined` rather than guessed.
+`conformant: false` means the text is not in the EDF+ shape, which is normal for plain EDF. The
+conformance checks in [`edfcore/validate`](/docs/api-validate) skip these two fields entirely for
+non-`+` files.
 
 ### The raw field interfaces
 
 Every property of both is a `string`, holding the field exactly as written before trimming or
-interpretation. They exist so a diagnostic — or you — can quote the bytes rather than a
-reconstruction of them.
+interpretation. A diagnostic (or you) can then quote the bytes rather than a reconstruction of them.
 
 `EdfRawHeaderFields` covers the ten fixed-header fields, at these offsets:
 
@@ -301,17 +297,17 @@ reconstruction of them.
 | `samplesPerRecord` | 8 |
 | `reserved` | 32 |
 
-Those widths sum to 256, which is why each signal adds exactly one 256-byte block. But the layout
-is **field-major**, not one struct per signal: all `ns` labels, then all `ns` transducer types, and
-so on. Reading it as a struct per signal happens to produce plausible output for a one-signal file,
-which is how that bug survives a first test.
+Those widths sum to 256, which is why each signal adds exactly one 256-byte block. The layout is
+**field-major**: all `ns` labels, then all `ns` transducer types, and so on. Reading it as a struct
+per signal produces plausible output for a one-signal file, which is how that bug survives a first
+test.
 
 ## The time axis
 
 `t = 0` is the **start of record 0**, not the header start time. Record 0's own timekeeping onset
-is `timeline.startOffsetTicks`, and it is the bridge back to the header clock. Every other second
-edfcore reports — segment, gap, chunk, window bound — is elapsed recording time. This is the
-EDFlib/pyEDFlib/MNE convention, and under it sample `n` of a signal sits at exactly
+is `timeline.startOffsetTicks`, the bridge back to the header clock. Every other second edfcore
+reports (segment, gap, chunk, window bound) is elapsed recording time. This is the
+EDFlib/pyEDFlib/MNE convention. Under it, sample `n` of a signal sits at exactly
 `n * recordDuration / samplesPerRecord` with no sub-second constant to remember.
 
 ### RecordRange
@@ -323,8 +319,8 @@ interface RecordRange {
 }
 ```
 
-Start plus count, never start plus end, so there is no inclusive/exclusive question to get wrong.
-It is the argument type for `readRecords` and `readAnnotations`, and it comes back on
+Start plus count, never start plus end, so there's no inclusive/exclusive question to get wrong.
+It's the argument type for `readRecords` and `readAnnotations`, and it comes back on
 `chunk.records` and `segment.records`.
 
 ### EdfTimeline
@@ -341,20 +337,19 @@ It is the argument type for `readRecords` and `readAnnotations`, and it comes ba
 | `coveredSeconds` | `number` | sum of the record durations |
 | `diagnostics` | `readonly EdfDiagnostic[]` | including whatever decoding the probed records turned up |
 
-`spanSeconds` and `coveredSeconds` are computed independently rather than derived from each other,
-because their being equal is the statement "this file is contiguous as far as two reads can tell".
-On the discontinuous file used throughout this page — six one-second records with a ten-second gap
-in the middle — they are `16` and `6`.
+`spanSeconds` and `coveredSeconds` are computed independently rather than derived from each other.
+Their being equal is the statement "this file is contiguous as far as two reads can tell". On the
+discontinuous file used throughout this page (six one-second records with a ten-second gap in the
+middle) they are `16` and `6`.
 
 > **Note**
 > Two probes detect any *net* drift of the timeline, but they are not a proof of contiguity: a gap
-> that a later overlap cancels exactly leaves both ends where a contiguous file would put them.
+> that a later overlap cancels exactly leaves both ends where a contiguous file puts them.
 > `buildRecordIndex` reads every onset and does see it.
 
 ### EdfRecordIndex
 
-The index answers "which record holds second *t*", and it is the one object in edfcore that
-deliberately withholds an answer it has not earned.
+The index answers "which record holds second *t*". How much it can answer depends on `coverage`.
 
 ```ts
 import { buildRecordIndex } from 'edfcore';
@@ -379,10 +374,8 @@ await index.locate(13);     // { recordIndex: 3, recordStartSeconds: 13, offsetI
 | `onsetTicks` | `(recordIndex: number, options?: ReadOptions) => Promise<bigint>` | one targeted read of that record's annotation region, memoised |
 | `locate` | `(seconds: number, options?: ReadOptions) => Promise<EdfLocation \| undefined>` | binary search, O(log recordCount) probes |
 
-`segments` and `gaps` are `undefined` on a probed index — the one `openEdf` hands you — and that is
-not a claim that the file has no gaps. It is the honest answer that nobody has read the onsets in
-between. No property on a probed index can ever read as "this recording is continuous" when that
-has not been checked.
+`segments` and `gaps` are `undefined` on a probed index (the one `openEdf` hands you), which isn't
+a claim that the file has no gaps. Nobody has read the onsets in between.
 
 `locate` returns `undefined` for a second that falls inside a gap or outside the recording, which
 is a different thing from an error. It verifies monotonicity at every pair its search touches, and
@@ -392,8 +385,8 @@ record. `onsetTicks` throws `EdfRangeError` for a record index that does not exi
 ### EdfSegment, EdfGap, EdfLocation
 
 A segment is a maximal run of records whose onsets are spaced by exactly one record duration, in
-exact ticks — not "within an epsilon", because a float tolerance is how a one-sample overlap
-becomes invisible.
+exact ticks. The comparison is exact rather than "within an epsilon": a float tolerance is how a
+one-sample overlap becomes invisible.
 
 | `EdfSegment` | type | meaning |
 |---|---|---|
@@ -414,7 +407,7 @@ becomes invisible.
 
 There is exactly one gap per adjacent pair of segments, so `gaps.length === segments.length - 1`
 (or `0`). A gap's duration is non-negative on any file whose onsets are monotonic and correctly
-spaced; a negative one means two records overlap in time, which `validateRecording` reports as
+spaced. A negative one means two records overlap in time, which `validateRecording` reports as
 `RECORD_ONSET_SPACING_VIOLATION`.
 
 | `EdfLocation` | type | meaning |
@@ -427,8 +420,8 @@ spaced; a negative one means two records overlap in time, which `validateRecordi
 
 ### EdfChunk and EdfChunkSignal
 
-A chunk is what a read returns. It is always **record-aligned**, so it is usually wider than the
-window you asked for; `trimToWindow` narrows one signal exactly.
+A chunk is what a read returns. It's always **record-aligned**, so it's usually wider than the
+window you asked for. `trimToWindow` narrows one signal exactly.
 
 ```ts
 import { readRecords } from 'edfcore';
@@ -461,13 +454,13 @@ first.firstSampleIndex;// 300 — index on this signal's own sample grid
 | `precededByGap` | `EdfGap \| undefined` | the gap immediately before these records |
 | `diagnostics` | `readonly EdfDiagnostic[]` | defects in the annotation regions inside these records |
 
-`durationSeconds` is a span, not a coverage: they are equal for one contiguous run, which is what
-`readWindow` produces, and they differ when you name records across a gap yourself.
+`durationSeconds` is a span, not a coverage. The two are equal for one contiguous run, which is
+what `readWindow` produces, and they differ when you name records across a gap yourself.
 
-`byteLength` is on the object so overread is visible instead of invisible. `precededByGap` is
-`undefined` on a probed index for the same reason `index.segments` is — nobody has read the onsets
-in between. `diagnostics` costs nothing: the annotation regions of a record live in the same bytes
-as its samples, so a defect there is found while decoding the data you already asked for.
+`byteLength` is on the object so overread is visible. `precededByGap` is `undefined` on a probed
+index for the same reason `index.segments` is: nobody has read the onsets in between. `diagnostics`
+costs nothing. The annotation regions of a record live in the same bytes as its samples, so a
+defect there is found while decoding the data you already asked for.
 
 | `EdfChunkSignal` | type | meaning |
 |---|---|---|
@@ -478,9 +471,9 @@ as its samples, so a defect there is found while decoding the data you already a
 | `startSeconds` | `number` | the chunk's start; per-signal because `samplesPerRecord` differs between signals |
 | `outOfDigitalRangeCount` | `number` | samples outside the **declared** digital range |
 
-`digital` is an `Int32Array` for both EDF and BDF, because a 24-bit sample does not fit an
-`Int16Array` and a `Float64Array` would quadruple the memory to hold integers. Pass it to
-`toPhysical` when you want units.
+`digital` is an `Int32Array` for both EDF and BDF, because a 24-bit sample doesn't fit an
+`Int16Array` and a `Float64Array` quadruples the memory to hold integers. Pass it to `toPhysical`
+when you want units.
 
 `outOfDigitalRangeCount` above zero means the declared range is wrong, not that the samples are.
 edfcore never clamps. The count is produced by the same pass that decodes the samples, so it costs
@@ -521,10 +514,9 @@ result.recordOnsetTicks;  // BigInt64Array [0n, 10000000n, 20000000n, 130000000n
 | `byteOffsetInRecord` | `number` | where inside that record, for a hexdump |
 | `textEncoding` | `'utf-8' \| 'latin-1-fallback'` | `'latin-1-fallback'` when the bytes were not valid UTF-8 |
 
-Both onset conventions ship as separately named fields rather than as an option, because a library
-that returns one number under a flag makes every downstream comparison depend on how the call was
-configured. Compare event times with `onsetTicks` and nothing else — float equality on event times
-is how ERP alignment silently breaks.
+Both onset conventions ship as separately named fields rather than as an option, so a downstream
+comparison never depends on how the call was configured. Compare event times with `onsetTicks` and
+nothing else. Float equality on event times is how ERP alignment breaks without anyone noticing.
 
 | `EdfAnnotationsResult` | type | meaning |
 |---|---|---|
@@ -535,10 +527,10 @@ is how ERP alignment silently breaks.
 `annotations` is stably sorted by `(onsetTicks, signalIndex, byteOffsetInRecord)`, so two files
 that carry the same events in the same records give you the same order.
 
-`recordOnsetTicks` always has one entry for every record in the decoded range — never a hole and
+`recordOnsetTicks` always has one entry for every record in the decoded range, never a hole and
 never a sentinel. A record whose timekeeping TAL is missing gets the derived onset
-`start + recordIndex * duration`, and `TIMEKEEPING_TAL_MISSING` carries that record's index so the
-derivation is never invisible. Every timeline in edfcore is built from this array.
+`start + recordIndex * duration`. `TIMEKEEPING_TAL_MISSING` carries that record's index, so the
+derivation stays visible. Every timeline in edfcore is built from this array.
 
 ## Results
 
@@ -566,7 +558,7 @@ const chunks = await readWindow(
 );
 ```
 
-It does not own the source. Closing is yours: `await recording.source.close?.()`.
+It doesn't own the source. Closing is yours: `await recording.source.close?.()`.
 
 ### EdfDiagnostic
 
@@ -593,7 +585,7 @@ and an I/O adapter is free to reuse its buffer. The full code table and the erro
 ### EdfInspection
 
 Header-only triage. `inspectEdf` reads at most 128 KiB and never throws about content, so a file
-that is not an EDF at all comes back as a value rather than an exception.
+that isn't an EDF at all comes back as a value rather than an exception.
 
 ```ts
 import { inspectEdf } from 'edfcore';
@@ -616,19 +608,19 @@ inspection.bytesRead;   // 768 — what inspection actually cost
 | `headerBytes` | `Uint8Array \| undefined` | the bytes it looked at, for a hexdump |
 | `diagnostics` | `readonly EdfDiagnostic[]` | including the one that would otherwise have been thrown |
 
-A signal whose scale was refused makes `ok` false even though the header itself is perfectly
-readable, because physical units are genuinely unavailable for that channel. Warnings leave `ok`
-true. See [diagnostics and errors](/docs/diagnostics) for the triage workflow.
+A signal with no defined scale makes `ok` false even when the header itself is readable, because
+physical units are unavailable for that channel. Warnings leave `ok` true. See
+[diagnostics and errors](/docs/diagnostics) for the triage workflow.
 
 ## The rest of types.ts
 
-The remaining exports are options and selections rather than results — they describe what you hand
+The remaining exports are options and selections rather than results. They describe what you hand
 edfcore, not what it hands back.
 
 | type | what it is |
 |---|---|
 | `ReadOptions` | `signal` and `maxMaterializeBytes`, accepted by every call that reads |
-| `ParseOptions` | `strict`; [diagnostics](/docs/diagnostics) lists which calls take it and which deliberately do not |
+| `ParseOptions` | `strict`; [diagnostics](/docs/diagnostics) lists which calls take it and which do not |
 | `OpenOptions` | `ParseOptions & ReadOptions` |
 | `ByteSource` | the random-access reader everything is built over |
 | `RecordSelection` | `{ records, signalIndices }` for `readRecords` |

@@ -55,10 +55,9 @@ const gaps = [
     <div class="page">
       <h1 class="reveal">Read EDF files<br />in JavaScript.</h1>
       <p class="lede reveal">
-        edfcore opens EDF, EDF+, BDF and BDF+ recordings — EEG, sleep studies, ECG — in the
+        edfcore opens EDF, EDF+, BDF and BDF+ recordings (EEG, sleep studies, ECG) in the
         browser and in Node. Read any ten seconds of a twelve-hour file without loading the
-        rest of it, and get a clear error when a file is wrong instead of quietly wrong
-        numbers.
+        rest. When a file is wrong, you get an error that names the byte.
       </p>
 
       <div class="actions reveal">
@@ -78,12 +77,11 @@ const gaps = [
   <section class="band">
     <div class="page split">
       <div>
-        <h2 class="reveal">Ten seconds out of twelve hours costs ten seconds of bytes.</h2>
+        <h2 class="reveal">Ten seconds out of twelve hours reads ten seconds of bytes.</h2>
         <p class="reveal measure">
           An EDF file stores every channel interleaved inside fixed-size data records, so a
           time window maps to a contiguous run of records. edfcore reads exactly that run.
-          Opening a file reads the header and nothing else; it never scans, and it never
-          materialises a recording you did not ask for.
+          Opening a file reads the header and nothing else. It doesn't scan.
         </p>
       </div>
       <CodeBlock code={readExample} lang="ts" caption="Reading a window in the browser" />
@@ -92,10 +90,9 @@ const gaps = [
 
   <section class="band band-inset">
     <div class="page">
-      <h2 class="reveal">The JavaScript ecosystem for EDF was, until now, mostly a warning.</h2>
+      <h2 class="reveal">Python has the tooling for EDF. JavaScript didn't.</h2>
       <p class="reveal measure lede-2">
-        Python has excellent tooling for these formats. JavaScript did not, and the gap is not
-        subtle. This is what a survey of every EDF package on npm turned up:
+        This is every EDF package on npm, surveyed in mid-2026:
       </p>
 
       <div class="scroll-x reveal">
@@ -121,7 +118,7 @@ const gaps = [
           href="https://github.com/epicurrents/edf-reader"
           rel="noopener">@epicurrents/edf-reader</a
         >, worth using if you want a whole viewer framework.
-        <a href="/docs/comparison">The full comparison is here.</a>
+        <a href="/docs/comparison">See the full comparison.</a>
       </p>
     </div>
   </section>
@@ -129,18 +126,18 @@ const gaps = [
   <section class="band">
     <div class="page split split-reverse">
       <div>
-        <h2 class="reveal">It refuses to invent data.</h2>
+        <h2 class="reveal">A bad file either throws or reports itself.</h2>
         <p class="reveal measure">
-          One rule decides everything: if edfcore cannot continue without making something up,
-          it throws; if it can continue truthfully, it records a diagnostic on the result.
-          There is no third option, and nothing is ever written to the console.
+          One rule decides which. If edfcore can't continue without inventing something, it
+          throws. If it can continue on what the file says, it records a diagnostic on the
+          result. There's no third option, and nothing is written to the console.
         </p>
         <p class="reveal measure">
-          When a header declares <code>digitalMinimum === digitalMaximum</code>, there is no
-          scale to apply. The reference C implementation quietly substitutes a gain of 1 and
-          hands back raw ADC counts labelled as microvolts. edfcore sets
-          <code>signal.scale</code> to <code>undefined</code> instead, so the type system makes
-          that outcome unrepresentable.
+          A header that declares <code>digitalMinimum === digitalMaximum</code> defines no
+          scale: the gain is a division by zero. edfcore sets <code>signal.scale</code> to
+          <code>undefined</code>, so <code>toPhysical</code> throws and
+          <code>strictNullChecks</code> catches the call you didn't guard. EDFlib substitutes a
+          gain of 1 here and returns ADC counts labelled as microvolts.
         </p>
       </div>
       <CodeBlock
@@ -154,16 +151,15 @@ const gaps = [
   <section class="band band-inset">
     <div class="page split">
       <div>
-        <h2 class="reveal">A recording that stopped and restarted says so.</h2>
+        <h2 class="reveal">Discontinuous recordings.</h2>
         <p class="reveal measure">
           Sleep and long-term-monitoring studies are routinely discontinuous. Most readers
-          either reject those files or decode them as though the gaps were not there,
-          producing a timeline that is silently wrong by hours.
+          either reject those files or decode them as though the gaps weren't there, producing
+          a timeline that's wrong by hours.
         </p>
         <p class="reveal measure">
-          <code>readWindow</code> always returns an array of chunks, one per contiguous run —
-          for continuous files too. If two shapes existed, people would write against the easy
-          one and it would break on the first real sleep study.
+          <code>readWindow</code> always returns an array of chunks, one per contiguous run,
+          including for continuous files. A window inside a gap returns an empty array.
         </p>
       </div>
       <CodeBlock code={gapExample} lang="ts" caption="Reading a discontinuous file" />
@@ -174,9 +170,8 @@ const gaps = [
     <div class="page">
       <h2 class="reveal">Try it on your own file.</h2>
       <p class="reveal measure">
-        The inspector runs entirely in your browser. Nothing is uploaded, because there is no
-        server to upload to — which is the same reason edfcore is worth using for clinical and
-        research data in the first place.
+        The inspector runs in your browser. Nothing is uploaded, because there's no server to
+        upload to. That's the same reason edfcore suits clinical and research data.
       </p>
       <div class="actions reveal">
         <a class="btn btn-primary" href="/demo">Open the inspector</a>

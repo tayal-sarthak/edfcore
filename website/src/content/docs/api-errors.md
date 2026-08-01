@@ -3,10 +3,10 @@ title: Errors and diagnostic codes
 description: The seven error classes and their fields, how to discriminate them without instanceof, and the complete diagnostic code table grouped by disposition.
 section: Reference
 order: 5
-lead: One rule decides which of these you get. If edfcore cannot proceed without inventing something it throws; if it can proceed truthfully it records a diagnostic on the result. There is no third category, and there is no console call anywhere in the package.
+lead: One rule decides which of these you get. edfcore throws when proceeding would mean making up a value, and records a diagnostic on the result when it can proceed without one. There is no third category, and there is no console call anywhere in the package.
 ---
 
-## Discriminate on `edfErrorKind`, not `instanceof`
+## `edfErrorKind`
 
 Every error edfcore throws carries a string `edfErrorKind`, and `isEdfError` is the one spelling of
 the check:
@@ -31,22 +31,22 @@ try {
 
 `instanceof` compares constructor identity, and constructor identity is per-realm. An error thrown
 inside a worker or an iframe and passed out fails `instanceof EdfFormatError` in the receiving
-context even though it is one, and so does an error from a second copy of edfcore that some
-dependency pulled into the tree. A string property survives all three.
+context even though it is one. So does an error from a second copy of edfcore that some dependency
+pulled into the tree. A string property survives all three.
 
 > **Note**
-> The cast in each branch is load-bearing. `edfErrorKind` discriminates correctly at *runtime*, but
-> the seven classes are seven class types rather than a union type, so TypeScript narrows the
-> property and not the object: `isEdfError` gives you an `EdfError`, and `EdfError` declares
-> `edfErrorKind` and nothing else. Reaching for `error.budgetBytes` without the cast is a
-> compile error. The cast is safe because the kind you just matched on is what fixes the class.
+> The cast in each branch is load-bearing. `edfErrorKind` discriminates correctly at *runtime*. The
+> seven classes are seven class types rather than a union type, so TypeScript narrows the property
+> and not the object. `isEdfError` gives you an `EdfError`, and `EdfError` declares `edfErrorKind`
+> and nothing else. Reaching for `error.budgetBytes` without the cast is a compile error. The cast
+> is safe because the kind you just matched on is what fixes the class.
 
 ```ts
 function isEdfError(value: unknown): value is EdfError;
 ```
 
 It tests for an object with a string `edfErrorKind` and nothing else. `EdfError` itself is
-exported — it is the abstract base every class below extends, and it sets `name` to the concrete
+exported. It's the abstract base every class below extends, and it sets `name` to the concrete
 constructor's name, so `error.name` is `'EdfFormatError'` rather than `'Error'`.
 
 ```ts
@@ -101,8 +101,7 @@ try {
 ```
 
 The public initialiser type is exported too, as `EdfFormatErrorInit`: `{ code, diagnostic?, field?,
-byteOffset?, signalIndex?, recordIndex?, cause? }`. You need it only if you construct one yourself,
-which is not something edfcore asks of you.
+byteOffset?, signalIndex?, recordIndex?, cause? }`. You need it only if you construct one yourself.
 
 ### EdfScalingError
 
@@ -113,10 +112,9 @@ which is not something edfcore asks of you.
 | `label` | `string` | that signal's trimmed label |
 
 Thrown by `toPhysical` for a signal whose `scale` is `undefined`. The code is re-derived from the
-signal by applying the same four tests the header applied, in the same order, so it names the same
-cause the header recorded. A signal that matches none of them yet still has no scale reports
-`SCALE_UNAVAILABLE` rather than the nearest-looking code — naming the wrong cause is worse than
-admitting the cause is not on hand.
+signal by applying the same four tests the header applied, in the same order. It therefore names
+the same cause the header recorded. A signal that matches none of them yet still has no scale
+reports `SCALE_UNAVAILABLE` rather than the nearest-looking code.
 
 ### EdfRangeError
 
@@ -135,14 +133,15 @@ Your bug, not the file's. `readRecordBytes`, `readRecords` and `index.onsetTicks
 | `requestedLength` | `number` | how many bytes were asked for |
 | `receivedLength` | `number \| undefined` | how many arrived, when that is knowable |
 
-The `ByteSource` contract is one sentence — a read resolves with exactly `length` bytes or rejects,
-never padding and never truncating — and it is checked on every call, including calls into a source
-you wrote. `receivedLength` is `number | undefined` because a misbehaving source may resolve with
+The `ByteSource` contract is one sentence: a read resolves with exactly `length` bytes or rejects,
+never padding and never truncating. It's checked on every call, including calls into a source you
+wrote. `receivedLength` is `number | undefined` because a misbehaving source may resolve with
 something that is not a byte array at all.
 
-`httpSource` also uses this class for its own failures: no `fetch` implementation available, a
-server that reports no usable size, a non-success status, and a server that ignored the `Range`
-header. Those carry an `offset` and a `requestedLength` describing the read that provoked them.
+`httpSource` uses this class for its own failures too. It throws when no `fetch` implementation is
+available, when a server reports no usable size, on a non-success status, and when a server ignores
+the `Range` header. Those carry an `offset` and a `requestedLength` describing the read that
+provoked them.
 
 ### EdfBudgetError
 
@@ -152,8 +151,8 @@ header. Those carry an `offset` and a `requestedLength` describing the read that
 | `budgetBytes` | `number` | the ceiling in force |
 | `optionName` | `'maxMaterializeBytes'` | the option to raise, as a literal |
 
-Refused before the allocation is attempted, not during it. Float64 physical output is four times
-the on-disk size for EDF, so without this one honest call can take down a browser tab. The default
+The check happens before the allocation is attempted rather than during it. Float64 physical output
+is four times the on-disk size for EDF, so one large call can take down a browser tab. The default
 ceiling is 256 MiB. Decode fewer records per call, reuse an `out` array, or raise the option.
 
 ### EdfAmbiguousChannelError and EdfChannelNotFoundError
@@ -168,17 +167,17 @@ ceiling is 256 MiB. Decode fewer records per call, reuse an `out` array, or rais
 | `selector` | `string \| number` | the label or index you passed |
 | `availableLabels` | `readonly string[]` | every label in the file, in signal order |
 
-Real files ship duplicate labels: CHB-MIT carries `T8-P8` twice. Silently returning the first is how
-the wrong channel ends up in a paper, so `getSignal` refuses and hands you the indices; `findSignals`
-returns them all when that is what you want.
+Real files ship duplicate labels: CHB-MIT carries `T8-P8` twice. Returning the first without a word
+is how the wrong channel ends up in a paper. `getSignal` throws and hands you the indices;
+`findSignals` returns them all when that is what you want.
 
 > **Note**
-> Not everything edfcore throws is an `EdfError`. Passing an annotations signal to `readRecords`,
-> passing a bad argument shape to a primitive, or asking a probed index to map a time window on a
-> file that has a gap all throw a plain `RangeError`, and `isEdfError` returns `false` for them.
-> That boundary is deliberate: an `EdfError` says something about the file, and those say something
-> about the call. Aborting through `options.signal` throws an `Error` whose `name` is
-> `'AbortError'`, which is the property the platform's own consumers branch on.
+> Not everything edfcore throws is an `EdfError`. Passing an annotations signal to `readRecords`
+> throws a plain `RangeError`, and so does a bad argument shape passed to a primitive. So does
+> asking a probed index to map a time window on a file that has a gap. `isEdfError` returns `false`
+> for all three. An `EdfError` says something about the file; a `RangeError` says something about
+> the call. Aborting through `options.signal` throws an `Error` whose `name` is `'AbortError'`, the
+> property the platform's own consumers branch on.
 
 ## Dispositions
 
@@ -189,7 +188,7 @@ what the code *does*; the severity is what it *is*.
 |---|---|---|
 | fatal | `'error'` | throws `EdfFormatError`, whether or not `strict` is set |
 | deferred | `'error'` | recorded; `signal.scale` becomes `undefined` and `toPhysical` throws |
-| warning | `'warning'` | recorded; the file is impolite and what you got back is true |
+| warning | `'warning'` | recorded; the file is non-conformant and what you got back is true |
 | info | `'info'` | recorded; the file is correct and the situation surprises people |
 
 Severity is derived from the code rather than passed in at the reporting site, so one code cannot
@@ -199,8 +198,8 @@ strict mode.
 
 ## Always fatal
 
-Eight codes. In each case, continuing would mean inventing the thing that is missing, so `strict`
-is irrelevant — there is no option that lets you opt into invented data.
+Eight codes. Each names something the file does not supply, so these throw whether or not `strict`
+is set.
 
 | code | what it means | what to do |
 |---|---|---|
@@ -216,14 +215,13 @@ is irrelevant — there is no option that lets you opt into invented data.
 `TIMELINE_NOT_MONOTONIC` is the one that fires late, and only where a violating pair is actually
 observed. `openEdf` sees the two probes; `locate` sees the pairs its binary search touches;
 `readRecords` sees the records in the chunk; `buildRecordIndex` and `validateRecording` see every
-pair in the file. A file whose only violation sits between the two probes opens fine and throws when
-you read across it — which is honest, since edfcore did not look until then.
+pair in the file. A file whose only violation sits between the two probes opens fine and throws
+when you read across it.
 
 ## Deferred-fatal
 
 Four codes. The header parses, the file is readable, and one signal has no defined conversion to
-physical units. Their severity is `error`, but they do not throw at parse time: refusing a whole
-recording over one channel would be the wrong trade.
+physical units. Their severity is `error`, and they do not throw at parse time.
 
 | code | what it means | what to do |
 |---|---|---|
@@ -292,7 +290,7 @@ Thirty-one codes. The file stays readable and what edfcore returns about it is t
 | code | what it means | what to do |
 |---|---|---|
 | `RECORD_ONSET_SPACING_VIOLATION` | consecutive record onsets are closer together than the record duration, i.e. records overlap in time | the onsets were used as written and nothing was reordered; `buildRecordIndex` reports which records are involved |
-| `DISCONTINUITY_IN_CONTINUOUS_FILE` | the reserved field says `EDF+C` but the onsets do not line up | treat the file as discontinuous: build a complete index, and `readWindow` then returns one chunk per contiguous run instead of crossing a gap silently |
+| `DISCONTINUITY_IN_CONTINUOUS_FILE` | the reserved field says `EDF+C` but the onsets do not line up | treat the file as discontinuous: build a complete index, and `readWindow` then returns one chunk per contiguous run instead of crossing a gap |
 
 ### I/O
 
@@ -304,7 +302,7 @@ Thirty-one codes. The file stays readable and what edfcore returns about it is t
 > **Note**
 > Those last two are in the vocabulary but are not emitted as diagnostics by the 0.1 release.
 > `HTTP_RANGE_IGNORED` is named inside the message of the `EdfSourceError` that `httpSource` throws
-> when a server ignores the `Range` header — with `allowFullDownload: true` the download proceeds
+> when a server ignores the `Range` header. With `allowFullDownload: true` the download proceeds
 > and nothing is reported. `SOURCE_SHORT_READ_RECOVERED` has no emitting call site at all: there is
 > no retry, and a short read throws `EdfSourceError` instead. Do not write a handler that waits for
 > either code.
@@ -315,20 +313,20 @@ Two codes. The file is correct; the note exists because the situation surprises 
 
 | code | what it means | what to do |
 |---|---|---|
-| `INVERTED_PHYSICAL_RANGE` | `physicalMinimum > physicalMaximum`, which encodes a negative amplifier gain | nothing; it is sanctioned by the EDF FAQ, and swapping the two would be a silent polarity flip |
+| `INVERTED_PHYSICAL_RANGE` | `physicalMinimum > physicalMaximum`, which encodes a negative amplifier gain | nothing; it is sanctioned by the EDF FAQ, and swapping the two inverts the signal's polarity |
 | `NEGATIVE_ANNOTATION_ONSET` | an annotation onset is negative, i.e. before the file start | nothing; this is how EDF+ writes a pre-stimulus event, and `onsetTicks` is exact and signed |
 
-## The code union is open
+## The code union
 
 ```ts
 type EdfKnownDiagnosticCode = 'NOT_AN_EDF_FILE' | 'SOURCE_TOO_SMALL' | /* ... */;
 type EdfDiagnosticCode = EdfKnownDiagnosticCode | (string & {});
 ```
 
-Known codes autocomplete, and a `default` branch in your `switch` stays mandatory. That is the
-point: a code added in a later minor release cannot break exhaustive handling, so the vocabulary can
-grow without a major version. **An unrecognised code is treated as a warning** — an unknown note
-must never escalate into an error.
+`EdfDiagnosticCode` is open. Known codes autocomplete, and a `default` branch in your `switch`
+stays mandatory. A code added in a later minor release can't break exhaustive handling, so the
+vocabulary can grow without a major version. **An unrecognised code is treated as a warning**, so
+an unknown note never escalates into an error.
 
 Codes outside the core vocabulary already exist, and none of them can ever be fatal:
 
@@ -344,8 +342,8 @@ Codes outside the core vocabulary already exist, and none of them can ever be fa
 
 ## Diagnostics are values
 
-A diagnostic is a plain object sitting on whatever produced it — never a log line — and every field
-of `EdfDiagnostic` is documented in [types](/docs/api-types). The arrays are:
+A diagnostic is a plain object sitting on whatever produced it, never a log line. Every field of
+`EdfDiagnostic` is documented in [types](/docs/api-types). The arrays are:
 
 ```ts
 recording.header.diagnostics;    // header parsing
@@ -356,20 +354,20 @@ inspection.diagnostics;          // inspectEdf
 report.diagnostics;              // validateRecording, from edfcore/validate
 ```
 
-Each is frozen when it is attached, so a result you are holding cannot grow later.
+Each is frozen when it's attached, so a result you're holding cannot grow later.
 `formatDiagnostics` renders any of them for a human, deterministically enough to snapshot in a test.
 
-Diagnostic volume is bounded on purpose, by one test: does another occurrence of this code carry
-information available nowhere else? `TIMEKEEPING_TAL_MISSING` names a record whose onset had to be
-derived, so it is reported per record. `NEGATIVE_ANNOTATION_ONSET` is a property of the writer, so
-it is reported once per call. Defects inside a single annotation region are deduplicated and carry
-an occurrence count, because a corrupt region can hold thousands of malformed TALs.
+Diagnostic volume is bounded by one test: does another occurrence of this code carry information
+available nowhere else? `TIMEKEEPING_TAL_MISSING` names a record whose onset had to be derived, so
+it's reported per record. `NEGATIVE_ANNOTATION_ONSET` is a property of the writer, so it's reported
+once per call. Defects inside a single annotation region are deduplicated and carry an occurrence
+count, because a corrupt region can hold thousands of malformed TALs.
 
 ## Where to go next
 
-- [Diagnostics and errors](/docs/diagnostics) — the narrative version, `strict` mode, and the
+- [Diagnostics and errors](/docs/diagnostics): the narrative version, `strict` mode, and the
   `inspectEdf` triage workflow.
-- [Types](/docs/api-types) — `EdfDiagnostic` field by field, and every other public shape.
-- [API — reading](/docs/api-reading) — which call throws which of these, and when.
-- [edfcore/validate](/docs/api-validate) — the four codes that only that module emits.
-- [Physical values](/docs/physical-values) — what the deferred group means for `toPhysical`.
+- [Types](/docs/api-types): `EdfDiagnostic` field by field, and every other public shape.
+- [API — reading](/docs/api-reading): which call throws which of these, and when.
+- [edfcore/validate](/docs/api-validate): the four codes that only that module emits.
+- [Physical values](/docs/physical-values): what the deferred group means for `toPhysical`.

@@ -10,8 +10,8 @@ lead: The shortest path from a file the user picked, or a path on disk, to a Flo
 
 Five calls do the work, and only the first one is runtime-specific.
 
-1. Wrap the bytes in a `ByteSource` — `blobSource(file)` in a browser, `await fileSource(path)` in Node.
-2. `openEdf(source)` parses the header and builds a time axis. It does not read the data.
+1. Wrap the bytes in a `ByteSource` (`blobSource(file)` in a browser, `await fileSource(path)` in Node).
+2. `openEdf(source)` parses the header and builds a time axis. It doesn't read the data.
 3. `getSignal(header, label)` resolves one channel by label or index.
 4. `readWindow(recording, selection)` reads a stretch of time for the channels you name.
 5. `toPhysical(signal, digital)` converts the stored integers into the signal's own units.
@@ -20,7 +20,7 @@ Everything else in the library is a variation on those.
 
 ## How do I read an EDF file in the browser?
 
-Start with a file input. `blobSource` accepts a `File` straight from the picker — no reading it into an `ArrayBuffer` first, which matters because that would defeat the point of range reads on a twelve-hour recording.
+Start with a file input. `blobSource` accepts a `File` straight from the picker. There's no intermediate `ArrayBuffer`, so a twelve-hour recording is read in ranges rather than loaded whole.
 
 ```html
 <input type="file" id="picker" accept=".edf,.bdf">
@@ -60,7 +60,7 @@ picker.addEventListener('change', async () => {
 });
 ```
 
-Against the three-channel file listed in the next section — EEG at 256 Hz, respiration at 16 Hz, and an annotations channel, in one-second records — that prints:
+Against the three-channel file listed in the next section (EEG at 256 Hz, respiration at 16 Hz, and an annotations channel, in one-second records), that prints:
 
 ```text
 EEG Fpz-Cz: 2560 samples of uV, 6040 bytes read from disk
@@ -73,13 +73,13 @@ Float64Array(5) [
 ]
 ```
 
-Two things in that output are worth pausing on. `values` is a `Float64Array`, not `Float32Array` — a 24-bit BDF sample scaled into float32 loses about a quarter of a quantisation step, which is a rounding error smaller than any real difference the hardware can express and therefore pure noise you can never get rid of. And `chunk.byteLength` is the bytes that actually left the source, which is more than the 5120 bytes those 2560 samples occupy, because EDF stores every channel interleaved and the smallest thing you can read is a whole data record. [Concepts](/docs/concepts) has the arithmetic.
+Two things in that output are worth pausing on. `values` is a `Float64Array`, because a 24-bit BDF sample scaled into float32 loses about a quarter of a quantisation step. And `chunk.byteLength` is the bytes that actually left the source, which is more than the 5120 bytes those 2560 samples occupy. EDF stores every channel interleaved, and the smallest readable unit is a whole data record. [Concepts](/docs/concepts) has the arithmetic.
 
-`readWindow` returns an *array* of chunks, which is why the example indexes into it. For a continuous file that array holds exactly one chunk whenever the window overlaps the recording. It holds more than one when the window crosses a gap in a discontinuous recording, and it is empty when the window contains no records at all — because it falls outside the recording, or entirely inside a gap.
+`readWindow` returns an *array* of chunks, which is why the example indexes into it. For a continuous file that array holds exactly one chunk whenever the window overlaps the recording. It holds more than one when the window crosses a gap in a discontinuous recording. It's empty when the window contains no records at all, either outside the recording or entirely inside a gap.
 
 ## How do I read an EDF file in Node.js?
 
-Identical after the first line. `fileSource` returns a promise because it opens a file handle, and you close it when you are done — edfcore has no other lifetime mechanism in 0.1, so a `try`/`finally` is the honest way to write this.
+It's identical after the first line. `fileSource` returns a promise because it opens a file handle, and you close it when you're done. edfcore has no other lifetime mechanism in 0.1, so wrap the work in `try`/`finally`.
 
 ```ts
 import { getSignal, openEdf, readWindow, toPhysical } from 'edfcore';
@@ -133,9 +133,9 @@ EDF+C: 300 records of 1 s
 ]
 ```
 
-Note the third channel. `EDF Annotations` is not a measurement — its bytes are timestamped text, and edfcore reports its `kind` as `'annotations'` and keeps it out of `header.dataSignalIndices`. Passing its index to `readWindow` throws rather than handing you numbers that look convincingly like a signal.
+Note the third channel. The bytes of `EDF Annotations` are timestamped text, so edfcore reports its `kind` as `'annotations'` and keeps it out of `header.dataSignalIndices`. Passing its index to `readWindow` throws.
 
-`getSignal` matches the trimmed label exactly and case-sensitively. It throws `EdfChannelNotFoundError` listing every label in the file when nothing matches, and `EdfAmbiguousChannelError` listing the indices when two channels share the label — which real files do, so returning the first silently is not an option.
+`getSignal` matches the trimmed label exactly and case-sensitively. When nothing matches it throws `EdfChannelNotFoundError`, listing every label in the file. When two channels share the label, which real files do, it throws `EdfAmbiguousChannelError`, listing the indices.
 
 ## How do I read the events in an EDF+ file?
 
@@ -173,10 +173,10 @@ try {
 95.500 s  Arousal
 ```
 
-The record range is required and has no default. Scanning a whole file for annotations is a legitimate thing to want and an expensive thing to do by accident, so `{ start: 0, count: recording.header.recordCount }` has to appear in your source rather than being what happens when you leave an argument out.
+The record range is required and has no default. Scanning a whole file for annotations is expensive, so `{ start: 0, count: recording.header.recordCount }` has to appear in your source.
 
-Each annotation carries its onset three ways: `onsetSecondsFromFirstRecord` (rebased to the start of record 0, which is the convention EDFlib, pyEDFlib and MNE use), `onsetSecondsFromHeaderStart` (the verbatim on-disk value), and `onsetTicks`, an exact `bigint` in 100-nanosecond units. Print the seconds; compare the ticks.
+Each annotation carries its onset three ways. `onsetSecondsFromFirstRecord` is rebased to the start of record 0, which is the convention EDFlib, pyEDFlib and MNE use. `onsetSecondsFromHeaderStart` is the verbatim on-disk value, and `onsetTicks` is an exact `bigint` in 100-nanosecond units. Print the seconds; compare the ticks.
 
 ## Next
 
-[Concepts](/docs/concepts) explains the record grid that all of the above sits on: why the unit of I/O is a range of records rather than a range of samples, why `samplesPerRecord` is authoritative and sample rates are derived, why digital and physical are two functions instead of one flag, and what changes when a recording has gaps in it.
+[Concepts](/docs/concepts) explains the record grid that all of the above sits on: the record range as the unit of I/O, `samplesPerRecord` as the authoritative field, and the two functions behind digital and physical values. It also covers what changes when a recording has gaps in it.

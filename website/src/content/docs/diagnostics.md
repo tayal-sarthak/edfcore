@@ -1,28 +1,27 @@
 ---
 title: Diagnostics and errors
-description: How edfcore reports a bad file — the diagnostic values on every result, the codes that always throw, strict mode, and the error classes.
+description: "How edfcore reports a bad file: the diagnostic values on every result, the codes that always throw, strict mode, and the error classes."
 section: Guides
 order: 6
-lead: Real EDF files are full of small deviations, and a reader that hides them is worse than one that is loud about them. This page covers what edfcore records, what it refuses to continue past, and how to tell the two apart in code.
+lead: Real EDF files are full of small deviations. This page covers what edfcore records, what it stops on, and how to tell the two apart in code.
 ---
 
 ## The one rule
 
-**If edfcore cannot proceed without inventing something, it throws. If it can proceed truthfully,
-it records a diagnostic on the result.**
+**If edfcore cannot proceed without inventing something, it throws. Otherwise it records a
+diagnostic on the result and carries on.**
 
-There is no third category. There is no logger to configure, no callback to register, no verbosity
-setting, and no `console` call anywhere in the package — a library that writes to your console has
-made a decision about your application that it was not entitled to make.
+There's no third category. There's no logger to configure, no callback to register, no verbosity
+setting, and no `console` call anywhere in the package.
 
-That rule is why a header with a wrong byte-count field parses (the computed size wins, and the
-mismatch is recorded), while a header with no recognisable version block does not (there is no
-version to substitute). It is also why a signal whose declared ranges do not define a gain gets
-`scale: undefined` rather than a fabricated gain of 1.
+A header with a wrong byte-count field parses: the computed size wins, and the mismatch is
+recorded. A header with no recognisable version block does not, because there's no version to
+substitute. A signal whose declared ranges do not define a gain gets `scale: undefined` rather than
+a fabricated gain of 1.
 
 ## Diagnostics are values
 
-A diagnostic is a plain object sitting on whatever produced it. You read the array, or you do not:
+A diagnostic is a plain object sitting on whatever produced it. You read the array, or you don't:
 
 ```ts
 recording.header.diagnostics;    // header parsing
@@ -34,11 +33,11 @@ report.diagnostics;              // validateRecording, from edfcore/validate
 ```
 
 Two of those are worth a note. `timeline.diagnostics` folds in whatever decoding the probed records
-turned up, so one array explains the whole timeline rather than making you correlate two. And
-`chunk.diagnostics` costs nothing: the annotation regions of a record live in the same bytes as its
-samples, so a defect there is found while decoding the data you already asked for.
+turned up, so one array explains the whole timeline. `chunk.diagnostics` costs nothing. The
+annotation regions of a record live in the same bytes as its samples, so a defect there is found
+while decoding the data you already asked for.
 
-Each array is frozen when it is attached, so a result you are holding cannot grow later.
+Each array is frozen when it is attached, so a result you're holding cannot grow later.
 
 ## What a diagnostic carries
 
@@ -62,20 +61,19 @@ for (const diagnostic of recording.header.diagnostics) {
 | `signalIndex`, `recordIndex` | which signal and which record, when applicable |
 | `specReference` | the clause it violates, e.g. `'EDF+ additional specification 5'` |
 
-Every field is always present as a key; ones that do not apply are `undefined`. Reading a
-diagnostic never requires knowing whether a key exists.
+Every field is always present as a key; ones that don't apply are `undefined`. Reading a diagnostic
+never requires knowing whether a key exists.
 
-`severity` is derived from the code rather than passed in at the reporting site, so one code cannot
-acquire two severities in two places. `rawBytes` is a copy rather than a view, because a diagnostic
-outlives the read that produced it and an I/O adapter is free to reuse its buffer.
+`severity` is derived from the code rather than passed in at the reporting site, so one code can't
+acquire two severities in two places. `rawBytes` is a copy rather than a view. A diagnostic
+outlives the read that produced it, and an I/O adapter is free to reuse its buffer.
 
-`specReference` is a spec clause and not a claim about how another library behaves — the first is
-verifiable and stable, the second is neither.
+`specReference` names a spec clause rather than the behaviour of another library.
 
 ## Reading a report
 
-`formatDiagnostics` lays an array out for a human. It adds structure and invents no wording, since
-the message contract already covers the substance:
+`formatDiagnostics` lays an array out for a human. It adds structure and no wording of its own,
+since the message contract already covers the substance:
 
 ```ts
 import { formatDiagnostics } from 'edfcore';
@@ -95,8 +93,8 @@ minimum". Next: decodeDigital() still works on this signal; edfcore will not inv
   spec: EDF+ additional specification 5
 ```
 
-The output is deterministic — no locale-sensitive formatting, no ANSI escapes unless you ask —
-so it is safe to snapshot in a test. It takes two options:
+The output is deterministic (no locale-sensitive formatting, no ANSI escapes unless you ask), so
+it's safe to snapshot in a test. It takes two options:
 
 ```ts
 formatDiagnostics(diagnostics, { color: true, maxItems: 20 });
@@ -133,7 +131,7 @@ The error carries the whole `diagnostic` it would otherwise have recorded, so no
 throwing. The order the checks run in is pinned and tested, which is what makes the error identity
 stable across refactors of the parser.
 
-`strict` is part of `ParseOptions`, so it is accepted by the calls that interpret the file:
+`strict` is part of `ParseOptions`, so it's accepted by the calls that interpret the file:
 
 | accepts `strict` | does not |
 |---|---|
@@ -141,18 +139,16 @@ stable across refactors of the parser.
 | `readAnnotations`, `decodeAnnotations` | `inspectEdf` |
 | `buildRecordIndex` | `readRecordBytes`, `decodeDigital` |
 
-The omissions are deliberate. `readRecords` and `readWindow` decode the annotation regions of the
-records they read, and a read that threw over an impolite TAL in a *different* channel would return
-no samples at all; those defects land on `chunk.diagnostics` next to the data they were found
-beside. `inspectEdf` is triage, and a triage call that stopped at the first bad field would be
-useless for exactly the files it exists to describe.
+`readRecords` and `readWindow` decode the annotation regions of the records they read, and those
+defects land on `chunk.diagnostics` next to the data they were found beside. `inspectEdf` is
+triage, and it has to describe exactly the files whose fields are bad.
 
 > **Warning**
 > `strict` is genuinely strict, and almost no real file survives it. The 8-byte header date field
 > holds a two-digit year by construction, so nearly every EDF file emits
-> `DATE_CLIPPED_TO_1985_2084` — including fully conformant EDF+ files that also spell the year out
-> in four digits in the recording identification. Use `strict` as an ingest gate when you want to
-> reject anything impolite, not as a default for reading.
+> `DATE_CLIPPED_TO_1985_2084`. That includes fully conformant EDF+ files that also spell the year
+> out in four digits in the recording identification. Use `strict` as an ingest gate, not as a
+> default for reading.
 
 ## Codes that always throw
 
@@ -162,11 +158,10 @@ Four dispositions decide what a code does when it fires:
 |---|---|---|
 | fatal | `error` | always throws, whether or not `strict` is set |
 | deferred | `error` | recorded; `signal.scale` becomes `undefined` and `toPhysical` throws |
-| warning | `warning` | recorded; the file is impolite and what you got back is true |
+| warning | `warning` | recorded; the file deviates from the spec and what you got back is accurate |
 | info | `info` | recorded; the file is correct and the situation surprises people |
 
-Eight codes are always fatal. In each case, continuing would mean inventing the thing that is
-missing:
+Eight codes are always fatal. In each case the missing information has no substitute:
 
 | code | why nothing can be substituted |
 |---|---|
@@ -176,17 +171,16 @@ missing:
 | `NUMERIC_FIELD_INVALID` | a field the file geometry depends on failed its grammar end to end |
 | `COMMA_DECIMAL_SEPARATOR` | `'0,5'` and `'1,024'` are indistinguishable; guessing turns 1024 into 1.024 |
 | `RECORD_SIZE_ZERO` | every signal declares 0 samples per record, so records have no size to step by |
-| `EDFPLUS_WITHOUT_ANNOTATION_SIGNAL` | an EDF+ marker with no annotations signal: no per-record timing exists, so any time reported would be invented |
+| `EDFPLUS_WITHOUT_ANNOTATION_SIGNAL` | an EDF+ marker with no annotations signal: no per-record timing exists |
 | `TIMELINE_NOT_MONOTONIC` | record onsets went backwards; every time-based answer for the file would be wrong |
 
-All eight throw `EdfFormatError` with the matching `code`. `strict: false` does not soften them,
-because an option that let you opt into invented data would defeat the point of the library.
+All eight throw `EdfFormatError` with the matching `code`. `strict: false` does not soften them.
 
 `TIMELINE_NOT_MONOTONIC` is the one that fires late, and only where a violating pair is actually
 observed. `openEdf` sees the two probes; `locate` sees the pairs its binary search touches;
 `readRecords` sees the records in the chunk; `buildRecordIndex` and `validateRecording` see every
 pair in the file. A file whose only violation sits between the two probes therefore opens fine and
-throws when you read across it — which is honest, since edfcore did not look until then.
+throws when you read across it.
 
 ## The deferred group
 
@@ -199,9 +193,8 @@ Four codes mean the header parsed but one signal cannot be scaled:
 | `INVERTED_DIGITAL_RANGE` | `digitalMinimum > digitalMaximum`, which has no sanctioned meaning |
 | `LOG_TRANSFORMED_CHANNEL` | the physical dimension is exactly `Filtered`: values are log-compressed, so the linear map would be wrong by orders of magnitude |
 
-Their severity is `error`, but they do not throw at parse time. The file is readable, the other
-signals are unaffected, and refusing the whole recording over one channel would be the wrong trade.
-Instead the failure is deferred to the exact call that cannot be answered:
+Their severity is `error`, but they do not throw at parse time. The file is readable and the other
+signals are unaffected. The failure is deferred to the exact call that cannot be answered:
 
 ```ts
 const temp = recording.header.signals[1];
@@ -219,17 +212,15 @@ toPhysical(temp, chunk.signals[0].digital);
 // for it. ... Next: decodeDigital() still works on this signal; edfcore will not invent a gain.
 ```
 
-The failure lands where the missing information actually matters. `signal.scale` is
-`EdfScale | undefined`, so under `strictNullChecks` the compiler makes you deal with it before you
-ever reach the throw. The reference C implementation quietly substitutes a gain of 1 here and hands
-back ADC counts labelled as microvolts; that is the specific outcome this design exists to prevent.
-See [physical values](/docs/physical-values) for the rest of the scaling story.
+`signal.scale` is `EdfScale | undefined`, so under `strictNullChecks` the compiler makes you deal
+with it before you ever reach the throw. The reference C implementation substitutes a gain of 1
+here and returns ADC counts labelled as microvolts. See
+[physical values](/docs/physical-values) for the rest of the scaling story.
 
 `EdfScalingError` carries `code`, `signalIndex` and `label`. The code it reports is re-derived from
-the signal in the same fixed order the header used, so it names the same cause the header
-recorded. A signal with no scale that matches none of the four conditions reports
-`SCALE_UNAVAILABLE` rather than the nearest-looking code — naming the wrong cause is worse than
-admitting the cause is not on hand.
+the signal in the same fixed order the header used, so it names the same cause the header recorded.
+A signal with no scale that matches none of the four conditions reports `SCALE_UNAVAILABLE` rather
+than the nearest-looking code.
 
 ## Warnings and info
 
@@ -246,16 +237,16 @@ they are about:
 | I/O | `SOURCE_SHORT_READ_RECOVERED`, `HTTP_RANGE_IGNORED` |
 
 Two codes are `info`, meaning the file is correct and the note exists only because the situation
-surprises people. `INVERTED_PHYSICAL_RANGE` is a physical minimum above the physical maximum, which
-encodes a negative amplifier gain and is sanctioned by the EDF FAQ — edfcore never "fixes" it,
-because swapping the two is a silent polarity flip. `NEGATIVE_ANNOTATION_ONSET` is a pre-stimulus
-event, which is how EDF+ writes one.
+surprises people. `INVERTED_PHYSICAL_RANGE` is a physical minimum above the physical maximum. It
+encodes a negative amplifier gain and is sanctioned by the EDF FAQ, and edfcore leaves the two as
+written, because swapping them flips polarity. `NEGATIVE_ANNOTATION_ONSET` is a pre-stimulus event,
+which is how EDF+ writes one.
 
-Diagnostic volume is bounded on purpose. A code is repeated only when another occurrence carries
-information available nowhere else: `TIMEKEEPING_TAL_MISSING` names a record whose onset had to be
-derived, so it is reported per record, while `NEGATIVE_ANNOTATION_ONSET` is a property of the
-writer and is reported once per call. Defects inside a single annotation region are deduplicated
-and carry an occurrence count, because a corrupt region can hold thousands of malformed TALs.
+Diagnostic volume is bounded. A code is repeated only when another occurrence carries information
+available nowhere else. `TIMEKEEPING_TAL_MISSING` names a record whose onset had to be derived, so
+it's reported per record. `NEGATIVE_ANNOTATION_ONSET` is a property of the writer and is reported
+once per call. Defects inside a single annotation region are deduplicated and carry an occurrence
+count, because a corrupt region can hold thousands of malformed TALs.
 
 ### The code union is open
 
@@ -265,13 +256,12 @@ type EdfDiagnosticCode = EdfKnownDiagnosticCode | (string & {});
 
 Known codes autocomplete, and a `default` branch in your `switch` stays mandatory, so a code added
 in a later minor release cannot break exhaustive handling. Codes outside the core vocabulary
-already exist: `INSPECTION_FAILED` and `HEADER_EXCEEDS_INSPECTION_BUDGET` from `inspectEdf`,
-`SCALE_UNAVAILABLE` from `toPhysical`, and `LABEL_CONVENTION_NONCONFORMANT`,
-`PREFILTERING_NONCONFORMANT`, `TRANSDUCER_TYPE_BLANK` and `DATE_IMPLAUSIBLE` from
-`edfcore/validate`. An unrecognised code is treated as a warning — an unknown note must never
-escalate.
+already exist. `inspectEdf` adds `INSPECTION_FAILED` and `HEADER_EXCEEDS_INSPECTION_BUDGET`,
+`toPhysical` adds `SCALE_UNAVAILABLE`, and `edfcore/validate` adds
+`LABEL_CONVENTION_NONCONFORMANT`, `PREFILTERING_NONCONFORMANT`, `TRANSDUCER_TYPE_BLANK` and
+`DATE_IMPLAUSIBLE`. An unrecognised code is treated as a warning.
 
-## Errors, and why `instanceof` is not the test
+## Error classes
 
 Seven error classes across six kinds, all extending an abstract `EdfError`:
 
@@ -281,7 +271,7 @@ Seven error classes across six kinds, all extending an abstract `EdfError`:
 | `EdfScalingError` | `'scaling'` | physical units are undefined for a signal |
 | `EdfRangeError` | `'range'` | you asked for records that do not exist |
 | `EdfSourceError` | `'source'` | a `ByteSource` returned a different number of bytes than asked |
-| `EdfBudgetError` | `'budget'` | an allocation was refused before it happened |
+| `EdfBudgetError` | `'budget'` | an allocation was rejected before it happened |
 | `EdfAmbiguousChannelError`, `EdfChannelNotFoundError` | `'channel'` | a label matched several signals, or none |
 
 Each carries the context for its own failure: `EdfRangeError` has `requested` and `available`,
@@ -309,22 +299,21 @@ try {
 
 `instanceof` compares constructor identity, and constructor identity is per-realm. An error thrown
 inside a worker or an iframe and passed out fails `instanceof EdfFormatError` in the receiving
-context even though it is one, and so does an error from a second copy of edfcore that a
-dependency pulled into the tree. `edfErrorKind` is a string on the object, so it survives all
-three. `isEdfError(value)` is the single spelling of that check — it tests for a string
-`edfErrorKind` and nothing else.
+context even though it is one. So does an error from a second copy of edfcore that a dependency
+pulled into the tree. `edfErrorKind` is a string on the object, so it survives all three.
+`isEdfError(value)` is the single spelling of that check. It tests for a string `edfErrorKind` and
+nothing else.
 
 > **Note**
-> Not everything edfcore throws is an `EdfError`. Passing a data signal to `readAnnotations`,
-> passing an annotations signal to `readRecords`, or asking a probed index to map a time window on
-> a file that has a gap all throw a plain `RangeError`, and `isEdfError` returns `false` for them.
-> That boundary is deliberate: an `EdfError` says something about the file, and those three say
-> something about the call.
+> Not everything edfcore throws is an `EdfError`, and `isEdfError` returns `false` for those.
+> Passing a data signal to `readAnnotations` throws a plain `RangeError`. So does passing an
+> annotations signal to `readRecords`, or asking a probed index to map a time window on a file that
+> has a gap. An `EdfError` says something about the file; those three say something about the call.
 
-## `inspectEdf` never throws about content
+## `inspectEdf`
 
-For an unfamiliar file — a directory of them, a user upload, anything you did not write yourself —
-`inspectEdf` is the first call:
+`inspectEdf` does not throw about the content of a file. For an unfamiliar file (a directory of
+them, a user upload, anything you didn't write yourself), it's the first call:
 
 ```ts
 import { inspectEdf, formatDiagnostics } from 'edfcore';
@@ -341,9 +330,9 @@ inspection.headerBytes; // the bytes it looked at, for a hexdump
 console.log(formatDiagnostics(inspection.diagnostics));
 ```
 
-It reads at most 128 KiB — exactly `256 × 512`, the full header of a 511-signal file — and a
-malformed file comes back as `ok: false` plus the diagnostic that would otherwise have been thrown,
-byte offset and raw bytes intact. There is no wrapping `try`/`catch` to write per file.
+It reads at most 128 KiB (exactly `256 × 512`, the full header of a 511-signal file). A malformed
+file comes back as `ok: false` plus the diagnostic that would otherwise have been thrown, with byte
+offset and raw bytes intact. There's no wrapping `try`/`catch` to write per file.
 
 ```ts
 // A file that is not an EDF at all — a gzip, a vendor container, a truncated download.
@@ -354,21 +343,19 @@ bad.variant;             // undefined
 bad.diagnostics[0].code; // 'NOT_AN_EDF_FILE'
 ```
 
-The `variant` is a separate best effort: the version block and the reserved field are the first 8
-and 44 bytes of the header and stay readable long after everything else has stopped making sense,
-so a file whose signal count is garbage can still be reported as `'BDF'` rather than as nothing at
+The `variant` is a separate best effort. The version block and the reserved field are the first 8
+and 44 bytes of the header, and they stay readable long after everything else has stopped making
+sense. A file whose signal count is garbage is still reported as `'BDF'` rather than as nothing at
 all.
 
-`ok` is true only when the header parsed *and* carried no error-severity diagnostic — a signal
-whose scale was refused makes `ok` false even though the header itself is perfectly readable,
-because physical units are genuinely unavailable for that channel. Warnings leave `ok` true: the
-file is impolite, and what is reported about it is still true.
+`ok` is true only when the header parsed *and* carried no error-severity diagnostic. A signal whose
+scale is unavailable makes `ok` false even though the header itself is readable, since physical
+units are genuinely unavailable for that channel. Warnings leave `ok` true, and what's reported
+about the file is still accurate.
 
-Two boundaries keep the promise honest. Only an `EdfError` is converted; anything else is a bug in
-edfcore and is rethrown, because swallowing it would turn "this file is broken" into a claim that
-cannot be supported. And the reads happen outside the `catch`, so a dead socket or a file that
-vanished still rejects — `inspectEdf` promises not to throw about *content*, and never promised to
-hide I/O.
+Two boundaries bound that promise. Only an `EdfError` is converted, and anything else is a bug in
+edfcore and is rethrown. The reads happen outside the `catch`, so a dead socket or a file that
+vanished still rejects. `inspectEdf` does not throw about *content*, and it does not hide I/O.
 
 A header larger than the 128 KiB ceiling is reported as `HEADER_EXCEEDS_INSPECTION_BUDGET` rather
 than half-parsed; `readHeader` and `openEdf` read the whole header however large it is.
@@ -376,8 +363,8 @@ than half-parsed; `readHeader` and `openEdf` read the whole header however large
 ## Going further
 
 [`edfcore/validate`](/docs/validation) is a separate entry point holding the checks that do not
-affect a single byte offset — label conventions, prefiltering syntax, implausible dates, segment
-structure — plus a full-file sweep that reports how much of the file it actually looked at:
+affect a single byte offset (label conventions, prefiltering syntax, implausible dates, segment
+structure). It also holds a full-file sweep that reports how much of the file it actually read:
 
 ```ts
 import { validateRecording } from 'edfcore/validate';
@@ -391,21 +378,20 @@ report.signalStats;     // observed digital min/max per signal, and out-of-range
 report.diagnostics;     // header parse + header conformance + timeline + traversal
 ```
 
-A sweep with `scanSamples: false` over a file whose onsets are already known — you passed a
-complete `index`, or the file is a plain EDF whose onsets are arithmetic — reads nothing at all,
-and `recordsScanned` and `bytesRead` come back as `0` to say so.
+A sweep with `scanSamples: false` reads nothing at all when the onsets are already known. That
+covers a complete `index` you passed in, and a plain EDF whose onsets are arithmetic.
+`recordsScanned` and `bytesRead` come back as `0` to say so.
 
-It gathers everything known about the recording into one array and leaves duplicates in, because
-deduplicating would silently drop the second of two genuinely different occurrences of the same
-code.
+It gathers everything known about the recording into one array and leaves duplicates in. Two
+genuinely different occurrences of the same code are both reported.
 
 ## Where to go next
 
-- [Physical values](/docs/physical-values) — the deferred group in full, and what happens to
-  `toPhysical` when a header refuses to define a gain.
-- [Annotations](/docs/annotations) — the TAL and timekeeping codes, and what each one means for the
+- [Physical values](/docs/physical-values): the deferred group in full, and what happens to
+  `toPhysical` when a header does not define a gain.
+- [Annotations](/docs/annotations): the TAL and timekeeping codes, and what each one means for the
   events you get back.
-- [Discontinuous recordings](/docs/discontinuous) — `DISCONTINUITY_IN_CONTINUOUS_FILE`,
+- [Discontinuous recordings](/docs/discontinuous): `DISCONTINUITY_IN_CONTINUOUS_FILE`,
   `TIMELINE_NOT_MONOTONIC`, and the traversal that finds them.
-- [Validation](/docs/validation) — the conformance checks that live outside the read path, and
-  what a full sweep costs.
+- [Validation](/docs/validation): the conformance checks that live outside the read path, and what
+  a full sweep costs.

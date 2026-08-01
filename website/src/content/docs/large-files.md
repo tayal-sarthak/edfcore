@@ -1,12 +1,12 @@
 ---
 title: Large files
-description: What every call costs in reads and bytes, why openEdf never scans, and how the allocation budget and the optional cache behave on multi-hour recordings.
+description: What every call costs in reads and bytes, and how the allocation budget and the optional cache behave on multi-hour recordings.
 section: "Guides"
 order: 3
-lead: A sleep study is hours long and hundreds of megabytes. edfcore is built so that reading ten seconds out of it costs ten seconds' worth of bytes — and so that you can measure the claim yourself rather than take it on faith.
+lead: A sleep study is hours long and hundreds of megabytes. Reading ten seconds out of it costs ten seconds' worth of bytes, and this page shows how to measure that for yourself.
 ---
 
-## Opening a file never reads the file
+## The cost of opening a file
 
 `openEdf` parses the header and, on EDF+ and BDF+, probes two records for their timekeeping
 onsets. That is the entire cost, whatever the file size.
@@ -19,22 +19,20 @@ onsets. That is the entire cost, whatever the file size.
 | a file with zero records | 2 | header only |
 
 The header is two reads and never more: 256 bytes to learn the signal count, then the remaining
-`256 * signalCount` as a single range. It is never one read per signal block — a 64-signal file
-would be 64 requests over HTTP — and the size is always the computed `256 * (ns + 1)`, never the
-byte-length field the header declares, which files do lie about.
+`256 * signalCount` as a single range. It is never one read per signal block, a pattern that costs
+64 requests over HTTP on a 64-signal file. The size read is always the computed `256 * (ns + 1)`,
+not the byte-length field the header declares, which files get wrong.
 
-The two extra reads on EDF+ are records 0 and *n*−1. They are what detects any net drift of the
-timeline for two reads instead of a traversal. They are not a proof of contiguity, and edfcore
-does not pretend otherwise: `recording.index.coverage` stays `'probed'`, and
-`index.segments` and `index.gaps` stay `undefined`, because no property on that object is allowed
-to read as "the recording is continuous" before anything has checked.
+The two extra reads on EDF+ are records 0 and *n*−1. They detect any net drift of the timeline for
+two reads instead of a traversal. They are not a proof of contiguity:
+`recording.index.coverage` stays `'probed'`, and `index.segments` and `index.gaps` stay
+`undefined` until something checks.
 
 A plain EDF or BDF is probed zero times. Without an annotation signal there are no per-record
-onsets stored on disk at all, so record *r* starts at `r * recordDuration` by definition, and
-reading data would answer a question the bytes do not contain.
+onsets stored on disk at all, so record *r* starts at `r * recordDuration` by definition.
 
-Measured on a 29,925,760-byte EDF+C — 8 channels at 256 Hz, 7,200 one-second records, 4,156-byte
-records:
+Measured on a 29,925,760-byte EDF+C (8 channels at 256 Hz, 7,200 one-second records, 4,156-byte
+records):
 
 ```
 open reads: { offset: 0, length: 256 }
@@ -48,8 +46,8 @@ total: 10,872 bytes = 0.036 % of the file
 
 After the header, every read edfcore issues is one contiguous range covering **all** signals over
 a range of records. `readWindow` resolves the window to record ranges and issues one read per
-contiguous run; `readRecords` issues exactly one. A zero-record range issues none at all — a
-zero-length HTTP range is not even expressible.
+contiguous run. `readRecords` issues exactly one. A zero-record range issues none at all, since a
+zero-length HTTP range is not expressible.
 
 ### Measure it yourself
 
@@ -92,22 +90,21 @@ await readWindow(recording, {
 console.log(reads, reads.reduce((total, r) => total + r.length, 0));
 ```
 
-On an eight-hour, 30-channel, 256 Hz EDF — 28,800 one-second records, 15,360 bytes each,
-442,375,936 bytes in total — that program prints:
+On an eight-hour, 30-channel, 256 Hz EDF (28,800 one-second records, 15,360 bytes each,
+442,375,936 bytes in total) that program prints:
 
 ```
 [ { offset: 221191936, length: 153600 } ]  153600
 ```
 
 One read. 153,600 bytes out of 442,375,936, which is 0.035 % of the file. The highest byte the
-read touches is 221,345,535, and the file's last byte is 442,375,935 — the far end of the
-recording is never addressed at all, which is the thing a whole-file reader cannot avoid doing.
-Opening the file first cost 7,936 bytes, or 0.0018 %.
+read touches is 221,345,535, and the file's last byte is 442,375,935. The far end of the recording
+is never addressed at all. Opening the file first cost 7,936 bytes, or 0.0018 %.
 
 The window's position does not change the price: ten seconds at the end costs the same one read
-as ten seconds at the start. This is random access, not a scan with a clever stopping condition.
+as ten seconds at the start.
 
-### One channel is not cheaper than thirty
+### One channel costs the same as thirty
 
 Ask for `signalIndices: [0]` over that same window and the read is byte-for-byte identical:
 
@@ -116,13 +113,12 @@ Ask for `signalIndices: [0]` over that same window and the read is byte-for-byte
 ```
 
 EDF interleaves every channel inside each record, so one channel's samples are a stripe repeated
-every 15,360 bytes. There is no byte range that holds them and nothing else. The alternative is
-one small read per record to collect the stripes: for this window that is ten requests of 512
-bytes instead of one of 153,600, and for a one-minute window it is sixty. Fewer bytes, far more
-round trips, and over HTTP that trade is a loss at almost any window size. edfcore takes the
-single contiguous read and says how big it was.
+every 15,360 bytes. No byte range holds them and nothing else. The alternative is one small read
+per record to collect the stripes: for this window that is ten requests of 512 bytes instead of
+one of 153,600, and for a one-minute window it is sixty. That's fewer bytes and far more round
+trips. edfcore takes the single contiguous read and reports how big it was.
 
-edfcore does not hide the arithmetic:
+Both numbers are on the chunk:
 
 ```ts
 const [chunk] = await readWindow(recording, { /* … */ signalIndices: [0] });
@@ -133,7 +129,7 @@ chunk.byteLength;              // 153,600 bytes actually read
 ```
 
 `chunk.byteLength` is the bytes that came off the source. When you want more than one channel,
-name them all in one call — the bytes are already being read.
+name them all in one call. The bytes are already being read.
 
 ## The allocation budget
 
@@ -166,13 +162,11 @@ Reading records { start: 0, count: 28800 } needs a 442368000-byte buffer, above 
 allocated. Next: read fewer records per call, or raise options.maxMaterializeBytes.
 ```
 
-The budget exists because a record range is the one allocation whose size *you* control directly,
-and because decoded output is much larger than the file. For EDF, two bytes on disk become four
-in the `Int32Array` of digital samples and eight in the `Float64Array` of physical values: a
-**4x expansion** to physical. Converting that eight-hour file whole would need 1.6 GiB of
-`Float64Array` for 422 MiB of disk. For BDF the ratio is 8/3, since samples are three bytes on
-disk. A typed error naming both figures is better than an out-of-memory crash with nothing
-attributable in the stack.
+A record range is the one allocation whose size *you* control directly, and decoded output is much
+larger than the file. For EDF, two bytes on disk become four in the `Int32Array` of digital samples
+and eight in the `Float64Array` of physical values: a **4x expansion** to physical. Converting that
+eight-hour file whole needs 1.6 GiB of `Float64Array` for 422 MiB of disk. For BDF the ratio is
+8/3, since samples are three bytes on disk.
 
 There are three allocation points, and each is checked independently against the same budget:
 
@@ -182,28 +176,27 @@ There are three allocation points, and each is checked independently against the
 | `decodeDigital` | `Int32Array` of digital values | 4 |
 | `toPhysical` | `Float64Array` of physical values | 8 |
 
-Passing an `out` array to `decodeDigital` or `toPhysical` skips the allocation, and therefore
-skips the budget check for that stage — which is the intended way to run a viewer that reads
-continuously. `readRecordBytes` has no `out`, so its buffer is always checked.
+Passing an `out` array to `decodeDigital` or `toPhysical` skips the allocation, and with it the
+budget check for that stage. That's how to run a viewer that reads continuously. `readRecordBytes`
+has no `out`, so its buffer is always checked.
 
-Raise the budget when you genuinely want a large read, and lower it when you are running in a
-browser tab and want a typed error instead of a crash:
+Raise the budget when you want a large read. Lower it in a browser tab to get a typed error
+instead of a crash:
 
 ```ts
 await readRecords(recording, selection, { maxMaterializeBytes: 16 * 1024 * 1024 });
 ```
 
-`buildRecordIndex`, the one call in edfcore that does traverse the whole file, treats the budget
-as a chunk size rather than a ceiling: it reads `floor(budget / recordByteLength)` records at a
-time, capped at a 4 MiB working set whatever the budget says, so memory stays flat however large
-the file is. It reports progress through `onProgress(done, total)` — the one operation here whose
-cost is proportional to the file deserves a progress bar.
+`buildRecordIndex` is the one call in edfcore that does traverse the whole file, and it treats the
+budget as a chunk size rather than a ceiling. It reads `floor(budget / recordByteLength)` records
+at a time, capped at a 4 MiB working set whatever the budget says, so memory stays flat however
+large the file is. It reports progress through `onProgress(done, total)`.
 
 ## `cachedSource`
 
-`cachedSource` wraps any `ByteSource` in a block-aligned LRU. It is the only cache of file bytes
-in edfcore, it is opt-in, it is visible at the call site, and you remove it by deleting one
-wrapper from the expression that built the source.
+`cachedSource` wraps any `ByteSource` in a block-aligned LRU. It's the only cache of file bytes in
+edfcore and it's opt-in. Remove it by deleting one wrapper from the expression that built the
+source.
 
 ```ts
 import { cachedSource, httpSource, openEdf } from 'edfcore';
@@ -219,7 +212,7 @@ record-aligned: the cache never sees a header, so there is no record size for it
 Round `blockBytes` to a multiple of `header.recordByteLength` yourself if you want block
 boundaries to fall on record boundaries.
 
-### What it changes, and what it does not
+### Scrolling with the cache in place
 
 Scrolling through 300 seconds of that 8-channel EDF+C in thirty consecutive ten-second windows,
 two channels at a time:
@@ -229,28 +222,25 @@ two channels at a time:
 | bare source | 30 | 1,246,800 |
 | `cachedSource`, 1 MiB blocks | 1 | 1,048,576 |
 
-Thirty requests become one, and the samples are identical — comparing every decoded value from
-both runs gives an exact match. That is the property to hold on to: **removing `cachedSource`
-changes the results not at all, only the number of reads.** If a bug appears while the cache is
-in place, delete the wrapper; if the bug survives, the cache was not involved.
+Thirty requests become one, and the samples are identical. Comparing every decoded value from both
+runs gives an exact match. **Removing `cachedSource` changes the number of reads and nothing
+else.** If a bug appears while the cache is in place, delete the wrapper. If the bug survives, the
+cache wasn't involved.
 
 The single read is the second 1 MiB block. The first was already resident because the header read
-at open pulled it in, which is the other thing a cache does for you here: the reads that come
-with opening a file are not wasted.
+at open pulled it in, so the reads that come with opening a file are not wasted.
 
-Two more guarantees are worth knowing. A cached read returns a **copy**, never a view into a
-retained block, so a caller who writes into the array it was handed cannot corrupt what the next
-reader sees. And concurrent reads that want the same block issue one underlying read between
-them — over HTTP the difference between one request and eight is the difference between usable
-and not.
+A cached read returns a **copy**, never a view into a retained block. A caller who writes into the
+array it was handed can't corrupt what the next reader sees. Concurrent reads that want the same
+block issue one underlying read between them.
 
 Reads larger than the whole LRU budget bypass the cache entirely rather than evicting every block
 on their way through.
 
 > **Note**
 > `cachedSource` caches bytes. The record index separately memoises record onsets it has already
-> decoded, which is why `index.locate()` costs O(log recordCount) reads the first time and close
-> to none for a nearby second call. Those are the only two forms of memory in the library.
+> decoded. `index.locate()` therefore costs O(log recordCount) reads the first time, and close to
+> none for a nearby second call. Those are the only two forms of memory in the library.
 
 ## Advice for a scrolling viewer
 
@@ -277,20 +267,20 @@ already reading.
 into it, so a viewer redrawing at 60 Hz can allocate once at startup. An oversized `out` is
 narrowed with `subarray`, which shares memory, so `result.length` is still the true sample count.
 
-**Wrap the source in `cachedSource` when it is remote.** Over HTTP, `httpSource` also takes
-`maxConcurrency`; concurrency belongs to the source, not to `readWindow`, which issues its runs
-one after another so the read pattern you observe is the one it asked for.
+**Wrap the source in `cachedSource` when it's remote.** Over HTTP, `httpSource` also takes
+`maxConcurrency`. Concurrency belongs to the source. `readWindow` issues its runs one after
+another, so the read pattern you observe is the one it asked for.
 
 **Build a complete index only when you need gaps located.** On a continuous file the probed index
-`openEdf` gives you already answers every window; on EDF+D it is the price of asking where the
-gaps are, and it is the only price in the library proportional to the file.
+`openEdf` gives you already answers every window. On EDF+D it is the price of asking where the
+gaps are, and it's the only price in the library proportional to the file.
 
 ## Where to go next
 
-- [Reading signals](/docs/reading-signals) — record ranges, chunk anatomy, and `trimToWindow`.
-- [Physical values](/docs/physical-values) — the 4x expansion the budget exists to guard, and
-  when conversion refuses.
-- [Data sources](/docs/data-sources) — the adapters, the `ByteSource` contract, and writing your
+- [Reading signals](/docs/reading-signals): record ranges, chunk anatomy, and `trimToWindow`.
+- [Physical values](/docs/physical-values): the 4x expansion the budget exists to guard, and when
+  conversion throws.
+- [Data sources](/docs/data-sources): the adapters, the `ByteSource` contract, and writing your
   own.
-- [Discontinuous recordings](/docs/discontinuous) — what `buildRecordIndex` buys and when you
-  need it.
+- [Discontinuous recordings](/docs/discontinuous): what `buildRecordIndex` buys and when you need
+  it.

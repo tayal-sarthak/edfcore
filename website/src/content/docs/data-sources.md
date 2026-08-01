@@ -1,9 +1,9 @@
 ---
 title: Data sources
-description: How bytes reach edfcore — the ByteSource contract, the adapters for memory, files, blobs and HTTP, and how to write your own.
+description: The ByteSource contract, the adapters for memory, files, blobs and HTTP, and how to write your own.
 section: Guides
 order: 7
-lead: edfcore never opens a file itself. Every entry point that reads a recording takes a ByteSource, so the same code path serves a local file, an object store, a drag-and-dropped File and a URL served over HTTP Range.
+lead: edfcore never opens a file itself. Every entry point that reads a recording takes a ByteSource. The same code path serves a local file, an object store, a drag-and-dropped File and a URL over HTTP Range.
 ---
 
 ## Start here
@@ -23,7 +23,7 @@ try {
 }
 ```
 
-Nothing above is specific to the filesystem. Replace `fileSource` with `blobSource(file)` and the same code runs in a browser tab; replace it with `httpSource(url)` and it runs against a 13 GiB recording on a CDN, reading only the parts you ask for.
+Nothing above is specific to the filesystem. Replace `fileSource` with `blobSource(file)` and the same code runs in a browser tab. Replace it with `httpSource(url)` and it runs against a 13 GiB recording on a CDN, reading only the parts you ask for.
 
 ## The interface
 
@@ -37,7 +37,7 @@ interface ByteSource {
 }
 ```
 
-`byteLength` is the size of the whole resource in bytes, and it has to be known before the first read. EDF addresses everything by absolute byte offset — record `r` begins at `headerByteLength + r * recordByteLength` — so a source that does not know how far it extends cannot say whether an offset is addressable. edfcore also uses it to recover the record count when the header field reads `-1`, which is what a writer leaves behind when it never closed the file.
+`byteLength` is the size of the whole resource in bytes, and it has to be known before the first read. EDF addresses everything by absolute byte offset (record `r` begins at `headerByteLength + r * recordByteLength`). A source that doesn't know how far it extends can't say whether an offset is addressable. edfcore also uses `byteLength` to recover the record count when the header field reads `-1`, which is what a writer leaves behind when it never closed the file.
 
 `read` returns the bytes at `[offset, offset + length)`. Offsets are plain JavaScript numbers, exact to 2^53, so a source over a multi-gigabyte BDF needs no special handling. The returned array belongs to the caller: an implementation that retains state must hand back a copy, never a view into a buffer it will reuse.
 
@@ -48,7 +48,7 @@ interface ByteSource {
 > **Warning**
 > A read resolves with exactly `length` bytes or rejects. It never pads, and it never truncates.
 
-edfcore checks this on every call, including calls into a source you wrote, because neither way of breaking it announces itself. A source that quietly returns a short buffer is indistinguishable from a truncated file: without the guard, the likeliest outcome of one hiccuping socket is a confident `TRUNCATED_FILE` diagnostic about a perfectly good recording, and a bug hunt in the wrong file. Padding is worse. Zero is a valid sample value, so a padded read decodes into a flat line — plausible, wrong, and reported by nobody.
+edfcore checks the length on every call, including calls into a source you wrote. A short buffer is indistinguishable from a truncated file, so one hiccuping socket turns into a `TRUNCATED_FILE` diagnostic about a good recording. Zero is a valid sample value, so a padded read decodes into a flat line.
 
 A violation raises `EdfSourceError` with the real numbers on it.
 
@@ -88,7 +88,7 @@ arrived, and reject if they never do.
 
 `EdfSourceError` also covers ranges a source cannot serve: a negative or non-integer offset, and a range that ends past `byteLength`. Discriminate it with `error.edfErrorKind === 'source'` rather than `instanceof`, which is false across a worker or iframe boundary.
 
-## byteSource — bytes you already have
+## byteSource: bytes you already have
 
 ```ts
 import { byteSource, openEdf } from 'edfcore';
@@ -97,9 +97,9 @@ const bytes = new Uint8Array(await (await fetch('/night.edf')).arrayBuffer());
 const recording = await openEdf(byteSource(bytes));
 ```
 
-`byteSource` accepts a `Uint8Array` or an `ArrayBuffer`, and reads are zero-copy: each one returns a `subarray` view over your own buffer. That is safe precisely because the buffer is yours — the ownership rule exists to stop an adapter handing out a view into state it retains, and this adapter retains nothing you do not already hold.
+`byteSource` accepts a `Uint8Array` or an `ArrayBuffer`, and reads are zero-copy: each one returns a `subarray` view over your own buffer. The ownership rule stops an adapter handing out a view into state it retains, and this adapter retains nothing you don't already hold.
 
-A `Uint8Array` with a non-zero `byteOffset` is respected. Offset 0 of the source is the first byte of the view, not the first byte of the underlying `ArrayBuffer`, so a recording embedded in a larger container needs no offset arithmetic at the call site.
+A `Uint8Array` with a non-zero `byteOffset` is respected. Offset 0 of the source is the first byte of the view, not the first byte of the underlying `ArrayBuffer`. A recording embedded in a larger container needs no offset arithmetic at the call site.
 
 ```ts
 // A 16-byte envelope, then the EDF file.
@@ -107,7 +107,7 @@ const view = envelope.subarray(16);
 const recording = await openEdf(byteSource(view));
 ```
 
-## blobSource — a browser File or Blob
+## blobSource: a browser File or Blob
 
 ```ts
 import { blobSource, openEdf } from 'edfcore';
@@ -122,15 +122,15 @@ input.addEventListener('change', async () => {
 });
 ```
 
-Nothing is loaded into memory here. `blobSource` slices the blob per read, so opening a 2 GiB file picked from disk reads its header — plus two small probes if the file is EDF+ — and stops there.
+Nothing is loaded into memory here. `blobSource` slices the blob per read. Opening a 2 GiB file picked from disk reads its header (plus two small probes if the file is EDF+) and stops there.
 
-edfcore never names the DOM `Blob`. The parameter type is `BlobLike`, a structural interface declaring exactly `size`, `slice` and `arrayBuffer`, which is why the published type definitions carry no dependency on the DOM library and still accept a real `File` with no cast. It also means anything with those three members works: an OPFS handle wrapper, a test double, a `Blob` from Node's global.
+edfcore never names the DOM `Blob`. The parameter type is `BlobLike`, a structural interface declaring exactly `size`, `slice` and `arrayBuffer`. The published type definitions therefore carry no dependency on the DOM library and still accept a real `File` with no cast. Anything with those three members works: an OPFS handle wrapper, a test double, a `Blob` from Node's global.
 
-A `Blob` read is the one place where the platform may legitimately return fewer bytes than asked — a `File` whose backing file changed on disk since the picker ran — so the exact-length contract is verified rather than assumed, and you get an `EdfSourceError` instead of shifted samples.
+A `Blob` read is the one place where the platform may legitimately return fewer bytes than asked. That happens when a `File`'s backing file changed on disk since the picker ran. The exact-length contract is verified rather than assumed, so you get an `EdfSourceError` instead of shifted samples.
 
-## fileSource and fileHandleSource — Node
+## fileSource and fileHandleSource (Node)
 
-These live in `edfcore/node`, the only module in the package that imports anything from `node:`. Keeping the import in exactly one file is what lets the universal entry point bundle for a browser with no polyfill and no resolver alias.
+These live in `edfcore/node`, the only module in the package that imports anything from `node:`. Keeping the import in exactly one file lets the universal entry point bundle for a browser with no polyfill and no resolver alias.
 
 ```ts
 import { fileSource } from 'edfcore/node';
@@ -149,9 +149,9 @@ try {
 }
 ```
 
-`fileSource` opens the path, takes the size from the handle it now holds rather than from a separate `stat` of the path, and closes the handle if anything fails before you own it. Taking the size from the handle means the size and the bytes describe the same file even if the path is replaced between the two, which on a rotating log or an rsync target is not hypothetical.
+`fileSource` opens the path and takes the size from the handle it now holds, rather than from a separate `stat` of the path. It closes the handle if anything fails before you own it. The size and the bytes then describe the same file even if the path is replaced between the two calls. That happens on a rotating log or an rsync target.
 
-Reads are positional and they loop. `FileHandle.read` is allowed to return fewer bytes than asked — a signal interrupted the syscall, the file lives on a network mount — so the adapter keeps reading until `length` bytes have arrived, and a genuine end of file falls out as an `EdfSourceError` naming both counts. Because reads are positional, the handle's own file position is never used and concurrent reads through one handle cannot interleave into each other's buffers.
+Reads are positional and they loop. `FileHandle.read` is allowed to return fewer bytes than asked (a signal interrupted the syscall, the file lives on a network mount). The adapter keeps reading until `length` bytes have arrived, and a genuine end of file surfaces as an `EdfSourceError` naming both counts. Positional reads never use the handle's own file position, so concurrent reads through one handle can't interleave into each other's buffers.
 
 If you already hold a handle, wrap it and supply the length yourself:
 
@@ -170,12 +170,12 @@ try {
 }
 ```
 
-The length is a parameter rather than something the adapter reads off the handle, because the two ways of learning it promise different things: `fileSource` knows the size of the file it opened, while a caller wrapping an existing handle may know something better — a range it intends to expose, a size it verified. Neither is guessed for you.
+The length is a parameter rather than something the adapter reads off the handle. `fileSource` knows the size of the file it opened. A caller wrapping an existing handle may know something more specific: a range it intends to expose, a size it verified.
 
 > **Warning**
 > Do not reach for `fs.openAsBlob(path)` and pass the result to `blobSource`. It reports `size` modulo 2^32 and yields zeros above 4 GiB, which turns a 13 GB BDF into a file that reads as silence with no error anywhere.
 
-## httpSource — a URL, over Range requests
+## httpSource: a URL over Range requests
 
 ```ts
 import { httpSource, openEdf, readWindow } from 'edfcore';
@@ -190,13 +190,13 @@ const chunks = await readWindow(recording, {
 });
 ```
 
-This is the adapter that makes a 13 GiB BDF openable in a browser tab. Opening an EDF+ file costs five requests — one `HEAD` for the length, two ranges for the header, then two probes of the first and last records for their timestamps — and the 30-second window above costs one more. A plain EDF has no per-record timestamps to probe, so it opens in three. Nothing else is transferred.
+This is the adapter that makes a 13 GiB BDF openable in a browser tab. Opening an EDF+ file costs five requests: one `HEAD` for the length, two ranges for the header, then two probes of the first and last records for their timestamps. The 30-second window above costs one more. A plain EDF has no per-record timestamps to probe, so it opens in three. Nothing else is transferred.
 
-`httpSource` is async, unlike the other adapters, because it has to learn the length before it can serve a read. It tries three things, cheapest first: `options.byteLength` if you passed one, then a `HEAD` request's `Content-Length`, then a one-byte `Range: bytes=0-0` probe and the total in the `Content-Range` reply. A rejected or forbidden `HEAD` is common enough — CORS, some object stores — that it falls through to the probe rather than failing on it. If all three come up empty, `httpSource` rejects with `EdfSourceError`: no byte offset can be addressed, so random access is impossible and pretending otherwise would only move the failure somewhere less obvious.
+`httpSource` is async, unlike the other adapters, because it has to learn the length before it can serve a read. It tries three things, cheapest first: `options.byteLength` if you passed one, then a `HEAD` request's `Content-Length`, then a one-byte `Range: bytes=0-0` probe and the total in the `Content-Range` reply. A rejected or forbidden `HEAD` is common enough (CORS, some object stores) that it falls through to the probe rather than failing on it. If all three come up empty, `httpSource` rejects with `EdfSourceError`. Without a length, no byte offset can be addressed.
 
 ### When the server ignores Range
 
-A `200 OK` answer to a Range request means the server did not honour the header and is sending the whole resource. edfcore refuses that by default:
+A `200 OK` answer to a Range request means the server did not honour the header and is sending the whole resource. edfcore rejects that by default:
 
 ```
 The server answered 200 OK instead of 206 Partial Content for Range bytes=0-0 on
@@ -206,13 +206,13 @@ Next: serve the file from an origin or CDN that supports byte ranges, or pass
 allowFullDownload: true to fetch it once and serve reads from memory.
 ```
 
-Silently buffering gigabytes because a CDN is misconfigured is exactly the cost this library exists to make visible. If you know the file is small, or you have no way to fix the origin, opt in:
+If you know the file is small, or you have no way to fix the origin, opt in:
 
 ```ts
 const source = await httpSource(url, { allowFullDownload: true });
 ```
 
-The body then arrives once, is held in memory, and every later read is served from it as a copy. The refusal happens during the length probe, before a second request is made, so accepting means one download rather than two.
+The body then arrives once, is held in memory, and every later read is served from it as a copy. The check happens during the length probe, before a second request is made, so accepting means one download rather than two.
 
 ### Options
 
@@ -225,7 +225,7 @@ The body then arrives once, is held in memory, and every later read is served fr
 | `allowFullDownload` | `false` | Accept a `200` answer instead of rejecting. |
 | `signal` | — | Handed to `fetch` for the length probe, and for any read that carries no signal of its own. |
 
-`headers` is the hook for authentication, and `fetch` is the hook for everything else — retries, a signed-URL refresher, an instrumented client. Anything matching `FetchLike` works, so a test double needs no network at all:
+`headers` is the hook for authentication, and `fetch` is the hook for everything else: retries, a signed-URL refresher, an instrumented client. Anything matching `FetchLike` works, so a test double needs no network at all:
 
 ```ts
 import { httpSource } from 'edfcore';
@@ -246,11 +246,11 @@ const source = await httpSource(url, {
 });
 ```
 
-`httpSource` accepts a `URL` object as well as a string, or anything else with an `href` property. One detail to know if you ever read the request log rather than write it: an HTTP byte range is inclusive at both ends, so a 512-byte read at offset 256 goes out as `bytes=256-767`.
+`httpSource` accepts a `URL` object as well as a string, or anything else with an `href` property. An HTTP byte range is inclusive at both ends, so a 512-byte read at offset 256 goes out as `bytes=256-767`.
 
-## cachedSource — an LRU over any source
+## cachedSource: an LRU over any source
 
-Every adapter above is thin, and none of them caches. `cachedSource` is the only cache in edfcore: you opt into it, it is visible at the call site, and you remove it by deleting one wrapper.
+None of the adapters above caches. `cachedSource` is the only cache in edfcore. You opt into it, it's visible at the call site, and you remove it by deleting one wrapper.
 
 ```ts
 import { cachedSource, httpSource, openEdf } from 'edfcore';
@@ -262,9 +262,9 @@ const source = cachedSource(await httpSource(url), {
 const recording = await openEdf(source);
 ```
 
-Reads are served out of block-aligned blocks kept in an LRU — 1 MiB blocks and a 64 MiB budget by default. Two properties matter more than the hit rate. A read returns a copy, never a view into a retained block, so a caller who writes into the result cannot corrupt what the next reader sees. And concurrent reads that want the same block issue exactly one underlying read: over HTTP, the difference between one request and eight is the difference between usable and not.
+Reads are served out of block-aligned blocks kept in an LRU (1 MiB blocks and a 64 MiB budget by default). A read returns a copy, never a view into a retained block, so a caller who writes into the result can't corrupt what the next reader sees. Concurrent reads that want the same block issue exactly one underlying read. Over HTTP that is the difference between one request and eight.
 
-Two sizes are clamped rather than left to misbehave. A `blockBytes` wider than `maxBytes` would evict itself on every insert, so it is clamped to the budget. A single read wider than `maxBytes` cannot benefit from the cache and would evict every block on its way through, so it goes straight to the source.
+Two sizes are clamped. A `blockBytes` wider than `maxBytes` is clamped to the budget, since otherwise it evicts itself on every insert. A single read wider than `maxBytes` cannot benefit from the cache, so it goes straight to the source.
 
 Block boundaries are byte-aligned, not record-aligned. The cache is format-independent by construction and never sees a header, so there is no record size for it to align to. If you want block boundaries to fall on record boundaries, read the header first and do the arithmetic yourself:
 
@@ -287,7 +287,7 @@ const recording = await openEdf(source);
 
 If your bytes live somewhere edfcore has no adapter for, implement the interface. The whole job is: know the length, return exactly the bytes asked for, and reject otherwise.
 
-Here is a source over a storage API that hands back a stream per range — the shape most object stores have. The loop is the part that matters: a stream delivers chunks of whatever size it likes, so the read is not done until `length` bytes have arrived, and a stream that ends early is an error rather than a short return.
+Here is a source over a storage API that hands back a stream per range, the shape most object stores have. A stream delivers chunks of whatever size it likes, so the read isn't done until `length` bytes have arrived. A stream that ends early is an error rather than a short return.
 
 ```ts
 import { EdfSourceError } from 'edfcore';
@@ -367,14 +367,14 @@ const recording = await openEdf(source);
 
 Four things to get right, in order of how badly they bite:
 
-1. **Never return a short buffer.** Loop until full, then reject. edfcore checks anyway and will raise `EdfSourceError` on your behalf, but the error it can produce says only that your source misbehaved — yours can say which key, which range, and why.
-2. **Never pad.** Zeros decode as a valid, silent signal.
+1. **Never return a short buffer.** Loop until full, then reject. edfcore checks anyway and raises `EdfSourceError` on your behalf. That error says only that the source returned the wrong length; yours can name the key and the range.
+2. **Never pad.** Zeros decode as a valid, flat signal.
 3. **Return bytes the caller can keep.** If you read into a buffer you reuse, copy before returning.
 4. **Honour `options.signal`.** See below.
 
 ## Cancellation
 
-Every bundled adapter checks `options.signal` before it starts, and again at each point where it resumes after an await — the loop in `fileHandleSource`, the slice in `blobSource`, the request in `httpSource`, the block gather in `cachedSource`. `httpSource` additionally hands the signal to `fetch` when it is a real `AbortSignal`, so an in-flight request is torn down rather than merely ignored. The rejection is a plain `Error` with `name === 'AbortError'`, not an `EdfError`, so `isEdfError` returns false for it and a `catch` that re-throws aborts stays simple.
+Every bundled adapter checks `options.signal` before it starts, and again at each point where it resumes after an await: the loop in `fileHandleSource`, the slice in `blobSource`, the request in `httpSource`, the block gather in `cachedSource`. `httpSource` additionally hands the signal to `fetch` when it's a real `AbortSignal`, so an in-flight request is torn down rather than merely ignored. The rejection is a plain `Error` with `name === 'AbortError'`, not an `EdfError`. `isEdfError` returns false for it, so a `catch` that re-throws aborts stays simple.
 
 ```ts
 const controller = new AbortController();
@@ -388,13 +388,13 @@ const chunks = await readWindow(
 ```
 
 > **Warning**
-> Cancellation lives entirely in the source. edfcore itself does not poll the signal between reads — a custom `ByteSource` that ignores `options.signal` makes cancellation a complete no-op, including for a long `validateRecording` sweep that issues hundreds of reads. This is a real limitation of 0.1, not an oversight in your code: if you write a source, check the signal, and check it inside your read loop as well as at the top.
+> Cancellation lives entirely in the source. edfcore itself does not poll the signal between reads. A custom `ByteSource` that ignores `options.signal` makes cancellation a complete no-op, including for a long `validateRecording` sweep that issues hundreds of reads. This is a real limitation of 0.1. If you write a source, check the signal at the top of `read` and inside your read loop as well.
 
-## Closing, and who owns what
+## Closing and ownership
 
-`close` is optional and most adapters do not define one, because most have nothing to release. `byteSource`, `blobSource` and `httpSource` all return a source with no `close`. `fileSource` and `fileHandleSource` close the underlying file handle, and `cachedSource` drops its blocks and then delegates to whatever it wraps.
+`close` is optional, and most adapters don't define one because they have nothing to release. `byteSource`, `blobSource` and `httpSource` all return a source with no `close`. `fileSource` and `fileHandleSource` close the underlying file handle, and `cachedSource` drops its blocks and then delegates to whatever it wraps.
 
-The consequence is a single rule: whoever opened the resource closes it, and `await source.close?.()` is always safe to call.
+The rule that follows: whoever opened the resource closes it, and `await source.close?.()` is always safe to call.
 
 ```ts
 const source = cachedSource(await fileSource('night.edf'));
@@ -406,6 +406,6 @@ try {
 }
 ```
 
-Closing a source does not invalidate the `EdfRecording` built from it. The header, the timeline and the segment list are plain data and stay readable after the handle is gone. Anything that goes back for bytes will fail — `readRecords`, `readWindow`, `readAnnotations`, and `index.locate` on a file whose onsets it has not already memoised. edfcore has no other lifetime mechanism in 0.1, because `Symbol.asyncDispose` is not Baseline yet, so there is no `using` form to reach for.
+Closing a source does not invalidate the `EdfRecording` built from it. The header, the timeline and the segment list are plain data and stay readable after the handle is gone. Anything that goes back for bytes fails: `readRecords`, `readWindow`, `readAnnotations`, and `index.locate` on a file whose onsets it has not already memoised. edfcore has no other lifetime mechanism in 0.1, because `Symbol.asyncDispose` is not Baseline yet, so there's no `using` form to reach for.
 
-Next: [reading signals](/docs/reading-signals) covers what to do with the recording once it is open, and [validation](/docs/validation) covers checking a file for conformance.
+Next: [reading signals](/docs/reading-signals) covers what to do with the recording once it's open, and [validation](/docs/validation) covers checking a file for conformance.
