@@ -1,0 +1,423 @@
+---
+import Base from '../layouts/Base.astro';
+import TraceStrip from '../components/TraceStrip.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+
+const readExample = `import { openEdf, blobSource, getSignal, readWindow, toPhysical } from 'edfcore';
+
+const recording = await openEdf(blobSource(file));
+const fp1 = getSignal(recording.header, 'Fp1');
+
+const [chunk] = await readWindow(recording, {
+  signalIndices: [fp1.index],
+  startSeconds: 30,
+  durationSeconds: 10,
+});
+
+const microvolts = toPhysical(fp1, chunk.signals[0].digital);`;
+
+const diagnosticExample = `const recording = await openEdf(source);
+
+for (const problem of recording.header.diagnostics) {
+  console.log(problem.code, problem.byteOffset, problem.message);
+}
+// DEGENERATE_DIGITAL_RANGE 3400 signal 7 "EMG Chin" declares digitalMinimum ===
+//   digitalMaximum === 0, so physical scale is undefined (division by zero). …`;
+
+const gapExample = `// A discontinuous recording is a list of runs, never one continuous block.
+const chunks = await readWindow(recording, {
+  signalIndices: [0],
+  startSeconds: 0,
+  durationSeconds: 7200,
+});
+
+chunks.length;                    // one chunk per contiguous run
+chunks[1].precededByGap;          // EdfGap — where the recorder stopped
+`;
+
+// Surveyed across every EDF package on npm in mid-2026. Figures drift; the shape does not.
+const gaps = [
+  ['Ships TypeScript types', 'No standalone reader does'],
+  ['Random access to a time window', 'Nothing published — the file is loaded whole'],
+  ['BDF / 24-bit samples', 'No published package can read them'],
+  ['Discontinuous EDF+D', 'Rejected, or silently decoded as contiguous'],
+  ['Typed, located errors', 'console.warn and null, or bare thrown strings'],
+  ['Header validation', 'Essentially none'],
+];
+---
+
+<Base
+  title="edfcore"
+  description="A typed, dependency-free TypeScript reader for EDF, EDF+, BDF and BDF+ biosignal files. Real random access, exact event times, and errors that name the byte."
+  wide
+>
+  <section class="hero">
+    <div class="page">
+      <p class="eyebrow reveal">EDF &middot; EDF+ &middot; BDF &middot; BDF+</p>
+      <h1 class="reveal">Bytes in.<br />Microvolts out.</h1>
+      <p class="lede reveal">
+        edfcore reads EEG, sleep and other biosignal recordings in the browser and in Node.
+        It gives you real random access into multi-hour files, event times that compare
+        exactly, and — when a file is wrong — an error that names the byte.
+      </p>
+
+      <div class="actions reveal">
+        <code class="install" id="install"
+          ><span class="prompt" aria-hidden="true">$</span> npm install edfcore</code
+        >
+        <a class="btn btn-primary" href="/docs/quick-start">Quick start</a>
+        <a class="btn" href="/demo">Open the inspector</a>
+      </div>
+
+      <p class="note reveal">
+        Zero runtime dependencies. Works on a plain origin, with no build step required and no
+        server involved.
+      </p>
+    </div>
+  </section>
+
+  <TraceStrip />
+
+  <section class="band">
+    <div class="page split">
+      <div>
+        <h2 class="reveal">Ten seconds out of twelve hours costs ten seconds of bytes.</h2>
+        <p class="reveal measure">
+          An EDF file stores every channel interleaved inside fixed-size data records, so a
+          time window maps to a contiguous run of records. edfcore reads exactly that run.
+          Opening a file reads the header and nothing else; it never scans, and it never
+          materialises a recording you did not ask for.
+        </p>
+        <p class="reveal measure">
+          Every chunk reports <code>byteLength</code> — the bytes actually read — because one
+          channel still costs a whole record. Making that visible is more useful than hiding
+          it.
+        </p>
+      </div>
+      <CodeBlock code={readExample} lang="ts" caption="Reading a window in the browser" />
+    </div>
+  </section>
+
+  <section class="band band-inset">
+    <div class="page">
+      <p class="eyebrow reveal">Why it exists</p>
+      <h2 class="reveal">The JavaScript ecosystem for EDF was, until now, mostly a warning.</h2>
+      <p class="reveal measure lede-2">
+        Python has excellent tooling for these formats. JavaScript did not, and the gap is not
+        subtle. This is what a survey of every EDF package on npm turned up:
+      </p>
+
+      <div class="scroll-x reveal">
+        <table class="gaps">
+          <thead>
+            <tr><th scope="col">Capability</th><th scope="col">State of the art before edfcore</th></tr>
+          </thead>
+          <tbody>
+            {
+              gaps.map(([capability, state]) => (
+                <tr>
+                  <th scope="row">{capability}</th>
+                  <td>{state}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="reveal measure aside">
+        The honest consequence is that people building EEG viewers do not reach for an EDF
+        package at all — they hand-roll a parser and reproduce the same bugs. edfcore exists to
+        end that, not to displace an incumbent. The strongest prior art,
+        <a href="https://github.com/epicurrents/edf-reader" rel="noopener"
+          >@epicurrents/edf-reader</a
+        >, is genuinely good and worth using if you want a whole viewer framework.
+        <a href="/docs/comparison">The full comparison is here.</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="page split split-reverse">
+      <div>
+        <p class="eyebrow reveal">When the bytes are wrong</p>
+        <h2 class="reveal">It refuses to invent data.</h2>
+        <p class="reveal measure">
+          One rule decides everything: if edfcore cannot continue without making something up,
+          it throws; if it can continue truthfully, it records a diagnostic on the result.
+          There is no third option, and nothing is ever written to the console.
+        </p>
+        <p class="reveal measure">
+          When a header declares <code>digitalMinimum === digitalMaximum</code>, there is no
+          scale to apply. The reference C implementation quietly substitutes a gain of 1 and
+          hands back raw ADC counts labelled as microvolts. edfcore sets
+          <code>signal.scale</code> to <code>undefined</code> instead, so the type system makes
+          that outcome unrepresentable.
+        </p>
+      </div>
+      <CodeBlock
+        code={diagnosticExample}
+        lang="ts"
+        caption="Diagnostics are values, not log lines"
+      />
+    </div>
+  </section>
+
+  <section class="band band-inset">
+    <div class="page split">
+      <div>
+        <p class="eyebrow reveal">Gaps are structural</p>
+        <h2 class="reveal">A recording that stopped and restarted says so.</h2>
+        <p class="reveal measure">
+          Sleep and long-term-monitoring studies are routinely discontinuous. Most readers
+          either reject those files or decode them as though the gaps were not there,
+          producing a timeline that is silently wrong by hours.
+        </p>
+        <p class="reveal measure">
+          <code>readWindow</code> always returns an array of chunks, one per contiguous run —
+          for continuous files too. If two shapes existed, people would write against the easy
+          one and it would break on the first real sleep study.
+        </p>
+      </div>
+      <CodeBlock code={gapExample} lang="ts" caption="EDF+D, handled honestly" />
+    </div>
+  </section>
+
+  <section class="band closing">
+    <div class="page">
+      <h2 class="reveal">Try it on your own file.</h2>
+      <p class="reveal measure">
+        The inspector runs entirely in your browser. Nothing is uploaded, because there is no
+        server to upload to — which is the same reason edfcore is worth using for clinical and
+        research data in the first place.
+      </p>
+      <div class="actions reveal">
+        <a class="btn btn-primary" href="/demo">Open the inspector</a>
+        <a class="btn" href="/docs/concepts">Read the concepts</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const targets = [...document.querySelectorAll<HTMLElement>('.reveal')];
+
+  /*
+   * One quiet gesture, used consistently: the hero strip carries the orchestrated moment and
+   * everything else only needs to arrive without jumping.
+   *
+   * This is a CSS transition toggled by a class rather than a scripted animation. Text that
+   * starts at opacity 0 must be guaranteed to reach opacity 1 — a Web Animation that never
+   * progresses (a throttled or backgrounded tab) holds the element on its first keyframe and
+   * outranks any inline style you try to rescue it with, which leaves the page blank. A
+   * transition cannot fail that way, and reduced-motion is already handled globally.
+   */
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add('is-in');
+        observer.unobserve(entry.target);
+      }
+    },
+    { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
+  );
+
+  targets.forEach((element) => observer.observe(element));
+
+  // Last resort: if the observer never fires, the page must still be readable.
+  window.setTimeout(() => targets.forEach((el) => el.classList.add('is-in')), 2000);
+</script>
+
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 550ms cubic-bezier(0.22, 0.61, 0.24, 1),
+      transform 550ms cubic-bezier(0.22, 0.61, 0.24, 1);
+  }
+
+  .reveal.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* If scripting is unavailable the observer never runs, so nothing may depend on it. */
+  @media (scripting: none) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .hero {
+    padding-block: clamp(3.5rem, 9vw, 7rem) var(--s-8);
+  }
+
+  h1 {
+    margin-top: var(--s-4);
+  }
+
+  .lede {
+    margin-top: var(--s-5);
+    max-width: 54ch;
+    font-size: var(--t-md);
+    color: var(--text-dim);
+  }
+
+  .lede-2 {
+    margin-top: var(--s-4);
+    color: var(--text-dim);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3);
+    margin-top: var(--s-6);
+  }
+
+  .install {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: 0.6rem var(--s-4);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--bg-inset);
+    color: var(--text);
+    font-size: var(--t-sm);
+    white-space: nowrap;
+  }
+
+  .prompt {
+    color: var(--accent);
+    user-select: none;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem var(--s-5);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--t-sm);
+    text-decoration: none;
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  }
+
+  .btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 500;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-ink);
+  }
+
+  .note {
+    margin-top: var(--s-5);
+    font-family: var(--font-mono);
+    font-size: var(--t-xs);
+    color: var(--text-muted);
+  }
+
+  .band {
+    padding-block: var(--s-8);
+  }
+
+  .band-inset {
+    background: var(--bg-sunken);
+    border-block: 1px solid var(--rule-soft);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: var(--s-7);
+    align-items: start;
+  }
+
+  .split-reverse > :first-child {
+    order: 2;
+  }
+
+  .split p {
+    margin-top: var(--s-4);
+    color: var(--text-dim);
+  }
+
+  .gaps {
+    width: 100%;
+    margin-top: var(--s-5);
+    border-collapse: collapse;
+    font-size: var(--t-sm);
+    text-align: left;
+  }
+
+  .gaps th,
+  .gaps td {
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+
+  .gaps thead th {
+    font-family: var(--font-mono);
+    font-size: var(--t-xs);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom-color: var(--rule);
+  }
+
+  .gaps tbody th {
+    font-family: var(--font-body);
+    font-weight: 600;
+    color: var(--text);
+    width: 34%;
+  }
+
+  .gaps td {
+    color: var(--text-dim);
+  }
+
+  .aside {
+    margin-top: var(--s-5);
+    font-size: var(--t-sm);
+    color: var(--text-muted);
+  }
+
+  .closing {
+    text-align: left;
+  }
+
+  .closing p {
+    margin-top: var(--s-4);
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 860px) {
+    .split {
+      grid-template-columns: 1fr;
+      gap: var(--s-5);
+    }
+    .split-reverse > :first-child {
+      order: 0;
+    }
+  }
+</style>

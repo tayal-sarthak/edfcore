@@ -1,0 +1,133 @@
+---
+const groups = [
+  {
+    heading: 'Documentation',
+    links: [
+      { href: '/docs/quick-start', label: 'Quick start' },
+      { href: '/docs/concepts', label: 'Concepts' },
+      { href: '/docs/reading-signals', label: 'Reading signals' },
+      { href: '/docs/api-reading', label: 'API reference' },
+    ],
+  },
+  {
+    heading: 'Background',
+    links: [
+      { href: '/docs/edf-format', label: 'The EDF format' },
+      { href: '/docs/design-decisions', label: 'Design decisions' },
+      { href: '/docs/comparison', label: 'Other libraries' },
+      { href: '/demo', label: 'Live inspector' },
+    ],
+  },
+  {
+    heading: 'Project',
+    links: [
+      { href: 'https://github.com/tayal-sarthak/edfcore', label: 'GitHub' },
+      { href: 'https://www.npmjs.com/package/edfcore', label: 'npm' },
+      { href: 'https://github.com/tayal-sarthak/edfcore/issues', label: 'Issues' },
+      { href: 'https://www.edfplus.info/specs/index.html', label: 'EDF specification' },
+    ],
+  },
+];
+---
+
+<footer>
+  <div class="page inner">
+    <div class="colophon">
+      <p class="wordmark">edfcore</p>
+      <p class="blurb">
+        A typed, dependency-free reader for EDF, EDF+, BDF and BDF+ biosignal files, for
+        browsers and Node.
+      </p>
+      <p class="license">MIT licensed. Version 0.1.0.</p>
+    </div>
+
+    {
+      groups.map((group) => (
+        <nav aria-labelledby={`ft-${group.heading}`}>
+          <p class="eyebrow" id={`ft-${group.heading}`}>
+            {group.heading}
+          </p>
+          <ul>
+            {group.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  rel={link.href.startsWith('http') ? 'noopener' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+</footer>
+
+<style>
+  footer {
+    margin-top: var(--s-9);
+    border-top: 1px solid var(--rule-soft);
+    background: var(--bg-sunken);
+    padding-block: var(--s-7) var(--s-6);
+  }
+
+  .inner {
+    display: grid;
+    grid-template-columns: 1.6fr repeat(3, 1fr);
+    gap: var(--s-6);
+    align-items: start;
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 660;
+    font-stretch: 116%;
+    font-size: var(--t-md);
+    letter-spacing: -0.02em;
+  }
+
+  .blurb {
+    margin-top: var(--s-2);
+    max-width: 34ch;
+    color: var(--text-dim);
+    font-size: var(--t-sm);
+    line-height: 1.6;
+  }
+
+  .license {
+    margin-top: var(--s-4);
+    font-family: var(--font-mono);
+    font-size: var(--t-xs);
+    color: var(--text-muted);
+  }
+
+  nav ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--s-3) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+
+  nav a {
+    font-size: var(--t-sm);
+    color: var(--text-dim);
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    color: var(--accent);
+  }
+
+  @media (max-width: 860px) {
+    .inner {
+      grid-template-columns: 1fr 1fr;
+    }
+    .colophon {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

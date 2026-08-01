@@ -1,0 +1,82 @@
+---
+import { getCollection } from 'astro:content';
+
+interface Props {
+  current: string;
+}
+const { current } = Astro.props;
+
+const SECTIONS = ['Start here', 'Guides', 'Reference', 'Background'] as const;
+
+const all = await getCollection('docs');
+const grouped = SECTIONS.map((section) => ({
+  section,
+  pages: all
+    .filter((page) => page.data.section === section)
+    .sort((a, b) => a.data.order - b.data.order),
+})).filter((group) => group.pages.length > 0);
+---
+
+<nav class="docs-nav" aria-label="Documentation">
+  {
+    grouped.map((group) => (
+      <div class="group">
+        <p class="eyebrow">{group.section}</p>
+        <ul>
+          {group.pages.map((page) => (
+            <li>
+              <a
+                href={`/docs/${page.id}`}
+                aria-current={page.id === current ? 'page' : undefined}
+              >
+                {page.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</nav>
+
+<style>
+  .docs-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+  }
+
+  .group ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--s-3) 0 0;
+    display: flex;
+    flex-direction: column;
+    /* A hairline rail ties a section's items together and gives the active marker
+       something to sit against. */
+    border-left: 1px solid var(--rule-soft);
+  }
+
+  .group a {
+    display: block;
+    padding: 0.3rem var(--s-4);
+    margin-left: -1px;
+    border-left: 1px solid transparent;
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 130ms ease, border-color 130ms ease;
+  }
+
+  .group a:hover {
+    color: var(--text);
+    border-left-color: var(--rule);
+  }
+
+  .group a[aria-current='page'] {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+</style>

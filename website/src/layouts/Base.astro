@@ -1,0 +1,99 @@
+---
+import '@fontsource-variable/archivo/standard.css';
+import '@fontsource-variable/newsreader/wght.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '../styles/tokens.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  /** The landing page runs its hero full-bleed and supplies its own top spacing. */
+  wide?: boolean;
+  /** Path to this page's raw-markdown twin, when it has one. */
+  markdownPath?: string;
+}
+
+const { title, description, wide = false, markdownPath } = Astro.props;
+const fullTitle = title === 'edfcore' ? title : `${title} — edfcore`;
+
+// Astro.site comes from the deployment origin, so these are correct without configuration.
+const canonical = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).href
+  : Astro.url.pathname;
+const markdownHref =
+  markdownPath && Astro.site ? new URL(markdownPath, Astro.site).href : markdownPath;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="edfcore" />
+    <meta name="twitter:card" content="summary" />
+    {
+      /* Retrieval crawlers do not use HTTP content negotiation, but the ones that fetch
+         markdown at all find it through a link like this. */
+      markdownHref && (
+        <link rel="alternate" type="text/markdown" href={markdownHref} title="Markdown" />
+      )
+    }
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      // Runs before first paint so the chosen theme never flashes the other one.
+      (() => {
+        try {
+          const saved = localStorage.getItem('edfcore-theme');
+          if (saved === 'light' || saved === 'dark') {
+            document.documentElement.dataset.theme = saved;
+          }
+        } catch {
+          /* Private mode blocks storage; the media query is a fine fallback. */
+        }
+      })();
+    </script>
+  </head>
+  <body class={wide ? 'is-wide' : ''}>
+    <a class="skip" href="#main">Skip to content</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: var(--s-4);
+    top: -4rem;
+    z-index: 100;
+    padding: var(--s-2) var(--s-4);
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: var(--t-sm);
+    text-decoration: none;
+    transition: top 160ms ease;
+  }
+
+  .skip:focus {
+    top: var(--s-4);
+  }
+
+  main {
+    min-height: 60vh;
+  }
+</style>

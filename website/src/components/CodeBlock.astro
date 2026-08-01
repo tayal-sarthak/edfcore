@@ -1,0 +1,89 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+  code: string;
+  lang?: 'ts' | 'js' | 'bash' | 'json' | 'text';
+  /** A short label above the block. Say what the snippet does, not "example". */
+  caption?: string;
+}
+
+const { code, lang = 'ts', caption } = Astro.props;
+---
+
+<figure class="block">
+  {
+    caption && (
+      <figcaption>
+        <span class="eyebrow">{caption}</span>
+        <button class="copy" type="button" data-code={code} aria-label="Copy code">
+          copy
+        </button>
+      </figcaption>
+    )
+  }
+  <Code code={code} lang={lang} />
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.copy').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const code = button.dataset.code;
+      if (!code) return;
+      try {
+        await navigator.clipboard.writeText(code);
+        button.textContent = 'copied';
+      } catch {
+        // Clipboard access can be refused; say so rather than silently doing nothing.
+        button.textContent = 'press ⌘C';
+      }
+      window.setTimeout(() => {
+        button.textContent = 'copy';
+      }, 1600);
+    });
+  });
+</script>
+
+<style>
+  .block {
+    margin: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    background: var(--bg-sunken);
+    overflow: hidden;
+  }
+
+  figcaption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--rule-soft);
+    background: var(--bg-inset);
+  }
+
+  .copy {
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: none;
+    padding: 0.15rem var(--s-2);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--t-xs);
+    cursor: pointer;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+
+  .copy:hover {
+    color: var(--accent);
+    border-color: var(--rule);
+  }
+
+  /* The block owns the frame, so the inner <pre> drops its own. */
+  .block :global(pre) {
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+</style>
