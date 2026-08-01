@@ -1,0 +1,42 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Required for npm trusted publishing. npm exchanges this short-lived OIDC token for
+  # publish rights, so no long-lived secret is stored anywhere, and provenance is attested
+  # automatically. Classic npm tokens were revoked at the end of 2025, so this is now the
+  # normal path rather than the advanced one.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - run: npm ci
+
+      # Never publish something that does not pass. The package has no install-time scripts,
+      # so this is the only gate there is.
+      - name: Lint, typecheck and test
+        run: npm run check
+
+      - run: npm run build
+
+      - name: Verify the published shape
+        run: |
+          npx --yes publint@latest --strict
+          npx --yes @arethetypeswrong/cli@latest --pack . --profile esm-only
+
+      - name: Publish
+        run: npm publish --access public
