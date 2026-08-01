@@ -20,5 +20,9 @@
     "astro": "^7.1.6",
     "edfcore": "file:..",
     "motion": "^12.43.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3"
   }
 }

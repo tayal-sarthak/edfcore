@@ -39,4 +39,5 @@ jobs:
       # The site imports edfcore from the parent package, so the library builds first.
       - run: npm run build
       - run: npm --prefix website ci
+      - run: npm --prefix website run check
       - run: npm --prefix website run build

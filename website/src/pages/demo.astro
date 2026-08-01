@@ -122,6 +122,7 @@ import Base from '../layouts/Base.astro';
 <script>
   import {
     blobSource,
+    buildRecordIndex,
     byteSource,
     formatStartTimeNaive,
     isEdfError,
@@ -151,6 +152,11 @@ import Base from '../layouts/Base.astro';
   let selected: number[] = [];
   let annotations: readonly EdfAnnotation[] = [];
   let redrawToken = 0;
+  let loadGeneration = 0;
+  let activeLoad: AbortController | undefined;
+  let canDraw = false;
+
+  const ANNOTATION_SCAN_TARGET_BYTES = 4 * 1024 * 1024;
 
   const fmt = (value: number, digits = 2) =>
     Number.isFinite(value) ? value.toFixed(digits).replace(/\.?0+$/, '') : '—';
@@ -167,28 +173,76 @@ import Base from '../layouts/Base.astro';
     statusEl.dataset.kind = kind;
   }
 
+  function errorDetail(error: unknown): string {
+    if (isEdfError(error)) {
+      return `${(error as { code?: string }).code ?? error.edfErrorKind}: ${error.message}`;
+    }
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  function readyMessage(name: string, next: EdfRecording): string {
+    const { header, timeline } = next;
+    return `${name} — ${header.variant}, ${header.signals.length} signals, ${hhmmss(timeline.spanSeconds)}`;
+  }
+
+  function isActiveLoad(generation: number, controller: AbortController): boolean {
+    return generation === loadGeneration && !controller.signal.aborted;
+  }
+
+  async function scanAnnotations(
+    next: EdfRecording,
+    name: string,
+    generation: number,
+    controller: AbortController,
+  ): Promise<readonly EdfAnnotation[] | undefined> {
+    const { header } = next;
+    const recordsPerBatch = Math.max(
+      1,
+      Math.floor(ANNOTATION_SCAN_TARGET_BYTES / Math.max(1, header.recordByteLength)),
+    );
+    const found: EdfAnnotation[] = [];
+    setStatus(`${name} — reading events 0%`, 'busy');
+
+    for (let start = 0; start < header.recordCount; start += recordsPerBatch) {
+      const count = Math.min(recordsPerBatch, header.recordCount - start);
+      const batch = await readAnnotations(
+        next,
+        { start, count },
+        { signal: controller.signal },
+      );
+      if (!isActiveLoad(generation, controller)) return undefined;
+      for (const annotation of batch.annotations) found.push(annotation);
+
+      const done = start + count;
+      const percent = Math.round((done / header.recordCount) * 100);
+      setStatus(`${name} — reading events ${percent}%`, 'busy');
+    }
+
+    return Object.freeze(found);
+  }
+
   // ---------------------------------------------------------------- loading
 
   async function load(bytes: Uint8Array | File, name: string) {
+    activeLoad?.abort();
+    const controller = new AbortController();
+    activeLoad = controller;
+    const generation = ++loadGeneration;
+    canDraw = false;
+    redrawToken += 1;
+    result.hidden = true;
     setStatus(`Reading ${name}…`, 'busy');
+
     try {
-      const source =
-        bytes instanceof File ? blobSource(bytes) : byteSource(bytes);
-      recording = await openEdf(source);
+      const source = bytes instanceof File ? blobSource(bytes) : byteSource(bytes);
+      const opened = await openEdf(source, { signal: controller.signal });
+      if (!isActiveLoad(generation, controller)) return;
 
-      const header = recording.header;
+      let next = opened;
+      const header = opened.header;
       selected = header.dataSignalIndices.slice(0, 4);
-
       annotations = [];
-      if (header.annotationSignalIndices.length > 0 && header.recordCount > 0) {
-        // The whole file, which for a demo is fine and is exactly why the record range is
-        // a required argument: a full scan is never accidental.
-        const result = await readAnnotations(recording, {
-          start: 0,
-          count: header.recordCount,
-        });
-        annotations = result.annotations;
-      }
+      recording = next;
 
       renderSummary();
       renderDiagnostics();
@@ -196,30 +250,64 @@ import Base from '../layouts/Base.astro';
       renderEvents();
       renderChannelPicker();
 
-      const span = recording.timeline.spanSeconds;
+      const span = opened.timeline.spanSeconds;
       position.max = String(Math.max(0, span - Number(windowLength.value)));
       position.value = '0';
 
       result.hidden = false;
-      setStatus(`${name} — ${header.variant}, ${header.signals.length} signals, ${hhmmss(span)}`);
       resize();
-      void draw();
-
       animate(
         result,
         { opacity: [0, 1], transform: ['translateY(10px)', 'translateY(0px)'] },
         { duration: 0.4 },
       );
+
+      const needsCompleteIndex =
+        header.continuity === 'discontinuous' ||
+        opened.timeline.spanSeconds !== opened.timeline.coveredSeconds;
+      if (needsCompleteIndex) {
+        setStatus(`${name} — indexing discontinuities 0%`, 'busy');
+        void draw();
+        const index = await buildRecordIndex(opened, {
+          signal: controller.signal,
+          onProgress: (done, total) => {
+            if (!isActiveLoad(generation, controller)) return;
+            const percent = total === 0 ? 100 : Math.round((done / total) * 100);
+            setStatus(`${name} — indexing discontinuities ${percent}%`, 'busy');
+          },
+        });
+        if (!isActiveLoad(generation, controller)) return;
+        next = { ...opened, index };
+        recording = next;
+      }
+
+      canDraw = true;
+      setStatus(readyMessage(name, next));
+      void draw();
+
+      if (header.annotationSignalIndices.length > 0 && header.recordCount > 0) {
+        try {
+          const found = await scanAnnotations(next, name, generation, controller);
+          if (found === undefined || !isActiveLoad(generation, controller)) return;
+          annotations = found;
+          renderEvents();
+          setStatus(readyMessage(name, next));
+          void draw();
+        } catch (error) {
+          if (!isActiveLoad(generation, controller)) return;
+          setStatus(`${readyMessage(name, next)} · events unavailable: ${errorDetail(error)}`, 'error');
+        }
+      }
     } catch (error) {
+      if (!isActiveLoad(generation, controller)) return;
       recording = null;
+      annotations = [];
+      canDraw = false;
       result.hidden = true;
-      const detail = isEdfError(error)
-        ? `${(error as { code?: string }).code ?? error.edfErrorKind}: ${error.message}`
-        : error instanceof Error
-          ? error.message
-          : String(error);
       // The point of the library is that this message is specific, so show all of it.
-      setStatus(detail, 'error');
+      setStatus(errorDetail(error), 'error');
+    } finally {
+      if (generation === loadGeneration) activeLoad = undefined;
     }
   }
 
@@ -389,6 +477,12 @@ import Base from '../layouts/Base.astro';
     const surface = s.getPropertyValue('--bg-sunken').trim();
 
     ctx.clearRect(0, 0, width, height);
+    if (!canDraw) {
+      ctx.fillStyle = muted;
+      ctx.font = '13px "IBM Plex Mono", monospace';
+      ctx.fillText('Indexing the recording timeline…', 12, 28);
+      return;
+    }
     if (selected.length === 0) {
       ctx.fillStyle = muted;
       ctx.font = '13px "IBM Plex Mono", monospace';

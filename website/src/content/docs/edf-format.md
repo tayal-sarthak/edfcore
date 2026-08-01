@@ -153,7 +153,7 @@ EDF+ did not add an events table, a timestamp column or a new record type. It ad
 
 **An annotations signal.** One of the signals in the header carries the label `EDF Annotations` — `BDF Annotations` in BDF+ — written into the 16-byte label field and padded with a space, so the match is case-sensitive on the trimmed text. Such a signal has a label, a `samplesPerRecord` and a block of bytes in every data record like any other, but its bytes are UTF-8 text in a small grammar called a TAL, a Time-stamped Annotations List. A file may carry more than one of them.
 
-```abnf
+```text
 region   = *TAL *%x00                     ; samplesPerRecord * bytesPerSample bytes
 TAL      = Onset [ %x15 Duration ] %x14 *( Text %x14 ) %x00
 Onset    = ("+" / "-") 1*DIGIT [ "." 1*DIGIT ]

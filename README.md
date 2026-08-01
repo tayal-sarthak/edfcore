@@ -169,7 +169,8 @@ window still reads the records that contain it. edfcore makes that visible rathe
 `chunk.byteLength` is the bytes actually read.
 
 ```ts
-import { openEdf, fileSource } from 'edfcore';          // fileSource is from 'edfcore/node'
+import { openEdf, readWindow, resolveTimeWindow } from 'edfcore';
+import { fileSource } from 'edfcore/node';
 
 const recording = await openEdf(await fileSource('./overnight.edf'));
 
