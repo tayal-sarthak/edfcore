@@ -4,6 +4,7 @@ import '@fontsource-variable/newsreader/wght.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/tokens.css';
+import Analytics from '@vercel/analytics/astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 
@@ -50,6 +51,26 @@ const markdownHref =
     }
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script is:inline>
+      /*
+       * Analytics filter. Must be defined before the analytics component's module script
+       * upgrades its custom element, which is why it is inline and in the head.
+       *
+       * This site tells people their recordings never leave the machine, so the measurement
+       * on it should be able to withstand someone reading the network tab. Vercel Analytics
+       * is cookieless and records a path, not a person, and no page here takes a query
+       * string today. This strips the query and hash anyway: it costs nothing, and it means
+       * a future page that does take a parameter cannot start leaking one by accident.
+       */
+      window.webAnalyticsBeforeSend = (event) => {
+        try {
+          const url = new URL(event.url, window.location.origin);
+          return { ...event, url: url.origin + url.pathname };
+        } catch {
+          return event;
+        }
+      };
+    </script>
+    <script is:inline>
       // Runs before first paint so the chosen theme never flashes the other one.
       (() => {
         try {
@@ -70,6 +91,7 @@ const markdownHref =
       <slot />
     </main>
     <Footer />
+    <Analytics />
   </body>
 </html>
 
