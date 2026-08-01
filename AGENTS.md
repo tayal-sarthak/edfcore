@@ -14,7 +14,7 @@ runtime dependencies and that is a permanent constraint, not a current state.
 |---|---|
 | `src/` | The library. Layered strictly: `bytes` → `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import from a lower layer. |
 | `tests/` | 1113 tests. Every fixture is built in memory by `tests/support/writer.ts`; there are no binary files in git. |
-| `website/src/content/docs/design-decisions.md` | Why the API is shaped as it is. **Read it before proposing an architectural change** — most obvious improvements were considered and rejected for a stated reason. (A fuller internal decision record may exist at `docs/DESIGN.md`; it is not tracked in git.) |
+| `website/src/content/docs/design-decisions.md` | Why the API is shaped as it is. **Read it before proposing an architectural change** — most obvious improvements were considered and rejected for a stated reason. |
 | `website/` | The Astro documentation site and the browser-based inspector. |
 
 ## Commands

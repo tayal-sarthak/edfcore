@@ -1,50 +1,5 @@
-# Dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# Build output
 dist/
-build/
-*.tsbuildinfo
-
-# Astro generated types and content cache
 .astro/
-
-# Test / coverage output
-coverage/
-.nyc_output/
-test-results/
-playwright-report/
-.vitest/
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Editor / OS
+.env*
 .DS_Store
-.idea/
-.vscode/*
-!.vscode/extensions.json
-*.swp
-
-# Environment
-.env
-.env.*
-!.env.example
-
-# Internal working notes: the design decision record and the discoverability research.
-# Kept on disk, not published. The user-facing versions of this material live in
-# website/src/content/docs/ and ship with the site.
-#
-# The leading slash anchors this to the repository root. Without it the pattern also matches
-# website/src/content/docs/, which would silently publish a documentation site with no
-# documentation in it.
-/docs/
-
-# Local scratch space for files pending review rather than permanent deletion
-deleted/
