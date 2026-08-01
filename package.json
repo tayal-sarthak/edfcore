@@ -68,7 +68,8 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "check": "npm run lint && npm run typecheck && npm run test",
-    "corpus:fetch": "node scripts/fetch-corpus.mjs"
+    "corpus:fetch": "node scripts/fetch-corpus.mjs",
+    "prepublishOnly": "npm run check && npm run build"
   },
   "publishConfig": {
     "access": "public",
