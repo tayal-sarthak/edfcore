@@ -67,7 +67,8 @@
     "test:watch": "vitest",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "check": "npm run lint && npm run typecheck && npm run test"
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "corpus:fetch": "node scripts/fetch-corpus.mjs"
   },
   "publishConfig": {
     "access": "public",

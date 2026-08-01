@@ -516,4 +516,4 @@ const saturated = digital.filter((v) => v === EDF_DIGITAL_MAX).length;
 console.log(`edfcore ${VERSION}`);
 ```
 
-`VERSION` is `'0.1.0'` at the time of writing, and that number is meant literally: edfcore has not yet been validated against real public corpora, so treat anything it tells you about a file as a well-argued claim rather than a settled one.
+`VERSION` is `'0.1.0'` at the time of writing, and that number is meant literally. edfcore is checked against real public corpora — see the [installation page](/docs/installation) — but it has not been compared element by element against pyEDFlib or MNE, so treat what it tells you about a file as a well-argued claim rather than a settled one.

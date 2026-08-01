@@ -58,10 +58,18 @@ for (const event of annotations) {
 }
 ```
 
-> **Status: 0.1.0, early.** The library is complete against its design and has a thorough test
-> suite built on synthetic files, but it has not yet been validated against large public
-> corpora (sleep-edfx, CHB-MIT, the BioSemi test files). Treat physical values as trustworthy
-> and the API as still able to move. See [Roadmap](#roadmap).
+> **Status: 0.1.0, early — but checked against real files.** Alongside 1,100+ tests on
+> generated fixtures, edfcore is verified against public corpora it did not author: the
+> EDF, EDF+ and 24-bit BDF+ test files from teuniz.net, and PhysioNet's sleep-edfx — a real
+> 22-hour polysomnography recording and its sleep-staging file. Those checks are numeric, not
+> just "it parsed": channels labelled `sine 8.5 Hz` decode to 8.5 Hz at their stated
+> amplitude, the 24-bit and 16-bit paths agree on identical signals, and the rectal
+> temperature channel of a real recording reads 37 °C. Run them yourself with
+> `npm run corpus:fetch && npm test`.
+>
+> Still outstanding: a golden-value harness comparing edfcore's float64 output against
+> pyEDFlib and MNE element by element. Until that exists, no claim of numeric parity with
+> those readers ships. Treat the API as still able to move. See [Roadmap](#roadmap).
 
 ---
 

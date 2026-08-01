@@ -265,7 +265,7 @@ reading — a file with a hundred warnings is a file you can read. If you want f
 parse time instead, that is `strict: true` on `openEdf`, a different mechanism on the core side of
 the line.
 
-It also does not certify anything. edfcore is 0.1 and has not yet been validated against the public
+It also does not certify anything. edfcore is 0.1 and has not been compared element by element against the established readers on the public
 corpora that would let anyone claim it agrees with the established readers across real files. Treat
 a clean report as "edfcore found nothing to complain about", which is a useful statement and a
 smaller one than "this file is conformant".

@@ -20,6 +20,7 @@ together; keeping them independent is what makes the round-trip and property tes
 | `io/` | The read *pattern* — how many requests, which ranges, how many bytes. This is where "does not load the whole file" is actually proven |
 | `property/` | Writer→reader round-trip and seeded byte-flip fuzzing against the safety invariant |
 | `integration/` | End-to-end journeys through the public barrel |
+| `corpus/` | Real EDF/BDF files from teuniz.net and PhysioNet. Skipped unless fetched — see below |
 | `support/` | The writer, the corruptor, and a `ByteSource` spy. Never exported from the package |
 
 ## The safety invariant
@@ -35,18 +36,36 @@ fields were individually valid but whose *derived* scale silently produced `NaN`
 Any input that violates the invariant should be printed with its bytes and become a permanent
 regression case here.
 
+## Checking against files we did not write
+
+Everything above is edfcore reading bytes edfcore's own writer produced. That is a real
+cross-check — the writer was built from the specification and imports nothing from `src/` —
+but both are still this project's reading of the format.
+
+`corpus/` closes that gap with files other people's software wrote. The teuniz generator files
+are the useful ones: their channels are **labelled with their own expected content**, so a
+channel called `sine 8.5 Hz` gives an expectation nobody here chose. The PhysioNet recordings
+add the messy real-world cases — a 22-hour polysomnography, and a scoring file whose record
+duration is legally zero.
+
+```bash
+npm run corpus:fetch    # ~59 MB, hash-verified, gitignored
+npm test
+```
+
 ## Fixture policy
 
-Three tiers were planned; only the first is in use today.
+Three tiers were planned; the first and third are in use.
 
 - **Tier 1 — synthetic, in memory.** Everything currently in the suite. No binaries in git, no
   licence questions, no network.
-- **Tier 2 — a small number of committed real files.** Only files under a clear open licence
-  (e.g. the ODC-By PhysioNet hypnograms) with the licence text and a NOTICE alongside them. Not
-  yet added.
-- **Tier 3 — download on demand.** A manifest of URL, byte size, SHA-256 and licence, fetched
-  into a gitignored directory, with tests `skipIf`-guarded so the default run stays offline. Not
-  yet added.
+- **Tier 2 — a small number of committed real files.** Not used. Tier 3 covers the same ground
+  without putting anyone's recording in git history.
+- **Tier 3 — download on demand.** In use. [`corpus/manifest.json`](corpus/manifest.json)
+  records the URL, byte size, SHA-256, licence and purpose of each file;
+  `npm run corpus:fetch` downloads them into a gitignored directory and verifies every hash;
+  [`corpus/corpus.test.ts`](corpus/corpus.test.ts) is `skipIf`-guarded so the default run
+  stays offline.
 
 **No file from teuniz.net or edfplus.info may be committed.** Neither site attaches a licence to
 its data, and `eeg_recording.zip` is an identifiable patient recording.

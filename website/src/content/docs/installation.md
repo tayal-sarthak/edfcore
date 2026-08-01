@@ -99,4 +99,4 @@ This is deliberate. Conditional exports are the single largest source of "it wor
 Read [Quick start](/docs/quick-start) to get real sample values on screen in either runtime, then [Concepts](/docs/concepts) for the mental model that makes the rest of the API predictable.
 
 > **Note**
-> edfcore is at 0.1.0. It is complete against its design and has a thorough test suite built on synthetic files, but it has not yet been validated against the large public corpora (sleep-edfx, CHB-MIT, the BioSemi test files). Treat the physical values as trustworthy and the API surface as still able to move.
+> edfcore is at 0.1.0. Alongside 1,100+ tests on generated fixtures, it is checked against public corpora it did not author — the teuniz.net EDF/EDF+/BDF+ test files and PhysioNet's sleep-edfx, including a real 22-hour polysomnography recording. Those checks are numeric rather than smoke tests. What is still missing is an element-by-element comparison against pyEDFlib and MNE, so no claim of numeric parity with those readers is made here. Treat the API surface as still able to move.
