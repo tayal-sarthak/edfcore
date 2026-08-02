@@ -147,8 +147,9 @@ decodeDigital(header, bytes, records, signal.index);   // still works
 The reference C implementation substitutes `bitvalue = 1; offset = 0` unconditionally in the
 degenerate cases, and then returns raw ADC counts labelled with the signal's physical dimension.
 Those numbers look like microvolts, plot like microvolts and are off by whatever the amplifier's
-real gain was. Making `scale` optional in the type system means `strictNullChecks` points at the
-call you have not guarded.
+real gain was. Making `scale` optional in the type system means the compiler refuses to let you
+read a gain that may not be there. The `toPhysical` call is not itself type-gated — it accepts
+any `EdfSignal` and throws `EdfScalingError` when the scale is missing.
 
 The cost: a file that another reader opens without complaint throws here, and you have to decide
 what to do about a channel with no defined physical interpretation. The digital samples remain

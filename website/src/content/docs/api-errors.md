@@ -231,8 +231,9 @@ physical units. Their severity is `error`, and they do not throw at parse time.
 | `LOG_TRANSFORMED_CHANNEL` | the physical dimension is exactly `Filtered`, so values are log-compressed | the linear formula would be wrong by orders of magnitude; apply the log transform yourself over `decodeDigital` output |
 
 The failure lands on the exact call that cannot be answered. `signal.scale` is
-`EdfScale | undefined`, so under `strictNullChecks` the compiler makes you deal with it before you
-reach the throw. See [physical values](/docs/physical-values) for the whole story.
+`EdfScale | undefined`, so the compiler makes you check before reading the gain, though
+`toPhysical` itself accepts any `EdfSignal` and throws at runtime. See
+[physical values](/docs/physical-values) for the whole story.
 
 ## Warnings
 

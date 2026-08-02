@@ -135,8 +135,8 @@ const gaps = [
         <p class="reveal measure">
           A header that declares <code>digitalMinimum === digitalMaximum</code> defines no
           scale: the gain is a division by zero. edfcore sets <code>signal.scale</code> to
-          <code>undefined</code>, so <code>toPhysical</code> throws and
-          <code>strictNullChecks</code> catches the call you didn't guard. EDFlib substitutes a
+          <code>undefined</code>, so reading the gain without checking is a compile error and
+          <code>toPhysical</code> throws at runtime. EDFlib substitutes a
           gain of 1 here and returns ADC counts labelled as microvolts.
         </p>
       </div>

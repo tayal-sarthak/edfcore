@@ -1,15 +1,22 @@
 ---
 /**
- * The hero figure: a single EEG trace drawn across the page.
+ * The hero figure: a phosphor display with a signal sweeping across it.
  *
- * The samples are real. A deterministic signal is generated, encoded to little-endian 16-bit
- * two's complement exactly as EDF stores it, and then decoded back out through the same
- * arithmetic the library uses — so the line on screen is the output of the thing being sold,
- * not a drawing of one.
+ * The samples are real. A signal is generated, encoded to little-endian 16-bit two's
+ * complement exactly as EDF stores it, and decoded back out through the same arithmetic the
+ * library uses — so the line on screen is the output of the thing being sold, not a drawing
+ * of one.
+ *
+ * The motion is one continuous gesture rather than a set of effects: a beam crosses the strip
+ * and the trace behind it decays the way phosphor does, brightest at the head and dimming with
+ * age. Nothing bounces, pulses or eases in and out; the only thing moving is the measurement.
+ *
+ * Brightness comes from age alone, and age is derived from a column's distance behind the beam
+ * rather than from a stored timestamp. That makes the whole picture a pure function of the
+ * beam position, so a resize, a theme change or a paused tab can never desynchronise it.
  *
  * An earlier version showed the underlying bytes as a hex grid behind the trace. It made the
- * point but read as noise, so the bytes are still what drives the curve and are simply no
- * longer painted.
+ * point but read as noise, so the bytes still drive the curve and are no longer painted.
  */
 interface Props {
   height?: number;
@@ -20,134 +27,396 @@ const { height = 260 } = Astro.props;
 <figure class="strip" style={`--strip-h:${height}px`}>
   <canvas id="trace-strip" aria-hidden="true"></canvas>
   <figcaption class="visually-hidden">
-    An electroencephalogram trace, drawn from sample values decoded by edfcore.
+    An electroencephalogram trace sweeping across an instrument display, drawn from sample
+    values encoded and decoded the way edfcore reads them.
   </figcaption>
 </figure>
 
 <script>
-  import { animate } from 'motion';
-
   const canvas = document.getElementById('trace-strip') as HTMLCanvasElement | null;
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ctx = canvas?.getContext('2d') ?? null;
 
-    // ---- the signal, and the bytes that hold it -------------------------------
-    const SAMPLES = 1400;
-    const digital = new Int16Array(SAMPLES);
-    for (let i = 0; i < SAMPLES; i += 1) {
-      const t = i / 64;
-      // Deliberately slow: about eight waves across the strip rather than twenty. A denser
-      // trace is more literally EEG-like and reads as a scribble at this size.
-      const alpha = Math.sin(t * 2.3) * 900;
-      const theta = Math.sin(t * 0.9 + 1.1) * 380;
-      const drift = Math.sin(t * 0.21) * 260;
-      const spike = i > 660 && i < 760 ? Math.sin(((i - 660) / 100) * Math.PI) * 1900 : 0;
-      // Just enough deterministic wobble that the line reads as measured, not drawn.
-      const wobble = Math.sin(i * 0.7639320225) * 55;
-      digital[i] = Math.max(
-        -32768,
-        Math.min(32767, Math.round(alpha + theta + drift + spike + wobble)),
-      );
-    }
+  if (canvas && ctx) {
+    const context = ctx;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    // Round-tripped through the on-disk encoding, so the curve is genuinely decoded output.
-    const bytes = new Uint8Array(SAMPLES * 2);
-    for (let i = 0; i < SAMPLES; i += 1) {
-      const v = (digital[i] ?? 0) < 0 ? (digital[i] ?? 0) + 0x10000 : (digital[i] ?? 0);
-      bytes[i * 2] = v & 0xff;
-      bytes[i * 2 + 1] = (v >> 8) & 0xff;
-    }
-    const decoded = new Int32Array(SAMPLES);
-    for (let i = 0; i < SAMPLES; i += 1) {
-      const raw = (bytes[i * 2] ?? 0) | ((bytes[i * 2 + 1] ?? 0) << 8);
-      decoded[i] = raw & 0x8000 ? raw - 0x10000 : raw;
-    }
-    const peak = decoded.reduce((m, v) => Math.max(m, Math.abs(v)), 1);
+    // ---- palette, read from the design tokens so the theme toggle drives the canvas ------
+
+    type Rgb = { r: number; g: number; b: number };
+
+    const hexToRgb = (value: string, fallback: Rgb): Rgb => {
+      const hex = value.trim().replace('#', '');
+      const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
+      if (full.length < 6) return fallback;
+      const n = Number.parseInt(full.slice(0, 6), 16);
+      return Number.isNaN(n) ? fallback : { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    };
+
+    const rgba = (c: Rgb, a: number) => `rgba(${c.r},${c.g},${c.b},${a})`;
+
+    let traceColor: Rgb = { r: 140, g: 203, b: 107 };
+    let eventColor: Rgb = { r: 222, g: 74, b: 134 };
+    let baselineColor = 'rgba(255,255,255,0.06)';
+    let onPaper = false;
 
     const readTokens = () => {
       const s = getComputedStyle(document.documentElement);
+      traceColor = hexToRgb(s.getPropertyValue('--accent'), traceColor);
+      eventColor = hexToRgb(s.getPropertyValue('--event'), eventColor);
+      baselineColor = s.getPropertyValue('--rule-soft').trim() || baselineColor;
+      // Glow is additive light. It belongs on a dark instrument and turns to grey mud on paper,
+      // so the light theme gets a clean ink line instead of a bloom.
+      const bg = hexToRgb(s.getPropertyValue('--bg'), { r: 20, g: 18, b: 14 });
+      onPaper = (bg.r * 299 + bg.g * 587 + bg.b * 114) / 1000 > 128;
+    };
+    readTokens();
+
+    // ---- the signal, and the bytes that hold it -----------------------------------------
+
+    /** Exactly what EDF does to a sample: clamp, store as 16-bit LE two's complement, read back. */
+    const throughEdfBytes = (value: number): number => {
+      const clamped = Math.max(-32768, Math.min(32767, Math.round(value)));
+      const unsigned = clamped < 0 ? clamped + 0x10000 : clamped;
+      const lo = unsigned & 0xff;
+      const hi = (unsigned >> 8) & 0xff;
+      const raw = lo | (hi << 8);
+      return raw & 0x8000 ? raw - 0x10000 : raw;
+    };
+
+    // Deliberately slow: roughly eight waves across the strip rather than the sixty a literal
+    // 10 Hz alpha rhythm would give. A true-density EEG reads as a scribble at this size.
+    const ALPHA_PERIOD = 150;
+    const THETA_PERIOD = 390;
+    const DELTA_PERIOD = 1700;
+    const EVENT_SAMPLES = 64;
+    const PEAK = 13000;
+
+    // A tiny LCG keeps event spacing irregular without being different on every page load.
+    let seed = 0x9e3779b9;
+    const random = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+
+    let cursor = 0;
+    let nextEventAt = 260;
+    let eventSince = -1;
+
+    /**
+     * One sample, advancing the generator's own state. Sequential rather than a pure function
+     * of the index because events carry duration.
+     */
+    const nextSample = (): { value: number; event: boolean } => {
+      const c = cursor;
+      cursor += 1;
+
+      if (eventSince < 0 && c >= nextEventAt) {
+        eventSince = c;
+        // 3.2 s to 8 s apart at the sweep rate below, so events feel observed, not metronomic.
+        nextEventAt = c + EVENT_SAMPLES + Math.floor(700 + random() * 1000);
+      }
+
+      let deflection = 0;
+      let inEvent = false;
+      if (eventSince >= 0) {
+        const age = c - eventSince;
+        if (age >= EVENT_SAMPLES) {
+          eventSince = -1;
+        } else {
+          // A biphasic deflection: a sharp negative trough followed by a slower positive
+          // recovery, windowed so it starts and ends flush with the underlying rhythm.
+          const p = age / EVENT_SAMPLES;
+          const window = Math.sin(p * Math.PI) ** 0.7;
+          deflection = -Math.sin(p * Math.PI * 2) * 15000 * window;
+          inEvent = true;
+        }
+      }
+
+      const alpha = Math.sin(c * ((Math.PI * 2) / ALPHA_PERIOD)) * 3400;
+      const theta = Math.sin(c * ((Math.PI * 2) / THETA_PERIOD) + 1.1) * 2100;
+      const delta = Math.sin(c * ((Math.PI * 2) / DELTA_PERIOD) + 0.4) * 1500;
+      // Just enough deterministic jitter that the line reads as measured, not drawn.
+      const jitter = Math.sin(c * 0.7639320225) * 190;
+
       return {
-        trace: s.getPropertyValue('--accent').trim(),
-        rule: s.getPropertyValue('--rule-soft').trim(),
+        value: throughEdfBytes(alpha + theta + delta + jitter + deflection) / PEAK,
+        event: inEvent,
       };
     };
-    let tokens = readTokens();
+
+    // ---- the display --------------------------------------------------------------------
+
+    const SWEEP_SECONDS = 5.6;
+    const TAU_SECONDS = 2.35; // phosphor decay constant
+    const BANDS = 26; // brightness steps used to fake a continuous gradient
+    const HEAD_COLUMNS = 26;
 
     let width = 0;
-    let cssHeight = 0;
-    let progress = 0;
+    let height = 0;
+    let columns = 0;
+    let values = new Float32Array(0);
+    let events = new Uint8Array(0);
+    let written = 0; // columns filled since the last resize, so a fresh strip fills in
+    let beam = 0; // fractional column position of the beam
 
-    const resize = () => {
+    /** Returns false when the element has no layout yet, so the caller can wait for one. */
+    const resize = (): boolean => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = canvas.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return false;
       width = rect.width;
-      cssHeight = rect.height;
+      height = rect.height;
       canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(cssHeight * dpr);
-      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvas.height = Math.round(height * dpr);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      columns = Math.max(2, Math.round(width));
+      values = new Float32Array(columns);
+      events = new Uint8Array(columns);
+      written = 0;
+      beam = 0;
+      return true;
+    };
+
+    /** How far behind the beam a column sits, in seconds. */
+    const ageOf = (column: number, head: number): number => {
+      const behind = head >= column ? head - column : head + columns - column;
+      return (behind / columns) * SWEEP_SECONDS;
     };
 
     const draw = () => {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, width, cssHeight);
+      context.clearRect(0, 0, width, height);
 
-      const mid = cssHeight / 2;
-      const amp = cssHeight * 0.34;
+      const mid = height / 2;
+      const amp = height * 0.34;
 
-      // A single hairline baseline. The trace is the only other mark on the strip.
-      ctx.strokeStyle = tokens.rule;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, mid);
-      ctx.lineTo(width, mid);
-      ctx.stroke();
+      context.strokeStyle = baselineColor;
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(0, mid);
+      context.lineTo(width, mid);
+      context.stroke();
 
-      const visible = Math.max(2, Math.floor(progress * SAMPLES));
-      ctx.beginPath();
-      for (let i = 0; i < visible; i += 1) {
-        const x = (i / (SAMPLES - 1)) * width;
-        const y = mid - ((decoded[i] ?? 0) / peak) * amp;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      if (written < 2) return;
+
+      const head = Math.floor(beam) % columns;
+      const filled = Math.min(written, columns);
+      const oldest = written >= columns ? (head + 1) % columns : 0;
+
+      const yOf = (column: number) => mid - (values[column] ?? 0) * amp;
+
+      context.lineJoin = 'round';
+      context.lineCap = 'round';
+
+      /*
+       * Walk from the oldest visible column to the beam in bands of constant brightness. One
+       * stroke per band rather than per segment keeps this to ~26 paths a frame, and repainting
+       * the whole trace every frame — instead of compositing a translucent wipe over the last
+       * one — means no ghost residue can accumulate at low alpha.
+       */
+      const perBand = Math.max(1, Math.ceil(filled / BANDS));
+
+      for (let start = 0; start < filled; start += perBand) {
+        const end = Math.min(start + perBand, filled - 1);
+        if (end <= start) continue;
+
+        const midColumn = (oldest + (start + end) / 2) % columns;
+        const alpha = Math.exp(-ageOf(Math.floor(midColumn), head) / TAU_SECONDS);
+        if (alpha < 0.015) continue;
+
+        context.beginPath();
+        let open = false;
+        for (let i = start; i <= end; i += 1) {
+          const column = (oldest + i) % columns;
+          // The ring wraps at the right edge; a path must never bridge that seam or it draws
+          // a horizontal streak straight across the display.
+          if (open && column === 0) {
+            context.stroke();
+            context.beginPath();
+            open = false;
+          }
+          const x = column;
+          const y = yOf(column);
+          if (!open) {
+            context.moveTo(x, y);
+            open = true;
+          } else {
+            context.lineTo(x, y);
+          }
+        }
+        context.strokeStyle = rgba(traceColor, Math.min(1, alpha));
+        context.lineWidth = 1.7;
+        context.stroke();
       }
-      ctx.strokeStyle = tokens.trace;
-      ctx.lineWidth = 1.75;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.stroke();
+
+      // Event marks. Semantic rose, never decoration — these are where an annotation would sit.
+      for (let i = 0; i < filled; i += 1) {
+        const column = (oldest + i) % columns;
+        if (!events[column]) continue;
+        const alpha = Math.exp(-ageOf(column, head) / TAU_SECONDS);
+        if (alpha < 0.05) continue;
+        context.fillStyle = rgba(eventColor, Math.min(0.9, alpha));
+        context.fillRect(column, yOf(column) - 1, 1.4, 2);
+      }
+
+      // The beam head: the newest stretch, brighter, with a bloom on the dark instrument.
+      const headStart = Math.max(0, filled - HEAD_COLUMNS);
+      if (filled - headStart > 1) {
+        context.save();
+        if (!onPaper) {
+          context.shadowBlur = 14;
+          context.shadowColor = rgba(traceColor, 0.85);
+        }
+        context.beginPath();
+        let open = false;
+        for (let i = headStart; i < filled; i += 1) {
+          const column = (oldest + i) % columns;
+          if (open && column === 0) break;
+          const y = yOf(column);
+          if (!open) {
+            context.moveTo(column, y);
+            open = true;
+          } else {
+            context.lineTo(column, y);
+          }
+        }
+        context.strokeStyle = rgba(onPaper ? traceColor : { r: 235, g: 255, b: 225 }, 1);
+        context.lineWidth = 1.9;
+        context.stroke();
+        context.restore();
+      }
     };
 
-    resize();
+    // ---- the loop -----------------------------------------------------------------------
 
-    if (reduced) {
-      progress = 1;
+    let raf = 0;
+    let last = 0;
+    let running = false;
+    let onScreen = true;
+
+    const advance = (seconds: number) => {
+      const perSecond = columns / SWEEP_SECONDS;
+      const steps = Math.min(columns, Math.round(seconds * perSecond));
+      for (let i = 0; i < steps; i += 1) {
+        beam = (beam + 1) % columns;
+        const column = Math.floor(beam);
+        const sample = nextSample();
+        values[column] = sample.value;
+        events[column] = sample.event ? 1 : 0;
+        written += 1;
+      }
+    };
+
+    const frame = (now: number) => {
+      if (!running) return;
+      // A tab that was hidden or a stalled frame must not fast-forward the whole sweep.
+      const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60);
+      last = now;
+      advance(dt);
       draw();
-    } else {
-      animate(0, 1, {
-        duration: 2.2,
-        ease: [0.22, 0.61, 0.24, 1],
-        onUpdate: (p: number) => {
-          progress = p;
-          draw();
-        },
-      });
-    }
+      raf = requestAnimationFrame(frame);
+    };
 
-    let frame = 0;
-    window.addEventListener('resize', () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        resize();
-        draw();
-      });
-    });
+    const start = () => {
+      if (running || reducedMotion.matches) return;
+      running = true;
+      last = 0;
+      raf = requestAnimationFrame(frame);
+    };
+
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+
+    /**
+     * Fill the strip synchronously, from a clean generator state.
+     *
+     * The canvas must never be blank. requestAnimationFrame does not fire in a background tab
+     * and some embedded webviews throttle it indefinitely, so a display that only ever paints
+     * from inside the loop can sit empty forever — the same failure the reveal animation on the
+     * landing page ran into. Seeding here means the worst case is a still picture.
+     */
+    const fillStrip = (seconds: number) => {
+      cursor = 0;
+      eventSince = -1;
+      nextEventAt = 260;
+      written = 0;
+      beam = 0;
+      advance(seconds);
+      draw();
+    };
+
+    /** Reduced motion still gets the picture, just not the movement. */
+    const paintStatic = () => {
+      stop();
+      fillStrip(SWEEP_SECONDS * 0.995);
+    };
+
+    const sync = () => {
+      if (reducedMotion.matches) paintStatic();
+      else if (onScreen && !document.hidden) start();
+      else stop();
+    };
+
+    /** Lay out, refill, resume. Safe to call before the element has been sized. */
+    const rebuild = () => {
+      const wasRunning = running;
+      stop();
+      // resize() reallocates the ring buffer, so the strip is refilled before anything is
+      // painted, or it would flash empty at the new width.
+      if (!resize()) return;
+      if (reducedMotion.matches) {
+        paintStatic();
+      } else {
+        fillStrip(SWEEP_SECONDS * 0.62);
+        if (wasRunning || onScreen) start();
+      }
+    };
+
+    /*
+     * A ResizeObserver rather than a window resize listener, because it also fires for the
+     * FIRST real layout. This script can run before the stylesheet has given the figure its
+     * height, and a one-shot measurement taken at that moment reads zero — which used to leave
+     * the canvas blank permanently with nothing scheduled to try again.
+     */
+    let lastWidth = 0;
+    let lastHeight = 0;
+    new ResizeObserver(() => {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w === lastWidth && h === lastHeight) return;
+      lastWidth = w;
+      lastHeight = h;
+      rebuild();
+    }).observe(canvas);
+
+    rebuild();
+    sync();
+
+    // Idle when scrolled away or backgrounded. A hero animation should not spin a fan.
+    new IntersectionObserver(
+      (entries) => {
+        onScreen = entries.some((e) => e.isIntersecting);
+        sync();
+      },
+      { threshold: 0 },
+    ).observe(canvas);
+
+    document.addEventListener('visibilitychange', sync);
+    reducedMotion.addEventListener('change', sync);
 
     // The canvas paints from CSS custom properties, so it repaints when the theme changes.
     new MutationObserver(() => {
-      tokens = readTokens();
-      draw();
+      readTokens();
+      if (!running) draw();
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      readTokens();
+      if (!running) draw();
+    });
   }
 </script>
 

@@ -139,8 +139,9 @@ units. There's no `{ physical: true }` option, because it would change the retur
 `Float32` output (it costs about a quarter of a quantisation step on 24-bit BDF).
 
 **Scaling can be refused.** A header that declares `digitalMinimum === digitalMaximum` defines
-no scale: the gain is a division by zero. edfcore sets `signal.scale` to `undefined`, so
-`toPhysical` throws and `strictNullChecks` catches the call you didn't guard. `decodeDigital`
+no scale: the gain is a division by zero. edfcore sets `signal.scale` to `undefined`, so reading
+the gain without checking is a compile error, and `toPhysical` throws `EdfScalingError` at
+runtime (it accepts any `EdfSignal`, so the call itself is not type-gated). `decodeDigital`
 keeps working. EDFlib substitutes a gain of 1 here and returns ADC counts labelled as microvolts.
 
 **Sample rates stay per-signal.** An EDF file can hold EEG at 256 Hz, ECG at 512 Hz and
@@ -282,7 +283,9 @@ Status-byte helpers. JSR publication.
 
 ## Documentation
 
-The full documentation site lives in [`website/`](website/), an Astro build with twenty pages.
+The full documentation site lives in
+[`website/`](https://github.com/tayal-sarthak/edfcore/tree/main/website), an Astro build with
+twenty pages.
 It includes a **local inspector** that opens an EDF file and shows its header, channels, events
 and waveforms in your browser, with nothing uploaded.
 
@@ -297,7 +300,8 @@ pages. Those include a standalone primer on the EDF format itself.
 
 ### Deploying the site
 
-[`vercel.json`](vercel.json) is set up so linking this repository to Vercel works as is.
+[`vercel.json`](https://github.com/tayal-sarthak/edfcore/blob/main/vercel.json) is set up so
+linking this repository to Vercel works as is.
 **Leave the Root Directory as the repository root** and don't pick a framework preset. The
 build compiles the library first (the site imports `edfcore` from the parent package), then
 builds the site into `website/dist`.
@@ -311,7 +315,8 @@ like bugs and are not (the pinned scaling expression, `readWindow` always return
 `scale` being `undefined` rather than fabricated) are documented on the site under
 *Background → Design decisions*.
 
-- [`tests/README.md`](tests/README.md) covers how the suite builds every fixture in memory,
+- [`tests/README.md`](https://github.com/tayal-sarthak/edfcore/blob/main/tests/README.md) covers
+  how the suite builds every fixture in memory,
   and why no binaries are committed.
 
 ## License

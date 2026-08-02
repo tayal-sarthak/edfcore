@@ -212,8 +212,9 @@ toPhysical(temp, chunk.signals[0].digital);
 // for it. ... Next: decodeDigital() still works on this signal; edfcore will not invent a gain.
 ```
 
-`signal.scale` is `EdfScale | undefined`, so under `strictNullChecks` the compiler makes you deal
-with it before you ever reach the throw. The reference C implementation substitutes a gain of 1
+`signal.scale` is `EdfScale | undefined`, so the compiler makes you check before reading the
+gain. Handing the signal straight to `toPhysical` still compiles, and throws at runtime rather
+than inventing a number. The reference C implementation substitutes a gain of 1
 here and returns ADC counts labelled as microvolts. See
 [physical values](/docs/physical-values) for the rest of the scaling story.
 

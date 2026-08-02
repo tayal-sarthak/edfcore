@@ -153,7 +153,8 @@ the two, because a silent polarity flip is a clinically wrong result that looks 
 
 `signal.scale` is `EdfScale | undefined`. `undefined` means edfcore found no usable way to
 compute a gain, and `toPhysical` on such a signal throws `EdfScalingError`. The `| undefined` in
-the type means `strictNullChecks` surfaces the case at compile time.
+the type makes reading the gain without a check a compile error. It does not gate the
+`toPhysical` call itself, which takes any `EdfSignal` and fails at runtime.
 
 Four conditions produce it, checked in this order:
 
