@@ -163,6 +163,8 @@ Reads a time window as **one chunk per contiguous run of records**. The return t
 
 An empty array means the window falls entirely inside a gap, entirely outside the recording, or has a non-positive duration. It never means the read failed. Nothing is ever filled in. There's no gap-fill, and no gap-fill option.
 
+A bad selection throws rather than returning `[]`, whether or not the window covers any records. An index outside the file's signals throws `EdfChannelNotFoundError`, and the annotations channel throws a plain `RangeError`. Both are checked before the window is resolved, so a typo can't read back as an empty stretch of recording.
+
 Chunks stay record-aligned and are therefore usually wider than the window you asked for. [`trimToWindow`](/docs/api-primitives#trimtowindow) narrows them to the exact samples, without I/O.
 
 Runs are read one after another rather than concurrently, so the read pattern you observe is the one this function issued, in order. Concurrency belongs to the source. [`httpSource`](/docs/api-sources#httpsource) has `maxConcurrency`.

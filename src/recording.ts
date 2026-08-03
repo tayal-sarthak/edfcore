@@ -210,6 +210,20 @@ export async function readWindow(
   selection: WindowSelection,
   options?: ReadOptions,
 ): Promise<readonly EdfChunk[]> {
+  /*
+   * Validate the selection before deciding whether it selects anything.
+   *
+   * `resolveSignals` runs inside `readChunk`, which only runs once the window has resolved to at
+   * least one record. A signalIndices that names a channel this file does not have, or names the
+   * annotations channel, therefore threw for a window over data and returned `[]` for a window
+   * past the end — the same mistake reported two different ways.
+   *
+   * `[]` means "no records in this window", and letting a bad argument produce it hands the
+   * caller a wrong diagnosis at the worst moment: an out-of-range index silently reads as an
+   * empty stretch of recording. A caller mistake is a caller mistake wherever the window lands.
+   */
+  resolveSignals(recording.header, selection.signalIndices);
+
   const ranges = resolveTimeWindow(
     recording.timeline,
     recording.index,
