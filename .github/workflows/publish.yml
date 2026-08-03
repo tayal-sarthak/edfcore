@@ -47,7 +47,23 @@ jobs:
       # applies to every publish, including one run by hand, and a laptop has no OIDC token to
       # sign with — so an ordinary `npm publish` fails with no useful explanation. Keeping the
       # flag on the CI step means provenance is attested when CI publishes, and publishing by
-      # hand still works. Requires `npm trust github edfcore --file publish.yml --repo <owner>/<repo>`,
-      # which can only be configured once the package exists on the registry.
+      # hand still works.
+      #
+      # Authentication is by granular access token, supplied as the NPM_TOKEN repository secret.
+      # `actions/setup-node` with `registry-url` writes an .npmrc that reads NODE_AUTH_TOKEN, so
+      # setting the variable here is all that is needed. Provenance is independent of how the
+      # publish authenticates — it comes from `id-token: write` above — so the attestation is
+      # still produced on a token publish.
+      #
+      # The token must be created with "bypass 2FA" enabled, because the package's publishing
+      # access is set to "require two-factor authentication OR a granular access token with
+      # bypass 2FA enabled". A granular token without that flag is refused like any other
+      # unauthenticated publish.
+      #
+      # Trusted publishing (`npm trust github …`) would remove the secret entirely and is the
+      # better end state, but registering it returns 400 against this package — OIDC is a third
+      # path that the access setting above does not sanction. Revisit if that setting changes.
       - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public --provenance
