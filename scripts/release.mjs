@@ -31,7 +31,7 @@ const dryRun = args.includes('--dry-run');
 const bump = args.find((a) => !a.startsWith('--')) ?? 'patch';
 
 const run = (command, commandArgs, { capture = false } = {}) => {
-  if (dryRun && command === 'git' && ['commit', 'tag', 'push'].includes(commandArgs[0])) {
+  if (dryRun && command === 'git' && ['add', 'commit', 'tag', 'push'].includes(commandArgs[0])) {
     console.log(`  [dry-run] git ${commandArgs.join(' ')}`);
     return '';
   }
@@ -139,7 +139,8 @@ run('gh', [
 
 if (dryRun) {
   console.log('\n  Dry run: reverting the local version bump.\n');
-  run('git', ['checkout', '--', 'package.json', 'package-lock.json', 'src/constants.ts']);
+  // From HEAD, not from the index — the index would hand back the bump we are undoing.
+  run('git', ['checkout', 'HEAD', '--', 'package.json', 'package-lock.json', 'src/constants.ts']);
   process.exit(0);
 }
 
