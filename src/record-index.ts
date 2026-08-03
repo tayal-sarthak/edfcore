@@ -27,10 +27,11 @@
  */
 
 import { DEFAULT_MAX_MATERIALIZE_BYTES } from './constants.js';
+import { appendDiagnostics } from './diagnostics/collector.js';
 import { EdfRangeError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { decodeAnnotations } from './tal/annotations.js';
-import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { saturateToInt64, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { buildSegmentation } from './time/segments.js';
 import {
   assertMonotonicOnsetArray,
@@ -81,7 +82,13 @@ export function scanChunkRecords(header: EdfHeader, maxMaterializeBytes?: number
  * definition for a plain EDF or BDF file, where record onsets are not stored at all.
  */
 function nominalOnsetTicks(header: EdfHeader, recordIndex: number): bigint {
-  return BigInt(recordIndex) * header.recordDurationTicks;
+  // Saturated, because every onset array here is a BigInt64Array and assignment to one wraps
+  // rather than throwing. A file with no annotation channel gets its onsets purely from this
+  // arithmetic, so an overflowing recordDuration produced an array that jumped backwards — read
+  // downstream as one segment per record with negative gaps, reported as a 'complete' index with
+  // no diagnostic at all. decodeAnnotations already saturated its own derived onsets; this path
+  // was the one that did not.
+  return saturateToInt64(BigInt(recordIndex) * header.recordDurationTicks);
 }
 
 /** True when the file stores per-record onsets, i.e. when probing can learn anything. */
@@ -280,7 +287,7 @@ export async function buildTimeline(
     // fake a discontinuity in a conforming file and make readWindow refuse every window in it.
     const probe = await probeOnset(source, header, recordIndex, probeOptions(options, memo.get(0)));
     memo.set(recordIndex, probe.ticks);
-    probeDiagnostics.push(...probe.diagnostics);
+    appendDiagnostics(probeDiagnostics, probe.diagnostics);
     probes.push({ recordIndex, onsetTicks: probe.ticks });
   }
 

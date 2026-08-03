@@ -21,7 +21,7 @@
 import { trimEdfField } from './bytes/latin1.js';
 import { DEFAULT_MAX_MATERIALIZE_BYTES, EDF_RECOMMENDED_MAX_RECORD_BYTES } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
-import { createDiagnostic } from './diagnostics/collector.js';
+import { appendDiagnostics, createDiagnostic } from './diagnostics/collector.js';
 import { EdfBudgetError } from './errors.js';
 import { calendarDatesEqual, formatCalendarDate, isValidCalendarDate } from './header/dates.js';
 import { signalFieldOffset } from './header/signals.js';
@@ -534,7 +534,7 @@ async function traverse(
       originTicks: recording.timeline.startOffsetTicks,
     });
     onsets.set(decoded.recordOnsetTicks, records.start);
-    diagnostics.push(...decoded.diagnostics);
+    appendDiagnostics(diagnostics, decoded.diagnostics);
 
     for (const accumulator of accumulators) {
       const digital = decodeDigitalCounted(
@@ -604,7 +604,7 @@ export async function validateRecording(
   const mustReadOnsets = supplied === undefined && !onsetsAreArithmetic;
   const traversal =
     scanSamples || mustReadOnsets ? await traverse(recording, options, scanSamples) : undefined;
-  if (traversal !== undefined) diagnostics.push(...traversal.diagnostics);
+  if (traversal !== undefined) appendDiagnostics(diagnostics, traversal.diagnostics);
 
   let segmentCount: number;
   let gaps: readonly EdfGap[];

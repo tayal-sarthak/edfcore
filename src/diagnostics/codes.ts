@@ -36,6 +36,7 @@ export type EdfKnownDiagnosticCode =
   | 'RECORD_SIZE_ZERO'
   | 'EDFPLUS_WITHOUT_ANNOTATION_SIGNAL'
   | 'TIMELINE_NOT_MONOTONIC'
+  | 'RECORDING_SPAN_UNREPRESENTABLE'
   // Deferred-fatal: header parses, scaling does not
   | 'DEGENERATE_DIGITAL_RANGE'
   | 'DEGENERATE_PHYSICAL_RANGE'
@@ -95,6 +96,7 @@ const DISPOSITIONS: Readonly<Record<EdfKnownDiagnosticCode, EdfDiagnosticDisposi
   EDFPLUS_WITHOUT_ANNOTATION_SIGNAL: 'fatal',
   /** Record onsets went backwards. Every time-based answer would be wrong. */
   TIMELINE_NOT_MONOTONIC: 'fatal',
+  RECORDING_SPAN_UNREPRESENTABLE: 'fatal',
 
   // ---- Deferred-fatal: header parses, scaling does not -----------------------
   /** digitalMinimum === digitalMaximum. Division by zero. EDF+ spec item 5. */

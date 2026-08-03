@@ -54,7 +54,7 @@ import {
   type TalIssueCode,
   type TalTextEncoding,
 } from './grammar.js';
-import { ticksToSeconds } from './ticks.js';
+import { saturateToInt64, ticksToSeconds } from './ticks.js';
 
 const ANNOTATIONS_SPEC = "EDF+ specification 2.2 (the 'EDF Annotations' signal)";
 const TIMEKEEPING_SPEC = 'EDF+ specification 2.2.1 (time keeping of data records)';
@@ -131,20 +131,6 @@ interface ObservedOnset {
   readonly recordIndex: number;
   readonly ticks: bigint;
   readonly raw: string;
-}
-
-/**
- * A `BigInt64Array` wraps silently on assignment, so a derived onset is saturated rather than
- * wrapped. Reaching either bound needs a declared geometry that is already impossible (~29,000
- * years of records); saturating keeps the array non-decreasing where wrapping would invert it.
- */
-const INT64_MIN: bigint = -(2n ** 63n);
-const INT64_MAX: bigint = 2n ** 63n - 1n;
-
-function saturateToInt64(ticks: bigint): bigint {
-  if (ticks > INT64_MAX) return INT64_MAX;
-  if (ticks < INT64_MIN) return INT64_MIN;
-  return ticks;
 }
 
 function describeRange(range: RecordRange): string {

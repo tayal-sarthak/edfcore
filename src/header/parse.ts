@@ -47,6 +47,9 @@ import { parsePatientId, parseRecordingId } from './identification.js';
 import { buildSignals, parseSignalHeaders, signalFieldOffset } from './signals.js';
 import { detectVariant } from './variant.js';
 
+/** The largest value a `BigInt64Array` element holds: about 29,000 years of 100 ns ticks. */
+const MAX_REPRESENTABLE_TICKS: bigint = 2n ** 63n - 1n;
+
 interface RecordCountResolution {
   readonly recordCount: number;
   readonly recordCountSource: EdfHeader['recordCountSource'];
@@ -332,6 +335,39 @@ export function parseHeader(
     },
     sink,
   );
+
+  // ---- 9b. A declared span no tick count can hold. ----------------------------------------
+  //
+  // Every onset array in edfcore is a BigInt64Array, and assignment to one wraps modulo 2^64
+  // rather than throwing. Saturating keeps such an array non-decreasing, but it cannot make it
+  // meaningful: clamping collapses the spacing between records, so a file declaring a span past
+  // the tick range indexes as one segment per record either way. There is no honest onset to
+  // report, which is what makes this fatal rather than a warning.
+  //
+  // Unreachable for a real recording — the bound is over 29,000 years — but `recordDuration` is
+  // free-form ASCII and `parseEdfNumber` accepts exponent notation, so `1E30` in an 8-byte field
+  // is enough to ask for it.
+  const declaredSpanTicks = recordDurationTicks * BigInt(recordCount);
+  if (declaredSpanTicks > MAX_REPRESENTABLE_TICKS) {
+    throw fatalError({
+      code: 'RECORDING_SPAN_UNREPRESENTABLE',
+      message:
+        `the header declares ${recordCount} records of ${recordDurationSeconds} s, a total span ` +
+        `of ${declaredSpanTicks} ticks of 100 ns. edfcore stores every record onset as a signed ` +
+        `64-bit tick count, whose largest value is ${MAX_REPRESENTABLE_TICKS} — about 29,000 ` +
+        'years — so the later onsets in this file have no representable value and every time it ' +
+        'reported would be invented. EDF specification, header (duration of a data record). ' +
+        `Next: the record duration lives at offset ${HEADER_FIELDS.recordDuration.offset} and ` +
+        `is written as ${JSON.stringify(raw.recordDuration)}; header.raw keeps it as written.`,
+      field: 'recordDuration',
+      byteOffset: HEADER_FIELDS.recordDuration.offset,
+      byteLength: HEADER_FIELDS.recordDuration.length,
+      raw: raw.recordDuration,
+      expected: `a span of at most ${MAX_REPRESENTABLE_TICKS} ticks`,
+      actual: `${declaredSpanTicks} ticks`,
+      specReference: 'EDF specification, header (duration of a data record)',
+    });
+  }
 
   // ---- 10. EDF+ without an annotations signal has no per-record timing to report. ---------
   if (variant.isPlus && parsed.annotationSignalIndices.length === 0) {

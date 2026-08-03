@@ -150,6 +150,29 @@ export function ticksToSeconds(ticks: bigint): number {
   return Number(wholeSeconds) + Number(remainder) / TICKS_PER_SECOND_FLOAT;
 }
 
+const INT64_MIN: bigint = -(2n ** 63n);
+const INT64_MAX: bigint = 2n ** 63n - 1n;
+
+/**
+ * Clamps a tick count to what a `BigInt64Array` element can hold.
+ *
+ * Assignment to a `BigInt64Array` wraps modulo 2^64 rather than throwing, and every onset array
+ * in edfcore is one. Wrapping turns a monotonically increasing series into one that jumps
+ * backwards, which downstream code reads as a genuine discontinuity: a file whose declared
+ * record duration overflows the range then indexes as one segment per record, with negative
+ * gaps between them and no diagnostic anywhere.
+ *
+ * Saturating keeps the array non-decreasing, so an absurd geometry stays visibly absurd instead
+ * of becoming plausibly wrong. Reaching either bound needs a declared geometry that is already
+ * impossible — over 29,000 years of records — but `recordDuration` is a free-form ASCII field
+ * that accepts exponent notation, so three bytes are enough to ask for it.
+ */
+export function saturateToInt64(ticks: bigint): bigint {
+  if (ticks > INT64_MAX) return INT64_MAX;
+  if (ticks < INT64_MIN) return INT64_MIN;
+  return ticks;
+}
+
 /**
  * Seconds to ticks, rounded to the NEAREST tick (ties away from zero is not required; ties go
  * toward +Infinity, as `Math.round` does).

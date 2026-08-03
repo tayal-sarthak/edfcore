@@ -211,6 +211,7 @@ is set.
 | `RECORD_SIZE_ZERO` | every signal declares 0 samples per record | records have no size to step by, so no record can be located |
 | `EDFPLUS_WITHOUT_ANNOTATION_SIGNAL` | an EDF+ marker with no annotations signal | no per-record timing exists, so any time reported would be invented; either the marker or the signal is wrong |
 | `TIMELINE_NOT_MONOTONIC` | record onsets went backwards | every time-based answer would be wrong; read by record index with `readRecords`, or repair the timekeeping TALs |
+| `RECORDING_SPAN_UNREPRESENTABLE` | `recordCount * recordDuration` exceeds the signed 64-bit tick range | onsets are stored as 100 ns ticks, so the later records have no representable start; the record duration field is wrong |
 
 `TIMELINE_NOT_MONOTONIC` is the one that fires late, and only where a violating pair is actually
 observed. `openEdf` sees the two probes; `locate` sees the pairs its binary search touches;

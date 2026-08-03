@@ -39,6 +39,23 @@ export interface DiagnosticInit {
   readonly specReference?: string;
 }
 
+/**
+ * Appends every diagnostic in `source` to `target`, without an argument spread.
+ *
+ * `target.push(...source)` passes each element as a separate call argument, and V8 throws
+ * `RangeError: Maximum call stack size exceeded` past roughly 125,000 of them. Several
+ * diagnostics are deliberately reported once per record — `TIMEKEEPING_TAL_MISSING` names the
+ * record whose onset it had to derive — so a long recording with a systematically damaged
+ * annotation section reaches that count honestly. A 32 MiB file with 130,000 records is enough.
+ *
+ * The failure was worse than a crash: the thrown value is a bare `RangeError` about the call
+ * stack, so it is neither an `EdfError` nor a caller mistake, and it lands in the one function
+ * whose whole purpose is to survive being pointed at an untrusted file.
+ */
+export function appendDiagnostics(target: EdfDiagnostic[], source: readonly EdfDiagnostic[]): void {
+  for (const diagnostic of source) target.push(diagnostic);
+}
+
 export function createDiagnostic(init: DiagnosticInit): EdfDiagnostic {
   return {
     code: init.code,

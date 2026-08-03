@@ -84,6 +84,10 @@ describe('the diagnostic vocabulary', () => {
         'RECORD_SIZE_ZERO',
         'EDFPLUS_WITHOUT_ANNOTATION_SIGNAL',
         'TIMELINE_NOT_MONOTONIC',
+        // Added after section 6 was written. Fatal for the same reason as the rest of this list:
+        // a declared span past the signed 64-bit tick range has no representable onset for its
+        // later records, so continuing would mean inventing every time the file reports.
+        'RECORDING_SPAN_UNREPRESENTABLE',
       ].sort(),
     );
   });
