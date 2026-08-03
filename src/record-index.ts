@@ -256,8 +256,11 @@ export async function buildTimeline(
 
   const probeOptions = (
     readOptions: ReadOptions | undefined,
-  ): DecodeAnnotationsOptions & ReadOptions =>
-    readOptions === undefined ? { strict } : { ...readOptions, strict };
+    originTicks?: bigint,
+  ): DecodeAnnotationsOptions & ReadOptions => {
+    const base = readOptions === undefined ? { strict } : { ...readOptions, strict };
+    return originTicks === undefined ? base : { ...base, originTicks };
+  };
 
   const memo = new Map<number, bigint>();
   const probes: RecordOnsetProbe[] = [];
@@ -271,7 +274,11 @@ export async function buildTimeline(
       probes.push({ recordIndex, onsetTicks: ticks });
       continue;
     }
-    const probe = await probeOnset(source, header, recordIndex, probeOptions(options));
+    // Record 0 is probed first and defines the origin, so by the time the last record is probed
+    // its true onset is in `memo`. Without handing it over, a last record with no timekeeping TAL
+    // derived its onset from zero and appeared to sit `startOffset` seconds early — enough to
+    // fake a discontinuity in a conforming file and make readWindow refuse every window in it.
+    const probe = await probeOnset(source, header, recordIndex, probeOptions(options, memo.get(0)));
     memo.set(recordIndex, probe.ticks);
     probeDiagnostics.push(...probe.diagnostics);
     probes.push({ recordIndex, onsetTicks: probe.ticks });
@@ -287,7 +294,12 @@ export async function buildTimeline(
       memo.set(recordIndex, ticks);
       return ticks;
     }
-    const probe = await probeOnset(source, header, recordIndex, probeOptions(readOptions));
+    const probe = await probeOnset(
+      source,
+      header,
+      recordIndex,
+      probeOptions(readOptions, timeline.startOffsetTicks),
+    );
     memo.set(recordIndex, probe.ticks);
     return probe.ticks;
   }
@@ -339,7 +351,14 @@ async function scanOnsets(
       count: Math.min(chunkRecords, recordCount - scanned),
     };
     const bytes = await readRecordBytes(source, header, records, options);
-    const decoded = decodeAnnotations(header, bytes, records, options);
+    // The origin comes from the recording, not from whatever this chunk happens to contain.
+    // Chunking is a memory-bounding detail and must not change the answer: without this, a chunk
+    // holding no observed onset derived from zero, so the onsets, the segments, the gaps and
+    // even a fatal TIMELINE_NOT_MONOTONIC varied with maxMaterializeBytes.
+    const decoded = decodeAnnotations(header, bytes, records, {
+      ...options,
+      originTicks: recording.timeline.startOffsetTicks,
+    });
     onsets.set(decoded.recordOnsetTicks, scanned);
     scanned += records.count;
     options?.onProgress?.(scanned, recordCount);

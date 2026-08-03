@@ -135,7 +135,14 @@ async function readChunk(
   // Never strict, and not because the flag was lost: a read that threw on an impolite TAL in a
   // record the caller asked for would return no samples at all over a defect in a different
   // channel. The defects land on `chunk.diagnostics`, next to the data they were found beside.
-  const annotations = decodeAnnotations(header, bytes, records);
+  // `originTicks` is the recording's own start, not this range's. It is already known here — the
+  // next few lines rebase against it — and without passing it down, a first record whose
+  // timekeeping TAL is missing derived its onset from zero. The same record then reported one
+  // start time when read alone and another when read beside a neighbour that did carry a TAL,
+  // and that start is the grid origin trimToWindow measures from.
+  const annotations = decodeAnnotations(header, bytes, records, {
+    originTicks: timeline.startOffsetTicks,
+  });
   const onsets = annotations.recordOnsetTicks;
   assertMonotonicOnsetArray(onsets, records.start);
 

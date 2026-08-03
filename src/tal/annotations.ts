@@ -445,9 +445,15 @@ export function decodeAnnotations(
 
   // Record 0's onset, observed when it was decoded and derived from the first record that was
   // otherwise. For a continuous file the derivation is exact; see the rebasing note below.
+  //
+  // With no observed onset anywhere in this range there is nothing local to derive from, and the
+  // origin has to come from the caller. Falling back to zero instead made the result depend on
+  // the range: the same record got one onset when read alone and another when read alongside a
+  // neighbour that did carry a timekeeping TAL, which in turn made chunk boundaries, segment
+  // boundaries and even a fatal TIMELINE_NOT_MONOTONIC a function of the scan chunk size.
   const baseTicks =
     firstObserved === undefined
-      ? 0n
+      ? (options?.originTicks ?? 0n)
       : firstObserved.ticks - BigInt(firstObserved.recordIndex) * durationTicks;
 
   const recordOnsetTicks = new BigInt64Array(records.count);

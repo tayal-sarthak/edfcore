@@ -529,7 +529,10 @@ async function traverse(
     bytesRead += bytes.length;
 
     // Never strict: a sweep whose job is to list every defect must not stop at the first one.
-    const decoded = decodeAnnotations(header, bytes, records);
+    // The origin is the recording's, so the sweep's verdict does not depend on its chunk size.
+    const decoded = decodeAnnotations(header, bytes, records, {
+      originTicks: recording.timeline.startOffsetTicks,
+    });
     onsets.set(decoded.recordOnsetTicks, records.start);
     diagnostics.push(...decoded.diagnostics);
 

@@ -449,6 +449,21 @@ export interface WindowSelection {
 export interface DecodeAnnotationsOptions extends ParseOptions {
   /** Defaults to every annotation signal. Only the first carries timekeeping. */
   readonly signalIndices?: readonly number[];
+  /**
+   * The recording's own time origin, for deriving the onset of a record whose timekeeping TAL
+   * is missing.
+   *
+   * A missing timekeeping TAL is a warning, not a fatal error, and such a record is documented
+   * to get `start + recordIndex * recordDuration`. That `start` can only be known by a caller
+   * who has already seen record 0. Without it the derivation falls back to an origin of zero,
+   * which is right only for a file whose first record starts at zero — and makes the answer
+   * depend on which records happened to share the call, because a range containing no observed
+   * onset at all gets a different origin from one that contains one.
+   *
+   * Pass `timeline.startOffsetTicks` whenever it is known. Decoding a range in isolation, as
+   * `openEdf` does before any timeline exists, correctly omits it.
+   */
+  readonly originTicks?: bigint;
 }
 
 /** Header-only triage. Reads at most 128 KiB and never throws on malformed content. */
