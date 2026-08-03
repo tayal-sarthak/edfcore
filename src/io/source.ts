@@ -12,7 +12,7 @@
  */
 
 import { EdfSourceError } from '../errors.js';
-import type { ReadOptions } from '../types.js';
+import type { AbortSignalLike, ReadOptions } from '../types.js';
 
 /**
  * A misbehaving source may resolve with something that is not a byte array at all, which is
@@ -80,8 +80,47 @@ export function assertReadRange(offset: number, length: number, byteLength: numb
  * on is `error.name === 'AbortError'`, so that is what this produces.
  */
 export function throwIfAborted(options?: ReadOptions): void {
-  if (options?.signal?.aborted !== true) return;
+  throwIfSignalAborted(options?.signal);
+}
+
+/**
+ * The same check against a signal that was resolved by the caller.
+ *
+ * A source can carry its own signal as well as the one passed per read, and the effective signal
+ * is `readOptions?.signal ?? sourceOptions?.signal`. That cannot be handed back to
+ * `throwIfAborted` as an object literal, because `exactOptionalPropertyTypes` refuses
+ * `{ signal: undefined }` where the property is declared optional.
+ */
+export function throwIfSignalAborted(signal?: AbortSignalLike): void {
+  if (signal?.aborted !== true) return;
   const error = new Error('The read was aborted through options.signal.');
   error.name = 'AbortError';
   throw error;
+}
+
+/**
+ * A numeric source option, rejected rather than silently coerced when it is not a finite number.
+ *
+ * These options are typed `number`, which admits `NaN` and `Infinity`, and both arrive easily:
+ * `Number(process.env.EDFCORE_CACHE_MIB)`, `Number(searchParams.get('block'))` and any absent
+ * key in a JSON config all produce `NaN`. Left alone they do not fail loudly — `Math.max(1, NaN)`
+ * is `NaN` and every subsequent comparison against it is false, so guards written as
+ * `if (value < 1)` simply do not fire and the caller gets fabricated data or a read that never
+ * settles. Refusing at construction keeps the failure at the line that holds the bad value.
+ *
+ * A plain `RangeError`, not an `EdfError`: this is a bug in the calling code rather than a
+ * problem with the file, which is the same split `isEdfError` documents.
+ */
+export function requireFiniteOption(
+  value: number | undefined,
+  name: string,
+  fallback: number,
+): number {
+  if (value === undefined) return fallback;
+  if (Number.isFinite(value)) return value;
+  throw new RangeError(
+    `options.${name} must be a finite number, but was ${String(value)}. Next: check the ` +
+      'expression that produced it — Number() on an absent environment variable, query ' +
+      'parameter or config key yields NaN.',
+  );
 }

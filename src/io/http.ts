@@ -23,7 +23,12 @@ import type {
   HttpSourceOptions,
   ReadOptions,
 } from '../types.js';
-import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
+import {
+  assertExactRead,
+  assertReadRange,
+  requireFiniteOption,
+  throwIfSignalAborted,
+} from './source.js';
 
 /** Small enough to stay polite to a shared origin, large enough to hide latency. */
 const DEFAULT_MAX_CONCURRENCY = 4;
@@ -122,7 +127,7 @@ function resolveFetch(options: HttpSourceOptions | undefined): FetchLike {
  *
  * It is attached only when it carries `addEventListener`, i.e. when it genuinely is an
  * `AbortSignal`. The platform `fetch` throws a `TypeError` on anything else, and a caller who
- * passed a bare `{ aborted }` shim is still served by the `throwIfAborted` polls around the
+ * passed a bare `{ aborted }` shim is still served by the `throwIfSignalAborted` polls around the
  * request.
  */
 function attachSignal(init: RequestInitLike, signal: AbortSignalLike | undefined): void {
@@ -170,6 +175,9 @@ async function resolveSource(
   options: HttpSourceOptions | undefined,
 ): Promise<ResolvedSource> {
   const signal = options?.signal;
+  // Resolution issues its own HEAD and probe requests, so an already-aborted source signal has
+  // to be caught here too — otherwise httpSource() itself does network work after cancellation.
+  throwIfSignalAborted(signal);
 
   const declared = options?.byteLength;
   if (declared !== undefined) {
@@ -232,13 +240,37 @@ export async function httpSource(
   const fetchImpl = resolveFetch(options);
   const baseHeaders: Record<string, string> = { ...options?.headers };
   const gate = createGate(
-    Math.max(1, Math.floor(options?.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY)),
+    Math.max(
+      1,
+      Math.floor(
+        requireFiniteOption(options?.maxConcurrency, 'maxConcurrency', DEFAULT_MAX_CONCURRENCY),
+      ),
+    ),
   );
 
   const resolved = await resolveSource(fetchImpl, href, baseHeaders, options);
   const byteLength = resolved.byteLength;
   /** Set once, and only ever when the server ignored Range and the caller allowed it. */
   let fullBody: Uint8Array | undefined = resolved.body;
+  /**
+   * The one in-flight full download, so a server that ignores Range costs one transfer.
+   *
+   * Without it, every read that had already entered `fetchRange` issued its own GET, each
+   * buffering the whole resource — N concurrent block reads downloaded the file N times and held
+   * up to `maxConcurrency` copies at once. That turns a large remote recording into an
+   * out-of-memory crash rather than a slow read.
+   */
+  let fullBodyInflight: Promise<Uint8Array> | undefined;
+  /**
+   * Settles once one request has revealed whether this server honours Range.
+   *
+   * Only used when `allowFullDownload` is on. Until the answer is known, a request is a gamble:
+   * if the server ignores Range it answers with the entire resource, and `maxConcurrency`
+   * requests issued in parallel each pay for a whole copy before any of them can warn the
+   * others. Sending the first one alone costs one round trip on the first read and bounds the
+   * worst case at a single transfer instead of `maxConcurrency` of them.
+   */
+  let rangeSupportProbe: Promise<void> | undefined;
 
   async function fetchRange(
     offset: number,
@@ -251,43 +283,98 @@ export async function httpSource(
 
     await gate.acquire();
     try {
-      throwIfAborted(readOptions);
-      const response = await request(fetchImpl, href, headers, 'GET', signal);
-
-      if (response.status === HTTP_PARTIAL_CONTENT) {
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        return assertExactRead(bytes, offset, length);
+      throwIfSignalAborted(signal);
+      // Waiting for a gate slot can take arbitrarily long, and in that time another read may
+      // have discovered that the server ignores Range. Re-checking here is what stops every
+      // queued read from repeating the download the first one already made.
+      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+      if (fullBodyInflight !== undefined) {
+        return sliceFullBody(await fullBodyInflight, offset, length);
       }
 
-      if (response.status === HTTP_OK) {
-        if (options?.allowFullDownload !== true) throw rangeIgnoredError(href, offset, length);
-        const body = new Uint8Array(await response.arrayBuffer());
-        // A concurrent read may have won the race; either copy is the same resource, so keep
-        // whichever landed first and let this one be collected.
-        if (fullBody === undefined) fullBody = body;
-        return sliceFullBody(fullBody, offset, length);
+      let announceProbeDone: (() => void) | undefined;
+      if (options?.allowFullDownload === true) {
+        if (rangeSupportProbe === undefined) {
+          rangeSupportProbe = new Promise<void>((resolve) => {
+            announceProbeDone = resolve;
+          });
+        } else {
+          // Someone else is finding out. Their answer is ours too.
+          await rangeSupportProbe;
+          if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+          if (fullBodyInflight !== undefined) {
+            return sliceFullBody(await fullBodyInflight, offset, length);
+          }
+        }
       }
 
-      throw new EdfSourceError(
-        `Reading bytes ${offset}..${offset + length - 1} of ${href} failed: the server ` +
-          `answered HTTP ${response.status}. Next: check the URL, its authentication headers ` +
-          'and whether a signed URL has expired.',
-        { offset, requestedLength: length },
-      );
+      try {
+        return await issueRequest(offset, length, headers, signal);
+      } finally {
+        announceProbeDone?.();
+      }
     } finally {
       gate.release();
     }
   }
 
+  async function issueRequest(
+    offset: number,
+    length: number,
+    headers: Record<string, string>,
+    signal: AbortSignalLike | undefined,
+  ): Promise<Uint8Array> {
+    const response = await request(fetchImpl, href, headers, 'GET', signal);
+
+    if (response.status === HTTP_PARTIAL_CONTENT) {
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      return assertExactRead(bytes, offset, length);
+    }
+
+    if (response.status === HTTP_OK) {
+      if (options?.allowFullDownload !== true) throw rangeIgnoredError(href, offset, length);
+      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+      // A read that raced us to the same discovery already owns the transfer. Abandon this
+      // response body unread and take theirs — either copy is the same resource.
+      if (fullBodyInflight === undefined) {
+        fullBodyInflight = response
+          .arrayBuffer()
+          .then((buffer) => {
+            const body = new Uint8Array(buffer);
+            fullBody = body;
+            return body;
+          })
+          .catch((error: unknown) => {
+            // A failed transfer must not poison every later read with a rejected promise.
+            fullBodyInflight = undefined;
+            throw error;
+          });
+      }
+      return sliceFullBody(await fullBodyInflight, offset, length);
+    }
+
+    throw new EdfSourceError(
+      `Reading bytes ${offset}..${offset + length - 1} of ${href} failed: the server ` +
+        `answered HTTP ${response.status}. Next: check the URL, its authentication headers ` +
+        'and whether a signed URL has expired.',
+      { offset, requestedLength: length },
+    );
+  }
+
   return {
     byteLength,
     async read(offset: number, length: number, readOptions?: ReadOptions): Promise<Uint8Array> {
-      throwIfAborted(readOptions);
+      // The effective signal, not just the per-read one. A source-level signal is documented as
+      // "the default for every request", and honouring it only inside `attachSignal` meant it
+      // worked for a real AbortSignal and was a silent no-op for the published
+      // `AbortSignalLike` shim, which has no addEventListener to attach to.
+      const signal = readOptions?.signal ?? options?.signal;
+      throwIfSignalAborted(signal);
       assertReadRange(offset, length, byteLength);
       if (length === 0) return new Uint8Array(0);
       if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
       const bytes = await fetchRange(offset, length, readOptions);
-      throwIfAborted(readOptions);
+      throwIfSignalAborted(signal);
       return bytes;
     },
   };

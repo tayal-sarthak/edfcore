@@ -157,8 +157,12 @@ describe.skipIf(!has('SC4001EC-Hypnogram.edf'))('sleep-edfx hypnogram, a real sc
     expect(annotations[0]?.text).toBe('Sleep stage W');
     // Scored stages are contiguous: each onset is the previous onset plus its duration.
     for (let i = 1; i < annotations.length; i += 1) {
-      const previous = annotations[i - 1]!;
-      expect(annotations[i]!.onsetSecondsFromFirstRecord).toBeCloseTo(
+      const previous = annotations[i - 1];
+      const current = annotations[i];
+      if (previous === undefined || current === undefined) {
+        throw new Error(`annotation ${i} is missing, which the loop bounds should have prevented`);
+      }
+      expect(current.onsetSecondsFromFirstRecord).toBeCloseTo(
         previous.onsetSecondsFromFirstRecord + (previous.durationSeconds ?? 0),
         6,
       );

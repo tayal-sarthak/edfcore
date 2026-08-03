@@ -19,9 +19,10 @@
  */
 
 import { trimEdfField } from './bytes/latin1.js';
-import { EDF_RECOMMENDED_MAX_RECORD_BYTES } from './constants.js';
+import { DEFAULT_MAX_MATERIALIZE_BYTES, EDF_RECOMMENDED_MAX_RECORD_BYTES } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
 import { createDiagnostic } from './diagnostics/collector.js';
+import { EdfBudgetError } from './errors.js';
 import { calendarDatesEqual, formatCalendarDate, isValidCalendarDate } from './header/dates.js';
 import { signalFieldOffset } from './header/signals.js';
 import { readRecordBytes } from './io/read.js';
@@ -54,6 +55,9 @@ export type { ObservedSignalStats, ValidateOptions, ValidationReport } from './t
 
 const LABEL_SPEC = 'EDF+ additional specification 9 (standard texts and labels)';
 const TIMEKEEPING_SPEC = 'EDF+ specification 2.2.1 (time keeping of data records)';
+
+/** The sample-scan scratch buffer is an `Int32Array`, so four bytes per sample. */
+const BYTES_PER_SCRATCH_SAMPLE = 4;
 
 /**
  * The signal types EDF+ additional specification 9 names.
@@ -479,8 +483,17 @@ async function traverse(
     : [];
 
   const chunkRecords = scanChunkRecords(header, options?.maxMaterializeBytes);
-  // One scratch array for every signal and every chunk. Bounded by chunkRecords *
-  // max(samplesPerRecord) * 4 bytes, which is at most twice the chunk's own byte size.
+  /*
+   * One scratch array for every signal and every chunk.
+   *
+   * This is normally bounded by the chunk's own byte size, because `scanChunkRecords` fits the
+   * chunk into a scan block. That bound fails for a single record larger than the whole block:
+   * the record count floors to 1 and the scratch size becomes `samplesPerRecord` unclamped, up
+   * to the 99,999,999 an 8-byte EDF field can hold — a 400 MB allocation reachable from one
+   * corrupted digit in a 512-byte file, made before any read, so no downstream check can catch
+   * it. Validation exists to be pointed at untrusted files, so it is exactly the caller who
+   * needs the budget honoured rather than a documented cap that only the read path respects.
+   */
   let scratch: Int32Array | undefined;
   if (scanSamples) {
     let maxSamplesPerRecord = 0;
@@ -489,6 +502,18 @@ async function traverse(
       if (signal !== undefined) {
         maxSamplesPerRecord = Math.max(maxSamplesPerRecord, signal.samplesPerRecord);
       }
+    }
+    const scratchBytes = chunkRecords * maxSamplesPerRecord * BYTES_PER_SCRATCH_SAMPLE;
+    const budgetBytes = options?.maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES;
+    if (scratchBytes > budgetBytes) {
+      throw new EdfBudgetError(
+        `Scanning samples needs a ${scratchBytes}-byte scratch buffer for ${chunkRecords} ` +
+          `record(s) of up to ${maxSamplesPerRecord} samples, above the ${budgetBytes}-byte ` +
+          'maxMaterializeBytes budget, so the scan was refused before anything was allocated. ' +
+          'Next: raise options.maxMaterializeBytes, or drop scanSamples and validate the ' +
+          'header alone.',
+        { requiredBytes: scratchBytes, budgetBytes },
+      );
     }
     scratch = new Int32Array(chunkRecords * maxSamplesPerRecord);
   }

@@ -16,7 +16,7 @@
  */
 
 import type { ByteSource, CacheOptions, ReadOptions } from '../types.js';
-import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
+import { assertExactRead, assertReadRange, requireFiniteOption, throwIfAborted } from './source.js';
 
 const DEFAULT_BLOCK_BYTES = 1024 * 1024;
 const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
@@ -36,8 +36,14 @@ function passThrough(source: ByteSource): ByteSource {
 
 export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSource {
   const byteLength = source.byteLength;
-  const maxBytes = Math.max(0, Math.floor(options?.maxBytes ?? DEFAULT_MAX_BYTES));
-  const requestedBlockBytes = Math.max(1, Math.floor(options?.blockBytes ?? DEFAULT_BLOCK_BYTES));
+  const maxBytes = Math.max(
+    0,
+    Math.floor(requireFiniteOption(options?.maxBytes, 'maxBytes', DEFAULT_MAX_BYTES)),
+  );
+  const requestedBlockBytes = Math.max(
+    1,
+    Math.floor(requireFiniteOption(options?.blockBytes, 'blockBytes', DEFAULT_BLOCK_BYTES)),
+  );
   // A block wider than the whole budget would evict itself on every insert, so the block is
   // clamped to the budget rather than the cache being left in a state that can never hold one.
   const blockBytes = Math.min(requestedBlockBytes, maxBytes);
