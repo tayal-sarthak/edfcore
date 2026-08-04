@@ -43,12 +43,15 @@ export type {
   EdfClockTime,
   EdfDiagnostic,
   EdfDiagnosticCode,
+  EdfEnvelopeChunk,
+  EdfEnvelopeSignal,
   EdfGap,
   EdfHeader,
   EdfInspection,
   EdfKnownDiagnosticCode,
   EdfLocation,
   EdfPatientId,
+  EdfPhysicalEnvelope,
   EdfRawHeaderFields,
   EdfRawSignalFields,
   EdfRecordIndex,
@@ -61,6 +64,7 @@ export type {
   EdfStartTime,
   EdfTimeline,
   EdfVariant,
+  EnvelopeSelection,
   FetchLike,
   HttpResponseLike,
   HttpSourceOptions,
@@ -147,5 +151,6 @@ export { buildRecordIndex, buildTimeline } from './record-index.js';
 // Convenience layer
 // ===========================================================================
 
+export { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from './envelope.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';

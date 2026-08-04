@@ -367,6 +367,59 @@ export interface EdfChunk {
   readonly diagnostics: readonly EdfDiagnostic[];
 }
 
+/**
+ * One signal's min/max envelope over a window, at a resolution the caller chose.
+ *
+ * The unit is the bucket, not the sample: `min[i]` and `max[i]` are the extremes of every sample
+ * that fell in bucket `i`. Drawing a twelve-hour recording into a thousand pixels needs exactly
+ * this and nothing else — the peaks are what a reader of an EEG trace is looking at, and they
+ * are the first thing naive subsampling throws away.
+ */
+export interface EdfEnvelopeSignal {
+  readonly signalIndex: number;
+  /** Digital extremes per bucket. Convert with `toPhysicalEnvelope`, never with `toPhysical`. */
+  readonly min: Int32Array;
+  readonly max: Int32Array;
+  /** Samples that landed in each bucket. Zero where the window had no samples to cover it. */
+  readonly counts: Int32Array;
+  /** Total samples reduced, i.e. the sum of `counts`. */
+  readonly sampleCount: number;
+  readonly firstSampleIndex: number;
+  readonly startSeconds: number;
+  readonly outOfDigitalRangeCount: number;
+}
+
+/** A contiguous run of records, reduced to buckets. One per run, exactly as `readWindow` splits. */
+export interface EdfEnvelopeChunk {
+  readonly records: RecordRange;
+  readonly startSeconds: number;
+  readonly durationSeconds: number;
+  /** Buckets actually filled. Never more than requested, and fewer for a short run. */
+  readonly bucketCount: number;
+  readonly secondsPerBucket: number;
+  readonly byteLength: number;
+  readonly signals: readonly EdfEnvelopeSignal[];
+  readonly precededByGap: EdfGap | undefined;
+  readonly diagnostics: readonly EdfDiagnostic[];
+}
+
+export interface EnvelopeSelection extends WindowSelection {
+  /**
+   * How many buckets to reduce the window into — in a viewer, the pixel width of the plot.
+   *
+   * A bucket per pixel is the point: asking for more buckets than the window has samples wastes
+   * work and yields empty buckets, so the count is clamped to the sample count of the densest
+   * signal in the run.
+   */
+  readonly buckets: number;
+}
+
+/** A physical-unit envelope. Separate from the digital one for the same reason `toPhysical` is. */
+export interface EdfPhysicalEnvelope {
+  readonly min: Float64Array;
+  readonly max: Float64Array;
+}
+
 export interface EdfAnnotation {
   /** Verbatim on-disk value, relative to the header startdate/starttime (EDF+ 2.2.4). */
   readonly onsetSecondsFromHeaderStart: number;
