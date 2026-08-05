@@ -101,8 +101,10 @@ function resolveSignals(header: EdfHeader, signalIndices: readonly number[]): re
  * `undefined` for a probed index, and that is not a claim that there is no gap — it is the honest
  * answer that nobody has read the onsets in between. `buildRecordIndex()` is what turns the
  * question into an answerable one.
+ *
+ * Exported for `envelope.ts`, so an envelope chunk reports a gap exactly as a read chunk does.
  */
-function gapBefore(index: EdfRecordIndex, recordStart: number): EdfGap | undefined {
+export function gapBefore(index: EdfRecordIndex, recordStart: number): EdfGap | undefined {
   const { segments, gaps } = index;
   if (segments === undefined || gaps === undefined) return undefined;
   for (const gap of gaps) {

@@ -25,6 +25,7 @@ import { decodeDigitalCounted } from './decode/digital.js';
 import { EdfScalingError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
+import { gapBefore } from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ticksToSeconds } from './tal/ticks.js';
 import { resolveTimeWindow } from './time/window.js';
@@ -209,7 +210,10 @@ async function reduceRange(
     secondsPerBucket: bucketCount > 0 ? durationSeconds / bucketCount : 0,
     byteLength,
     signals: Object.freeze(envelopeSignals),
-    precededByGap: undefined,
+    // The same gap a readWindow chunk would carry. An envelope promises to mirror readWindow,
+    // and a viewer that draws envelopes needs the discontinuities just as much as one that
+    // draws samples -- more, since at one bucket per pixel a gap is invisible without it.
+    precededByGap: gapBefore(recording.index, records.start),
     diagnostics: Object.freeze(diagnostics),
   });
 }

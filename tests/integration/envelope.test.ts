@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from '../../src/envelope.js';
 import { byteSource } from '../../src/io/bytes.js';
+import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import type { EdfRecording } from '../../src/types.js';
 import { minimalEdfPlus } from '../support/writer.js';
@@ -234,5 +235,45 @@ describe('envelopeOfSamples', () => {
     const inHand = envelopeOfSamples(chunkSignal, buckets);
     expect([...inHand.min]).toEqual([...fromRead.min]);
     expect([...inHand.max]).toEqual([...fromRead.max]);
+  });
+});
+
+describe('envelope chunks report gaps the way readWindow chunks do', () => {
+  it('carries precededByGap once the index knows where the gaps are', async () => {
+    // An envelope promises to mirror readWindow. At one bucket per pixel a gap is invisible in
+    // the data itself, so a viewer needs this more here than it does for raw samples.
+    const edf = await openEdf(
+      byteSource(
+        minimalEdfPlus({
+          plus: 'D',
+          recordCount: 6,
+          recordDurationSeconds: 1,
+          // A two-second hole after record 2.
+          recordOnsetSeconds: (record: number) => (record < 3 ? record : record + 2),
+          signals: [{ label: 'EEG Fpz-Cz', samplesPerRecord: 4 }],
+        }),
+      ),
+    );
+
+    const located = { ...edf, index: await buildRecordIndex(edf) };
+    expect(located.index.gaps?.length).toBe(1);
+
+    const chunks = await readEnvelope(located, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 100,
+      buckets: 8,
+    });
+    const windows = await readWindow(located, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 100,
+    });
+
+    expect(chunks).toHaveLength(windows.length);
+    expect(chunks.map((c) => c.precededByGap?.durationSeconds)).toEqual(
+      windows.map((c) => c.precededByGap?.durationSeconds),
+    );
+    expect(chunks[1]?.precededByGap).toBeDefined();
   });
 });
