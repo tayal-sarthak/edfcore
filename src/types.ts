@@ -420,6 +420,13 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+export interface FormatReportOptions {
+  /** Only used to name signals; a report reads fine without it. */
+  readonly header?: EdfHeader;
+  /** Individual diagnostics to print. Defaults to 20 — the counts above them are the summary. */
+  readonly maxItems?: number;
+}
+
 export interface FormatHeaderOptions {
   /** Off by default: a header carries a name and a birth date, and a summary gets pasted around. */
   readonly includePatientId?: boolean;

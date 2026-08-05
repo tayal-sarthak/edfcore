@@ -44,6 +44,7 @@ import type {
   ValidationReport,
 } from './types.js';
 
+export { formatValidationReport } from './format-report.js';
 /**
  * The three shapes only this subpath produces, re-exported from where they are declared.
  *
@@ -51,7 +52,12 @@ import type {
  * consumer of `edfcore/validate` must be able to name a `ValidationReport` without reaching into
  * the universal entry for it.
  */
-export type { ObservedSignalStats, ValidateOptions, ValidationReport } from './types.js';
+export type {
+  FormatReportOptions,
+  ObservedSignalStats,
+  ValidateOptions,
+  ValidationReport,
+} from './types.js';
 
 const LABEL_SPEC = 'EDF+ additional specification 9 (standard texts and labels)';
 const TIMEKEEPING_SPEC = 'EDF+ specification 2.2.1 (time keeping of data records)';
