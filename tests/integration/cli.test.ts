@@ -125,3 +125,16 @@ describe('validate', () => {
     expect(out).toMatch(/^(PASS|FAIL)/);
   });
 });
+
+describe('--version', () => {
+  it('prints the version and exits 0 with no command', async () => {
+    // A bare --version has no command, so it must not fall through to usage and exit 2.
+    const { code, out } = await invoke(['--version'], {});
+    expect(code).toBe(0);
+    expect(out.trim()).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it('accepts -v', async () => {
+    expect((await invoke(['-v'], {})).code).toBe(0);
+  });
+});

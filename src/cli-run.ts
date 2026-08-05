@@ -8,6 +8,7 @@
  */
 
 import { countAnnotationsByText } from './annotations-query.js';
+import { VERSION } from './constants.js';
 import { formatDiagnostics } from './diagnostics/format.js';
 import { formatHeader } from './format-header.js';
 import { formatValidationReport } from './format-report.js';
@@ -33,6 +34,8 @@ Options
   --patient                       include patient identification (header, json)
   --limit <n>                     individual diagnostics to print (default 20)
 
+  --version                       print the version and exit
+
 Exit codes: 0 success, 1 the file is unreadable or failed validation, 2 bad usage.
 `;
 
@@ -40,17 +43,20 @@ export interface Args {
   readonly command: string | undefined;
   readonly file: string | undefined;
   readonly patient: boolean;
+  readonly version: boolean;
   readonly limit: number | undefined;
 }
 
 export function parseArgs(argv: readonly string[]): Args {
   const positional: string[] = [];
   let patient = false;
+  let version = false;
   let limit: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--patient') patient = true;
+    else if (arg === '--version' || arg === '-v') version = true;
     else if (arg === '--limit') {
       const value = Number(argv[i + 1]);
       // A NaN limit would disable the cap silently, which is the opposite of what was asked for.
@@ -62,7 +68,7 @@ export function parseArgs(argv: readonly string[]): Args {
     } else if (arg !== undefined && !arg.startsWith('-')) positional.push(arg);
   }
 
-  return { command: positional[0], file: positional[1], patient, limit };
+  return { command: positional[0], file: positional[1], patient, version, limit };
 }
 
 async function open(io: CliIo, file: string) {
@@ -73,6 +79,12 @@ async function open(io: CliIo, file: string) {
 
 export async function runCli(args: Args, io: CliIo): Promise<number> {
   const { command, file } = args;
+  // Before the command check: `edfcore --version` has no command, and a bare --version must not
+  // fall through to the usage text and exit 2.
+  if (args.version) {
+    io.out(`${VERSION}\n`);
+    return 0;
+  }
   if (command === undefined || command === 'help' || command === '--help') {
     io.out(USAGE);
     return command === undefined ? 2 : 0;

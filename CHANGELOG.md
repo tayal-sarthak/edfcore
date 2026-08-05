@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.1
+
+- **Added** `--version` / `-v` to the CLI. Handled before the command check, so a bare
+  `--version` does not fall through to usage and exit 2.
+
 ## 0.2.0
 
 Marks the feature set that accumulated across 0.1.7–0.1.19 — envelope decimation, the CLI,
