@@ -58,6 +58,7 @@ export type {
   EdfRecordIndex,
   EdfRecording,
   EdfRecordingId,
+  EdfSampleLocation,
   EdfScale,
   EdfSegment,
   EdfSeverity,
@@ -165,4 +166,9 @@ export { decodeStatusWord, getStatusSignal, readTriggers } from './biosemi.js';
 export { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from './envelope.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';
+export {
+  sampleIndexAt,
+  sampleStartSeconds,
+  sampleStartTicks,
+} from './sample-grid.js';
 export { streamRecords } from './stream.js';

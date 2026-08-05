@@ -420,6 +420,13 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+/** Where a time lands on a signal's own sample grid. */
+export interface EdfSampleLocation {
+  readonly sampleIndex: number;
+  readonly recordIndex: number;
+  readonly sampleWithinRecord: number;
+}
+
 /** A time window for narrowing annotations already in hand. */
 export interface EdfAnnotationWindow {
   readonly startSeconds: number;
