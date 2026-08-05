@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.3
+
+- **Added** `declaredDurationSeconds(header)`. This is what the records COVER, which on an EDF+D
+  file is less than `timeline.spanSeconds` — the gaps belong to no record.
+
 ## 0.2.2
 
 - **Added** `edfcore signals <file>`: one tab-separated line per signal. `header` is for reading;

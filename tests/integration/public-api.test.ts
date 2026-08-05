@@ -118,6 +118,7 @@ const FUNCTIONS: readonly string[] = [
   'sampleStartSeconds',
   'formatHeader',
   'matchSignals',
+  'declaredDurationSeconds',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

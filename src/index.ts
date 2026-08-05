@@ -131,7 +131,13 @@ export { decodeDigital } from './decode/digital.js';
 export { clampToDigitalRange, toPhysical } from './decode/physical.js';
 export { formatDiagnostics } from './diagnostics/format.js';
 export { formatStartTimeNaive } from './header/dates.js';
-export { findSignals, getSignal, isAnnotationLabel, matchSignals } from './header/lookup.js';
+export {
+  declaredDurationSeconds,
+  findSignals,
+  getSignal,
+  isAnnotationLabel,
+  matchSignals,
+} from './header/lookup.js';
 export { parseHeader } from './header/parse.js';
 export { decodeAnnotations } from './tal/annotations.js';
 export { resolveTimeWindow, trimToWindow } from './time/window.js';

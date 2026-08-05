@@ -101,3 +101,17 @@ export function matchSignals(
     header.signals.filter((signal) => signal.kind === 'data' && test(signal.label)),
   );
 }
+
+/**
+ * The recording's total declared length in seconds.
+ *
+ * `recordCount * recordDurationSeconds`, which is the arithmetic every caller writes by hand.
+ * Zero for a file whose record duration is zero — legal EDF, and the honest answer, since such a
+ * file's records do not advance in time.
+ *
+ * This is the DECLARED length. On an EDF+D file the recording spans longer than this, because the
+ * gaps between records are not covered by any record; `timeline.spanSeconds` is that number.
+ */
+export function declaredDurationSeconds(header: EdfHeader): number {
+  return header.recordCount * header.recordDurationSeconds;
+}
