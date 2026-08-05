@@ -420,6 +420,11 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+export interface FormatHeaderOptions {
+  /** Off by default: a header carries a name and a birth date, and a summary gets pasted around. */
+  readonly includePatientId?: boolean;
+}
+
 /** Where a time lands on a signal's own sample grid. */
 export interface EdfSampleLocation {
   readonly sampleIndex: number;
