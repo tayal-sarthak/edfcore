@@ -7,6 +7,17 @@ Node. Real random access, no dependencies.
 npm install edfcore
 ```
 
+## Look at a file without writing code
+
+```bash
+npx edfcore header overnight.edf     # signals, rates, ranges, diagnostics
+npx edfcore events hypnogram.edf     # annotations, counted by text
+npx edfcore validate overnight.edf   # full conformance sweep; exits 1 on failure
+npx edfcore json overnight.edf       # the header as JSON, for jq
+```
+
+Patient identification is omitted unless you pass `--patient`.
+
 ## How do I read an EDF file in JavaScript?
 
 Open a source, pick a signal, read a time window, convert it to physical units. In the browser,

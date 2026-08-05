@@ -204,3 +204,29 @@ genuinely undefined prints as an em dash rather than `0 Hz` or `Infinity`.
 of the file each affects, then a capped sample of individual entries. A sweep over a damaged file
 can produce six figures of diagnostics — `TIMEKEEPING_TAL_MISSING` is per record — and a wall of
 them buries the answer.
+
+## The CLI
+
+```bash
+npx edfcore header <file>      # the header, the signals, and any diagnostics
+npx edfcore validate <file>    # a full conformance sweep, scanning every sample
+npx edfcore events <file>      # the annotations, counted by text
+npx edfcore json <file>        # the header as JSON, for piping into jq
+```
+
+Flags: `--patient` includes patient identification, `--limit <n>` caps the individual diagnostics
+printed.
+
+Exit codes are the contract, so a script can act on them without parsing the output:
+
+| Code | Meaning |
+|---|---|
+| `0` | success |
+| `1` | the file could not be read, or validation failed |
+| `2` | bad usage — unknown command, missing file, bad flag |
+
+`edfcore validate` exiting non-zero is the intended way to gate a CI job on file conformance.
+
+Patient identification is omitted from `header` and `json` unless `--patient` is passed, for the
+same reason `formatHeader` withholds it: the obvious thing to do with CLI output is pipe it
+somewhere.

@@ -1,0 +1,119 @@
+# Changelog
+
+Notable changes per release. Fixes say what was wrong and what it cost, because a version number
+alone does not tell you whether you were affected.
+
+edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
+defect; those are called out below.
+
+## 0.1.18
+
+- **Added** this changelog, and documentation for the CLI.
+
+## 0.1.17
+
+- **Added** a CLI: `npx edfcore header|validate|events|json <file>`. Exit codes are the contract —
+  0 success, 1 unreadable or failed validation, 2 bad usage — so `edfcore validate` gates a CI job
+  without parsing output. Patient identification is opt-in.
+
+## 0.1.16
+
+- **Added** an exhaustiveness check to the public API test. It was an allowlist, which only proved
+  that listed exports exist; fifteen helpers reached npm undocumented because nothing failed.
+
+## 0.1.15
+
+- **Fixed** `readEnvelope` reporting `precededByGap: undefined` on every chunk, so an EDF+D
+  envelope claimed no gaps. Introduced in 0.1.7. At one bucket per pixel a gap is invisible in the
+  data itself, so a viewer had nothing to go on.
+
+## 0.1.14
+
+- **Added** [API — helpers](https://edfcore.vercel.app/docs/api-helpers), documenting everything
+  shipped in 0.1.7 through 0.1.13.
+
+## 0.1.13
+
+- **Added** `formatValidationReport` to `edfcore/validate`.
+
+## 0.1.12
+
+- **Added** `formatHeader`. Omits patient identification unless asked.
+
+## 0.1.11
+
+- **Added** `sampleIndexAt`, `sampleStartTicks`, `sampleStartSeconds`. `Math.round(seconds *
+  sampleRateHz)` drifts by one over a long recording when the rate has no exact float
+  representation, and yields `NaN` for a zero record duration.
+
+## 0.1.10
+
+- **Added** `filterAnnotationsByTime`, `filterAnnotationsByText`, `countAnnotationsByText`. All
+  comparisons are on `onsetTicks`, not on float seconds.
+
+## 0.1.9
+
+- **Added** `streamRecords`, an async iterator over a window with bounded memory.
+
+## 0.1.8
+
+- **Added** BioSemi Status-channel helpers: `getStatusSignal`, `decodeStatusWord`, `readTriggers`.
+  One event per change of the trigger word, not one per sample.
+
+## 0.1.7
+
+- **Added** min/max envelope decimation: `readEnvelope`, `toPhysicalEnvelope`,
+  `envelopeOfSamples`. `toPhysicalEnvelope` swaps the bounds when the gain is negative, which
+  `toPhysical` applied twice would not.
+
+## 0.1.6
+
+- **Fixed** `validateRecording` throwing `RangeError: Maximum call stack size exceeded` once a
+  sweep collected about 125,000 diagnostics. `push(...array)` passes each element as a call
+  argument. A 32 MiB file with 130,000 records and a damaged annotation section reached it
+  honestly, and the thrown value was neither an `EdfError` nor a caller mistake.
+- **Fixed** record onsets wrapping silently in their `BigInt64Array` for an overflowing record
+  duration, producing an index that reported `coverage: 'complete'` with one segment per record,
+  negative gaps, and no diagnostic. A declared span past the tick range is now refused with a new
+  fatal `RECORDING_SPAN_UNREPRESENTABLE`.
+
+## 0.1.5
+
+- **Changed** `readWindow` to validate `signalIndices` before resolving the window. An
+  out-of-range index previously threw for a window over data and returned `[]` for a window past
+  the end — and `[]` is documented to mean "no records here", never "the read failed".
+
+## 0.1.4
+
+- **Fixed** a record whose timekeeping TAL is missing deriving its onset from zero rather than
+  from the recording's start. Three failures came from this one gap: a missing TAL in the last
+  record faked a discontinuity and made `readWindow` refuse an entire conforming file; the scan
+  chunk size changed the onsets, the segments and even a fatal `TIMELINE_NOT_MONOTONIC`; and the
+  same record reported two different start times depending on how many neighbours were read with
+  it.
+
+## 0.1.3
+
+- **Fixed** `cachedSource` returning fabricated zero bytes when `blockBytes` or `maxBytes` was
+  `NaN`. The `< 1` guard cannot fire for `NaN`.
+- **Fixed** `httpSource` hanging forever on a `NaN` `maxConcurrency` — no error, no timeout.
+- **Fixed** `httpSource` re-downloading a Range-ignoring resource once per concurrent read. 32
+  concurrent reads cost 32 full transfers; now one.
+- **Fixed** a source-level `AbortSignalLike` shim being ignored, so the same object behaved
+  differently depending on where it was passed.
+- **Fixed** `validateRecording` allocating its scan scratch buffer without checking
+  `maxMaterializeBytes`, reachable as 400 MB from one corrupted field in a 512-byte file.
+
+## 0.1.2
+
+- Release tooling only.
+
+## 0.1.1
+
+- **Fixed** a false claim in the README: `strictNullChecks` does not catch an unguarded
+  `toPhysical` call. The type stops you reading the gain; it does not gate the call.
+- **Fixed** three README links that 404ed on npmjs.com.
+
+## 0.1.0
+
+First release. Reads EDF, EDF+, BDF and BDF+ with real random access.
