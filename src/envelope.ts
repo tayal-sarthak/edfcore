@@ -288,6 +288,7 @@ function foldChunk(
 export function toPhysicalEnvelope(
   signal: EdfSignal,
   envelope: EdfEnvelopeSignal,
+  out?: EdfPhysicalEnvelope,
 ): EdfPhysicalEnvelope {
   const scale = signal.scale;
   if (scale === undefined) {
@@ -299,9 +300,25 @@ export function toPhysicalEnvelope(
     );
   }
 
+  /*
+   * `out` reuses the caller's arrays. An envelope is the render-loop path — a viewer redraws on
+   * every pan, zoom and resize — so allocating two Float64Arrays per frame is the one allocation
+   * here worth letting a caller avoid. `toPhysical` already takes an `out` for the same reason;
+   * this is the same contract, including refusing an array that is too short rather than
+   * silently writing fewer values than the caller will read.
+   */
   const length = envelope.min.length;
-  const low = new Float64Array(length);
-  const high = new Float64Array(length);
+  if (out !== undefined && (out.min.length < length || out.max.length < length)) {
+    throw new RangeError(
+      `out holds ${Math.min(out.min.length, out.max.length)} buckets but this envelope has ` +
+        `${length}. Next: size both arrays to envelope.min.length, or omit out and let ` +
+        'toPhysicalEnvelope allocate.',
+    );
+  }
+  // A longer `out` is narrowed to a view over its own memory, so reuse allocates nothing while
+  // the result length stays equal to the real bucket count.
+  const low = out === undefined ? new Float64Array(length) : out.min.subarray(0, length);
+  const high = out === undefined ? new Float64Array(length) : out.max.subarray(0, length);
   const decreasing = scale.bitValue < 0;
 
   for (let i = 0; i < length; i += 1) {

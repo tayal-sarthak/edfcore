@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.1.19
+
+- **Added** an optional `out` parameter to `toPhysicalEnvelope`, matching `toPhysical`. An
+  envelope is the render-loop path, so two `Float64Array` allocations per frame is the one
+  allocation worth letting a caller avoid.
+
 ## 0.1.18
 
 - **Added** this changelog, and documentation for the CLI.

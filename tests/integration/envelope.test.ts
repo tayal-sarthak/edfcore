@@ -277,3 +277,59 @@ describe('envelope chunks report gaps the way readWindow chunks do', () => {
     expect(chunks[1]?.precededByGap).toBeDefined();
   });
 });
+
+describe('toPhysicalEnvelope reuses a caller buffer', () => {
+  it('writes into out and allocates nothing', async () => {
+    const edf = await recording();
+    const [envelope] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: SECONDS,
+      buckets: 16,
+    });
+    const signal = edf.header.signals[0];
+    const envelopeSignal = envelope?.signals[0];
+    if (signal === undefined || envelopeSignal === undefined) throw new Error('missing fixture');
+
+    const fresh = toPhysicalEnvelope(signal, envelopeSignal);
+    const out = { min: new Float64Array(16), max: new Float64Array(16) };
+    const reused = toPhysicalEnvelope(signal, envelopeSignal, out);
+
+    expect([...reused.min]).toEqual([...fresh.min]);
+    expect([...reused.max]).toEqual([...fresh.max]);
+    // Same memory, not a copy: that is the whole point of passing it.
+    expect(reused.min.buffer).toBe(out.min.buffer);
+  });
+
+  it('narrows a longer out rather than reporting the wrong length', async () => {
+    const edf = await recording();
+    const [envelope] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: SECONDS,
+      buckets: 16,
+    });
+    const signal = edf.header.signals[0];
+    const envelopeSignal = envelope?.signals[0];
+    if (signal === undefined || envelopeSignal === undefined) throw new Error('missing fixture');
+
+    const roomy = { min: new Float64Array(64), max: new Float64Array(64) };
+    expect(toPhysicalEnvelope(signal, envelopeSignal, roomy).min).toHaveLength(16);
+  });
+
+  it('refuses an out that is too short instead of writing fewer values than will be read', async () => {
+    const edf = await recording();
+    const [envelope] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: SECONDS,
+      buckets: 16,
+    });
+    const signal = edf.header.signals[0];
+    const envelopeSignal = envelope?.signals[0];
+    if (signal === undefined || envelopeSignal === undefined) throw new Error('missing fixture');
+
+    const small = { min: new Float64Array(4), max: new Float64Array(4) };
+    expect(() => toPhysicalEnvelope(signal, envelopeSignal, small)).toThrow(RangeError);
+  });
+});
