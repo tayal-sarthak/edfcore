@@ -420,6 +420,11 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+export interface StreamSelection extends WindowSelection {
+  /** Records held at once. Defaults to 256. The record is the only unit every signal shares. */
+  readonly chunkRecords?: number;
+}
+
 /** One decoded BioSemi Status sample. Only the bits BioSemi documents are named. */
 export interface EdfStatusWord {
   /** All 24 bits, unsigned. Decode rig-specific conventions from this. */

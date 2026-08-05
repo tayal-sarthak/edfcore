@@ -75,6 +75,7 @@ export type {
   ReadOptions,
   RecordRange,
   RecordSelection,
+  StreamSelection,
   TriggerSelection,
   WindowSelection,
 } from './types.js';
@@ -158,3 +159,4 @@ export { decodeStatusWord, getStatusSignal, readTriggers } from './biosemi.js';
 export { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from './envelope.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';
+export { streamRecords } from './stream.js';
