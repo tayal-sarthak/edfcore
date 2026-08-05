@@ -74,5 +74,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "bin": {
+    "edfcore": "./dist/cli.js"
   }
 }

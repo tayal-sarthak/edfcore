@@ -1,0 +1,158 @@
+/**
+ * What `npx edfcore` actually does, with the process factored out.
+ *
+ * `cli.ts` is a shell that supplies real `node:fs` and `node:process`; everything decidable lives
+ * here, behind an injected `CliIo`. That is not ceremony — a CLI tested by spawning a subprocess
+ * can only be tested once the package is built, so the tests either skip in CI or test a stale
+ * binary. This way the exit codes and the output are ordinary unit tests.
+ */
+
+import { countAnnotationsByText } from './annotations-query.js';
+import { formatDiagnostics } from './diagnostics/format.js';
+import { formatHeader } from './format-header.js';
+import { formatValidationReport } from './format-report.js';
+import { byteSource } from './io/bytes.js';
+import { openEdf, readAnnotations } from './recording.js';
+import { validateRecording } from './validate.js';
+
+/** Everything the CLI touches outside itself. */
+export interface CliIo {
+  readFile(path: string): Promise<Uint8Array>;
+  out(text: string): void;
+  err(text: string): void;
+}
+
+const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
+
+  npx edfcore header <file>       the header, the signals, and any diagnostics
+  npx edfcore validate <file>     a full conformance sweep, scanning every sample
+  npx edfcore events <file>       the annotations, counted by text
+  npx edfcore json <file>         the header as JSON, for piping into jq
+
+Options
+  --patient                       include patient identification (header, json)
+  --limit <n>                     individual diagnostics to print (default 20)
+
+Exit codes: 0 success, 1 the file is unreadable or failed validation, 2 bad usage.
+`;
+
+export interface Args {
+  readonly command: string | undefined;
+  readonly file: string | undefined;
+  readonly patient: boolean;
+  readonly limit: number | undefined;
+}
+
+export function parseArgs(argv: readonly string[]): Args {
+  const positional: string[] = [];
+  let patient = false;
+  let limit: number | undefined;
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--patient') patient = true;
+    else if (arg === '--limit') {
+      const value = Number(argv[i + 1]);
+      // A NaN limit would disable the cap silently, which is the opposite of what was asked for.
+      if (!Number.isSafeInteger(value) || value < 0) {
+        throw new RangeError(`--limit needs a whole number, received ${String(argv[i + 1])}`);
+      }
+      limit = value;
+      i += 1;
+    } else if (arg !== undefined && !arg.startsWith('-')) positional.push(arg);
+  }
+
+  return { command: positional[0], file: positional[1], patient, limit };
+}
+
+async function open(io: CliIo, file: string) {
+  // Read whole rather than fileSource: a CLI invocation is one pass over one file, and holding
+  // it in memory removes any question of a descriptor outliving the process.
+  return openEdf(byteSource(await io.readFile(file)));
+}
+
+export async function runCli(args: Args, io: CliIo): Promise<number> {
+  const { command, file } = args;
+  if (command === undefined || command === 'help' || command === '--help') {
+    io.out(USAGE);
+    return command === undefined ? 2 : 0;
+  }
+  if (file === undefined) {
+    io.err(`edfcore ${command}: no file given\n\n${USAGE}`);
+    return 2;
+  }
+
+  switch (command) {
+    case 'header': {
+      const recording = await open(io, file);
+      io.out(`${formatHeader(recording.header, { includePatientId: args.patient })}\n`);
+      if (recording.header.diagnostics.length > 0) {
+        io.out(
+          `\n${formatDiagnostics(recording.header.diagnostics, { maxItems: args.limit ?? 20 })}\n`,
+        );
+      }
+      return 0;
+    }
+
+    case 'validate': {
+      const recording = await open(io, file);
+      const report = await validateRecording(recording, { scanSamples: true });
+      io.out(
+        `${formatValidationReport(report, { header: recording.header, maxItems: args.limit ?? 20 })}\n`,
+      );
+      // Exit 1 on failure so a CI job can gate on it without parsing the output.
+      return report.ok ? 0 : 1;
+    }
+
+    case 'events': {
+      const recording = await open(io, file);
+      const { annotations } = await readAnnotations(recording, {
+        start: 0,
+        count: recording.header.recordCount,
+      });
+      if (annotations.length === 0) {
+        io.out('no annotations\n');
+        return 0;
+      }
+      io.out(`${annotations.length} annotation(s)\n\n`);
+      for (const { text, count } of countAnnotationsByText(annotations)) {
+        io.out(`${String(count).padStart(8)}  ${text}\n`);
+      }
+      return 0;
+    }
+
+    case 'json': {
+      const recording = await open(io, file);
+      const { header } = recording;
+      io.out(
+        `${JSON.stringify(
+          {
+            variant: header.variant,
+            recordCount: header.recordCount,
+            recordDurationSeconds: header.recordDurationSeconds,
+            spanSeconds: recording.timeline.spanSeconds,
+            // Patient identification is opt-in here for the same reason it is in formatHeader:
+            // the obvious thing to do with this output is pipe it somewhere.
+            ...(args.patient ? { patient: header.patient.raw.trim() } : {}),
+            signals: header.signals.map((signal) => ({
+              index: signal.index,
+              label: signal.label,
+              kind: signal.kind,
+              samplesPerRecord: signal.samplesPerRecord,
+              sampleRateHz: signal.sampleRateHz,
+              physicalDimension: signal.physicalDimension,
+            })),
+            diagnostics: header.diagnostics.map((d) => ({ code: d.code, severity: d.severity })),
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      return 0;
+    }
+
+    default:
+      io.err(`edfcore: unknown command ${JSON.stringify(command)}\n\n${USAGE}`);
+      return 2;
+  }
+}
