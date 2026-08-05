@@ -62,7 +62,9 @@ export type {
   EdfSeverity,
   EdfSignal,
   EdfStartTime,
+  EdfStatusWord,
   EdfTimeline,
+  EdfTriggerEvent,
   EdfVariant,
   EnvelopeSelection,
   FetchLike,
@@ -73,6 +75,7 @@ export type {
   ReadOptions,
   RecordRange,
   RecordSelection,
+  TriggerSelection,
   WindowSelection,
 } from './types.js';
 
@@ -151,6 +154,7 @@ export { buildRecordIndex, buildTimeline } from './record-index.js';
 // Convenience layer
 // ===========================================================================
 
+export { decodeStatusWord, getStatusSignal, readTriggers } from './biosemi.js';
 export { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from './envelope.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';

@@ -420,6 +420,32 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+/** One decoded BioSemi Status sample. Only the bits BioSemi documents are named. */
+export interface EdfStatusWord {
+  /** All 24 bits, unsigned. Decode rig-specific conventions from this. */
+  readonly raw: number;
+  /** The parallel trigger input: the low 16 bits. */
+  readonly trigger: number;
+  readonly newEpoch: boolean;
+  readonly cmsInRange: boolean;
+  readonly batteryLow: boolean;
+}
+
+/** A change of the trigger word, timed on the Status channel's own sample grid. */
+export interface EdfTriggerEvent {
+  readonly sampleIndex: number;
+  readonly seconds: number;
+  /** Exact, in 100 ns units. Compare with this, never with the float. */
+  readonly ticks: bigint;
+  readonly trigger: number;
+  readonly status: EdfStatusWord;
+}
+
+export interface TriggerSelection {
+  readonly startSeconds: number;
+  readonly durationSeconds: number;
+}
+
 export interface EdfAnnotation {
   /** Verbatim on-disk value, relative to the header startdate/starttime (EDF+ 2.2.4). */
   readonly onsetSecondsFromHeaderStart: number;
