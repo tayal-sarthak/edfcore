@@ -420,6 +420,12 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+/** A time window for narrowing annotations already in hand. */
+export interface EdfAnnotationWindow {
+  readonly startSeconds: number;
+  readonly durationSeconds: number;
+}
+
 export interface StreamSelection extends WindowSelection {
   /** Records held at once. Defaults to 256. The record is the only unit every signal shares. */
   readonly chunkRecords?: number;

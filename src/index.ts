@@ -37,6 +37,7 @@ export type {
   DecodeAnnotationsOptions,
   EdfAnnotation,
   EdfAnnotationsResult,
+  EdfAnnotationWindow,
   EdfCalendarDate,
   EdfChunk,
   EdfChunkSignal,
@@ -155,6 +156,11 @@ export { buildRecordIndex, buildTimeline } from './record-index.js';
 // Convenience layer
 // ===========================================================================
 
+export {
+  countAnnotationsByText,
+  filterAnnotationsByText,
+  filterAnnotationsByTime,
+} from './annotations-query.js';
 export { decodeStatusWord, getStatusSignal, readTriggers } from './biosemi.js';
 export { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from './envelope.js';
 export { inspectEdf } from './inspect.js';
