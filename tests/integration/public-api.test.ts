@@ -117,6 +117,7 @@ const FUNCTIONS: readonly string[] = [
   'sampleStartTicks',
   'sampleStartSeconds',
   'formatHeader',
+  'matchSignals',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

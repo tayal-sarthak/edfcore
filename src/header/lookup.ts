@@ -79,3 +79,25 @@ export function getSignal(header: EdfHeader, selector: number | string): EdfSign
     { label: trimEdfField(selector), matchingIndices },
   );
 }
+
+/**
+ * Every data signal whose label matches a pattern.
+ *
+ * `findSignals` matches one exact label, which is right when you know what you want. This is for
+ * the other case: a montage is a family — `EEG Fpz-Cz`, `EEG Pz-Oz` — and picking it out by hand
+ * means filtering `header.signals` and remembering to drop the annotations channel, which is the
+ * step people forget. Its bytes are TAL text, so decoding them as samples produces numbers that
+ * look like a signal.
+ *
+ * Annotation channels are never returned. Pass a RegExp or a predicate; a plain string is the
+ * exact-match case `findSignals` already covers.
+ */
+export function matchSignals(
+  header: EdfHeader,
+  match: RegExp | ((label: string) => boolean),
+): readonly EdfSignal[] {
+  const test = match instanceof RegExp ? (label: string): boolean => match.test(label) : match;
+  return Object.freeze(
+    header.signals.filter((signal) => signal.kind === 'data' && test(signal.label)),
+  );
+}

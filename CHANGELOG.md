@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.0
+
+Marks the feature set that accumulated across 0.1.7–0.1.19 — envelope decimation, the CLI,
+BioSemi Status helpers, streaming iteration, annotation queries, the sample grid and the
+formatters. Those went out as patch releases, which understated them: a backward-compatible
+feature is a minor under semver, and nineteen patch bumps read as nineteen bug fixes.
+
+- **Added** `matchSignals(header, pattern)` — a signal family by RegExp or predicate. Never
+  returns an annotations channel, which is the step people forget when filtering
+  `header.signals` by hand.
+
 ## 0.1.19
 
 - **Added** an optional `out` parameter to `toPhysicalEnvelope`, matching `toPhysical`. An
