@@ -100,6 +100,23 @@ const FUNCTIONS: readonly string[] = [
   'readWindow',
   'readAnnotations',
   'inspectEdf',
+  // Helpers, added after the original barrel. Listing one here is not a formality: the
+  // exhaustiveness test below refuses any export that is not named, which is what makes adding
+  // one a deliberate act rather than something that quietly ships undocumented.
+  'readEnvelope',
+  'toPhysicalEnvelope',
+  'envelopeOfSamples',
+  'streamRecords',
+  'getStatusSignal',
+  'decodeStatusWord',
+  'readTriggers',
+  'filterAnnotationsByTime',
+  'filterAnnotationsByText',
+  'countAnnotationsByText',
+  'sampleIndexAt',
+  'sampleStartTicks',
+  'sampleStartSeconds',
+  'formatHeader',
 ];
 
 const ERROR_CLASSES: readonly string[] = [
@@ -125,6 +142,28 @@ const CONSTANTS: readonly string[] = [
   'BDF_DIGITAL_MAX',
   'VERSION',
 ];
+
+describe('the barrel exports nothing that is not accounted for', () => {
+  it('names every runtime export in one of the lists above', () => {
+    /*
+     * The lists above are an allowlist, and an allowlist only proves that what it names EXISTS.
+     * Fifteen helpers were added across six releases and every one of them passed this file
+     * untouched, which is also how they reached npm with no documentation.
+     *
+     * This is the other half: an export nobody listed is a failure. The cost of adding a symbol
+     * is now one line here, and that line is the moment to ask whether it is documented.
+     */
+    const accounted = new Set([...FUNCTIONS, ...ERROR_CLASSES, ...CONSTANTS]);
+    const runtimeExports = Object.keys(edfcore).filter((name) => name !== 'default');
+    const unaccounted = runtimeExports.filter((name) => !accounted.has(name));
+    expect(unaccounted).toEqual([]);
+  });
+
+  it('does not leak an internal helper into the barrel', () => {
+    // gapBefore is exported from recording.ts so envelope.ts can share it. It is not API.
+    expect(Object.keys(edfcore)).not.toContain('gapBefore');
+  });
+});
 
 describe('the "edfcore" barrel exports every symbol DESIGN section 3 lists', () => {
   it.each(FUNCTIONS)('exports %s as a plain function', (name) => {
