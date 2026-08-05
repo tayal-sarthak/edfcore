@@ -28,6 +28,7 @@ const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
   npx edfcore header <file>       the header, the signals, and any diagnostics
   npx edfcore validate <file>     a full conformance sweep, scanning every sample
   npx edfcore events <file>       the annotations, counted by text
+  npx edfcore signals <file>      one line per signal, for grep and awk
   npx edfcore json <file>         the header as JSON, for piping into jq
 
 Options
@@ -129,6 +130,23 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(`${annotations.length} annotation(s)\n\n`);
       for (const { text, count } of countAnnotationsByText(annotations)) {
         io.out(`${String(count).padStart(8)}  ${text}\n`);
+      }
+      return 0;
+    }
+
+    case 'signals': {
+      // Tab-separated and one line per signal: `header` is for reading, this is for piping.
+      const recording = await open(io, file);
+      for (const signal of recording.header.signals) {
+        io.out(
+          [
+            signal.index,
+            signal.label,
+            signal.kind,
+            signal.sampleRateHz ?? '',
+            signal.physicalDimension.trim(),
+          ].join('\t') + '\n',
+        );
       }
       return 0;
     }

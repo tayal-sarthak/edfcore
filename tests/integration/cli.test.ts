@@ -138,3 +138,20 @@ describe('--version', () => {
     expect((await invoke(['-v'], {})).code).toBe(0);
   });
 });
+
+describe('signals', () => {
+  it('emits one tab-separated line per signal', async () => {
+    const { code, out } = await invoke(['signals', 'a.edf'], { 'a.edf': PLUS });
+    expect(code).toBe(0);
+    const lines = out.trim().split('\n');
+    expect(lines.every((l) => l.includes('\t'))).toBe(true);
+    // Every signal, annotations channel included: this is the raw listing.
+    expect(lines).toHaveLength(
+      (
+        await invoke(['json', 'a.edf'], { 'a.edf': PLUS }).then(
+          (r) => (JSON.parse(r.out) as { signals: unknown[] }).signals,
+        )
+      ).length,
+    );
+  });
+});

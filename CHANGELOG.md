@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.2
+
+- **Added** `edfcore signals <file>`: one tab-separated line per signal. `header` is for reading;
+  this is for grep and awk.
+
 ## 0.2.1
 
 - **Added** `--version` / `-v` to the CLI. Handled before the command check, so a bare
