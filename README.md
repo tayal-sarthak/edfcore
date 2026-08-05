@@ -58,7 +58,7 @@ for (const event of annotations) {
 }
 ```
 
-> **Status: 0.1.0, early.** edfcore runs 1,100+ tests on generated fixtures, and it's checked
+> **Status: 0.1.x, early.** edfcore runs 1,200+ tests on generated fixtures, and it's checked
 > against public corpora it didn't author: the EDF, EDF+ and 24-bit BDF+ test files from
 > teuniz.net, and PhysioNet's sleep-edfx (a real 22-hour polysomnography recording and its
 > sleep-staging file). Those checks are numeric. Channels labelled `sine 8.5 Hz` decode to
@@ -275,9 +275,14 @@ edfplus.info test files) and a golden-value harness cross-checking physical valu
 pyEDFlib and MNE. Until that harness exists this README makes no numerical-interop claim, and it
 will not make one that a test did not produce.
 
-**Later, additive.** Min/max envelope decimation as its own type. The `edffloat` logarithmic
-inverse transform, opt-in (currently detected and rejected). BioSemi
-Status-byte helpers. JSR publication.
+**Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`). BioSemi Status-byte
+helpers (`readTriggers`). Streaming iteration (`streamRecords`). Annotation queries, exact
+time-to-sample conversion, and text formatters for the header and the validation report. See
+[API — helpers](https://edfcore.vercel.app/docs/api-helpers).
+
+**Still later, additive.** The `edffloat` logarithmic inverse transform, opt-in — still detected
+and rejected, because applying an inverse edfcore cannot verify against a real edffloat file is
+exactly the invention this library refuses. JSR publication.
 
 ---
 
