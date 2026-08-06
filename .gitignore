@@ -7,3 +7,7 @@ tests/corpus/files/
 
 # Preserved, never committed: see CLAUDE.md file-deletion policy.
 deleted/
+
+# Throwaway reproductions written by review agents. Never committed: they assert whatever
+# behaviour was current when they were written, so committing them pins defects.
+tests/scratch/
