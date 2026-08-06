@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.21
+
+- **Fixed** `matchSignals` and `filterAnnotationsByText` returning roughly half their matches when
+  the caller's `RegExp` carried a `g` or `y` flag. `RegExp.prototype.test` starts from `lastIndex`
+  and advances it with those flags, so across an array each element's answer depended on what the
+  previous one matched: four EEG channels and `/^EEG/g` gave back the first and the third. Even a
+  match-everything pattern stopped returning every signal once it carried the flag, and a second
+  call with the same regex object gave a different answer than the first. A `g` flag on a
+  membership test means nothing, so both now test against a clone with `lastIndex` reset — cloned
+  rather than reset in place, so a shared module-level regex is never mutated.
+
 ## 0.2.20
 
 - **Fixed** `filterAnnotationsByTime` dropping an annotation whose duration was written as an

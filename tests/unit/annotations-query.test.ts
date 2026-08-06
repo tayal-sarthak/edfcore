@@ -206,3 +206,34 @@ describe('an instantaneous event is instantaneous however the writer spelled it'
     );
   });
 });
+
+describe('filterAnnotationsByText with a stateful regex', () => {
+  // Same defect as matchSignals: `test` advances `lastIndex` on a /g or /y pattern, so the answer
+  // for one annotation depended on what the previous one matched.
+  const stages = [
+    annotation(0, 'Sleep stage W'),
+    annotation(30, 'Sleep stage W'),
+    annotation(60, 'Sleep stage W'),
+    annotation(90, 'Sleep stage N1'),
+  ];
+
+  it('returns every match, not every other one', () => {
+    const plain = filterAnnotationsByText(stages, /Sleep stage W/);
+    expect(plain).toHaveLength(3);
+    expect(filterAnnotationsByText(stages, /Sleep stage W/g)).toHaveLength(3);
+    expect(filterAnnotationsByText(stages, /Sleep stage W/y)).toHaveLength(3);
+  });
+
+  it('is idempotent across calls sharing one regex object', () => {
+    const shared = /Sleep stage/g;
+    expect(filterAnnotationsByText(stages, shared)).toHaveLength(4);
+    expect(filterAnnotationsByText(stages, shared)).toHaveLength(4);
+  });
+
+  it('leaves the caller lastIndex alone', () => {
+    const shared = /Sleep/g;
+    shared.lastIndex = 3;
+    filterAnnotationsByText(stages, shared);
+    expect(shared.lastIndex).toBe(3);
+  });
+});

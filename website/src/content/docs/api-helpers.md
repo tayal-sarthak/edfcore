@@ -18,8 +18,13 @@ const eeg = matchSignals(recording.header, /^EEG /);
 const byPredicate = matchSignals(recording.header, (s) => s.physicalDimension === 'uV');
 ```
 
-`matchSignals` never returns an annotations channel. `getSignal` remains the right call for one
-channel by name — it throws `EdfChannelNotFoundError` or `EdfAmbiguousChannelError` rather than
+`matchSignals` never returns an annotations channel. A `g` or `y` flag on the pattern is harmless:
+`RegExp.prototype.test` is stateful with those flags and would otherwise make each label's answer
+depend on the previous one — returning about half a montage, silently. Both this and
+`filterAnnotationsByText` test against a clone with `lastIndex` reset, so your own regex object is
+never mutated either (fixed in 0.2.21).
+
+`getSignal` remains the right call for one channel by name — it throws `EdfChannelNotFoundError` or `EdfAmbiguousChannelError` rather than
 returning `undefined`; `matchSignals` returns a family, possibly empty.
 
 ```ts

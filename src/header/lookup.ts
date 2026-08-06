@@ -81,6 +81,31 @@ export function getSignal(header: EdfHeader, selector: number | string): EdfSign
 }
 
 /**
+ * A membership test over a caller's RegExp that cannot be poisoned by its own flags.
+ *
+ * `RegExp.prototype.test` is STATEFUL when the pattern carries `g` or `y`: it starts from
+ * `lastIndex` and advances it on every match. Used across an array — which is what every filter
+ * here does — that makes the result depend on what the previous element matched, so `/EEG/g` over
+ * four EEG channels returns the first and third and silently drops the other two. The caller sees
+ * half a montage with no error, and even a match-everything pattern stops returning every signal
+ * once it carries the flag.
+ *
+ * A `g` flag on a membership test means nothing, so honouring its statefulness serves no one. The
+ * regex is CLONED rather than reset in place: resetting the caller's object would mutate an
+ * argument, and a module-level `const PATTERN = /x/g` shared with a `String.replace` elsewhere
+ * would then behave differently depending on whether edfcore had been called first.
+ */
+export function matchesText(match: RegExp): (text: string) => boolean {
+  const pattern = new RegExp(match.source, match.flags);
+  return (text: string): boolean => {
+    // `y` anchors at `lastIndex`, so this also makes a sticky pattern test from the start of each
+    // string rather than from wherever the previous element left off.
+    pattern.lastIndex = 0;
+    return pattern.test(text);
+  };
+}
+
+/**
  * Every data signal whose label matches a pattern.
  *
  * `findSignals` matches one exact label, which is right when you know what you want. This is for
@@ -96,7 +121,7 @@ export function matchSignals(
   header: EdfHeader,
   match: RegExp | ((label: string) => boolean),
 ): readonly EdfSignal[] {
-  const test = match instanceof RegExp ? (label: string): boolean => match.test(label) : match;
+  const test = match instanceof RegExp ? matchesText(match) : match;
   return Object.freeze(
     header.signals.filter((signal) => signal.kind === 'data' && test(signal.label)),
   );

@@ -19,6 +19,7 @@
  * offset.
  */
 
+import { matchesText } from './header/lookup.js';
 import { secondsToTicks } from './tal/ticks.js';
 import type { EdfAnnotation, EdfAnnotationWindow } from './types.js';
 
@@ -73,7 +74,9 @@ export function filterAnnotationsByText(
     typeof match === 'string'
       ? (text: string): boolean => text === match
       : match instanceof RegExp
-        ? (text: string): boolean => match.test(text)
+        ? // Not `match.test` directly: a `g` or `y` flag makes `test` stateful across the array
+          // and silently returns about half the true matches. See `matchesText`.
+          matchesText(match)
         : match;
   return Object.freeze(annotations.filter((annotation) => test(annotation.text)));
 }
