@@ -461,7 +461,16 @@ export interface EdfStatusWord {
   readonly batteryLow: boolean;
 }
 
-/** A change of the trigger word, timed on the Status channel's own sample grid. */
+/**
+ * A change of the trigger word, located on the Status channel's own sample grid and timed on the
+ * recording's axis.
+ *
+ * Those are two different things and the distinction is load-bearing. `sampleIndex` counts samples
+ * of the Status channel from the start of the file. `seconds`/`ticks` are elapsed recording time —
+ * `t = 0` is the start of record 0 — derived from the containing record's TRUE onset, so on an
+ * EDF+D file the gaps are in them. Deriving the time from `sampleIndex` instead would place every
+ * post-gap event early by the whole gap.
+ */
 export interface EdfTriggerEvent {
   readonly sampleIndex: number;
   readonly seconds: number;

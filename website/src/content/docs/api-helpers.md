@@ -298,6 +298,24 @@ trigger is held for as long as the stimulus computer asserts it, so the transiti
 the information. A return to `0` is reported too, because the release time is what gives a trigger
 its duration.
 
+### Times and the window
+
+`seconds` and `ticks` are elapsed recording time on the same axis as everything else: `t = 0` is
+the start of record 0, matching `chunk.startSeconds` and the bounds you pass here. Each event is
+timed from its own record's **true** onset, so on an EDF+D file the gaps are in the numbers.
+`sampleIndex` is a different quantity — a count of Status samples from the start of the file — and
+deriving a time from it would place every post-gap event early by the whole gap. Before 0.2.18 that
+is exactly what happened: a stimulus the hardware latched at 10 s was reported at 2 s.
+
+Events outside the window are never returned, even though the scan itself is record-aligned. The
+first in-window sample always produces an event carrying the code **in force** at that instant,
+whether or not it is a transition — the same rule a whole-file read follows at `t = 0`, so an
+aligned and an unaligned window behave alike. If you want assertions only, filter on `trigger`:
+
+```ts
+const onsets = (await readTriggers(recording, window)).filter((e) => e.trigger !== 0);
+```
+
 `decodeStatusWord` masks the sample back to 24 unsigned bits first. `decodeDigital` sign-extends
 BDF samples, as it must for a measurement, so a Status word with bit 23 set arrives negative.
 

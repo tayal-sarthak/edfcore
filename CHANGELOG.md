@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.18
+
+- **Fixed** `readTriggers` timing every event on the nominal grid — `sampleIndex * recordDuration /
+  samplesPerRecord` — instead of from its record's true onset. On an EDF+D file every event after a
+  gap was early by the whole gap: a stimulus the amplifier latched at 10 s was reported at 2 s, and
+  the same call was self-inconsistent, answering a request for `[10, 12)` with events labelled 2 s
+  and 3 s. `readWindow` on the identical records returned the correct onsets, so one file had two
+  timebases depending on which function you asked. This is the 0.1.4 defect in the one function
+  that never got the fix.
+- **Fixed** `readTriggers` returning events from outside the requested window, and — the worse
+  half — manufacturing an onset that is not in the file. The scan is record-aligned, and its
+  running trigger state reset at the record boundary rather than carrying across it, so a window
+  starting at 1.5 s reported a *transition* to a code that had been held since 1.0 s. In a file
+  whose only real transition was at 0.75 s, a window containing no transition at all returned a
+  stimulus onset. The error is up to one record duration, which is 30 s in many clinical files.
+- **Changed**, as a consequence: a windowed `readTriggers` now reports the code **in force** at the
+  window's left edge plus every transition inside it, and nothing outside it. That generalises the
+  rule a whole-file read already followed at `t = 0`, so an aligned and an unaligned window behave
+  alike. All eight existing BioSemi tests pass unmodified.
+
 ## 0.2.17
 
 - **Changed** the README's compatibility section to say what the browser claim now rests on. The

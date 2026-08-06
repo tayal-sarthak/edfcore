@@ -4,3 +4,6 @@ dist/
 .env*
 .DS_Store
 tests/corpus/files/
+
+# Preserved, never committed: see CLAUDE.md file-deletion policy.
+deleted/
