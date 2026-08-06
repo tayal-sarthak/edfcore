@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  annotationsAt,
   countAnnotationsByText,
   filterAnnotationsByText,
   filterAnnotationsByTime,
@@ -110,5 +111,32 @@ describe('countAnnotationsByText', () => {
 
   it('returns an empty list for no annotations', () => {
     expect(countAnnotationsByText([])).toEqual([]);
+  });
+});
+
+describe('annotationsAt', () => {
+  const events = [
+    annotation(0, 'Sleep stage W', 30),
+    annotation(30, 'Sleep stage N1', 30),
+    annotation(45, 'Arousal'),
+  ];
+
+  it('covers the half-open span of an annotation with a duration', () => {
+    expect(annotationsAt(events, 30).map((a) => a.text)).toEqual(['Sleep stage N1']);
+    expect(annotationsAt(events, 59.9).map((a) => a.text)).toEqual(['Sleep stage N1']);
+    // 60 is the start of the next epoch, not the end of this one.
+    expect(annotationsAt(events, 60)).toEqual([]);
+  });
+
+  it('matches a zero-duration event only at its own onset', () => {
+    expect(annotationsAt(events, 45).map((a) => a.text)).toEqual(['Sleep stage N1', 'Arousal']);
+    expect(annotationsAt(events, 45.0001).map((a) => a.text)).toEqual(['Sleep stage N1']);
+  });
+
+  it('is what a cursor needs, where a zero-length window returns nothing', () => {
+    // filterAnnotationsByTime refuses a non-positive duration, so the obvious call returns []
+    // at every position.
+    expect(filterAnnotationsByTime(events, { startSeconds: 45, durationSeconds: 0 })).toEqual([]);
+    expect(annotationsAt(events, 45).length).toBeGreaterThan(0);
   });
 });

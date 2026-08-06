@@ -81,3 +81,26 @@ export function countAnnotationsByText(
     [...counts].map(([text, count]) => ({ text, count })).sort((a, b) => b.count - a.count),
   );
 }
+
+/**
+ * The annotations covering an instant.
+ *
+ * A viewer with a cursor asks this on every mouse move. The window form works — a zero-length
+ * window — except that `filterAnnotationsByTime` returns nothing for a non-positive duration, so
+ * the obvious call returns an empty list at every position. This is the instant form: an
+ * annotation covers `t` when `onset <= t < onset + duration`, and a zero-duration event covers
+ * only its own onset.
+ */
+export function annotationsAt(
+  annotations: readonly EdfAnnotation[],
+  seconds: number,
+): readonly EdfAnnotation[] {
+  const at = secondsToTicks(seconds);
+  return Object.freeze(
+    annotations.filter((annotation) => {
+      const onset = annotation.onsetTicks;
+      const duration = annotation.durationTicks ?? 0n;
+      return duration === 0n ? onset === at : onset <= at && at < onset + duration;
+    }),
+  );
+}

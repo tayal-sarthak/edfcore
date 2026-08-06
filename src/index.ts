@@ -165,6 +165,7 @@ export { buildRecordIndex, buildTimeline, contiguityOf } from './record-index.js
 // ===========================================================================
 
 export {
+  annotationsAt,
   countAnnotationsByText,
   filterAnnotationsByText,
   filterAnnotationsByTime,

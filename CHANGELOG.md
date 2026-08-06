@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.6
+
+- **Added** `annotationsAt(annotations, seconds)` — the instant form a cursor needs.
+  `filterAnnotationsByTime` refuses a non-positive duration, so a zero-length window returns
+  nothing at every position.
+
 ## 0.2.5
 
 - **Added** `readEnvelopeAtResolution`: an envelope at a chosen seconds-per-bucket rather than a

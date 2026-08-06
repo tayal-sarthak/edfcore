@@ -121,6 +121,7 @@ const FUNCTIONS: readonly string[] = [
   'declaredDurationSeconds',
   'contiguityOf',
   'readEnvelopeAtResolution',
+  'annotationsAt',
 ];
 
 const ERROR_CLASSES: readonly string[] = [
