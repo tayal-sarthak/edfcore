@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.4
+
+- **Added** `contiguityOf(index)`: `contiguous`, `discontinuous`, or `unknown`. Three answers,
+  because a probed index has seen two records and cannot rule out a gap between them.
+
 ## 0.2.3
 
 - **Added** `declaredDurationSeconds(header)`. This is what the records COVER, which on an EDF+D

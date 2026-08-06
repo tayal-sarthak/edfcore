@@ -158,7 +158,7 @@ export { httpSource } from './io/http.js';
 // ===========================================================================
 
 export { readHeader, readRecordBytes } from './io/read.js';
-export { buildRecordIndex, buildTimeline } from './record-index.js';
+export { buildRecordIndex, buildTimeline, contiguityOf } from './record-index.js';
 
 // ===========================================================================
 // Convenience layer

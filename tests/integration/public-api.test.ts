@@ -119,6 +119,7 @@ const FUNCTIONS: readonly string[] = [
   'formatHeader',
   'matchSignals',
   'declaredDurationSeconds',
+  'contiguityOf',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

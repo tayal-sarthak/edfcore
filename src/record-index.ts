@@ -413,3 +413,18 @@ export async function buildRecordIndex(
     onsetOf,
   });
 }
+
+/**
+ * Whether the records run without gaps — or whether nobody has checked.
+ *
+ * Three answers, not two. A probed index has read record 0 and the last record and nothing in
+ * between, so it cannot rule out a gap in the middle; `'unknown'` is the truthful answer there,
+ * and collapsing it into `false` would report a discontinuity nobody observed, while collapsing
+ * it into `true` would claim a contiguity nobody verified.
+ *
+ * `buildRecordIndex()` is what turns `'unknown'` into a real answer.
+ */
+export function contiguityOf(index: EdfRecordIndex): 'contiguous' | 'discontinuous' | 'unknown' {
+  if (index.coverage !== 'complete' || index.gaps === undefined) return 'unknown';
+  return index.gaps.length === 0 ? 'contiguous' : 'discontinuous';
+}
