@@ -53,6 +53,18 @@ It **throws** on a probed index rather than returning `undefined`, because `unde
 the file. Merging "there is a gap here" with "nobody looked" is the one confusion this whole area
 of the API exists to prevent.
 
+```ts
+import { gapAt } from 'edfcore';
+
+const gap = gapAt(index, 3612.5);   // EdfGap, or undefined if a record covers that instant
+gap?.durationSeconds;
+gap?.endSeconds;                    // when the recording resumes
+```
+
+`gapAt` is the complement. `segmentAt` returning `undefined` tells a viewer there is no data under
+the cursor and nothing else; how long the hole is and when data resumes are on the `EdfGap`.
+Exactly one of the two returns a value for any instant strictly inside the recording.
+
 ## Envelope decimation
 
 A twelve-hour recording at 256 Hz is about eleven million samples per channel. A plot is a

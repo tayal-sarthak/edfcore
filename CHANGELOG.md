@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.16
+
+- **Added** `gapAt(index, seconds)`, the complement of `segmentAt`. `segmentAt` returning
+  `undefined` tells a viewer there is no data under the cursor and nothing else; how long the hole
+  is and when the recording resumes are on the `EdfGap`. Exactly one of the two returns a value
+  for any instant strictly inside the recording, and a test checks that at every tenth of a second
+  across a file with a real gap.
+
 ## 0.2.15
 
 - **Added** `summarizeDiagnostics(diagnostics)` — counts by severity and by code, plus `worst`.

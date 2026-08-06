@@ -473,3 +473,41 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
   }
   return undefined;
 }
+
+/**
+ * The gap covering an instant, or `undefined` when a record covers it.
+ *
+ * The complement of `segmentAt`, and the reason it exists separately: `segmentAt` returning
+ * `undefined` tells a viewer there is no data under the cursor and nothing else. What a viewer
+ * then wants — how long the hole is, and when the recording resumes — is on the `EdfGap`.
+ *
+ * Exactly one of the two returns a value for any instant strictly inside the recording, and
+ * neither does for a time before the first record or after the last. Refuses a probed index and a
+ * non-finite time for the same reasons `segmentAt` does.
+ */
+export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefined {
+  const gaps = index.gaps;
+  if (index.coverage !== 'complete' || gaps === undefined) {
+    throw new RangeError(
+      'gapAt() needs a complete index: this one is probed, so it has read record 0 and the last ' +
+        'record and nothing between, and has not looked for gaps at all. ' +
+        'Next: await buildRecordIndex(recording) and pass the index it returns.',
+    );
+  }
+  if (!Number.isFinite(seconds)) {
+    throw new RangeError(`gapAt() needs a finite time in seconds, received ${seconds}.`);
+  }
+
+  let low = 0;
+  let high = gaps.length - 1;
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+    const gap = gaps[middle] as EdfGap;
+    // Half-open, matching `segmentAt`: `gap.endSeconds` is the first instant with data again, so
+    // it belongs to the segment after the gap and not to the gap.
+    if (seconds < gap.startSeconds) high = middle - 1;
+    else if (seconds >= gap.endSeconds) low = middle + 1;
+    else return gap;
+  }
+  return undefined;
+}

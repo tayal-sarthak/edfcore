@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
-import { buildRecordIndex, segmentAt } from '../../src/record-index.js';
+import { buildRecordIndex, gapAt, segmentAt } from '../../src/record-index.js';
 import { openEdf } from '../../src/recording.js';
 import type { EdfRecordIndex } from '../../src/types.js';
 import { minimalEdfPlus } from '../support/writer.js';
@@ -94,5 +94,45 @@ describe('segmentAt refuses what it cannot answer', () => {
     for (const bad of [Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => segmentAt(index, bad)).toThrow(RangeError);
     }
+  });
+});
+
+describe('gapAt is the complement of segmentAt', () => {
+  it('returns the gap under an instant with no data, and its bounds', async () => {
+    const index = await scanned();
+    const gap = gapAt(index, 5);
+    expect(gap).toBe((index.gaps ?? [])[0]);
+    // What a viewer actually wanted when segmentAt said undefined.
+    expect(gap?.durationSeconds).toBe(5);
+    expect(gap?.endSeconds).toBe(8);
+  });
+
+  it('returns undefined wherever a record exists', async () => {
+    const index = await scanned();
+    expect(gapAt(index, 0)).toBeUndefined();
+    expect(gapAt(index, 2.5)).toBeUndefined();
+    expect(gapAt(index, 8)).toBeUndefined();
+  });
+
+  it('agrees with segmentAt on every instant: never both, never neither inside the span', async () => {
+    const index = await scanned();
+    for (let tenths = 0; tenths <= 110; tenths += 1) {
+      const seconds = tenths / 10;
+      const inSegment = segmentAt(index, seconds) !== undefined;
+      const inGap = gapAt(index, seconds) !== undefined;
+      // 11 s is the exclusive end of the recording, so neither covers it.
+      const inside = seconds < 11;
+      expect(inSegment && inGap, `both at ${seconds}s`).toBe(false);
+      expect(inSegment || inGap, `neither at ${seconds}s`).toBe(inside);
+    }
+  });
+
+  it('refuses a probed index and a non-finite time, as segmentAt does', async () => {
+    const recording = await openEdf(
+      byteSource(minimalEdfPlus({ recordCount: 6, recordDurationSeconds: 1 })),
+    );
+    expect(() => gapAt(recording.index, 2)).toThrow(/buildRecordIndex/);
+    const index = await scanned();
+    expect(() => gapAt(index, Number.NaN)).toThrow(RangeError);
   });
 });

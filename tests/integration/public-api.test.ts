@@ -126,6 +126,7 @@ const FUNCTIONS: readonly string[] = [
   'physicalRangeOf',
   'segmentAt',
   'summarizeDiagnostics',
+  'gapAt',
 ];
 
 const ERROR_CLASSES: readonly string[] = [
