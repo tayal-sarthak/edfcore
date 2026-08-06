@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { mergeChunks } from '../../src/chunks.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
-import { openEdf, readWindow } from '../../src/recording.js';
+import { openEdf, readRecords, readWindow } from '../../src/recording.js';
 import { trimToWindow } from '../../src/time/window.js';
 import type { EdfChunk, EdfRecording } from '../../src/types.js';
 import { minimalEdfPlus } from '../support/writer.js';
@@ -199,5 +199,64 @@ describe('mergeChunks refuses what is not', () => {
     // `readWindow` returns [] for a window past the end, and [] has no start, no records and no
     // signals. Fabricating a chunk shaped like one would be a lie about what was read.
     expect(() => mergeChunks([])).toThrow(/nothing to merge/);
+  });
+});
+
+describe('mergeChunks refuses a gap the index never looked for', () => {
+  it('catches a discontinuity from the chunks own clocks, with no index at all', async () => {
+    // `openEdf` returns a PROBED index, and `readRecords` reads by record number without ever
+    // consulting the timeline — so this is the one path that reaches mergeChunks with a real gap
+    // and `precededByGap: undefined` on every chunk. Before 0.2.19 the refusal was keyed on that
+    // field alone and this merge succeeded, concatenating samples five seconds apart.
+    const recording = await openEdf(byteSource(file({ discontinuous: true })));
+    expect(recording.index.coverage).toBe('probed');
+
+    const before = await readRecords(recording, {
+      signalIndices: [0],
+      records: { start: 0, count: 3 },
+    });
+    const after = await readRecords(recording, {
+      signalIndices: [0],
+      records: { start: 3, count: 3 },
+    });
+
+    // The evidence was in hand the whole time: each chunk decoded its own onset from its own
+    // bytes, and they are five seconds further apart than three one-second records.
+    expect(before.precededByGap).toBeUndefined();
+    expect(after.precededByGap).toBeUndefined();
+    expect(before.startSeconds).toBe(0);
+    expect(after.startSeconds).toBe(8);
+    expect(after.records.start).toBe(before.records.start + before.records.count);
+
+    expect(() => mergeChunks([before, after])).toThrow(RangeError);
+    expect(() => mergeChunks([before, after])).toThrow(/discontinuity of 5 s/);
+  });
+
+  it('still merges two reads of a genuinely contiguous file', async () => {
+    // The new check must not refuse the case the helper exists for.
+    const recording = await openEdf(byteSource(file({ discontinuous: false })));
+    const before = await readRecords(recording, {
+      signalIndices: [0],
+      records: { start: 0, count: 3 },
+    });
+    const after = await readRecords(recording, {
+      signalIndices: [0],
+      records: { start: 3, count: 3 },
+    });
+
+    const merged = mergeChunks([before, after]);
+    expect(merged.records).toEqual({ start: 0, count: RECORDS });
+    expect(Array.from(merged.signals[0]?.digital ?? [])).toEqual(
+      Array.from({ length: RECORDS * SAMPLES_PER_RECORD }, (_, i) => sample(i)),
+    );
+  });
+
+  it('reports the gap by its duration, not by which check happened to fire', async () => {
+    // An indexed read still gets the precededByGap message, which names the indexed gap. Both
+    // paths must refuse; only the wording differs.
+    const indexed = await open(true);
+    const chunks = await wholeFile(true);
+    expect(indexed.index.coverage).toBe('complete');
+    expect(() => mergeChunks(chunks)).toThrow(/gap of 5 s/);
   });
 });

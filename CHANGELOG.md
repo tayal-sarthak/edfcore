@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.19
+
+- **Fixed** `mergeChunks` merging across a real gap whenever the index had not been scanned — the
+  one thing the helper exists to refuse. Its gap check read `precededByGap`, which is `undefined`
+  in two different situations: no gap, and nobody looked. `openEdf` returns a probed index that has
+  looked for none, and `readRecords` reads by record number without consulting the timeline, so two
+  chunks five seconds apart arrived record-adjacent with that field empty on both and were joined
+  silently. The refusal now compares the chunks' own `startSeconds` in exact ticks — each chunk
+  decoded its onset from its own bytes, so the evidence was in hand the whole time and never needed
+  an index. The `precededByGap` branch stays, because its message names the indexed gap's duration.
+
 ## 0.2.18
 
 - **Fixed** `readTriggers` timing every event on the nominal grid — `sampleIndex * recordDuration /

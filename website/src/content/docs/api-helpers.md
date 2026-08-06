@@ -185,6 +185,13 @@ gap, for chunks out of order or not adjacent, for a different signal selection, 
 already narrowed by `trimToWindow`. That last one is invisible to a record-adjacency check, which
 is why the check is per signal on `firstSampleIndex`. Trim after merging, not before.
 
+The gap check does not depend on the index. `precededByGap` is `undefined` in two different
+situations — no gap, and nobody looked — and `openEdf` returns a probed index that has looked for
+none. So `readRecords` by record number on an EDF+D file could hand two chunks a minute apart to
+`mergeChunks` with that field empty on both. Since 0.2.19 the refusal compares the chunks' own
+`startSeconds`, in exact ticks: each chunk decoded its onset from its own bytes, so the evidence
+never needed an index at all.
+
 A single chunk is returned unchanged, so the continuous case costs no allocation.
 
 ## Annotation queries

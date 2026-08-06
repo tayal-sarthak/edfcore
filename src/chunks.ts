@@ -16,6 +16,7 @@
  */
 
 import { appendDiagnostics } from './diagnostics/collector.js';
+import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import type { EdfChunk, EdfChunkSignal, EdfDiagnostic } from './types.js';
 
 /** Reads as one line at the call site, and keeps the `chunks[i]` non-null assertions out of it. */
@@ -28,9 +29,19 @@ function at(chunks: readonly EdfChunk[], index: number): EdfChunk {
 /**
  * Everything that makes two chunks joinable, checked before a byte is allocated.
  *
- * The record-adjacency test is the obvious one. The per-signal sample-index test is the one that
- * earns its place: `trimToWindow` narrows a chunk on each signal's own grid, so two chunks can
- * still be record-adjacent after a trim has removed the samples between them. Comparing
+ * Three tests, and the second and third are the ones that earn their place.
+ *
+ * `precededByGap` alone is not enough, because it is `undefined` in two different situations: no
+ * gap, and nobody looked. `openEdf` returns a probed index, `gapBefore` has nothing to report from
+ * one, and `readRecords` reads by record number without ever consulting the timeline — so two
+ * chunks a minute apart on an EDF+D file arrive record-adjacent with `precededByGap: undefined` on
+ * both, and the field the refusal was keyed on says nothing at all. Every chunk carries its own
+ * `startSeconds`, decoded from the annotation regions in its own bytes, so the evidence was in hand
+ * the whole time: the second test compares the clock instead of asking the index.
+ *
+ * The per-signal sample-index test is the third: `trimToWindow` narrows a chunk on each signal's
+ * own grid without changing the chunk's `durationSeconds`, so a trimmed chunk passes both the
+ * record and the clock test while the samples between the two are gone. Comparing
  * `firstSampleIndex` against the previous chunk's end catches exactly that, per signal, which is
  * the granularity at which it actually happens.
  */
@@ -49,6 +60,25 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
     throw new RangeError(
       `mergeChunks: chunk ${index} starts at record ${next.records.start}, but the chunk before ` +
         `it ends at ${expectedStart}. Chunks must be adjacent and in order.`,
+    );
+  }
+
+  // In exact ticks, never in float seconds: both values were produced from ticks by
+  // `ticksToSeconds`, and rounding back recovers the tick they came from for any recording
+  // shorter than ~28.5 years — the same round trip `trimToWindow` relies on. A float comparison
+  // here would let a sub-tick discrepancy through, and an epsilon would let a real one through.
+  const previousEndTicks =
+    secondsToTicks(previous.startSeconds) + secondsToTicks(previous.durationSeconds);
+  const nextStartTicks = secondsToTicks(next.startSeconds);
+  if (previousEndTicks !== nextStartTicks) {
+    const gapSeconds = ticksToSeconds(nextStartTicks - previousEndTicks);
+    throw new RangeError(
+      `mergeChunks: chunk ${index} starts at ${next.startSeconds} s, but the chunk before it ends ` +
+        `at ${ticksToSeconds(previousEndTicks)} s — a discontinuity of ${gapSeconds} s. The two ` +
+        'are record-adjacent, so this is a gap in TIME that the record numbers cannot show: ' +
+        'either the index was never scanned, or these chunks came from separate reads. ' +
+        'Concatenating them would date every sample after the join wrong by that much. Next: ' +
+        'await buildRecordIndex(recording) and merge each contiguous run separately.',
     );
   }
 
