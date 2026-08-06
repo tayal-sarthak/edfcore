@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.13
+
+- **Added** `edfcore events <file> --list`: one tab-separated event per line instead of counts by
+  text. The onset column is `onsetSecondsFromFirstRecord`, the axis `gaps` and every read already
+  use — printing the on-disk value here would put two lines of the same CLI on different clocks. A
+  truncated listing says how many it withheld.
+
 ## 0.2.12
 
 - **Added** documentation for everything shipped since 0.1.19: `matchSignals`,

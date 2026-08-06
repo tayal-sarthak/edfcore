@@ -35,7 +35,8 @@ const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
 
 Options
   --patient                       include patient identification (header, json)
-  --limit <n>                     individual diagnostics to print (default 20)
+  --list                          list events one per line instead of counting (events)
+  --limit <n>                     individual diagnostics or events to print (default 20)
 
   --version                       print the version and exit
 
@@ -46,6 +47,7 @@ export interface Args {
   readonly command: string | undefined;
   readonly file: string | undefined;
   readonly patient: boolean;
+  readonly list: boolean;
   readonly version: boolean;
   readonly limit: number | undefined;
 }
@@ -53,12 +55,14 @@ export interface Args {
 export function parseArgs(argv: readonly string[]): Args {
   const positional: string[] = [];
   let patient = false;
+  let list = false;
   let version = false;
   let limit: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--patient') patient = true;
+    else if (arg === '--list') list = true;
     else if (arg === '--version' || arg === '-v') version = true;
     else if (arg === '--limit') {
       const value = Number(argv[i + 1]);
@@ -71,7 +75,7 @@ export function parseArgs(argv: readonly string[]): Args {
     } else if (arg !== undefined && !arg.startsWith('-')) positional.push(arg);
   }
 
-  return { command: positional[0], file: positional[1], patient, version, limit };
+  return { command: positional[0], file: positional[1], patient, list, version, limit };
 }
 
 async function open(io: CliIo, file: string) {
@@ -130,6 +134,27 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         return 0;
       }
       io.out(`${annotations.length} annotation(s)\n\n`);
+
+      if (args.list) {
+        const limit = args.limit ?? 20;
+        // `onsetSecondsFromFirstRecord`, because that is the axis the rest of this CLI reports on:
+        // `gaps` prints it, `header` counts records from it, and t = 0 is the start of record 0.
+        // The on-disk value is `onsetSecondsFromHeaderStart`, and mixing the two in one output
+        // would put two lines of the same listing on different clocks.
+        for (const event of annotations.slice(0, limit)) {
+          const duration = event.durationSeconds === undefined ? '' : `${event.durationSeconds}`;
+          io.out(
+            `${event.onsetSecondsFromFirstRecord}\t${duration}\t${event.text}\t` +
+              `${event.channelLabel ?? ''}\n`,
+          );
+        }
+        // Say what was withheld. A silently truncated listing reads as a complete one.
+        if (annotations.length > limit) {
+          io.out(`\n... ${annotations.length - limit} more (raise --limit to see them)\n`);
+        }
+        return 0;
+      }
+
       for (const { text, count } of countAnnotationsByText(annotations)) {
         io.out(`${String(count).padStart(8)}  ${text}\n`);
       }

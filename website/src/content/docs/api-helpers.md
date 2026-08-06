@@ -315,8 +315,18 @@ npx edfcore json <file>        # the header as JSON, for piping into jq
 npx edfcore --version          # the installed version
 ```
 
-Flags: `--patient` includes patient identification, `--limit <n>` caps the individual diagnostics
+Flags: `--patient` includes patient identification, `--list` makes `events` print one event per
+line instead of counting them by text, `--limit <n>` caps the individual diagnostics or events
 printed.
+
+```bash
+npx edfcore events recording.edf --list --limit 100
+# 0<TAB>30<TAB>Sleep stage W<TAB>
+```
+
+The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every read use, where
+`t = 0` is the start of record 0. A truncated listing says how many events it withheld, because a
+silently cut one reads as a complete one.
 
 `header` is for reading and `signals` is for piping — the second emits index, label, samples per
 record, rate and unit, tab-separated, annotations channel included. `gaps` runs a full scan rather

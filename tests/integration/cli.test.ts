@@ -176,3 +176,45 @@ describe('gaps', () => {
     expect(out).toContain('after segment 0');
   });
 });
+
+describe('events --list', () => {
+  it('lists one tab-separated event per line, on the recording timebase', async () => {
+    const scored = minimalEdfPlus({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      annotationSignals: [
+        {
+          samplesPerRecord: 60,
+          tals: (r: number) => [{ onset: r, duration: 1, texts: [`Sleep stage ${r}`] }],
+        },
+      ],
+    });
+    const { code, out } = await invoke(['events', 'a.edf', '--list'], { 'a.edf': scored });
+    expect(code).toBe(0);
+
+    const lines = out
+      .trim()
+      .split('\n')
+      .filter((line) => line.includes('\t'));
+    expect(lines).toHaveLength(4);
+    expect(lines[0]?.split('\t').slice(0, 3)).toEqual(['0', '1', 'Sleep stage 0']);
+    expect(lines[3]?.split('\t')[0]).toBe('3');
+    // Counting mode is still the default — --list opts in, it does not replace.
+    const counted = await invoke(['events', 'a.edf'], { 'a.edf': scored });
+    expect(counted.out).not.toMatch(/\t/);
+  });
+
+  it('says how many it withheld rather than truncating in silence', async () => {
+    const many = minimalEdfPlus({
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      annotationSignals: [
+        { samplesPerRecord: 60, tals: (r: number) => [{ onset: r, texts: [`event ${r}`] }] },
+      ],
+    });
+    const { out } = await invoke(['events', 'a.edf', '--list', '--limit', '2'], { 'a.edf': many });
+    expect(out).toContain('6 annotation(s)');
+    expect(out.split('\n').filter((line) => line.includes('\t'))).toHaveLength(2);
+    expect(out).toContain('... 4 more');
+  });
+});
