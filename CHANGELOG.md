@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.33
+
+- **Fixed** annotations being dropped with no diagnostic naming them. `TIMEKEEPING_TAL_NONCONFORMANT`
+  covers several unrelated defects behind one once-per-call flag. Most lose nothing — the onset is
+  unambiguous either way — but a timekeeping TAL that carries TEXT has swallowed an annotation: the
+  writer merged an event into it, and the text appears in no field of the result. Because the flag
+  was shared, a file whose FIRST record used the widespread `+t 0x14 0x00` shorthand — which is most
+  of the real corpus — reported that shorthand and then suppressed every dropped event after it. On
+  a six-record fixture: two annotations gone, `annotations` empty, and one warning naming record 0
+  and a different, harmless cause. `strict: true` did not help either; it threw on record 0's
+  benign shorthand and never reached the real problem. The text-carrying kind is now reported for
+  every affected record, with the text and the byte offset where it still is; the harmless kinds
+  are still capped at one per call, and each message now says which of the two it is.
+
 ## 0.2.32
 
 - **Documented, not fixed**, and the distinction is the point: `sampleIndexAt`, `sampleStartTicks`

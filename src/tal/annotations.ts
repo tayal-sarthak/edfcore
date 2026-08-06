@@ -252,25 +252,55 @@ function reportTimekeepingMissing(sink: DiagnosticSink, context: RegionContext):
  * treat "zero texts" and "one empty text" as the same thing and keep going, because the onset is
  * unambiguous either way and refusing the file would refuse a large part of the real corpus.
  */
-function timekeepingDefect(tal: ParsedTal): string | undefined {
+/**
+ * What is wrong with a timekeeping TAL, and whether saying so once is enough.
+ *
+ * `destructive` is the distinction that matters. Most of these defects lose nothing — the onset is
+ * unambiguous and lands in `recordOnsetTicks` either way — so one report per call is the right
+ * volume and a per-record flood would bury it. But a timekeeping TAL that carries TEXT is
+ * different: that text is an annotation the writer merged into the wrong TAL, it appears nowhere
+ * in the result, and each occurrence names a DIFFERENT event that is now gone.
+ *
+ * Sharing one once-per-call flag between the two meant that a file whose first record used the
+ * widespread `+t 0x14 0x00` shorthand — which is most of the real corpus — reported that shorthand
+ * and then silently swallowed every dropped event after it. Six records in, two annotations gone,
+ * one warning about a benign spelling in record 0 (fixed in 0.2.33).
+ */
+interface TimekeepingDefect {
+  readonly reason: string;
+  /** True when the TAL carried text that exists nowhere in the returned annotations. */
+  readonly destructive: boolean;
+}
+
+function timekeepingDefect(tal: ParsedTal): TimekeepingDefect | undefined {
   if (tal.durationRaw !== undefined) {
-    return `carries the duration "${tal.durationRaw}", which a timekeeping TAL never has`;
+    return {
+      reason: `carries the duration "${tal.durationRaw}", which a timekeeping TAL never has`,
+      destructive: false,
+    };
   }
   if (tal.texts.length === 0) {
-    return (
-      'omits the mandatory empty text and is written "+onset 0x14 0x00" — the widespread ' +
-      'shorthand, which EDFlib rejects outright'
-    );
+    return {
+      reason:
+        'omits the mandatory empty text and is written "+onset 0x14 0x00" — the widespread ' +
+        'shorthand, which EDFlib rejects outright',
+      destructive: false,
+    };
   }
   const texts = tal.texts.map((run) => run.text).filter((text) => text.length > 0);
   if (texts.length > 0) {
-    return (
-      `carries the text ${texts.map((text) => `"${text}"`).join(', ')}, which is dropped: the ` +
-      'timekeeping TAL is not an annotation'
-    );
+    return {
+      reason:
+        `carries the text ${texts.map((text) => `"${text}"`).join(', ')}, which is dropped: the ` +
+        'timekeeping TAL is not an annotation',
+      destructive: true,
+    };
   }
   if (tal.texts.length > 1) {
-    return `carries ${tal.texts.length} empty texts, where the grammar allows exactly one`;
+    return {
+      reason: `carries ${tal.texts.length} empty texts, where the grammar allows exactly one`,
+      destructive: false,
+    };
   }
   return undefined;
 }
@@ -279,17 +309,23 @@ function reportTimekeepingDefect(
   sink: DiagnosticSink,
   context: RegionContext,
   tal: ParsedTal,
-  defect: string,
+  defect: TimekeepingDefect,
 ): void {
   sink.report({
     code: 'TIMEKEEPING_TAL_NONCONFORMANT',
     message:
       `the timekeeping TAL of record ${context.recordIndex} (annotation signal ` +
-      `${context.signal.index}, onset "${tal.onsetRaw}") ${defect}. ` +
+      `${context.signal.index}, onset "${tal.onsetRaw}") ${defect.reason}. ` +
       'Rule: a timekeeping TAL is written "+onset 0x14 0x14 0x00" — one signed onset, no ' +
       'duration, one empty text. ' +
-      "Next: the onset was used as this record's start and the file was kept; this is " +
-      'reported once per decodeAnnotations() call, so later records are not re-reported.',
+      (defect.destructive
+        ? "Next: the onset was used as this record's start, but the text above is an " +
+          'annotation the writer merged into the timekeeping TAL and it is in no other field of ' +
+          'the result — read it from the raw bytes at the offset above if you need it. Reported ' +
+          'for EVERY affected record, because each one names a different event that was lost.'
+        : "Next: the onset was used as this record's start and the file was kept; nothing was " +
+          'lost. This kind is reported once per decodeAnnotations() call, so later records are ' +
+          'not re-reported.'),
     field: 'timekeeping TAL',
     byteOffset: context.fileOffset + tal.byteOffsetInRegion,
     byteLength: tal.byteLength,
@@ -392,8 +428,11 @@ export function decodeAnnotations(
             raw: timekeeping.onsetRaw,
           };
           const defect = timekeepingDefect(timekeeping);
-          if (defect !== undefined && !timekeepingDefectReported) {
-            timekeepingDefectReported = true;
+          // The once-per-call cap applies ONLY to the defects that lose nothing. A dropped text is
+          // a distinct annotation per record, available nowhere else in the result, so capping it
+          // deletes evidence — and worse, a benign first record used to consume the one slot.
+          if (defect !== undefined && (defect.destructive || !timekeepingDefectReported)) {
+            if (!defect.destructive) timekeepingDefectReported = true;
             reportTimekeepingDefect(sink, context, timekeeping, defect);
           }
         }

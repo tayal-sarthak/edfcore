@@ -1,0 +1,103 @@
+/**
+ * Timekeeping-TAL defects, and which of them may be reported once.
+ *
+ * Most cost nothing: the onset is unambiguous and reaches `recordOnsetTicks` either way, so one
+ * report per call is the right volume and a per-record flood would bury it. A timekeeping TAL that
+ * carries TEXT is the exception — that text is an annotation the writer merged into the wrong TAL,
+ * it is in no field of the result, and each occurrence is a DIFFERENT event that is now gone.
+ *
+ * Before 0.2.33 both shared one flag, so a file whose first record used the widespread
+ * `+t 0x14 0x00` shorthand — most of the real corpus — reported the shorthand and then swallowed
+ * every dropped event after it.
+ */
+
+import { describe, expect, it } from 'vitest';
+import { byteSource } from '../../../src/io/bytes.js';
+import { openEdf, readAnnotations } from '../../../src/recording.js';
+import { buildEdf } from '../../support/writer.js';
+
+const RECORDS = 6;
+const encode = (text: string): number[] => Array.from(text).map((c) => c.charCodeAt(0));
+
+/**
+ * A file whose writer merged the event into the timekeeping TAL on records 2 and 4, and used the
+ * benign shorthand everywhere else. The regions are written by hand so the bytes are exact.
+ */
+async function sloppyWriter() {
+  const bytes = buildEdf({
+    plus: 'C',
+    recordCount: RECORDS,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+    annotationSignals: [{ samplesPerRecord: 40, tals: () => [] }],
+    recordOnsetSeconds: (r: number) => r,
+  });
+  const probe = await openEdf(byteSource(bytes));
+  const header = probe.header;
+  const signal = header.signals[header.annotationSignalIndices[0] as number];
+  if (signal === undefined) throw new Error('fixture has no annotations channel');
+
+  for (let r = 0; r < RECORDS; r += 1) {
+    const offset = header.headerByteLength + r * header.recordByteLength + signal.recordByteOffset;
+    bytes.fill(0, offset, offset + signal.recordByteLength);
+    const merged = r === 2 ? 'Arousal' : r === 4 ? 'Sleep stage R' : undefined;
+    bytes.set(
+      merged === undefined
+        ? [...encode(`+${r}`), 0x14, 0x00]
+        : [...encode(`+${r}`), 0x14, ...encode(merged), 0x14, 0x00],
+      offset,
+    );
+  }
+  return openEdf(byteSource(bytes));
+}
+
+describe('a timekeeping TAL that swallowed an annotation', () => {
+  it('is reported for every affected record, not once for the whole call', async () => {
+    const recording = await sloppyWriter();
+    const { annotations, diagnostics } = await readAnnotations(recording, {
+      start: 0,
+      count: RECORDS,
+    });
+
+    // The events really are gone from the result — that part is the format's fault, not a bug.
+    expect(annotations).toEqual([]);
+
+    // What must not happen is losing them silently. Both records are named, with their text.
+    const affected = diagnostics
+      .filter((d) => d.code === 'TIMEKEEPING_TAL_NONCONFORMANT' && d.message.includes('dropped'))
+      .map((d) => d.recordIndex);
+    expect(affected).toEqual([2, 4]);
+    expect(JSON.stringify(diagnostics)).toContain('Arousal');
+    expect(JSON.stringify(diagnostics)).toContain('Sleep stage R');
+  });
+
+  it('still caps the benign shorthand at one report per call', async () => {
+    // Four records use `+t 0x14 0x00`. Reporting each would bury the two that matter.
+    const recording = await sloppyWriter();
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: RECORDS });
+    const shorthand = diagnostics.filter((d) => d.message.includes('widespread shorthand'));
+    expect(shorthand).toHaveLength(1);
+    expect(shorthand[0]?.recordIndex).toBe(0);
+  });
+
+  it('says plainly which kind is capped and which is not', async () => {
+    const recording = await sloppyWriter();
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: RECORDS });
+    const benign = diagnostics.find((d) => d.message.includes('widespread shorthand'));
+    const destructive = diagnostics.find((d) => d.message.includes('dropped'));
+
+    expect(benign?.message).toContain('nothing was lost');
+    expect(benign?.message).toContain('once per decodeAnnotations() call');
+    expect(destructive?.message).toContain('EVERY affected record');
+    // And it points at where the text still is, since the result no longer holds it.
+    expect(destructive?.message).toContain('raw bytes');
+  });
+
+  it('does not let a benign first record consume the only slot', async () => {
+    // The precise defect: record 0's shorthand fired first and set the shared flag, so records 2
+    // and 4 were never reported at all and the one warning named a different, harmless cause.
+    const recording = await sloppyWriter();
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: RECORDS });
+    expect(diagnostics.filter((d) => d.code === 'TIMEKEEPING_TAL_NONCONFORMANT')).toHaveLength(3);
+  });
+});

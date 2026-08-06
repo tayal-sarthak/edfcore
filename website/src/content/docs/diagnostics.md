@@ -255,6 +255,23 @@ the signal in the same fixed order the header used, so it names the same cause t
 A signal with no scale that matches none of the four conditions reports `SCALE_UNAVAILABLE` rather
 than the nearest-looking code.
 
+### One report, or one per record
+
+Diagnostic volume is bounded on purpose, by one test: does another occurrence carry information
+available nowhere else? `TIMEKEEPING_TAL_MISSING` does — it names a record whose onset had to be
+derived — so it fires per record. The widespread `+t 0x14 0x00` timekeeping shorthand does not: the
+onset is unambiguous, nothing is lost, and it is a property of the writer rather than of a record,
+so it fires once per `decodeAnnotations` call.
+
+`TIMEKEEPING_TAL_NONCONFORMANT` covers both kinds, and until 0.2.33 they shared one flag. A
+timekeeping TAL that carries TEXT has swallowed an annotation — the writer merged an event into it,
+and that text appears in no field of the result — so each occurrence names a different lost event.
+Sharing the flag meant a file whose first record used the benign shorthand, which is most of the
+real corpus, reported the shorthand and then silently swallowed every dropped event after it: six
+records, two annotations gone, one warning about a harmless spelling in record 0. The
+text-carrying kind is now reported for every affected record and says where the bytes still are;
+the harmless kinds are still capped at one.
+
 ## Warnings and info
 
 Everything else is recorded and the file keeps working. Thirty-one warning codes, grouped by what
