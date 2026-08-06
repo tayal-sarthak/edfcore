@@ -10,10 +10,13 @@ npm install edfcore
 ## Look at a file without writing code
 
 ```bash
-npx edfcore header overnight.edf     # signals, rates, ranges, diagnostics
-npx edfcore events hypnogram.edf     # annotations, counted by text
-npx edfcore validate overnight.edf   # full conformance sweep; exits 1 on failure
-npx edfcore json overnight.edf       # the header as JSON, for jq
+npx edfcore header overnight.edf          # signals, rates, ranges, diagnostics
+npx edfcore events hypnogram.edf          # annotations, counted by text
+npx edfcore events hypnogram.edf --list   # one event per line, with onsets
+npx edfcore gaps overnight.edf            # the discontinuities, after a full scan
+npx edfcore signals overnight.edf         # one line per signal, for grep and awk
+npx edfcore validate overnight.edf        # full conformance sweep; exits 1 on failure
+npx edfcore json overnight.edf            # the header as JSON, for jq
 ```
 
 Patient identification is omitted unless you pass `--patient`.
@@ -267,6 +270,13 @@ the reason to trust the reader.
 ## Compatibility
 
 - **Node** ≥ 22.12.0 · **Chrome/Edge** 94+ · **Firefox** 93+ · **Safari** 15.4+
+- The browser half of that line is tested, not asserted. Every other test in this repository runs
+  under `environment: 'node'`, where `process.env` and `Buffer.from` work perfectly — so none of
+  them could catch a bare Node global, which needs no import and passes the module-graph walk
+  untouched. Since 0.2.11 the built universal bundle is driven end to end in a realm whose
+  Node-only globals throw the way a browser does. The version numbers above remain a
+  syntax-and-API floor rather than a per-browser test matrix; what is now checked is that nothing
+  reaches outside the platform.
 - ESM only. `require()` works on Node ≥ 22.12 (there is no top-level `await` anywhere in the
   module graph, which is what makes that safe).
 - Zero runtime dependencies, permanently. `edfcore/node` imports `node:fs/promises` and nothing
@@ -286,10 +296,14 @@ edfplus.info test files) and a golden-value harness cross-checking physical valu
 pyEDFlib and MNE. Until that harness exists this README makes no numerical-interop claim, and it
 will not make one that a test did not produce.
 
-**Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`). BioSemi Status-byte
-helpers (`readTriggers`). Streaming iteration (`streamRecords`). Annotation queries, exact
-time-to-sample conversion, and text formatters for the header and the validation report. See
-[API — helpers](https://edfcore.vercel.app/docs/api-helpers).
+**Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
+`readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration
+(`streamRecords`). Annotation queries, exact time-to-sample conversion, and text formatters for
+the header and the validation report. Chunk joining that refuses to concatenate across a gap
+(`mergeChunks`). Timeline lookup with no read (`segmentAt`, `gapAt`, `contiguityOf`). Signal
+lookup by pattern (`matchSignals`) and ordered physical bounds (`physicalRangeOf`). See
+[API — helpers](https://edfcore.vercel.app/docs/api-helpers) and
+[CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/CHANGELOG.md).
 
 **Still later, additive.** The `edffloat` logarithmic inverse transform, opt-in — still detected
 and rejected, because applying an inverse edfcore cannot verify against a real edffloat file is

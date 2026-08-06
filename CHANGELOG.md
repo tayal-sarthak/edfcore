@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.17
+
+- **Changed** the README's compatibility section to say what the browser claim now rests on. The
+  version floors were always a syntax-and-API judgement rather than a test matrix, and until
+  0.2.11 nothing executed the library off Node at all; that distinction now appears where the
+  claim does rather than only in this file.
+- **Added** the `events --list`, `gaps` and `signals` commands to the README's CLI block, and the
+  helpers shipped since 0.1.6 to its roadmap. The changelog link is absolute, because a relative
+  one 404s on npmjs.com — the same mistake 0.1.1 fixed for three other links.
+
 ## 0.2.16
 
 - **Added** `gapAt(index, seconds)`, the complement of `segmentAt`. `segmentAt` returning
