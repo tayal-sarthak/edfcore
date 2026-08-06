@@ -6,7 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
-## 0.2.29
+## 0.2.31
+
+- **Fixed** `readEnvelopeAtResolution` not delivering the resolution it was asked for. A chunk
+  covers one record-aligned contiguous run, and a run is not the window, but one bucket count was
+  computed from the window and handed to every chunk. A window of 11 s over an EDF+D file asked at
+  1 s per bucket came back as 0.27 s per bucket in one chunk and 0.09 s in the other — widths that
+  are not commensurable, so a viewer could not place the two on one axis, which is the entire
+  promise of the function. A contiguous window that did not start on a record boundary got 1.33 s
+  per bucket for the same reason. The count is now derived from each run's own span; the ceil rule
+  is unchanged, so the tail of a window is still never dropped.
+
+### A note on version numbers
+
+`0.2.29` was never released: a failed release run consumed the number before the tag was cut.
+`0.2.26` has a git tag and a GitHub release but is **not on npm** — GitHub Actions was dropping
+events and failing to acquire runners while these went out, and by the time 0.2.26 was retried npm
+refused to tag it `latest` because 0.2.28 was already above it. Everything 0.2.26 fixed, including
+the patient-identification leak, is present in 0.2.27 and every release after it; that was verified
+against the published 0.2.27 tarball rather than assumed.
+
+## 0.2.30
 
 - **Fixed** `validateRecording({ scanSamples: true })` refusing a small file for a scratch buffer
   it could never fill. The buffer was sized from `chunkRecords` — a chunk size chosen from the

@@ -18,7 +18,7 @@ import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import type { EdfChunkSignal, EdfRecording } from '../../src/types.js';
-import { minimalEdfPlus } from '../support/writer.js';
+import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
 const RECORDS = 40;
 const SAMPLES_PER_RECORD = 25;
@@ -427,5 +427,65 @@ describe('envelopeOfSamples treats sampleCount as authoritative', () => {
     const envelope = envelopeOfSamples(signal, 37);
     expect(envelope.sampleCount).toBe(signal.sampleCount);
     expect(Array.from(envelope.counts).reduce((a, b) => a + b, 0)).toBe(signal.sampleCount);
+  });
+});
+
+describe('readEnvelopeAtResolution delivers the resolution it was asked for', () => {
+  // A chunk covers one record-aligned contiguous RUN, and a run is not the window. Before 0.2.31
+  // one bucket count was computed from the window and handed to every chunk, so a single call
+  // returned chunks at 0.27 s and 0.09 s per bucket when asked for 1 s — widths that are not
+  // commensurable, so the two cannot go on one axis, which is the entire promise of this function.
+  const actualResolution = (chunk: { durationSeconds: number; bucketCount: number }) =>
+    chunk.durationSeconds / chunk.bucketCount;
+
+  it('gives every chunk of an EDF+D window the same bucket width', async () => {
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => (r < 3 ? r : r + 7),
+      signals: [{ label: 'Fp1', samplesPerRecord: 40 }],
+      annotationSignals: [{ samplesPerRecord: 60 }],
+    });
+    const opened = await openEdf(byteSource(bytes));
+    const edf = { ...opened, index: await buildRecordIndex(opened) };
+
+    const chunks = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 11,
+      secondsPerBucket: 1,
+    });
+
+    expect(chunks).toHaveLength(2);
+    for (const chunk of chunks) expect(actualResolution(chunk)).toBe(1);
+    // Each run gets the buckets its own span needs: 3 s and 1 s.
+    expect(chunks.map((c) => c.bucketCount)).toEqual([3, 1]);
+  });
+
+  it('honours it for a window that does not start on a record boundary', async () => {
+    // The record-aligned run is 4 s wide while the window asked for 3 s, so a window-derived
+    // count gave 1.33 s per bucket on an ordinary contiguous file.
+    const edf = await recording();
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0.5,
+      durationSeconds: 3,
+      secondsPerBucket: 1,
+    });
+    if (chunk === undefined) throw new Error('setup failed');
+    expect(actualResolution(chunk)).toBe(1);
+  });
+
+  it('still ceils, so the tail of a window is never dropped', async () => {
+    // The 0.2.5 rule, unchanged: 40 s at 30 s per bucket is two buckets, not one.
+    const edf = await recording();
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 40,
+      secondsPerBucket: 30,
+    });
+    expect(chunk?.bucketCount).toBe(2);
   });
 });

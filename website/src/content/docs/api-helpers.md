@@ -144,6 +144,14 @@ const chunks = await readEnvelopeAtResolution(recording, {
 The bucket count is rounded UP: 40 seconds at 30 seconds per bucket is two buckets, not one.
 Rounding down would drop the last ten seconds off the picture entirely.
 
+It is computed per **run**, not once for the window, so every chunk of one call shares a bucket
+width. A chunk covers one record-aligned contiguous run, and a run is not the window: an EDF+D
+window spanning a gap gives two runs of different lengths, and even a contiguous window that does
+not begin on a record boundary gives a run wider than it asked for. Before 0.2.31 one count was
+derived from the window and handed to every chunk, so a window of 11 s asked at 1 s per bucket came
+back as 0.27 s per bucket in one chunk and 0.09 s in the other — widths that are not
+commensurable, so the two could not be drawn on one axis.
+
 ## Streaming iteration
 
 `readWindow` returns every chunk at once, which is right for a window you are about to draw and

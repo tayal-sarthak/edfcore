@@ -387,6 +387,15 @@ export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number):
  * which is what a fixed-scale view wants — 30 s per bucket for a sleep hypnogram, whatever the
  * window length. Deriving one from the other by hand means dividing and rounding, and rounding
  * the wrong way produces a final bucket covering a sliver of time that reads as a dropout.
+ *
+ * The bucket count is computed PER RUN, from that run's own span, not once from the window. A
+ * chunk covers one record-aligned contiguous run, and a run is not the window: an EDF+D window
+ * spanning a gap produces two runs of different lengths, and even a contiguous window that does
+ * not start on a record boundary produces a run wider than it asked for. Handing one bucket count
+ * to every chunk therefore delivered a different resolution in each — a window of 11 s asked at
+ * 1 s per bucket came back as 0.27 s per bucket in one chunk and 0.09 s in the other, which are
+ * not commensurable, so a viewer cannot place the two on one axis. That is the whole promise of
+ * this function, so it is computed where the run's length is known (fixed in 0.2.31).
  */
 export async function readEnvelopeAtResolution(
   recording: EdfRecording,
@@ -405,17 +414,42 @@ export async function readEnvelopeAtResolution(
         `${secondsPerBucket}.`,
     );
   }
-  // Ceil, not round: a window of 100 s at 30 s per bucket needs four buckets, not three. Three
-  // would silently drop the last 10 s off the end of the picture.
-  const buckets = Math.max(1, Math.ceil(selection.durationSeconds / secondsPerBucket));
-  return readEnvelope(
-    recording,
-    {
-      signalIndices: selection.signalIndices,
-      startSeconds: selection.startSeconds,
-      durationSeconds: selection.durationSeconds,
-      buckets,
-    },
-    options,
+  // Validated before the window is resolved, exactly as `readEnvelope` does it and for the same
+  // reason: a bad signalIndices must not read back as an empty stretch of recording.
+  resolveEnvelopeSignals(recording.header, selection.signalIndices);
+
+  // Resolved here, rather than inside `readEnvelope`, so each run's own span is known before its
+  // bucket count is chosen.
+  const ranges = resolveTimeWindow(
+    recording.timeline,
+    recording.index,
+    selection.startSeconds,
+    selection.durationSeconds,
   );
+
+  const recordSeconds = recording.header.recordDurationSeconds;
+  const chunks: EdfEnvelopeChunk[] = [];
+  for (const records of ranges) {
+    // A run's span is exactly its record count times the record duration: records within one run
+    // are contiguous by construction. A zero record duration is legal EDF and leaves no time axis
+    // at all, so one bucket is the only honest answer for it.
+    const runSeconds = records.count * recordSeconds;
+    // Ceil, not round: 100 s at 30 s per bucket needs four buckets, not three. Three would
+    // silently drop the last 10 s off the end of the picture.
+    const buckets = runSeconds > 0 ? Math.max(1, Math.ceil(runSeconds / secondsPerBucket)) : 1;
+    chunks.push(
+      await reduceRange(
+        recording,
+        records,
+        {
+          signalIndices: selection.signalIndices,
+          startSeconds: selection.startSeconds,
+          durationSeconds: selection.durationSeconds,
+          buckets,
+        },
+        options,
+      ),
+    );
+  }
+  return Object.freeze(chunks);
 }
