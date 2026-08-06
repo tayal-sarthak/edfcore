@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.11
+
+- **Added** the first test that runs edfcore anywhere other than Node. All 1,293 of the others ran
+  under `environment: 'node'`, where `process.env` and `Buffer.from` work perfectly — so nothing
+  could catch the one mistake that breaks Chrome, Firefox and Safari at once: a bare Node global,
+  which needs no import and so passes the existing module-graph walk untouched. The built
+  universal bundle is now driven end to end in a child process whose Node-only globals have been
+  replaced by getters that throw the way a browser does. Verified by planting one and watching it
+  fail. `npm run check` builds before it tests, because the test loads `dist/`.
+
 ## 0.2.10
 
 - **Fixed** `filterAnnotationsByTime` and `annotationsAt` answering on the header's timebase while
