@@ -17,7 +17,7 @@ import {
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
-import type { EdfRecording } from '../../src/types.js';
+import type { EdfChunkSignal, EdfRecording } from '../../src/types.js';
 import { minimalEdfPlus } from '../support/writer.js';
 
 const RECORDS = 40;
@@ -381,5 +381,51 @@ describe('readEnvelopeAtResolution', () => {
     await expect(
       readEnvelopeAtResolution(edf, { ...base, secondsPerBucket: Number.NaN }),
     ).rejects.toThrow(RangeError);
+  });
+});
+
+describe('envelopeOfSamples treats sampleCount as authoritative', () => {
+  it('ignores a padded tail on a caller-built chunk signal', async () => {
+    // No edfcore read path produces this: `decodeDigital` narrows an oversized reused buffer with
+    // `subarray` before it escapes, and every internal producer sets `sampleCount` from
+    // `digital.length`. But a caller can build an `EdfChunkSignal`, and `mergeChunks` and
+    // `trimToWindow` already bound themselves by `sampleCount` — so this one does too, rather than
+    // leaving two helpers defending and one not.
+    const padded = new Int32Array(8);
+    padded.set([10, -10, 20, -20], 0);
+    padded.fill(30000, 4); // The tail: never part of the signal.
+
+    const signal: EdfChunkSignal = {
+      signalIndex: 0,
+      sampleCount: 4,
+      digital: padded,
+      firstSampleIndex: 0,
+      startSeconds: 0,
+      outOfDigitalRangeCount: 0,
+    };
+
+    const envelope = envelopeOfSamples(signal, 2);
+    expect(envelope.sampleCount).toBe(4);
+    expect(Array.from(envelope.counts)).toEqual([2, 2]);
+    // 30000 appears nowhere: the tail was not folded in.
+    expect(Array.from(envelope.max)).toEqual([10, 20]);
+    expect(Array.from(envelope.min)).toEqual([-10, -20]);
+  });
+
+  it('is unchanged for every chunk edfcore itself produces', async () => {
+    // The equal-length case is the only one a read can produce, and it must be untouched.
+    const edf = await recording();
+    const [chunk] = await readWindow(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: SECONDS,
+    });
+    const signal = chunk?.signals[0];
+    if (signal === undefined) throw new Error('setup failed');
+    expect(signal.sampleCount).toBe(signal.digital.length);
+
+    const envelope = envelopeOfSamples(signal, 37);
+    expect(envelope.sampleCount).toBe(signal.sampleCount);
+    expect(Array.from(envelope.counts).reduce((a, b) => a + b, 0)).toBe(signal.sampleCount);
   });
 });

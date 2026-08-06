@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.24
+
+- **Changed** `envelopeOfSamples` to bound its reduction by `sampleCount` rather than by
+  `digital.length`. This is a consistency change, NOT a bug fix, and the difference is worth
+  stating: it was reported as a leak of edfcore's reusable decode buffer, and that leak does not
+  exist — `decodeDigital` narrows an oversized reused buffer with `subarray` before it escapes, and
+  every internal producer sets `sampleCount` from `digital.length`, so no read path could ever hand
+  this a padded array. What was real is that `mergeChunks` and `trimToWindow` both treat
+  `sampleCount` as authoritative on a caller-built `EdfChunkSignal` and this one did not. Two
+  helpers defending and one not is the worst of the three states.
+
 ## 0.2.23
 
 One hardening pass over `io/`. Both are cases where a guard that looked total was not.

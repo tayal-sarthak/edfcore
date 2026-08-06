@@ -335,11 +335,19 @@ export function toPhysicalEnvelope(
  *
  * For a caller who has samples in hand and wants them plotted: same reduction, same bucket rule,
  * no I/O.
+ *
+ * `sampleCount` bounds the reduction, not `digital.length`. `EdfChunkSignal` documents
+ * `sampleCount` as the truth and every producer inside edfcore makes the two equal — `decodeDigital`
+ * narrows an oversized reused buffer with `subarray` before it escapes, so no read path can hand
+ * this a padded array. The bound is here because a CALLER can build an `EdfChunkSignal`, and
+ * because `mergeChunks` and `trimToWindow` already take `sampleCount` as authoritative: two
+ * helpers defending and one not is the worst of the three states, whichever way the contract is
+ * eventually written down.
  */
 export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number): EdfEnvelopeSignal {
   assertPositiveInteger(buckets, 'buckets');
   const samples = chunkSignal.digital;
-  const total = samples.length;
+  const total = Math.min(chunkSignal.sampleCount, samples.length);
   const bucketCount = Math.max(1, Math.min(buckets, total));
 
   const min = new Int32Array(bucketCount);
