@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.5
+
+- **Added** `readEnvelopeAtResolution`: an envelope at a chosen seconds-per-bucket rather than a
+  chosen bucket count. Ceils, so a 40 s window at 30 s per bucket gets two buckets — rounding
+  down would drop the last 10 s off the picture.
+
 ## 0.2.4
 
 - **Added** `contiguityOf(index)`: `contiguous`, `discontinuous`, or `unknown`. Three answers,

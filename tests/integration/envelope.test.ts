@@ -8,7 +8,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from '../../src/envelope.js';
+import {
+  envelopeOfSamples,
+  readEnvelope,
+  readEnvelopeAtResolution,
+  toPhysicalEnvelope,
+} from '../../src/envelope.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
@@ -331,5 +336,50 @@ describe('toPhysicalEnvelope reuses a caller buffer', () => {
 
     const small = { min: new Float64Array(4), max: new Float64Array(4) };
     expect(() => toPhysicalEnvelope(signal, envelopeSignal, small)).toThrow(RangeError);
+  });
+});
+
+describe('readEnvelopeAtResolution', () => {
+  it('ceils rather than rounds, so the tail of the window is never dropped', async () => {
+    // 40 s at 30 s per bucket needs two buckets. Rounding down to one would silently lose 10 s
+    // off the end of the picture.
+    const edf = await recording();
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 40,
+      secondsPerBucket: 30,
+    });
+    expect(chunk?.bucketCount).toBe(2);
+  });
+
+  it('agrees with readEnvelope given the equivalent bucket count', async () => {
+    const edf = await recording();
+    const [byResolution] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: SECONDS,
+      secondsPerBucket: 4,
+    });
+    const [byCount] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: SECONDS,
+      buckets: Math.ceil(SECONDS / 4),
+    });
+    expect([...(byResolution?.signals[0]?.min ?? [])]).toEqual([
+      ...(byCount?.signals[0]?.min ?? []),
+    ]);
+  });
+
+  it('rejects a non-positive resolution', async () => {
+    const edf = await recording();
+    const base = { signalIndices: [0], startSeconds: 0, durationSeconds: SECONDS };
+    await expect(readEnvelopeAtResolution(edf, { ...base, secondsPerBucket: 0 })).rejects.toThrow(
+      RangeError,
+    );
+    await expect(
+      readEnvelopeAtResolution(edf, { ...base, secondsPerBucket: Number.NaN }),
+    ).rejects.toThrow(RangeError);
   });
 });

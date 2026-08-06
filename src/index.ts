@@ -170,7 +170,12 @@ export {
   filterAnnotationsByTime,
 } from './annotations-query.js';
 export { decodeStatusWord, getStatusSignal, readTriggers } from './biosemi.js';
-export { envelopeOfSamples, readEnvelope, toPhysicalEnvelope } from './envelope.js';
+export {
+  envelopeOfSamples,
+  readEnvelope,
+  readEnvelopeAtResolution,
+  toPhysicalEnvelope,
+} from './envelope.js';
 export { formatHeader } from './format-header.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';

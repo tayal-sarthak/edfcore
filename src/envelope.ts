@@ -371,3 +371,43 @@ export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number):
     outOfDigitalRangeCount: chunkSignal.outOfDigitalRangeCount,
   };
 }
+
+/**
+ * The envelope of a window, at a chosen time resolution rather than a chosen bucket count.
+ *
+ * `readEnvelope` takes buckets because a plot has a pixel width. This takes seconds per bucket,
+ * which is what a fixed-scale view wants — 30 s per bucket for a sleep hypnogram, whatever the
+ * window length. Deriving one from the other by hand means dividing and rounding, and rounding
+ * the wrong way produces a final bucket covering a sliver of time that reads as a dropout.
+ */
+export async function readEnvelopeAtResolution(
+  recording: EdfRecording,
+  selection: {
+    readonly signalIndices: readonly number[];
+    readonly startSeconds: number;
+    readonly durationSeconds: number;
+    readonly secondsPerBucket: number;
+  },
+  options?: ReadOptions,
+): Promise<readonly EdfEnvelopeChunk[]> {
+  const { secondsPerBucket } = selection;
+  if (!Number.isFinite(secondsPerBucket) || secondsPerBucket <= 0) {
+    throw new RangeError(
+      `readEnvelopeAtResolution(): secondsPerBucket must be a positive finite number, received ` +
+        `${secondsPerBucket}.`,
+    );
+  }
+  // Ceil, not round: a window of 100 s at 30 s per bucket needs four buckets, not three. Three
+  // would silently drop the last 10 s off the end of the picture.
+  const buckets = Math.max(1, Math.ceil(selection.durationSeconds / secondsPerBucket));
+  return readEnvelope(
+    recording,
+    {
+      signalIndices: selection.signalIndices,
+      startSeconds: selection.startSeconds,
+      durationSeconds: selection.durationSeconds,
+      buckets,
+    },
+    options,
+  );
+}

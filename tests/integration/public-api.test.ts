@@ -120,6 +120,7 @@ const FUNCTIONS: readonly string[] = [
   'matchSignals',
   'declaredDurationSeconds',
   'contiguityOf',
+  'readEnvelopeAtResolution',
 ];
 
 const ERROR_CLASSES: readonly string[] = [
