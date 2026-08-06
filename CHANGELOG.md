@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.27
+
+Three defects in one place: the CLI's argument handling did not match its own documented exit-code
+contract, which is the part a CI job depends on without parsing output.
+
+- **Fixed** bad usage exiting 1 instead of the documented 2. `parseArgs` threw a plain `RangeError`
+  that `cli.ts` caught alongside every other failure, so `--limit all` was indistinguishable from a
+  corrupt recording to the job gating on it. Usage mistakes now throw `CliUsageError`, which
+  extends `RangeError` so anyone already catching that keeps working.
+- **Fixed** an unknown option being ignored. A misspelled `--patinet` was dropped silently, so the
+  command printed the patient identification the caller was trying to withhold, and exited 0.
+- **Fixed** extra positional arguments being dropped. `edfcore validate *.edf` validated whichever
+  file the shell expanded first, exited 0, and said nothing about the rest — a green CI gate for
+  files that were never opened. It now refuses and names them, and suggests the shell loop.
+- **Fixed** `npx edfcore --help` exiting 2. `parseArgs` never puts a dash-prefixed argument in the
+  command slot, so `runCli`'s `command === '--help'` branch was unreachable and help fell through
+  to "no command". `--help` and `-h` are now flags, handled beside `--version`, and exit 0.
+
 ## 0.2.26
 
 - **Fixed** `edfcore header` and `edfcore validate` printing the full local patient identification

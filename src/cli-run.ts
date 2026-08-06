@@ -17,6 +17,27 @@ import { buildRecordIndex } from './record-index.js';
 import { openEdf, readAnnotations } from './recording.js';
 import { validateRecording } from './validate.js';
 
+/**
+ * A mistake in the command line, as opposed to a mistake in the file.
+ *
+ * The documented exit codes are 0 success, 1 the file is unreadable or failed validation, 2 bad
+ * usage — and a script gates on them without parsing output. `parseArgs` used to throw a plain
+ * `RangeError`, which `cli.ts` caught with everything else and reported as 1, so `--limit all` was
+ * indistinguishable from a corrupt recording. This type is what lets the shell tell them apart.
+ *
+ * It EXTENDS `RangeError` rather than `Error`, so a caller who was already catching `RangeError`
+ * from `parseArgs` — the package's convention for a caller mistake, and what the existing test
+ * pins — keeps working unchanged. The new class narrows that, it does not replace it.
+ */
+export class CliUsageError extends RangeError {
+  readonly usage = true as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'CliUsageError';
+  }
+}
+
 /** Everything the CLI touches outside itself. */
 export interface CliIo {
   readFile(path: string): Promise<Uint8Array>;
@@ -34,6 +55,7 @@ const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
   npx edfcore json <file>         the header as JSON, for piping into jq
 
 Options
+  --help, -h                      print this and exit 0
   --patient                       include patient identification (header, json)
   --list                          list events one per line instead of counting (events)
   --limit <n>                     individual diagnostics or events to print (default 20)
@@ -49,6 +71,7 @@ export interface Args {
   readonly patient: boolean;
   readonly list: boolean;
   readonly version: boolean;
+  readonly help: boolean;
   readonly limit: number | undefined;
 }
 
@@ -57,6 +80,7 @@ export function parseArgs(argv: readonly string[]): Args {
   let patient = false;
   let list = false;
   let version = false;
+  let help = false;
   let limit: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -64,18 +88,43 @@ export function parseArgs(argv: readonly string[]): Args {
     if (arg === '--patient') patient = true;
     else if (arg === '--list') list = true;
     else if (arg === '--version' || arg === '-v') version = true;
+    else if (arg === '--help' || arg === '-h') help = true;
     else if (arg === '--limit') {
       const value = Number(argv[i + 1]);
       // A NaN limit would disable the cap silently, which is the opposite of what was asked for.
       if (!Number.isSafeInteger(value) || value < 0) {
-        throw new RangeError(`--limit needs a whole number, received ${String(argv[i + 1])}`);
+        throw new CliUsageError(
+          `--limit needs a whole number, received ${String(argv[i + 1])}. Next: pass a count, ` +
+            'or omit --limit for the default of 20.',
+        );
       }
       limit = value;
       i += 1;
-    } else if (arg !== undefined && !arg.startsWith('-')) positional.push(arg);
+    } else if (arg?.startsWith('-')) {
+      // An unrecognised flag is bad usage, not something to ignore: a misspelled --patinet would
+      // otherwise print the output the caller was trying to avoid, quietly and with exit 0.
+      throw new CliUsageError(
+        `unknown option ${JSON.stringify(arg)}. Next: run \`edfcore --help\` for the list.`,
+      );
+    } else if (arg !== undefined) positional.push(arg);
   }
 
-  return { command: positional[0], file: positional[1], patient, list, version, limit };
+  if (positional.length > 2) {
+    // Silently dropping the rest is the dangerous shape: `edfcore validate *.edf` would check the
+    // first file, exit 0, and report success for every other file the shell expanded — in a CI
+    // gate, which is what the exit code exists for.
+    throw new CliUsageError(
+      `expected one file, received ${positional.length - 1}: ` +
+        `${positional
+          .slice(1)
+          .map((value) => JSON.stringify(value))
+          .join(', ')}. ` +
+        'edfcore reads one file per invocation. Next: loop in the shell — ' +
+        'for f in *.edf; do edfcore validate "$f" || exit 1; done',
+    );
+  }
+
+  return { command: positional[0], file: positional[1], patient, list, version, help, limit };
 }
 
 /**
@@ -108,9 +157,17 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
     io.out(`${VERSION}\n`);
     return 0;
   }
-  if (command === undefined || command === 'help' || command === '--help') {
+  // `--help` is a FLAG, handled here alongside `--version`, because `parseArgs` never puts a
+  // dash-prefixed argument in `command`: the old `command === '--help'` branch could not be
+  // reached, so `edfcore --help` fell through to "no command" and exited 2 — on the first thing
+  // most people type.
+  if (args.help || command === 'help') {
     io.out(USAGE);
-    return command === undefined ? 2 : 0;
+    return 0;
+  }
+  if (command === undefined) {
+    io.out(USAGE);
+    return 2;
   }
   if (file === undefined) {
     io.err(`edfcore ${command}: no file given\n\n${USAGE}`);

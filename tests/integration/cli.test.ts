@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { type CliIo, parseArgs, runCli } from '../../src/cli-run.js';
+import { type CliIo, CliUsageError, parseArgs, runCli } from '../../src/cli-run.js';
 import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
 
 interface Captured {
@@ -268,5 +268,53 @@ describe('patient identification and the diagnostics that quote it', () => {
     });
     const { out } = await invoke(['header', 'a.edf'], { 'a.edf': odd });
     expect(out).toContain('Filtered');
+  });
+});
+
+describe('bad usage is distinguishable from an unreadable file', () => {
+  // The documented contract is 0 success, 1 unreadable or failed validation, 2 bad usage, and a CI
+  // job gates on it without parsing output. Before 0.2.27 parseArgs threw a plain RangeError that
+  // cli.ts caught with everything else and reported as 1.
+  it('throws a typed usage error the shell can map to exit 2', () => {
+    expect(() => parseArgs(['--limit', 'all', 'header', 'a.edf'])).toThrow(CliUsageError);
+    expect(() => parseArgs(['--limit', 'all', 'header', 'a.edf'])).toThrow(RangeError);
+  });
+
+  it('refuses an unknown option instead of ignoring it', async () => {
+    // A misspelled --patinet used to be dropped silently, so the command printed the output the
+    // caller was trying to avoid and exited 0.
+    expect(() => parseArgs(['header', 'a.edf', '--patinet'])).toThrow(CliUsageError);
+    expect(() => parseArgs(['header', 'a.edf', '--patinet'])).toThrow(/unknown option/);
+  });
+
+  it('refuses extra files rather than checking one and reporting success', async () => {
+    // `edfcore validate *.edf` expanded to five files used to validate the first, exit 0, and say
+    // nothing about the other four — inside the CI gate the exit code exists for.
+    expect(() => parseArgs(['validate', 'a.edf', 'b.edf', 'c.edf'])).toThrow(CliUsageError);
+    expect(() => parseArgs(['validate', 'a.edf', 'b.edf', 'c.edf'])).toThrow(/expected one file/);
+    // One file plus flags in any order is still fine.
+    expect(parseArgs(['--patient', 'header', 'a.edf'])).toMatchObject({
+      command: 'header',
+      file: 'a.edf',
+    });
+  });
+});
+
+describe('--help', () => {
+  it('exits 0 and prints usage', async () => {
+    // parseArgs never puts a dash-prefixed argument in `command`, so runCli's `command === '--help'`
+    // branch was unreachable and `edfcore --help` fell through to "no command" and exited 2 — on
+    // the first thing most people type.
+    for (const argv of [['--help'], ['-h'], ['help']]) {
+      const { code, out } = await invoke(argv, {});
+      expect(code, argv.join(' ')).toBe(0);
+      expect(out).toContain('npx edfcore header');
+    }
+  });
+
+  it('still exits 2 for no arguments at all', async () => {
+    const { code, out } = await invoke([], {});
+    expect(code).toBe(2);
+    expect(out).toContain('npx edfcore header');
   });
 });

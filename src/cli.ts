@@ -19,7 +19,7 @@ import * as nodeFsPromises from 'node:fs/promises';
 // biome-ignore lint/suspicious/noTsIgnore: as above.
 // @ts-ignore 'node:process' has no declarations under `types: []`; its shape is below.
 import * as nodeProcess from 'node:process';
-import { type CliIo, parseArgs, runCli } from './cli-run.js';
+import { type CliIo, CliUsageError, parseArgs, runCli } from './cli-run.js';
 import { isEdfError } from './errors.js';
 
 interface NodeFs {
@@ -55,7 +55,10 @@ async function main(): Promise<void> {
     // top of it would bury the one useful line.
     const message = isEdfError(error) || error instanceof Error ? error.message : String(error);
     proc.stderr.write(`edfcore: ${message}\n`);
-    proc.exitCode = 1;
+    // 2 is the documented code for bad usage and 1 for a file that could not be read. Reporting
+    // both as 1 makes a typo indistinguishable from a corrupt recording to the script that is
+    // gating on it.
+    proc.exitCode = error instanceof CliUsageError ? 2 : 1;
   }
 }
 

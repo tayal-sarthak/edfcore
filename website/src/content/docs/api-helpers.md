@@ -403,7 +403,21 @@ Exit codes are the contract, so a script can act on them without parsing the out
 |---|---|
 | `0` | success |
 | `1` | the file could not be read, or validation failed |
-| `2` | bad usage — unknown command, missing file, bad flag |
+| `2` | bad usage — unknown command or option, missing file, extra files, bad flag value |
+
+Bad usage really does exit 2 since 0.2.27; before that `parseArgs` threw a plain `RangeError` that
+the shell reported as 1, so `--limit all` was indistinguishable from a corrupt recording to the job
+gating on it. Three related things changed with it:
+
+- An **unknown option** is refused rather than ignored. A misspelled `--patinet` used to be dropped
+  silently, so the command printed the identification the caller was trying to withhold, and
+  exited 0.
+- **Extra files** are refused. `edfcore validate *.edf` used to validate the first file the shell
+  expanded, exit 0, and say nothing about the rest — inside the CI gate the exit code exists for.
+  Loop instead: `for f in *.edf; do edfcore validate "$f" || exit 1; done`
+- **`--help` and `-h`** exit 0. They are flags, and `parseArgs` never puts a dash-prefixed argument
+  in the command slot, so the old `command === '--help'` branch was unreachable and
+  `npx edfcore --help` fell through to "no command" and exited 2.
 
 `edfcore validate` exiting non-zero is the intended way to gate a CI job on file conformance.
 
