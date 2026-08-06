@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.12
+
+- **Added** documentation for everything shipped since 0.1.19: `matchSignals`,
+  `declaredDurationSeconds`, `contiguityOf`, `readEnvelopeAtResolution`, `annotationsAt`,
+  `mergeChunks`, `physicalRangeOf`, `onsetTicksFromFirstRecord`, and the `signals`, `gaps` and
+  `--version` CLI commands.
+- **Added** a test that fails when an export is mentioned nowhere in the docs. 0.1.16 made adding
+  an export a deliberate act by requiring a line in a test file; adding a line to a test file is
+  not writing a doc, and eight more helpers shipped undocumented after it. The match is on word
+  boundaries, so `readEnvelopeAtResolution` does not vouch for `readEnvelope`.
+
 ## 0.2.11
 
 - **Added** the first test that runs edfcore anywhere other than Node. All 1,293 of the others ran

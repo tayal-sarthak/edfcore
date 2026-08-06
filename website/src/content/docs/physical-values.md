@@ -149,6 +149,23 @@ signal 0 "Inv" declares physicalMinimum 500 greater than physicalMaximum -500
 the two, because a silent polarity flip is a clinically wrong result that looks normal.
 ```
 
+### The declared range, in order
+
+`physicalMinimum` is not the smaller of the two, and a viewer that reads the two fields in field
+order gets an inverted y-axis on exactly the channels whose trace is also inverted — two errors
+that cancel on screen while both are wrong.
+
+```ts
+import { physicalRangeOf } from 'edfcore';
+
+physicalRangeOf(inverted);   // { low: -500, high: 500 }
+```
+
+This is the DECLARED envelope, not the observed one. Samples outside it exist — that is what
+`outOfDigitalRangeCount` counts — and this function reads no samples. It is what a fixed axis or a
+gain control should be built from. A bound that is not finite throws a `RangeError` rather than
+returning a `NaN` axis that draws nothing and reports no error.
+
 ## Signals with no scale
 
 `signal.scale` is `EdfScale | undefined`. `undefined` means edfcore found no usable way to

@@ -132,10 +132,12 @@ two answers differ by that offset. EDFlib, pyEDFlib and MNE all report the secon
 
 edfcore reports both, as two separately named fields:
 
-| field | measured from | value in the example below |
-|---|---|---|
-| `onsetSecondsFromHeaderStart` | the header startdate/starttime, verbatim on disk | `1.25` |
-| `onsetSecondsFromFirstRecord` | the true start of record 0 | `1` |
+| field | measured from | exact | value in the example below |
+|---|---|---|---|
+| `onsetSecondsFromHeaderStart` | the header startdate/starttime, verbatim on disk | no | `1.25` |
+| `onsetSecondsFromFirstRecord` | the true start of record 0 | no | `1` |
+| `onsetTicks` | the header startdate/starttime, verbatim on disk | yes | `12500000n` |
+| `onsetTicksFromFirstRecord` | the true start of record 0 | yes | `10000000n` |
 
 They differ by `recording.timeline.startOffsetSeconds`, which is record 0's timekeeping onset
 (`0.25` in the example file):
@@ -146,6 +148,8 @@ recording.timeline.startOffsetTicks;    // 2500000n
 
 event.onsetSecondsFromHeaderStart;      // 1.25
 event.onsetSecondsFromFirstRecord;      // 1
+event.onsetTicks;                       // 12500000n
+event.onsetTicksFromFirstRecord;        // 10000000n
 ```
 
 `onsetSecondsFromFirstRecord` is the one that lines up with everything else edfcore reports. `t = 0`
@@ -171,9 +175,16 @@ Both seconds fields are float64 and both are lossy. The exact value is `onsetTic
 count of 100 ns ticks:
 
 ```ts
-event.onsetTicks;  // 12500000n
-event.onsetRaw;    // '+1.25' — the digits exactly as the file wrote them
+event.onsetTicks;                  // 12500000n — from the header start time
+event.onsetTicksFromFirstRecord;   // 10000000n — from the start of record 0
+event.onsetRaw;                    // '+1.25' — the digits exactly as the file wrote them
 ```
+
+Both exact fields exist because both axes are needed. `onsetTicks` is the number the file wrote,
+which is what you want when reconciling against a wall clock or another system's export.
+`onsetTicksFromFirstRecord` is the axis every read in edfcore uses — `resolveTimeWindow`,
+`readWindow`, `readEnvelope` all put `t = 0` at the start of record 0 — so it is the one to compare
+against a window you have read. It is `onsetSecondsFromFirstRecord` without the float.
 
 Onsets are parsed digit by digit into `bigint`. `parseFloat` and `Number()` appear nowhere on that
 path. An onset written `+0.1` and one written `+0.3` are integers by the time you see them.
