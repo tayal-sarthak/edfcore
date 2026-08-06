@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.14
+
+- **Added** `segmentAt(index, seconds)` — the pure, synchronous form of `index.locate()`. A viewer
+  asks which segment covers the cursor on every mouse move and should not issue a read to find
+  out; a completed index already holds the segments. Throws on a probed index rather than
+  returning `undefined`, because `undefined` means "no records cover this instant" and a probed
+  index cannot say that about anything in the middle of the file.
+
 ## 0.2.13
 
 - **Added** `edfcore events <file> --list`: one tab-separated event per line instead of counts by

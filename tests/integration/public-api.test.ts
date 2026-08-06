@@ -124,6 +124,7 @@ const FUNCTIONS: readonly string[] = [
   'annotationsAt',
   'mergeChunks',
   'physicalRangeOf',
+  'segmentAt',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

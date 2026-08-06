@@ -38,6 +38,21 @@ Three answers, not a boolean. `openEdf` probes two records and does not scan; a 
 seen the first and the last and cannot rule out a gap between them. `'unknown'` is that state, and
 `await buildRecordIndex(recording)` is what turns it into one of the other two.
 
+```ts
+import { segmentAt } from 'edfcore';
+
+const index = await buildRecordIndex(recording);
+segmentAt(index, 3612.5);   // EdfSegment, or undefined if that instant is in a gap
+```
+
+`segmentAt` is the pure, synchronous form of `index.locate()`: a binary search over segments the
+scan already produced, with no reads. A viewer asking on every mouse move wants this one.
+
+It **throws** on a probed index rather than returning `undefined`, because `undefined` here means
+"no records cover this instant" and a probed index cannot say that about anything in the middle of
+the file. Merging "there is a gap here" with "nobody looked" is the one confusion this whole area
+of the API exists to prevent.
+
 ## Envelope decimation
 
 A twelve-hour recording at 256 Hz is about eleven million samples per channel. A plot is a

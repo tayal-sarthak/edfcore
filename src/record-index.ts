@@ -428,3 +428,48 @@ export function contiguityOf(index: EdfRecordIndex): 'contiguous' | 'discontinuo
   if (index.coverage !== 'complete' || index.gaps === undefined) return 'unknown';
   return index.gaps.length === 0 ? 'contiguous' : 'discontinuous';
 }
+
+/**
+ * The segment covering an instant, or `undefined` when the instant falls in a gap or outside the
+ * recording.
+ *
+ * Pure and synchronous, which is the point: `index.locate()` answers the same question by probing
+ * the file, and a viewer that asks on every mouse move should not be issuing reads. A completed
+ * index already holds the segments, so this is a binary search over them.
+ *
+ * THROWS on a probed index rather than returning `undefined`. `undefined` here means "no records
+ * cover this time", and a probed index has read record 0 and the last record and nothing between —
+ * it does not know where the segments are, so it cannot say that about any instant in the middle.
+ * Returning `undefined` would merge "there is a gap here" with "nobody looked", which are the two
+ * answers a caller most needs to keep apart.
+ *
+ * `seconds` is on the recording's own axis: `t = 0` is the start of record 0, matching
+ * `segment.startSeconds`, `readWindow` and `readEnvelope`.
+ */
+export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | undefined {
+  const segments = index.segments;
+  if (index.coverage !== 'complete' || segments === undefined) {
+    throw new RangeError(
+      'segmentAt() needs a complete index: this one is probed, so it knows record 0 and the last ' +
+        'record and nothing between, and cannot say which segment covers a time in the middle. ' +
+        'Next: await buildRecordIndex(recording) and pass the index it returns.',
+    );
+  }
+  // NaN fails every comparison below, so the binary search would walk to an arbitrary segment and
+  // return it. Refusing is the only honest answer for a time that is not a time.
+  if (!Number.isFinite(seconds)) {
+    throw new RangeError(`segmentAt() needs a finite time in seconds, received ${seconds}.`);
+  }
+
+  let low = 0;
+  let high = segments.length - 1;
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+    const segment = segments[middle] as EdfSegment;
+    // Half-open, so a segment that ends exactly where the next begins is not both.
+    if (seconds < segment.startSeconds) high = middle - 1;
+    else if (seconds >= segment.endSeconds) low = middle + 1;
+    else return segment;
+  }
+  return undefined;
+}
