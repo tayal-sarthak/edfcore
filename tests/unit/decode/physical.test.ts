@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { decodeDigital } from '../../../src/decode/digital.js';
-import { clampToDigitalRange, toPhysical } from '../../../src/decode/physical.js';
+import { clampToDigitalRange, physicalRangeOf, toPhysical } from '../../../src/decode/physical.js';
 import { EdfBudgetError, EdfScalingError, isEdfError } from '../../../src/errors.js';
 import { parseHeader } from '../../../src/header/parse.js';
 import type { EdfDiagnosticCode, EdfHeader, EdfSignal, RecordRange } from '../../../src/types.js';
@@ -770,5 +770,80 @@ describe('out reuse', () => {
     expect(clamped.buffer).toBe(out.buffer);
     expect(out[3]).toBe(-7);
     expect(() => clampToDigitalRange(signal, samples, new Int32Array(2))).toThrow(RangeError);
+  });
+});
+
+describe('physicalRangeOf', () => {
+  it('returns the declared bounds in ascending order for an ordinary signal', () => {
+    const signal = buildSignal({
+      label: 'Fp1',
+      samplesPerRecord: 1,
+      physicalMinimum: -500,
+      physicalMaximum: 500,
+    });
+    expect(physicalRangeOf(signal)).toEqual({ low: -500, high: 500 });
+  });
+
+  it('orders the bounds of a negative-gain signal instead of returning them as declared', () => {
+    // physicalMinimum 500 > physicalMaximum -500 is a legal negative gain. Reading the two
+    // fields in field order gives a viewer an inverted axis on exactly the channels whose trace
+    // is also inverted, and the two errors cancel visually while both are wrong.
+    const signal = buildSignal({
+      label: 'Fp1',
+      samplesPerRecord: 1,
+      physicalMinimum: 500,
+      physicalMaximum: -500,
+      digitalMinimum: -32768,
+      digitalMaximum: 32767,
+    });
+    expect(signal.physicalMinimum).toBeGreaterThan(signal.physicalMaximum);
+    expect(physicalRangeOf(signal)).toEqual({ low: -500, high: 500 });
+  });
+
+  it('agrees with the endpoints toPhysical actually produces', () => {
+    // The range must be the image of the digital range under the pinned expression, for both
+    // gain signs. This is the property, not the field order.
+    for (const [low, high] of [
+      [-500, 500],
+      [500, -500],
+    ] as const) {
+      const signal = buildSignal({
+        label: 'Fp1',
+        samplesPerRecord: 1,
+        physicalMinimum: low,
+        physicalMaximum: high,
+        digitalMinimum: -32768,
+        digitalMaximum: 32767,
+      });
+      const ends = toPhysical(signal, Int32Array.from([-32768, 32767]));
+      const range = physicalRangeOf(signal);
+      expect(range.low).toBeCloseTo(Math.min(ends[0] as number, ends[1] as number), 9);
+      expect(range.high).toBeCloseTo(Math.max(ends[0] as number, ends[1] as number), 9);
+    }
+  });
+
+  it('keeps a degenerate range as the single point it is', () => {
+    // physicalMinimum == physicalMaximum leaves `scale` undefined, but the declared range is
+    // still a fact about the file. Reporting it is honest; widening it would not be.
+    const signal = buildSignal({
+      label: 'Fp1',
+      samplesPerRecord: 1,
+      physicalMinimum: 7,
+      physicalMaximum: 7,
+    });
+    expect(signal.scale).toBeUndefined();
+    expect(physicalRangeOf(signal)).toEqual({ low: 7, high: 7 });
+  });
+
+  it('refuses a non-finite bound rather than returning a NaN axis', () => {
+    // `parseHeader` refuses an unreadable physical field outright, so a NaN bound reaches here
+    // only on a hand-assembled signal — the same way the clampToDigitalRange guard is reached.
+    // It still has to be guarded: every comparison against NaN is false, so an unguarded version
+    // returns {low: NaN, high: NaN}, an axis that draws nothing and reports no error.
+    const parsed = buildSignal(PINNED_SIGNAL);
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => physicalRangeOf({ ...parsed, physicalMinimum: bad })).toThrow(RangeError);
+      expect(() => physicalRangeOf({ ...parsed, physicalMaximum: bad })).toThrow(RangeError);
+    }
   });
 });

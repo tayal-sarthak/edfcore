@@ -128,7 +128,7 @@ export {
 
 export { decodeHeaderLatin1 } from './bytes/latin1.js';
 export { decodeDigital } from './decode/digital.js';
-export { clampToDigitalRange, toPhysical } from './decode/physical.js';
+export { clampToDigitalRange, physicalRangeOf, toPhysical } from './decode/physical.js';
 export { formatDiagnostics } from './diagnostics/format.js';
 export { formatStartTimeNaive } from './header/dates.js';
 export {

@@ -198,6 +198,41 @@ export function toPhysical(
 }
 
 /**
+ * The signal's declared physical bounds, in ascending order.
+ *
+ * `signal.physicalMinimum` is not the smaller of the two. A negative amplifier gain is declared
+ * by putting the larger value in the minimum field, it is legal, and edfcore never "fixes" it —
+ * so `{ low: signal.physicalMinimum, high: signal.physicalMaximum }` written by hand gives a
+ * viewer an inverted y-axis on exactly the channels where the trace is also inverted, and the
+ * two mistakes hide each other.
+ *
+ * This is the DECLARED envelope, not the observed one: samples outside it exist (that is what
+ * `outOfDigitalRangeCount` counts) and this function does not look at any. It is what a fixed
+ * axis or a gain control should be built from.
+ *
+ * Throws `RangeError` when either bound is not finite, for the reason `clampToDigitalRange`
+ * does: `Math.min(NaN, x)` is `NaN`, and an axis from `NaN` to `NaN` draws nothing while
+ * reporting no error at all.
+ */
+export function physicalRangeOf(signal: EdfSignal): {
+  readonly low: number;
+  readonly high: number;
+} {
+  const { physicalMinimum, physicalMaximum } = signal;
+  if (!Number.isFinite(physicalMinimum) || !Number.isFinite(physicalMaximum)) {
+    throw new RangeError(
+      `signal ${signal.index} "${signal.label}" declares physical minimum ` +
+        `"${signal.raw.physicalMinimum}" and physical maximum "${signal.raw.physicalMaximum}", ` +
+        'which do not both parse as numbers, so it has no physical range. Next: read ' +
+        'header.diagnostics for this signal.',
+    );
+  }
+  return physicalMinimum <= physicalMaximum
+    ? { low: physicalMinimum, high: physicalMaximum }
+    : { low: physicalMaximum, high: physicalMinimum };
+}
+
+/**
  * Clamp to the declared digital range. POST-HOC ONLY — nothing on the read path calls this.
  *
  * It exists to reproduce a clamping consumer (EDFlib clamps silently on read; edfcore does not)

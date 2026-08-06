@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.9
+
+- **Added** `physicalRangeOf(signal)`, the declared physical bounds in ascending order.
+  `physicalMinimum` is not the smaller of the two: a negative amplifier gain is declared by
+  putting the larger value in the minimum field, and reading the fields in field order gives a
+  viewer an inverted y-axis on exactly the channels whose trace is also inverted — two errors
+  that cancel on screen while both are wrong.
+
 ## 0.2.8
 
 - **Added** `mergeChunks(chunks)`. `readWindow` splits at every discontinuity, and joining the

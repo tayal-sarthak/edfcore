@@ -123,6 +123,7 @@ const FUNCTIONS: readonly string[] = [
   'readEnvelopeAtResolution',
   'annotationsAt',
   'mergeChunks',
+  'physicalRangeOf',
 ];
 
 const ERROR_CLASSES: readonly string[] = [
