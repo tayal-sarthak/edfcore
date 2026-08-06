@@ -166,6 +166,13 @@ for await (const chunk of streamRecords(recording, {
 every signal in an EDF file shares — channels sample at different rates, so "a second of data" is
 a different number of samples per channel.
 
+`signalIndices` is validated before the window is resolved, so a non-existent index or the
+annotations channel is refused even when the window selects no records at all — the same
+`EdfChannelNotFoundError` `readWindow` raises. Before 0.2.22 a window past the end, inside an
+EDF+D gap, or of zero duration reported a bad channel as "no data here", which is the wrong
+diagnosis. A *valid* selection over an empty window still yields nothing, silently; that is an
+ordinary answer, not an error.
+
 Chunks arrive in time order, never span a gap, and carry the same `precededByGap` a `readWindow`
 chunk would. They come from `readRecords`, so a streamed chunk and a read chunk are the same
 object in every respect, diagnostics included.

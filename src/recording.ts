@@ -65,8 +65,14 @@ export async function openEdf(source: ByteSource, options?: OpenOptions): Promis
  * An annotation signal is refused with a plain `RangeError` rather than an `EdfError`: its bytes
  * are TAL text, and decoding them as samples produces numbers that look exactly like a signal.
  * That is the failure this library exists to prevent, and it can only ever be a caller's mistake.
+ *
+ * Exported for `stream.ts`, which must produce the byte-identical refusal `readWindow` does — not
+ * for the barrel. Validating a selection is not a public operation.
  */
-function resolveSignals(header: EdfHeader, signalIndices: readonly number[]): readonly EdfSignal[] {
+export function resolveSignals(
+  header: EdfHeader,
+  signalIndices: readonly number[],
+): readonly EdfSignal[] {
   const seen = new Set<number>();
   const signals: EdfSignal[] = [];
   for (const signalIndex of signalIndices) {

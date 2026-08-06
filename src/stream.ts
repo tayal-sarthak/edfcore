@@ -13,7 +13,7 @@
  * `readWindow` chunk would, so a consumer sees the discontinuities rather than a smooth lie.
  */
 
-import { readRecords } from './recording.js';
+import { readRecords, resolveSignals } from './recording.js';
 import { resolveTimeWindow } from './time/window.js';
 import type { EdfChunk, EdfRecording, ReadOptions, RecordRange, StreamSelection } from './types.js';
 
@@ -40,6 +40,14 @@ export async function* streamRecords(
         'Next: omit it for the default, or pass how many records you want to hold at once.',
     );
   }
+
+  // Validated BEFORE the window is resolved, for the reason `readWindow` and `readEnvelope` both
+  // state: a caller mistake is a caller mistake wherever the window lands. Resolving first meant
+  // that a window past the end, one inside an EDF+D gap, or one of zero duration produced no
+  // records, so `readRecords` never ran, so a signal index that does not exist — or the
+  // annotations channel, the refusal this library exists for — was reported as "no data here".
+  // Every other selection error in the package surfaces on the spot; this one waited for data.
+  resolveSignals(recording.header, selection.signalIndices);
 
   const ranges = resolveTimeWindow(
     recording.timeline,

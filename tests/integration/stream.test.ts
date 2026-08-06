@@ -7,10 +7,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { EdfChannelNotFoundError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import { streamRecords } from '../../src/stream.js';
-import type { EdfRecording } from '../../src/types.js';
+import type { EdfChunk, EdfRecording, StreamSelection } from '../../src/types.js';
 import { minimalEdfPlus } from '../support/writer.js';
 
 const RECORDS = 50;
@@ -129,5 +130,53 @@ describe('streamRecords', () => {
       if (pulled >= 4) break;
     }
     expect(pulled).toBe(4);
+  });
+});
+
+describe('streamRecords validates its selection wherever the window lands', () => {
+  // An async generator does not run its body until the first `next()`, so the refusal surfaces on
+  // the first pull rather than at the call — which is what `for await` does anyway.
+  async function drain(recording: EdfRecording, selection: StreamSelection): Promise<EdfChunk[]> {
+    const chunks: EdfChunk[] = [];
+    for await (const chunk of streamRecords(recording, selection)) chunks.push(chunk);
+    return chunks;
+  }
+
+  it('refuses a signal index that does not exist, even over an empty window', async () => {
+    // Before 0.2.22 the window resolved to zero records, `readRecords` never ran, and the bad
+    // index was reported as "no data for this epoch" — the wrong diagnosis entirely.
+    const recording = await openEdf(byteSource(minimalEdfPlus({ recordCount: 4 })));
+
+    await expect(
+      drain(recording, { signalIndices: [99], startSeconds: 1000, durationSeconds: 10 }),
+    ).rejects.toThrow(EdfChannelNotFoundError);
+
+    // And it is the same refusal readWindow gives for the identical selection.
+    await expect(
+      readWindow(recording, { signalIndices: [99], startSeconds: 1000, durationSeconds: 10 }),
+    ).rejects.toThrow(EdfChannelNotFoundError);
+  });
+
+  it('refuses the annotations channel over an empty window too', async () => {
+    // The refusal this library exists for: TAL bytes decoded as samples produce numbers that look
+    // like a signal. It must not be skippable by asking for a stretch with no records in it.
+    const recording = await openEdf(byteSource(minimalEdfPlus({ recordCount: 4 })));
+    const annotationsIndex = recording.header.annotationSignalIndices[0] as number;
+
+    await expect(
+      drain(recording, {
+        signalIndices: [annotationsIndex],
+        startSeconds: 0,
+        durationSeconds: 0,
+      }),
+    ).rejects.toThrow(/annotations channel/);
+  });
+
+  it('still yields nothing, silently, for a valid selection over an empty window', async () => {
+    // The fix must not turn "no data here" into an error. An empty stretch is an ordinary answer.
+    const recording = await openEdf(byteSource(minimalEdfPlus({ recordCount: 4 })));
+    expect(
+      await drain(recording, { signalIndices: [0], startSeconds: 1000, durationSeconds: 10 }),
+    ).toEqual([]);
   });
 });

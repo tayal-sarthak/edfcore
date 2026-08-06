@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.22
+
+- **Fixed** `streamRecords` skipping the signal validation `readWindow` and `readEnvelope` both do
+  before resolving the window. It validated `chunkRecords` and not `signalIndices`, and
+  `readRecords` — where the check lived — only ran once the window resolved to at least one
+  record. So a window past the end, one inside an EDF+D gap, or one of zero duration reported a
+  non-existent channel, or the annotations channel, as "no data here". Both siblings carry a
+  comment explaining that a caller mistake is a caller mistake wherever the window lands; this was
+  the third one, and the odd one out. A valid selection over an empty window still yields nothing.
+
 ## 0.2.21
 
 - **Fixed** `matchSignals` and `filterAnnotationsByText` returning roughly half their matches when

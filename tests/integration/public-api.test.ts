@@ -170,8 +170,11 @@ describe('the barrel exports nothing that is not accounted for', () => {
   });
 
   it('does not leak an internal helper into the barrel', () => {
-    // gapBefore is exported from recording.ts so envelope.ts can share it. It is not API.
+    // Both are exported from recording.ts so a sibling module can share them — gapBefore for
+    // envelope.ts, resolveSignals for stream.ts. Neither is API: validating a selection and
+    // locating a gap are steps inside a read, not operations a consumer performs.
     expect(Object.keys(edfcore)).not.toContain('gapBefore');
+    expect(Object.keys(edfcore)).not.toContain('resolveSignals');
   });
 });
 
