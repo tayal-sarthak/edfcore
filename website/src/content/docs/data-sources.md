@@ -50,6 +50,15 @@ interface ByteSource {
 
 edfcore checks the length on every call, including calls into a source you wrote. A short buffer is indistinguishable from a truncated file, so one hiccuping socket turns into a `TRUNCATED_FILE` diagnostic about a good recording. Zero is a valid sample value, so a padded read decodes into a flat line.
 
+The value itself is checked too, not only its `.length`. It must be a `Uint8Array` — or a
+`Uint8ClampedArray`, or Node's `Buffer` — tested by its built-in tag rather than by `instanceof`,
+so one that crossed a worker or iframe boundary still counts. **`Int8Array` does not.** It has one
+byte per element, so it passes any length check, and its already-signed elements are then
+sign-extended a second time during decode: a file holding `[-32768, -1, 200, 32767]` came back as
+`[-98304, -65537, -65592, -65537]` with no error at all. TypeScript stops that at compile time;
+plain JavaScript does not, and `new Int8Array(buf)` for `new Uint8Array(buf)` is a one-character
+typo. Since 0.2.23 it raises `EdfSourceError` like any other contract violation.
+
 A violation raises `EdfSourceError` with the real numbers on it.
 
 ```ts
@@ -247,6 +256,19 @@ const source = await httpSource(url, {
 ```
 
 `httpSource` accepts a `URL` object as well as a string, or anything else with an `href` property. An HTTP byte range is inclusive at both ends, so a 512-byte read at offset 256 goes out as `bytes=256-767`.
+
+### Range responses are verified
+
+A `206 Partial Content` is checked for **which** bytes it carries, not only how many.
+`Content-Range: bytes 0-3/16` answering a request for `bytes=8-11` is refused with an
+`EdfSourceError`, even though four bytes really did arrive. A length check cannot see that, and the
+result is the worst kind of wrong: the samples decode cleanly and land at the timestamps you asked
+for, and they are the wrong seconds of the recording.
+
+The usual cause is a cache, Service Worker or CDN edge keyed on the URL without the `Range` header.
+Bypass it, or make it vary on `Range`. A response that reports no `Content-Range` at all is still
+accepted, so a hand-written `FetchLike` test double that returns `null` for every header keeps
+working — a real 206 always carries the header, which is what makes the check bite where it counts.
 
 ## cachedSource: an LRU over any source
 

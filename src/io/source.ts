@@ -15,13 +15,33 @@ import { EdfSourceError } from '../errors.js';
 import type { AbortSignalLike, ReadOptions } from '../types.js';
 
 /**
- * A misbehaving source may resolve with something that is not a byte array at all, which is
- * why `EdfSourceError.receivedLength` is `number | undefined` rather than `number`.
+ * The byte count of a genuine byte array, or `undefined` for anything else — which is why
+ * `EdfSourceError.receivedLength` is `number | undefined` rather than `number`.
+ *
+ * Reading `.length` off the value was not enough, even though the message it feeds already
+ * promised to detect "a value that is not a byte array". A `string`, a `number[]` and a
+ * `{ length }` object all satisfied it and then threw an unrelated `TypeError` deeper in — noisy,
+ * but at least loud. The case that was not loud is a typed-array view of the WRONG signedness:
+ * `Int8Array` has one byte per element, so it passes a length check, and `decodeInt16` then
+ * sign-extends an already-signed element a second time. A file holding `[-32768, -1, 200, 32767]`
+ * decodes as `[-98304, -65537, -65592, -65537]` with no error anywhere — fabricated microvolts.
+ *
+ * The test is on the built-in tag, not on `instanceof` and not on `BYTES_PER_ELEMENT`.
+ * `instanceof Uint8Array` is false across a realm boundary, and a `Uint8Array` from a worker or an
+ * iframe is a perfectly good byte array — the same reason `io/bytes.ts` reaches for
+ * `ArrayBuffer.isView`. `BYTES_PER_ELEMENT === 1` looks like the right test and is not: `Int8Array`
+ * has one byte per element too, so it is exactly the dangerous case that check would admit.
+ *
+ * `Object.prototype.toString` reads `Symbol.toStringTag` off the TypedArray prototype, which every
+ * realm agrees on. It admits `Uint8Array` — including Node's `Buffer`, a subclass that inherits the
+ * tag — and `Uint8ClampedArray`, and rejects `Int8Array`, every wider view, and `DataView`.
  */
+const BYTE_ARRAY_TAGS = new Set(['[object Uint8Array]', '[object Uint8ClampedArray]']);
+
 function receivedLengthOf(received: unknown): number | undefined {
-  if (received === null || received === undefined) return undefined;
-  const length = (received as { length?: unknown }).length;
-  return typeof length === 'number' ? length : undefined;
+  if (!ArrayBuffer.isView(received)) return undefined;
+  if (!BYTE_ARRAY_TAGS.has(Object.prototype.toString.call(received))) return undefined;
+  return received.byteLength;
 }
 
 /**

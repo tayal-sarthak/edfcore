@@ -90,6 +90,27 @@ function parseNonNegativeInteger(text: string | null): number | undefined {
   return Number.isSafeInteger(value) ? value : undefined;
 }
 
+/**
+ * The `first-byte-pos` and `last-byte-pos` of a `Content-Range`, or `undefined` when the header is
+ * absent or not in the `bytes <first>-<last>/<total>` form.
+ *
+ * `undefined` means "no usable claim", never "the range was wrong": a caller-supplied `FetchLike`
+ * test double is free to answer every header with `null`, and treating that as corruption would
+ * break doubles rather than catch servers. A real 206 always carries the header (RFC 7233 makes it
+ * mandatory), so a misbehaving cache is still caught.
+ */
+function rangeFromContentRange(
+  value: string | null,
+): { readonly first: number; readonly last: number } | undefined {
+  if (value === null) return undefined;
+  const match = /^\s*bytes\s+(\d+)-(\d+)\//.exec(value);
+  if (match === null) return undefined;
+  const first = parseNonNegativeInteger(match[1] ?? null);
+  const last = parseNonNegativeInteger(match[2] ?? null);
+  if (first === undefined || last === undefined) return undefined;
+  return { first, last };
+}
+
 /** `Content-Range: bytes 0-0/12345` -> 12345. A `/*` total is unknown, not zero. */
 function totalFromContentRange(value: string | null): number | undefined {
   if (value === null) return undefined;
@@ -327,6 +348,24 @@ export async function httpSource(
     const response = await request(fetchImpl, href, headers, 'GET', signal);
 
     if (response.status === HTTP_PARTIAL_CONTENT) {
+      // WHICH bytes arrived, before how many. `assertExactRead` below is a LENGTH guard and cannot
+      // see a right-sized body taken from the wrong offset — which is exactly what a cache, a
+      // Service Worker or a CDN edge keyed on URL alone returns when it serves a stored partial
+      // body for a differently-ranged request. The samples then decode cleanly, land at the
+      // timestamps the caller asked for, and are the wrong seconds of the recording, with nothing
+      // anywhere to say so. RFC 7233 makes this header the check against precisely that.
+      const claimed = rangeFromContentRange(headerOf(response, 'Content-Range'));
+      const expectedLast = offset + length - 1;
+      if (claimed !== undefined && (claimed.first !== offset || claimed.last !== expectedLast)) {
+        throw new EdfSourceError(
+          `Reading bytes ${offset}..${expectedLast} of ${href}: the server answered 206 but its ` +
+            `Content-Range says it sent bytes ${claimed.first}..${claimed.last} — a different ` +
+            'part of the resource. Serving these as the bytes that were asked for would put the ' +
+            'wrong samples at the right timestamps. Next: this is usually a cache or CDN keyed on ' +
+            'the URL without the Range header; bypass it, or vary on Range.',
+          { offset, requestedLength: length, receivedLength: claimed.last - claimed.first + 1 },
+        );
+      }
       const bytes = new Uint8Array(await response.arrayBuffer());
       return assertExactRead(bytes, offset, length);
     }

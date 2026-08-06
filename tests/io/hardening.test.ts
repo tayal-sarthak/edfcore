@@ -10,10 +10,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_MAX_MATERIALIZE_BYTES } from '../../src/constants.js';
-import { isEdfError } from '../../src/errors.js';
+import { EdfSourceError, isEdfError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
 import { httpSource } from '../../src/io/http.js';
+import { assertExactRead } from '../../src/io/source.js';
 import { openEdf } from '../../src/recording.js';
 import type { FetchLike, HttpResponseLike } from '../../src/types.js';
 import { validateRecording } from '../../src/validate.js';
@@ -229,5 +230,109 @@ describe('validateRecording honours maxMaterializeBytes for its scan scratch buf
     // Header-only validation never allocates the scratch buffer, so it must still work.
     const report = await validateRecording(recording, { scanSamples: false });
     expect(report.recordsScanned).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A 206 that carries the wrong bytes (0.2.23)
+// ---------------------------------------------------------------------------
+
+describe('a partial response is checked for WHICH bytes it carries', () => {
+  const CONTENT = Uint8Array.from({ length: 16 }, (_, i) => i);
+
+  /**
+   * A server whose 206 always answers with `served` regardless of the Range asked for, and
+   * announces `contentRange` — the shape a cache keyed on the URL alone produces.
+   */
+  function misbehaving(contentRange: string | null, served: Uint8Array) {
+    const requested: string[] = [];
+    const fetchImpl = (async (_href: string, init?: { method?: string; headers?: unknown }) => {
+      if ((init?.method ?? 'GET') === 'HEAD') {
+        return {
+          status: 200,
+          headers: { get: (n: string) => (n.toLowerCase() === 'content-length' ? '16' : null) },
+          arrayBuffer: async () => new ArrayBuffer(0),
+        } satisfies HttpResponseLike;
+      }
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      if (headers.Range !== undefined) requested.push(headers.Range);
+      return {
+        status: 206,
+        headers: {
+          get: (n: string) => (n.toLowerCase() === 'content-range' ? contentRange : null),
+        },
+        arrayBuffer: async () => served.slice().buffer,
+      } satisfies HttpResponseLike;
+    }) as unknown as FetchLike;
+    return { fetch: fetchImpl, requested };
+  }
+
+  it('refuses a right-sized body taken from the wrong offset', async () => {
+    // The exact failure: `bytes=8-11` goes out, the first four bytes come back, and the length
+    // guard cannot tell — it only ever compared 4 against 4. Before 0.2.23 this resolved with
+    // bytes 0..3 and the caller had the wrong seconds of the recording at the right timestamps.
+    const { fetch, requested } = misbehaving('bytes 0-3/16', CONTENT.subarray(0, 4));
+    const source = await httpSource('https://example.invalid/f.edf', { fetch });
+
+    await expect(source.read(8, 4)).rejects.toThrow(EdfSourceError);
+    await expect(source.read(8, 4)).rejects.toThrow(/sent bytes 0\.\.3/);
+    // The request really did ask for the right range; the server is the one at fault.
+    expect(requested).toContain('bytes=8-11');
+  });
+
+  it('accepts a 206 that carries the range it was asked for', async () => {
+    const { fetch } = misbehaving('bytes 8-11/16', CONTENT.subarray(8, 12));
+    const source = await httpSource('https://example.invalid/f.edf', { fetch });
+    expect(Array.from(await source.read(8, 4))).toEqual([8, 9, 10, 11]);
+  });
+
+  it('still accepts a 206 from a double that reports no headers at all', async () => {
+    // A caller-written FetchLike is a documented extension point and may answer `null` for every
+    // header. Treating that as corruption would break doubles rather than catch servers; a real
+    // 206 always carries Content-Range, so a misbehaving cache is still caught above.
+    const { fetch } = misbehaving(null, CONTENT.subarray(8, 12));
+    const source = await httpSource('https://example.invalid/f.edf', { fetch });
+    expect(Array.from(await source.read(8, 4))).toEqual([8, 9, 10, 11]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The contract guard admits only real byte arrays (0.2.23)
+// ---------------------------------------------------------------------------
+
+describe('assertExactRead', () => {
+  it('refuses a one-byte view of the wrong signedness', async () => {
+    // The dangerous case, and the quiet one. `Int8Array` has one byte per element so it passed a
+    // length check, and `decodeInt16` then sign-extended already-signed elements a second time:
+    // a file holding [-32768, -1, 200, 32767] decoded as [-98304, -65537, -65592, -65537] with no
+    // error anywhere. A plain-JavaScript caller reaches this by typing Int8Array for Uint8Array.
+    const wrong = new Int8Array(8) as unknown as Uint8Array;
+    expect(() => assertExactRead(wrong, 0, 8)).toThrow(EdfSourceError);
+    expect(() => assertExactRead(wrong, 0, 8)).toThrow(/not a byte array/);
+  });
+
+  it('refuses the duck-typed values the old length check let through', async () => {
+    for (const value of [
+      'abcd',
+      [1, 2, 3, 4],
+      { length: 4 },
+      new Int32Array(4),
+      new DataView(new ArrayBuffer(4)),
+    ]) {
+      expect(() => assertExactRead(value as unknown as Uint8Array, 0, 4)).toThrow(EdfSourceError);
+    }
+  });
+
+  it('accepts every legitimate byte array, cross-realm ones included', async () => {
+    // ArrayBuffer.isView rather than instanceof: a Uint8Array from a worker or an iframe is a
+    // perfectly good byte array and `instanceof` is false for it.
+    for (const value of [new Uint8Array(4), new Uint8ClampedArray(4), Buffer.alloc(4)]) {
+      expect(assertExactRead(value as unknown as Uint8Array, 0, 4)).toBe(value);
+    }
+  });
+
+  it('still reports the real length of a genuine short read', async () => {
+    const short = new Uint8Array(3);
+    expect(() => assertExactRead(short, 8, 4)).toThrow(/resolved with 3 bytes/);
   });
 });

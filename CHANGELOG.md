@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.23
+
+One hardening pass over `io/`. Both are cases where a guard that looked total was not.
+
+- **Fixed** `httpSource` accepting a `206 Partial Content` without checking WHICH bytes it carried.
+  The only guard was `assertExactRead`, which compares lengths, so a server answering `bytes=8-11`
+  with the bytes of `bytes 0-3` passed — four bytes were asked for and four arrived. The
+  `Content-Range` header, which RFC 7233 makes mandatory on a 206 precisely as the check against
+  this, was never parsed. The result is the worst shape a data bug can take: the samples decode
+  cleanly, land at the timestamps the caller asked for, and are the wrong seconds of the recording.
+  The usual cause is a cache, Service Worker or CDN edge keyed on the URL without the `Range`
+  header. A 206 that reports no `Content-Range` at all is still accepted, so a hand-written
+  `FetchLike` double that answers `null` for every header keeps working.
+- **Fixed** the `ByteSource` contract guard reading `.length` off whatever it was handed, while its
+  own error message promised to detect "a value that is not a byte array". The quiet case is a
+  one-byte view of the wrong signedness: `Int8Array` passes any length check, and `decodeInt16`
+  then sign-extends already-signed elements a second time, so a file holding
+  `[-32768, -1, 200, 32767]` decoded as `[-98304, -65537, -65592, -65537]` with no error anywhere.
+  A plain-JavaScript caller reaches it by typing `Int8Array` for `Uint8Array`. The guard now tests
+  the built-in tag rather than `instanceof` — a `Uint8Array` from a worker or an iframe still
+  counts — and `BYTES_PER_ELEMENT === 1` was NOT the right test, because `Int8Array` satisfies it.
+
 ## 0.2.22
 
 - **Fixed** `streamRecords` skipping the signal validation `readWindow` and `readEnvelope` both do
