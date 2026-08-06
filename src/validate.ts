@@ -509,11 +509,17 @@ async function traverse(
         maxSamplesPerRecord = Math.max(maxSamplesPerRecord, signal.samplesPerRecord);
       }
     }
-    const scratchBytes = chunkRecords * maxSamplesPerRecord * BYTES_PER_SCRATCH_SAMPLE;
+    // Clamped to the records that EXIST. `chunkRecords` is a chunk size, chosen from the record
+    // geometry and not from the file's length, so on a short file it is larger than the whole
+    // recording — a 4-record file was budgeted and allocated for a full chunk it can never fill,
+    // and a 552-byte file was refused under any budget below 8 MiB. That is the opposite of the
+    // failure this guard exists for: refusing a read that is genuinely small.
+    const scratchRecords = Math.min(chunkRecords, Math.max(0, header.recordCount));
+    const scratchBytes = scratchRecords * maxSamplesPerRecord * BYTES_PER_SCRATCH_SAMPLE;
     const budgetBytes = options?.maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES;
     if (scratchBytes > budgetBytes) {
       throw new EdfBudgetError(
-        `Scanning samples needs a ${scratchBytes}-byte scratch buffer for ${chunkRecords} ` +
+        `Scanning samples needs a ${scratchBytes}-byte scratch buffer for ${scratchRecords} ` +
           `record(s) of up to ${maxSamplesPerRecord} samples, above the ${budgetBytes}-byte ` +
           'maxMaterializeBytes budget, so the scan was refused before anything was allocated. ' +
           'Next: raise options.maxMaterializeBytes, or drop scanSamples and validate the ' +
@@ -521,7 +527,7 @@ async function traverse(
         { requiredBytes: scratchBytes, budgetBytes },
       );
     }
-    scratch = new Int32Array(chunkRecords * maxSamplesPerRecord);
+    scratch = new Int32Array(scratchRecords * maxSamplesPerRecord);
   }
 
   let recordsScanned = 0;

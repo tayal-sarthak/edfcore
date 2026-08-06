@@ -18,6 +18,7 @@ import { assertExactRead } from '../../src/io/source.js';
 import { openEdf } from '../../src/recording.js';
 import type { FetchLike, HttpResponseLike } from '../../src/types.js';
 import { validateRecording } from '../../src/validate.js';
+import { minimalEdfPlus } from '../support/writer.js';
 
 // ---------------------------------------------------------------------------
 // Non-finite numeric options
@@ -194,35 +195,37 @@ describe('validateRecording honours maxMaterializeBytes for its scan scratch buf
     return bytes;
   }
 
-  it('refuses a 400 MB scratch buffer demanded by a 512-byte file', async () => {
+  it('allocates nothing at all for it, which is stronger than refusing (0.2.29)', async () => {
+    // 0.1.3 fixed this by REFUSING: the scratch size was `samplesPerRecord` unclamped, up to the
+    // 99,999,999 an 8-byte field holds, allocated before any read so no downstream check could
+    // catch it. 0.2.29 clamps the buffer to the records that exist, and this file declares none —
+    // so the 400 MB is never demanded in the first place and there is nothing to refuse.
+    //
+    // The invariant 0.1.3 established is unchanged and stated here directly: a 512-byte file
+    // never causes a large allocation. What changed is that it is now enforced by not allocating
+    // rather than by throwing, which is why this test asserts success where it once asserted a
+    // budget error. The refusal itself is still live — see the oversized-scan case below.
     const recording = await openEdf(byteSource(oneCorruptedField()));
     expect(recording.header.recordCount).toBe(0);
 
-    // scanChunkRecords floors to one record when a single record exceeds the scan block, so the
-    // scratch size becomes samplesPerRecord unclamped. It was allocated before any read, which
-    // is why no downstream budget check could ever catch it.
-    const error = await validateRecording(recording, {
-      scanSamples: true,
-      maxMaterializeBytes: 1024,
-    }).then(
-      () => undefined,
-      (thrown: unknown) => thrown,
-    );
-
-    expect(isEdfError(error)).toBe(true);
-    expect(error).toMatchObject({
-      edfErrorKind: 'budget',
-      requiredBytes: 99999999 * 4,
-      budgetBytes: 1024,
-    });
+    for (const options of [{ maxMaterializeBytes: 1024 }, {}]) {
+      const report = await validateRecording(recording, { scanSamples: true, ...options });
+      expect(report.recordsScanned).toBe(0);
+    }
   });
 
-  it('refuses it against the default budget too', async () => {
-    const recording = await openEdf(byteSource(oneCorruptedField()));
-    await expect(validateRecording(recording, { scanSamples: true })).rejects.toMatchObject({
-      edfErrorKind: 'budget',
-      budgetBytes: DEFAULT_MAX_MATERIALIZE_BYTES,
+  it('still refuses when the records really do exist and really are too big', async () => {
+    // The guard has to keep biting, or the clamp above would have traded one defect for another.
+    const wide = minimalEdfPlus({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 50_000 }],
     });
+    const recording = await openEdf(byteSource(wide));
+    expect(recording.header.recordCount).toBe(2);
+    await expect(
+      validateRecording(recording, { scanSamples: true, maxMaterializeBytes: 4096 }),
+    ).rejects.toMatchObject({ edfErrorKind: 'budget', budgetBytes: 4096 });
   });
 
   it('leaves a well-formed file scanning normally', async () => {
@@ -334,5 +337,45 @@ describe('assertExactRead', () => {
   it('still reports the real length of a genuine short read', async () => {
     const short = new Uint8Array(3);
     expect(() => assertExactRead(short, 8, 4)).toThrow(/resolved with 3 bytes/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The scan budget is sized from the file, not from the chunk (0.2.29)
+// ---------------------------------------------------------------------------
+
+describe('validateRecording sizes its scan buffer from the records that exist', () => {
+  it('does not refuse a tiny file for a buffer it could never fill', async () => {
+    // `chunkRecords` is a chunk size chosen from the record geometry, not from the file's length.
+    // On a four-record file it is far larger than the whole recording, so the budget check was
+    // made against a buffer that can never be filled and a small file was refused outright —
+    // the opposite of the failure this guard exists for.
+    const tiny = minimalEdfPlus({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+    });
+    const recording = await openEdf(byteSource(tiny));
+
+    // 4 records x 30 samples x 4 bytes is well under a kilobyte; 64 KiB is generous for it.
+    const report = await validateRecording(recording, {
+      scanSamples: true,
+      maxMaterializeBytes: 64 * 1024,
+    });
+    expect(report.recordsScanned).toBe(4);
+    expect(report.signalStats.length).toBeGreaterThan(0);
+  });
+
+  it('still refuses a scan that genuinely does not fit', async () => {
+    // The guard must keep biting for a file whose records really are too big for the budget.
+    const wide = minimalEdfPlus({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 20000 }],
+    });
+    const recording = await openEdf(byteSource(wide));
+    await expect(
+      validateRecording(recording, { scanSamples: true, maxMaterializeBytes: 1024 }),
+    ).rejects.toThrow(/maxMaterializeBytes budget/);
   });
 });

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.29
+
+- **Fixed** `validateRecording({ scanSamples: true })` refusing a small file for a scratch buffer
+  it could never fill. The buffer was sized from `chunkRecords` — a chunk size chosen from the
+  record geometry, not from the file's length — so a four-record file was budgeted for a full
+  chunk, and a 552-byte one demanded 8 MB and was refused under any budget below 8 MiB. That is
+  the opposite of the failure the guard exists for. It is now clamped to the records that exist.
+- **Changed**, as a consequence, what 0.1.3's fixture does. That file declares zero records and a
+  `samplesPerRecord` of 99,999,999, and 0.1.3 fixed the resulting 400 MB allocation by REFUSING
+  it. With the clamp the allocation is never demanded, so there is nothing to refuse and the scan
+  simply reports zero records scanned. The invariant is unchanged and stronger — a 512-byte file
+  still never causes a large allocation — but it is now enforced by not allocating rather than by
+  throwing, so the two tests that pinned the budget error now pin success. A new case pins the
+  refusal for a file whose records really do exist and really are too big, so the guard is still
+  covered.
+
 ## 0.2.28
 
 - **Fixed** `readAnnotations` answering on the header's axis for any record range that does not
