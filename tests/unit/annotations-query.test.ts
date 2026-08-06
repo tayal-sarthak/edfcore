@@ -3,7 +3,9 @@
  *
  * The interesting cases are the boundaries: an event exactly on a window edge, an event with a
  * duration that only overlaps, and onsets whose float64 seconds do not round-trip. Every
- * comparison is on `onsetTicks`, so the last of those has to hold.
+ * comparison is on `onsetTicksFromFirstRecord`, so the last of those has to hold. These fixtures
+ * declare no start offset, so that field equals `onsetTicks`; the file that separates them lives
+ * in tests/integration/annotation-timebase.test.ts.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,6 +28,7 @@ function annotation(onsetSeconds: number, text: string, durationSeconds?: number
     onsetSecondsFromHeaderStart: onsetSeconds,
     onsetSecondsFromFirstRecord: onsetSeconds,
     onsetTicks,
+    onsetTicksFromFirstRecord: onsetTicks,
     onsetRaw: `+${onsetSeconds}`,
     durationSeconds,
     durationTicks,

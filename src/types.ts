@@ -481,8 +481,22 @@ export interface EdfAnnotation {
   readonly onsetSecondsFromHeaderStart: number;
   /** Rebased to the first record's true start — the EDFlib/pyEDFlib/MNE convention. */
   readonly onsetSecondsFromFirstRecord: number;
-  /** Exact, in 100 ns units. Compare event times with this, never with the floats. */
+  /**
+   * Exact, in 100 ns units, on the HEADER's timebase — the number the file wrote, unrebased.
+   *
+   * This is the right field for comparing one annotation against another, and the wrong one for
+   * comparing an annotation against a window: `resolveTimeWindow`, `readWindow` and `readEnvelope`
+   * all put `t = 0` at the start of record 0, which is `onsetTicksFromFirstRecord`.
+   */
   readonly onsetTicks: bigint;
+  /**
+   * Exact, in 100 ns units, on the same axis as every read in the package: `t = 0` is the start of
+   * record 0. This is `onsetSecondsFromFirstRecord` without the float.
+   *
+   * It differs from `onsetTicks` by the sub-second start offset a file may declare in record 0's
+   * timekeeping TAL, so the two are equal on most files and up to a second apart on some.
+   */
+  readonly onsetTicksFromFirstRecord: bigint;
   /** The original digits, so precision is never lost to a round-trip. */
   readonly onsetRaw: string;
   readonly durationSeconds: number | undefined;

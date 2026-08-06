@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.10
+
+- **Fixed** `filterAnnotationsByTime` and `annotationsAt` answering on the header's timebase while
+  every read answers on the recording's. EDF+ lets a file put its sub-second start offset in
+  record 0's timekeeping TAL; `onsetTicks` is the number the file wrote, and `readWindow` puts
+  `t = 0` at the start of record 0. The two are identical on a file with no offset and up to a
+  second apart on one that declares an offset, so `readWindow` and `filterAnnotationsByTime` — the
+  pair that answers "the events in the window I just read" — disagreed on exactly the files
+  careful enough to state their offset. Events landed in the neighbouring window, and one near the
+  end landed in no window at all.
+- **Added** `EdfAnnotation.onsetTicksFromFirstRecord`: `onsetSecondsFromFirstRecord` without the
+  float. Only the header-axis form was exact, so a caller comparing on the axis the rest of the
+  package uses had nothing exact to compare with. This is what the two queries above now use.
+
 ## 0.2.9
 
 - **Added** `physicalRangeOf(signal)`, the declared physical bounds in ascending order.

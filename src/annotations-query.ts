@@ -9,7 +9,14 @@
  * `a.onsetSecondsFromFirstRecord >= from && ... < to`, and those are float64 seconds converted
  * from exact tick counts. An onset stored as `+30.0000001` and a bound of `30.0000001` need not
  * compare equal once both have been through a division by 10,000,000. Every comparison here is on
- * `onsetTicks`, which is exact, and the bounds are converted to ticks once.
+ * ticks, which are exact, and the bounds are converted to ticks once.
+ *
+ * The ticks compared are `onsetTicksFromFirstRecord`, not `onsetTicks`. The window is in the same
+ * seconds `resolveTimeWindow` and `readWindow` take, and those put `t = 0` at the start of record
+ * 0; `onsetTicks` is on the header's timebase, which sits up to a second earlier when the file
+ * declares a sub-second start offset in record 0's timekeeping TAL. Comparing against the wrong
+ * one puts events in the neighbouring window on exactly the files that bother to state their
+ * offset.
  */
 
 import { secondsToTicks } from './tal/ticks.js';
@@ -33,7 +40,7 @@ export function filterAnnotationsByTime(
 
   return Object.freeze(
     annotations.filter((annotation) => {
-      const onset = annotation.onsetTicks;
+      const onset = annotation.onsetTicksFromFirstRecord;
       const end = onset + (annotation.durationTicks ?? 0n);
       // Half-open on both sides: [onset, end) against [from, to).
       return (
@@ -98,7 +105,7 @@ export function annotationsAt(
   const at = secondsToTicks(seconds);
   return Object.freeze(
     annotations.filter((annotation) => {
-      const onset = annotation.onsetTicks;
+      const onset = annotation.onsetTicksFromFirstRecord;
       const duration = annotation.durationTicks ?? 0n;
       return duration === 0n ? onset === at : onset <= at && at < onset + duration;
     }),

@@ -463,6 +463,10 @@ export function decodeAnnotations(
     onsetSecondsFromHeaderStart: ticksToSeconds(item.onsetTicks),
     onsetSecondsFromFirstRecord: ticksToSeconds(item.onsetTicks - startOffsetTicks),
     onsetTicks: item.onsetTicks,
+    // The exact form of the line above. Saturating rather than wrapping, for the same reason
+    // record onsets do: an onset already at the edge of the int64 range must not come back as a
+    // large positive number after a subtraction.
+    onsetTicksFromFirstRecord: saturateToInt64(item.onsetTicks - startOffsetTicks),
     onsetRaw: item.onsetRaw,
     durationSeconds:
       item.durationTicks === undefined ? undefined : ticksToSeconds(item.durationTicks),
