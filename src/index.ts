@@ -28,6 +28,7 @@
 /** The trailing `options` argument shared by every primitive that can allocate. */
 export type { MaterializeOptions } from './decode/digital.js';
 export type { FormatDiagnosticsOptions } from './diagnostics/format.js';
+export type { EdfCodeCount, EdfDiagnosticSummary } from './diagnostics/summary.js';
 export type {
   AbortSignalLike,
   BlobLike,
@@ -130,6 +131,7 @@ export { decodeHeaderLatin1 } from './bytes/latin1.js';
 export { decodeDigital } from './decode/digital.js';
 export { clampToDigitalRange, physicalRangeOf, toPhysical } from './decode/physical.js';
 export { formatDiagnostics } from './diagnostics/format.js';
+export { summarizeDiagnostics } from './diagnostics/summary.js';
 export { formatStartTimeNaive } from './header/dates.js';
 export {
   declaredDurationSeconds,

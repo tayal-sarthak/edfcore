@@ -12,6 +12,7 @@
  */
 
 import { formatDiagnostics } from './diagnostics/format.js';
+import { summarizeDiagnostics } from './diagnostics/summary.js';
 import type { EdfHeader, FormatReportOptions, ValidationReport } from './types.js';
 
 /** Enough to see the pattern, few enough to read. Override with `maxItems`. */
@@ -34,29 +35,34 @@ export function formatValidationReport(
   const lines: string[] = [];
   const header = options?.header;
 
-  const bySeverity = new Map<string, number>();
-  const byCode = new Map<string, number>();
-  for (const diagnostic of report.diagnostics) {
-    bySeverity.set(diagnostic.severity, (bySeverity.get(diagnostic.severity) ?? 0) + 1);
-    byCode.set(diagnostic.code, (byCode.get(diagnostic.code) ?? 0) + 1);
-  }
+  // One counting implementation, shared with the public `summarizeDiagnostics`.
+  const summary = summarizeDiagnostics(report.diagnostics);
 
   const verdict = report.ok ? 'PASS' : 'FAIL';
   const severities =
-    bySeverity.size === 0
+    summary.total === 0
       ? 'no diagnostics'
-      : [...bySeverity].map(([severity, count]) => `${count} ${severity}`).join(', ');
+      : (
+          [
+            [summary.errors, 'error'],
+            [summary.warnings, 'warning'],
+            [summary.infos, 'info'],
+          ] as const
+        )
+          .filter(([count]) => count > 0)
+          .map(([count, severity]) => `${count} ${severity}`)
+          .join(', ');
   lines.push(`${verdict} — ${severities}`);
   lines.push(
     `scanned ${pluralise(report.recordsScanned, 'record')}, ` +
       `read ${report.bytesRead.toLocaleString('en-US')} bytes`,
   );
 
-  if (byCode.size > 0) {
+  if (summary.byCode.length > 0) {
     lines.push('');
     lines.push('by code:');
-    // Descending by count: the code affecting most of the file is the one to look at first.
-    for (const [code, count] of [...byCode].sort((a, b) => b[1] - a[1])) {
+    // Already descending by count: the code affecting most of the file comes first.
+    for (const { code, count } of summary.byCode) {
       lines.push(`  ${String(count).padStart(7)}  ${code}`);
     }
   }

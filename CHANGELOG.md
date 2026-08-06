@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.15
+
+- **Added** `summarizeDiagnostics(diagnostics)` — counts by severity and by code, plus `worst`.
+  `formatDiagnostics` produces text for a person; there was nothing that produced numbers for a
+  program, and `validateRecording`'s `report.ok` needs a full scan. `worst` is `undefined` for an
+  empty list rather than `'info'`, so `worst !== undefined` means "anything to report at all".
+  Documented with the warning that `errors > 0` does NOT mean the file failed to read: a deferred
+  code carries `error` severity while every signal but one decodes perfectly.
+- **Changed** `formatValidationReport` to print severity counts in a fixed error-warning-info
+  order rather than in whichever order they first appeared, and to share one counting
+  implementation with `summarizeDiagnostics` instead of keeping a second copy.
+
 ## 0.2.14
 
 - **Added** `segmentAt(index, seconds)` — the pure, synchronous form of `index.locate()`. A viewer

@@ -125,6 +125,7 @@ const FUNCTIONS: readonly string[] = [
   'mergeChunks',
   'physicalRangeOf',
   'segmentAt',
+  'summarizeDiagnostics',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

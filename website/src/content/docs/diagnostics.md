@@ -109,6 +109,38 @@ of up to 24 bytes:
   bytes: 63 61 66 e9  |caf.|
 ```
 
+### Counting them instead
+
+`formatDiagnostics` produces text for a person. `summarizeDiagnostics` produces numbers for a
+program — the question "is anything wrong with this header, and how wrong" has no answer on
+`EdfHeader` itself, and `report.ok` needs a full scan.
+
+```ts
+import { summarizeDiagnostics } from 'edfcore';
+
+const summary = summarizeDiagnostics(recording.header.diagnostics);
+
+summary.total;      // 4
+summary.errors;     // 1
+summary.warnings;   // 1
+summary.infos;      // 2
+summary.worst;      // 'error' — or undefined when there are none at all
+summary.byCode;     // [{ code, severity, count }, ...] most frequent first
+```
+
+`worst` ranks `error` above `warning` above `info`, not by whichever arrived first, and it is
+`undefined` for an empty list rather than `'info'` — so `summary.worst !== undefined` is the
+spelling of "anything to report at all".
+
+`byCode` is ordered by count because on a damaged file one code usually accounts for most of the
+list: `TIMEKEEPING_TAL_MISSING` is reported per record, so a 130,000-record file can produce
+130,000 of them and one of everything else.
+
+> **`errors > 0` does not mean the file failed to read.** The deferred group below carries `error`
+> severity while the file parses, reads and decodes perfectly — one signal has no `scale` and
+> every other signal is fine. Gating a read on this count throws away good data. Gate on the
+> thrown `EdfError`, or on `validateRecording`'s `report.ok`.
+
 ## `strict: true`
 
 Pass `strict` and the first would-be diagnostic throws `EdfFormatError` carrying it, instead of
