@@ -13,6 +13,7 @@ import { formatDiagnostics } from './diagnostics/format.js';
 import { formatHeader } from './format-header.js';
 import { formatValidationReport } from './format-report.js';
 import { byteSource } from './io/bytes.js';
+import { buildRecordIndex } from './record-index.js';
 import { openEdf, readAnnotations } from './recording.js';
 import { validateRecording } from './validate.js';
 
@@ -28,6 +29,7 @@ const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
   npx edfcore header <file>       the header, the signals, and any diagnostics
   npx edfcore validate <file>     a full conformance sweep, scanning every sample
   npx edfcore events <file>       the annotations, counted by text
+  npx edfcore gaps <file>         the discontinuities, after a full scan
   npx edfcore signals <file>      one line per signal, for grep and awk
   npx edfcore json <file>         the header as JSON, for piping into jq
 
@@ -130,6 +132,25 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(`${annotations.length} annotation(s)\n\n`);
       for (const { text, count } of countAnnotationsByText(annotations)) {
         io.out(`${String(count).padStart(8)}  ${text}\n`);
+      }
+      return 0;
+    }
+
+    case 'gaps': {
+      const recording = await open(io, file);
+      // A full scan, not the two probes openEdf makes: the probed index cannot see a gap in the
+      // middle, and reporting "none" from it would be a claim nobody verified.
+      const index = await buildRecordIndex(recording);
+      const gaps = index.gaps ?? [];
+      if (gaps.length === 0) {
+        io.out(`no gaps in ${index.recordCount} records\n`);
+        return 0;
+      }
+      io.out(`${gaps.length} gap(s) in ${index.recordCount} records\n\n`);
+      for (const gap of gaps) {
+        io.out(
+          `after segment ${gap.beforeSegmentIndex}\t${gap.startSeconds}s..${gap.endSeconds}s\t+${gap.durationSeconds}s\n`,
+        );
       }
       return 0;
     }

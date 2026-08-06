@@ -155,3 +155,24 @@ describe('signals', () => {
     );
   });
 });
+
+describe('gaps', () => {
+  it('says so plainly when a file is contiguous', async () => {
+    const { code, out } = await invoke(['gaps', 'a.edf'], { 'a.edf': PLUS });
+    expect(code).toBe(0);
+    expect(out).toContain('no gaps');
+  });
+
+  it('lists the discontinuities of an EDF+D file', async () => {
+    const discontinuous = minimalEdfPlus({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (i: number) => (i < 3 ? i : i + 5),
+    });
+    const { code, out } = await invoke(['gaps', 'd.edf'], { 'd.edf': discontinuous });
+    expect(code).toBe(0);
+    expect(out).toContain('1 gap(s)');
+    expect(out).toContain('after segment 0');
+  });
+});

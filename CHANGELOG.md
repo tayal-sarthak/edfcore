@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.7
+
+- **Added** `edfcore gaps <file>`. Runs a full scan rather than reading the two probes `openEdf`
+  makes: a probed index cannot see a gap in the middle, so reporting "none" from it would be a
+  claim nobody verified.
+
 ## 0.2.6
 
 - **Added** `annotationsAt(annotations, seconds)` — the instant form a cursor needs.
