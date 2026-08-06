@@ -410,3 +410,18 @@ Exit codes are the contract, so a script can act on them without parsing the out
 Patient identification is omitted from `header` and `json` unless `--patient` is passed, for the
 same reason `formatHeader` withholds it: the obvious thing to do with CLI output is pipe it
 somewhere.
+
+That covers the diagnostics too, which is the part that is easy to miss. A diagnostic names the
+raw bytes as written — that is the message contract, and it is what makes a report actionable —
+so a NON-CONFORMANT identification field had its whole content printed in the diagnostics block
+underneath the summary that had just withheld it. That is not a rare file: a writer that packs the
+name into a single token fails the EDF+ grammar, and a file that behaves oddly is exactly the one
+someone runs `edfcore header` on and pastes into an issue. Since 0.2.26 both are gated by the same
+flag, and the diagnostic still reports its code, severity, byte offset and rule with the value
+replaced by `[redacted]`.
+
+`formatDiagnostics` and `formatValidationReport` take `redactFields` for the same purpose:
+
+```ts
+formatDiagnostics(header.diagnostics, { redactFields: ['patientId', 'recordingId'] });
+```

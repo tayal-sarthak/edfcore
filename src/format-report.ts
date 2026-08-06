@@ -87,7 +87,12 @@ export function formatValidationReport(
   if (report.diagnostics.length > 0) {
     const maxItems = options?.maxItems ?? DEFAULT_MAX_ITEMS;
     lines.push('');
-    lines.push(formatDiagnostics(report.diagnostics, { maxItems }));
+    lines.push(
+      formatDiagnostics(report.diagnostics, {
+        maxItems,
+        ...(options?.redactFields === undefined ? {} : { redactFields: options.redactFields }),
+      }),
+    );
   }
 
   return lines.join('\n');

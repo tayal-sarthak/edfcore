@@ -425,6 +425,12 @@ export interface FormatReportOptions {
   readonly header?: EdfHeader;
   /** Individual diagnostics to print. Defaults to 20 — the counts above them are the summary. */
   readonly maxItems?: number;
+  /**
+   * Forwarded to `formatDiagnostics`. Pass `['patientId', 'recordingId']` for a report that will
+   * be pasted somewhere: a non-conformant identification field is reported with its content, and
+   * that content is a person's name.
+   */
+  readonly redactFields?: readonly string[];
 }
 
 export interface FormatHeaderOptions {

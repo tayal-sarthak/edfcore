@@ -14,6 +14,21 @@ import type { EdfDiagnostic, EdfSeverity } from '../types.js';
 export interface FormatDiagnosticsOptions {
   readonly color?: boolean;
   readonly maxItems?: number;
+  /**
+   * Field names whose CONTENT must not appear in the output — `['patientId', 'recordingId']` is
+   * the one that matters.
+   *
+   * A diagnostic names the raw bytes as written, by design: that is what makes a report
+   * actionable. For an identification field those bytes are a person's name and birth date, and
+   * a diagnostic about them is not rare — a writer that packs the name into one token is
+   * non-conformant, which is exactly the file someone runs a tool on and pastes the output of.
+   * Withholding `header.patient` while the diagnostic below it spells the same string out is not
+   * withholding it at all.
+   *
+   * The diagnostic still appears in full otherwise: code, severity, byte offset, the rule, and
+   * the next step. Only the value is replaced, so the report still says what is wrong and where.
+   */
+  readonly redactFields?: readonly string[];
 }
 
 const INDENT = '  ';
@@ -42,11 +57,13 @@ export function formatDiagnostics(
   const shown = resolveLimit(options?.maxItems, diagnostics.length);
   const lines: string[] = [];
 
+  const redact = new Set(options?.redactFields ?? []);
+
   for (let i = 0; i < shown; i++) {
     const diagnostic = diagnostics[i];
     // i < shown <= diagnostics.length, so this only satisfies noUncheckedIndexedAccess.
     if (diagnostic === undefined) continue;
-    appendDiagnostic(lines, diagnostic, color);
+    appendDiagnostic(lines, diagnostic, color, redact);
   }
 
   const hidden = diagnostics.length - shown;
@@ -60,7 +77,44 @@ function resolveLimit(maxItems: number | undefined, total: number): number {
   return Math.max(0, Math.min(total, Math.floor(maxItems)));
 }
 
-function appendDiagnostic(lines: string[], diagnostic: EdfDiagnostic, color: boolean): void {
+const REDACTED = '[redacted]';
+
+/**
+ * Removes a field's content from every place `appendDiagnostic` would print it.
+ *
+ * The message is prose with the value interpolated into it, so the value is substituted out by
+ * text rather than by re-rendering the message: the raw string is known exactly, and both its
+ * padded and trimmed spellings are removed. `rawBytes` is dropped outright — it is the field's
+ * literal bytes, and a hex dump with an ASCII column is not a redaction of anything.
+ *
+ * Substitution is done on the value, never on the code or the rule, so what is left still
+ * identifies the problem: `[PATIENT_ID_NONCONFORMANT] ... at byte offset 8` remains readable.
+ */
+function redactDiagnostic(diagnostic: EdfDiagnostic): EdfDiagnostic {
+  const raw = diagnostic.raw;
+  let message = diagnostic.message;
+  if (raw !== undefined) {
+    for (const spelling of [JSON.stringify(raw), JSON.stringify(raw.trim()), raw, raw.trim()]) {
+      if (spelling.length > 0) message = message.split(spelling).join(REDACTED);
+    }
+  }
+  return {
+    ...diagnostic,
+    message,
+    raw: raw === undefined ? undefined : REDACTED,
+    rawBytes: undefined,
+    actual: diagnostic.actual === undefined ? undefined : REDACTED,
+  };
+}
+
+function appendDiagnostic(
+  lines: string[],
+  input: EdfDiagnostic,
+  color: boolean,
+  redactFields: ReadonlySet<string>,
+): void {
+  const diagnostic =
+    input.field !== undefined && redactFields.has(input.field) ? redactDiagnostic(input) : input;
   const marker = paint(
     `${diagnostic.severity} [${diagnostic.code}]`,
     SEVERITY_COLORS[diagnostic.severity],

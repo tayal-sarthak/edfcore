@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.26
+
+- **Fixed** `edfcore header` and `edfcore validate` printing the full local patient identification
+  without `--patient`. Withholding it from the summary was never enough on its own: a diagnostic
+  names the raw bytes as written — that is the message contract and what makes a report
+  actionable — so a NON-CONFORMANT identification field had its whole content printed in the
+  diagnostics block directly underneath the line that had just withheld it. `header` printed the
+  name three times and `validate` six. The trigger is not exotic: a writer that packs the name into
+  one token fails the EDF+ four-subfield grammar, and a file that behaves oddly is exactly the one
+  someone runs this on and pastes into an issue tracker — which is the whole reason the flag
+  exists. Recording identification, which carries technician and investigation codes, leaked the
+  same way.
+- **Added** `redactFields` to `FormatDiagnosticsOptions` and `FormatReportOptions`. The diagnostic
+  still reports its code, severity, byte offset, rule and next step; only the value is replaced,
+  and `rawBytes` is dropped outright because a hex dump with an ASCII column redacts nothing.
+  Diagnostics about every other field are untouched — a signal-label or numeric-field diagnostic
+  keeps its raw bytes, since that is what makes it actionable and none of it identifies anyone.
+
 ## 0.2.25
 
 - **Added** a property test pinning the ONE timebase invariant across every public function that

@@ -218,3 +218,55 @@ describe('events --list', () => {
     expect(out).toContain('... 4 more');
   });
 });
+
+describe('patient identification and the diagnostics that quote it', () => {
+  // EDF+ wants four space-separated subfields. A writer that packs the name into one token is
+  // non-conformant — and a file that behaves oddly is exactly the one someone runs this on and
+  // pastes the output of. The diagnostic names the raw bytes as written, by design, so before
+  // 0.2.26 `header` printed the whole identification string three times and `validate` six,
+  // with no --patient anywhere on the command line.
+  const NAME = 'Haagse_Harry_MRN_0234567_born_02-MAY-1951';
+  const NONCONFORMANT = minimalEdfPlus({
+    recordCount: 4,
+    recordDurationSeconds: 1,
+    patientId: NAME,
+  });
+
+  for (const command of ['header', 'validate'] as const) {
+    it(`${command} withholds it from the diagnostics too, not only from the summary`, async () => {
+      const { code, out } = await invoke([command, 'a.edf'], { 'a.edf': NONCONFORMANT });
+      expect(code).toBe(0);
+      expect(out).not.toContain(NAME);
+      expect(out).not.toContain('Haagse_Harry');
+      // Withheld, not suppressed: the report still says what is wrong and where.
+      expect(out).toContain('PATIENT_ID_NONCONFORMANT');
+      expect(out).toContain('[redacted]');
+    });
+
+    it(`${command} still prints it in full when --patient is passed`, async () => {
+      const { out } = await invoke([command, 'a.edf', '--patient'], { 'a.edf': NONCONFORMANT });
+      expect(out).toContain(NAME);
+      expect(out).not.toContain('[redacted]');
+    });
+  }
+
+  it('withholds a non-conformant recording identification on the same flag', async () => {
+    // The recording ID carries technician and investigation codes, which identify people too.
+    const recordingId = 'NotAStartdate_TECH_J_SMITH_ROOM_4';
+    const file = minimalEdfPlus({ recordCount: 2, recordingId });
+    const { out } = await invoke(['header', 'a.edf'], { 'a.edf': file });
+    expect(out).not.toContain('J_SMITH');
+    expect(out).toContain('RECORDING_ID_NONCONFORMANT');
+  });
+
+  it('leaves diagnostics about every other field untouched', async () => {
+    // Redaction is per field. A signal-label or numeric-field diagnostic must keep its raw bytes,
+    // because that is what makes it actionable and none of it identifies anyone.
+    const odd = minimalEdfPlus({
+      recordCount: 2,
+      signals: [{ label: 'Fp1', samplesPerRecord: 4, physicalDimension: 'Filtered' }],
+    });
+    const { out } = await invoke(['header', 'a.edf'], { 'a.edf': odd });
+    expect(out).toContain('Filtered');
+  });
+});

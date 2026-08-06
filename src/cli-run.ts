@@ -78,6 +78,22 @@ export function parseArgs(argv: readonly string[]): Args {
   return { command: positional[0], file: positional[1], patient, list, version, limit };
 }
 
+/**
+ * What `--patient` actually has to gate.
+ *
+ * Withholding the identification line from `formatHeader` is not enough on its own. A diagnostic
+ * names the raw bytes as written — that is the message contract, and it is what makes a report
+ * actionable — so a NON-CONFORMANT identification field gets its whole content printed in the
+ * diagnostics block underneath. That is not a rare file: a writer that packs the name into a
+ * single token fails the EDF+ grammar, and a file that behaves oddly is exactly the one someone
+ * runs `edfcore header` on and pastes into an issue.
+ *
+ * So the two must be gated together, by the same flag, in every command that prints either.
+ */
+function redaction(args: Args): { redactFields?: readonly string[] } {
+  return args.patient ? {} : { redactFields: ['patientId', 'recordingId'] };
+}
+
 async function open(io: CliIo, file: string) {
   // Read whole rather than fileSource: a CLI invocation is one pass over one file, and holding
   // it in memory removes any question of a descriptor outliving the process.
@@ -107,7 +123,10 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(`${formatHeader(recording.header, { includePatientId: args.patient })}\n`);
       if (recording.header.diagnostics.length > 0) {
         io.out(
-          `\n${formatDiagnostics(recording.header.diagnostics, { maxItems: args.limit ?? 20 })}\n`,
+          `\n${formatDiagnostics(recording.header.diagnostics, {
+            maxItems: args.limit ?? 20,
+            ...redaction(args),
+          })}\n`,
         );
       }
       return 0;
@@ -117,7 +136,11 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       const recording = await open(io, file);
       const report = await validateRecording(recording, { scanSamples: true });
       io.out(
-        `${formatValidationReport(report, { header: recording.header, maxItems: args.limit ?? 20 })}\n`,
+        `${formatValidationReport(report, {
+          header: recording.header,
+          maxItems: args.limit ?? 20,
+          ...redaction(args),
+        })}\n`,
       );
       // Exit 1 on failure so a CI job can gate on it without parsing the output.
       return report.ok ? 0 : 1;
