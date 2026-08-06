@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.32
+
+- **Documented, not fixed**, and the distinction is the point: `sampleIndexAt`, `sampleStartTicks`
+  and `sampleStartSeconds` measure the signal's own SAMPLE GRID, which equals elapsed recording
+  time only when the recording is contiguous. On a file with a seven-second hole,
+  `sampleStartSeconds(signal, 12, d)` answers 3 s for a sample whose record truly begins at 10 s,
+  and `sampleIndexAt(signal, 10, d)` names record 10 of a six-record file. This is the fifth
+  instance the 0.2.25 property test found, and the one that cannot be fixed by arithmetic: the
+  three take a signal, a number and a record duration — no index, no timeline — so a gap is not in
+  their arguments and nothing inside them could find it. Changing that would mean changing their
+  signatures, which is a 0.3 decision, not a patch. Until then the contract is stated in the source,
+  in the docs and in the property test, which now pins both regimes: exact agreement with
+  `readRecords` on a contiguous file, and the grid behaviour on a discontinuous one. `index.locate`,
+  `segmentAt`/`gapAt` and `chunk.firstSampleIndex` are the recording-axis answers.
+
 ## 0.2.31
 
 - **Fixed** `readEnvelopeAtResolution` not delivering the resolution it was asked for. A chunk

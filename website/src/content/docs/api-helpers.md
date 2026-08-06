@@ -298,6 +298,23 @@ These do the arithmetic in integers on `(record, sampleWithinRecord)` — the sa
 `trimToWindow` follows — and throw a `RangeError` for a zero record duration rather than returning
 `NaN`.
 
+> **These measure the signal's own sample grid, not the recording clock.**
+> Sample `n` is the `n`th sample the file stores for that signal, at
+> `n * recordDuration / samplesPerRecord`. On a contiguous recording that is also elapsed recording
+> time and the two are the same number — which is exactly why the difference is easy to miss.
+>
+> On a **discontinuous** file they part company. Samples are adjacent in the array across a gap
+> while their times are not, so on a file with a seven-second hole after record 2,
+> `sampleStartSeconds(signal, 12, d)` answers `3` for a sample whose record truly begins at `10`,
+> and `sampleIndexAt(signal, 10, d)` names record `10` of a six-record file. They are handed a
+> signal, a number and a record duration — no index, no timeline — so a gap is not in their
+> arguments and nothing inside them could find it.
+>
+> For a file that may be discontinuous: `index.locate(seconds)` maps time to record,
+> `segmentAt`/`gapAt` say whether an instant has data at all, and `chunk.firstSampleIndex` gives
+> the sample index a read actually produced. `contiguityOf(index)` tells you which regime you are
+> in.
+
 `sampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
 over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit edfcore has. Truncating
 would return a tick lying inside the previous sample, and `sampleIndexAt` would send it straight

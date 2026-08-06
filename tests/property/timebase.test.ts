@@ -23,13 +23,12 @@
  * The expected onsets come from `trueOnsetSeconds` below, which is the same arithmetic the fixture
  * writer is given — never from another edfcore call.
  *
- * NOT COVERED HERE, deliberately and temporarily: `sampleIndexAt`, `sampleStartTicks` and
- * `sampleStartSeconds`. Running this invariant against them is what found the fifth instance —
- * `sampleStartSeconds(signal, 12, d)` answers 3 s for a sample that starts at 10 s on this fixture
- * — but they take `(signal, seconds, recordDurationTicks)` and no index, so they CANNOT see a gap
- * from their arguments. That is a signature problem rather than an arithmetic one, and the fix is
- * a separate decision; see the changelog. Adding them to this file is the last step of that fix,
- * and this paragraph is what stops the file reading as complete before then.
+ * `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` are covered too, but they are the
+ * one family that is NOT on this axis, and the last section pins that as a stated contract rather
+ * than leaving it to be rediscovered. They receive a signal, a number and a record duration — no
+ * index, no timeline — so a gap is not in their arguments and no arithmetic inside them could find
+ * it. They measure the signal's own sample grid, which equals elapsed time exactly when the
+ * recording is contiguous.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -39,6 +38,7 @@ import { readEnvelope, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex, gapAt, segmentAt } from '../../src/record-index.js';
 import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
+import { sampleIndexAt, sampleStartSeconds } from '../../src/sample-grid.js';
 import { streamRecords } from '../../src/stream.js';
 import type { EdfRecording } from '../../src/types.js';
 import { buildEdf } from '../support/writer.js';
@@ -404,5 +404,81 @@ describe('a partial record range answers the same as a whole-file one', () => {
       expect(chunk.startSeconds, `record ${r}`).toBe(trueOnsetSeconds(r));
       expect(partial[0]?.[1], `record ${r}`).toBe(trueOnsetTicks(r));
     }
+  });
+});
+
+describe('the sample grid is the signal own grid, not the recording clock', () => {
+  // The fifth instance the invariant above found — and the one that cannot be fixed by arithmetic.
+  // These three take (signal, value, recordDurationTicks): no index, no timeline, so a gap is not
+  // in their arguments. What is pinned here is the CONTRACT, so the difference is a documented
+  // property rather than something the next reader rediscovers the hard way.
+  async function signalAndDuration(edf: EdfRecording) {
+    const signal = edf.header.signals[0];
+    if (signal === undefined) throw new Error('setup failed');
+    return { signal, durationTicks: edf.header.recordDurationTicks };
+  }
+
+  it('agrees with the recording axis on a contiguous file, exactly', async () => {
+    // The common case — every plain EDF and EDF+C — where the two ideas coincide and these
+    // functions are the right tool.
+    const edf = await openEdf(
+      byteSource(
+        buildEdf({
+          plus: 'C',
+          recordCount: 4,
+          recordDurationSeconds: 1,
+          signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD, sample: sampleValue }],
+          annotationSignals: [{ samplesPerRecord: 40 }],
+        }),
+      ),
+    );
+    const { signal, durationTicks } = await signalAndDuration(edf);
+
+    for (let r = 0; r < 4; r += 1) {
+      const chunk = await readRecords(edf, {
+        signalIndices: [0],
+        records: { start: r, count: 1 },
+      });
+      const firstSample = chunk.signals[0]?.firstSampleIndex ?? -1;
+      expect(sampleStartSeconds(signal, firstSample, durationTicks), `record ${r}`).toBe(
+        chunk.startSeconds,
+      );
+      expect(sampleIndexAt(signal, chunk.startSeconds, durationTicks).recordIndex).toBe(r);
+    }
+  });
+
+  it('measures the sample grid, not the clock, once the file has a gap', async () => {
+    // Record 3 holds samples 12..15 and truly starts at 10 s. The sample grid says 3 s, because on
+    // the grid it IS the twelfth sample. Both numbers are correct about different things; this
+    // asserts which one you get, so nobody has to find out from a plot.
+    const edf = await scanned();
+    const { signal, durationTicks } = await signalAndDuration(edf);
+    const firstSampleOfRecord3 = 3 * SAMPLES_PER_RECORD;
+
+    expect(sampleStartSeconds(signal, firstSampleOfRecord3, durationTicks)).toBe(3);
+    expect(trueOnsetSeconds(3)).toBe(10);
+
+    // The recording axis is available, from the index, and it is the one every read uses.
+    const located = await edf.index.locate(trueOnsetSeconds(3));
+    expect(located?.recordIndex).toBe(3);
+    const chunk = await readRecords(edf, {
+      signalIndices: [0],
+      records: { start: 3, count: 1 },
+    });
+    expect(chunk.signals[0]?.firstSampleIndex).toBe(firstSampleOfRecord3);
+    expect(chunk.startSeconds).toBe(trueOnsetSeconds(3));
+  });
+
+  it('answers past the end of the file rather than bounding, having no record count', async () => {
+    // `sampleIndexAt(signal, 10, d)` names record 10 of a six-record file. It is given no record
+    // count, so it cannot refuse; `segmentAt` is what answers whether an instant has data.
+    const edf = await scanned();
+    const { signal, durationTicks } = await signalAndDuration(edf);
+
+    expect(sampleIndexAt(signal, 10, durationTicks).recordIndex).toBe(10);
+    expect(edf.header.recordCount).toBe(RECORDS);
+    // And the function that CAN answer, does.
+    expect(segmentAt(edf.index, 10)?.records.start).toBe(3);
+    expect(segmentAt(edf.index, 5)).toBeUndefined();
   });
 });

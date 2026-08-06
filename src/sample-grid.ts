@@ -14,6 +14,24 @@
  *
  * These do the arithmetic in integers on `(record, sampleWithinRecord)` instead, which is the
  * same rule `trimToWindow` follows.
+ *
+ * WHAT THEY MEASURE, PRECISELY: position on the SIGNAL'S OWN SAMPLE GRID. Sample `n` is the `n`th
+ * sample the file stores for that signal, and its time is `n * recordDuration / samplesPerRecord`.
+ * On a CONTIGUOUS recording that is also elapsed recording time, and the two ideas are the same
+ * number — which is why the distinction is easy to miss.
+ *
+ * ON A DISCONTINUOUS FILE THEY ARE NOT THE SAME. Samples are adjacent in the array across a gap
+ * while their times are not, so `sampleStartSeconds(signal, 12, d)` answers 3 s for a sample whose
+ * record truly begins at 10 s, and `sampleIndexAt(signal, 10, d)` answers with a record index past
+ * the end of a six-record file. These functions receive a signal, a number and a record duration —
+ * no index, no timeline — so they CANNOT detect a gap, cannot bound the answer by the record
+ * count, and are not being modest about it: the information is not in their arguments.
+ *
+ * So the contract is stated rather than guessed at. For a file that may be discontinuous, use
+ * `index.locate(seconds)` for time to record, `segmentAt`/`gapAt` to find out whether an instant
+ * has data at all, and `chunk.firstSampleIndex` for the sample index a read actually produced.
+ * `contiguityOf(index)` answers which regime you are in. On a contiguous file — the common case,
+ * and every plain EDF or EDF+C — these are exact and are what you want.
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
