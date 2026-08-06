@@ -9,8 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_MAX_MATERIALIZE_BYTES } from '../../src/constants.js';
-import { EdfSourceError, isEdfError } from '../../src/errors.js';
+import { EdfSourceError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
 import { httpSource } from '../../src/io/http.js';
