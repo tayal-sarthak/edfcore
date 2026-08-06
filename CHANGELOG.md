@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.25
+
+- **Added** a property test pinning the ONE timebase invariant across every public function that
+  reports a time, against a single EDF+D fixture whose true onsets are known independently of
+  edfcore. Four releases — 0.1.4, 0.2.10, 0.2.18, 0.2.19 — were the same defect wearing different
+  clothes: a function deriving a time from the nominal `recordIndex * recordDuration` grid while
+  the rest of the package used the record's true onset. Fixing them one at a time did not stop the
+  next one, because a contiguous fixture agrees with both rules and every test used one.
+  `index.onsetTicks`, `index.segments`, `index.locate`, `readRecords`, `readWindow`,
+  `streamRecords`, `readEnvelope`, `readEnvelopeAtResolution`, `segmentAt`, `gapAt`,
+  `readAnnotations` and `filterAnnotationsByTime` are now all asserted against the same fixture,
+  plus a second file with a sub-second start offset.
+- **Found**, by running it: a fifth instance. `sampleIndexAt`, `sampleStartTicks` and
+  `sampleStartSeconds` are all on the nominal grid — `sampleStartSeconds(signal, 12, d)` answers
+  3 s for a sample that starts at 10 s, and `sampleIndexAt(signal, 10, d)` returns record 10 of a
+  six-record file. They take no index and so cannot see a gap from their arguments, which makes it
+  a signature problem rather than an arithmetic one; the fix is the next release, and the property
+  test says out loud that they are not yet covered.
+
 ## 0.2.24
 
 - **Changed** `envelopeOfSamples` to bound its reduction by `sampleCount` rather than by
