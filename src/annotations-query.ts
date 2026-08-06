@@ -42,10 +42,17 @@ export function filterAnnotationsByTime(
     annotations.filter((annotation) => {
       const onset = annotation.onsetTicksFromFirstRecord;
       const end = onset + (annotation.durationTicks ?? 0n);
-      // Half-open on both sides: [onset, end) against [from, to).
-      return (
-        onset < to && (end > from || (annotation.durationTicks === undefined && onset >= from))
-      );
+      // Half-open on both sides: [onset, end) against [from, to). An instantaneous event has an
+      // empty interval, so `end > from` can never hold for one and it needs the second clause.
+      //
+      // That clause tests `end === onset` — the event's actual duration — and NOT
+      // `durationTicks === undefined`, which is a fact about the WRITER rather than the event. A
+      // TAL may spell an instant either by omitting the duration field or by writing `0`, the two
+      // are the same instant, and `annotations.md` says edfcore does not distinguish them. Keying
+      // on the spelling dropped every explicitly-zero event from the window starting at its own
+      // onset — and from the previous window too, so in an adjacent-window partition it belonged
+      // to no window at all (fixed in 0.2.20).
+      return onset < to && (end > from || (end === onset && onset >= from));
     }),
   );
 }

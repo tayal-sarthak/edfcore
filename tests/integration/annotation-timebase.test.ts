@@ -146,3 +146,51 @@ describe('a file with no start offset', () => {
     ).toEqual(['Spindle']);
   });
 });
+
+describe('an explicit zero duration on disk', () => {
+  it('survives a real read and lands in the window that starts on its onset', async () => {
+    // The on-disk shape is `+2\x150\x14ExplicitZero\x14\x00` — a writer that always emits the
+    // 0x15 duration field and writes `0` for an instantaneous marker. src/tal/grammar.ts assigns
+    // durationTicks = 0n for it, and before 0.2.20 filterAnnotationsByTime dropped it from the
+    // window [2, 3) and from [1, 2) alike, so it belonged to no window in a partition.
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+      annotationSignals: [
+        {
+          samplesPerRecord: 60,
+          tals: (r: number) =>
+            r === 2
+              ? [
+                  { onset: 2, duration: 0, texts: ['ExplicitZero'] },
+                  { onset: 2, texts: ['OmittedDuration'] },
+                ]
+              : [],
+        },
+      ],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const { annotations } = await readAnnotations(recording, { start: 0, count: 4 });
+
+    // The two really are spelled differently on disk, and really do mean the same instant.
+    const explicit = annotations.find((a) => a.text === 'ExplicitZero');
+    const omitted = annotations.find((a) => a.text === 'OmittedDuration');
+    expect(explicit?.durationTicks).toBe(0n);
+    expect(omitted?.durationTicks).toBeUndefined();
+    expect(explicit?.onsetTicksFromFirstRecord).toBe(omitted?.onsetTicksFromFirstRecord);
+
+    expect(
+      filterAnnotationsByTime(annotations, { startSeconds: 2, durationSeconds: 1 }).map(
+        (a) => a.text,
+      ),
+    ).toEqual(['ExplicitZero', 'OmittedDuration']);
+
+    // And each appears exactly once across a partition of the whole recording.
+    const seen = Array.from({ length: 4 }, (_, i) =>
+      filterAnnotationsByTime(annotations, { startSeconds: i, durationSeconds: 1 }),
+    ).flat();
+    expect(seen.map((a) => a.text)).toEqual(['ExplicitZero', 'OmittedDuration']);
+  });
+});

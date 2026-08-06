@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.20
+
+- **Fixed** `filterAnnotationsByTime` dropping an annotation whose duration was written as an
+  explicit `0`. A TAL spells an instant either by omitting the duration field or by writing `0`;
+  the two are the same instant, and the docs say edfcore does not distinguish them. The left-edge
+  clause keyed on `durationTicks === undefined` — a fact about the writer, not the event — so an
+  explicitly-zero marker fell out of the window starting at its own onset AND out of the window
+  before it, belonging to no window at all in an adjacent-window partition. It also disagreed with
+  `annotationsAt`, which had always treated the two spellings alike. The clause now tests the
+  event's actual duration; positive-duration events and the half-open rule are untouched.
+
 ## 0.2.19
 
 - **Fixed** `mergeChunks` merging across a real gap whenever the index had not been scanned — the

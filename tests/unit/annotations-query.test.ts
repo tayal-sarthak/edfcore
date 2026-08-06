@@ -143,3 +143,66 @@ describe('annotationsAt', () => {
     expect(annotationsAt(events, 45).length).toBeGreaterThan(0);
   });
 });
+
+describe('an instantaneous event is instantaneous however the writer spelled it', () => {
+  // A TAL may write `+0.5\x150\x14Marker` or `+0.5\x14Marker`; both name the same instant, and
+  // annotations.md says edfcore does not distinguish them. Before 0.2.20 filterAnnotationsByTime
+  // keyed its left-edge clause on `durationTicks === undefined`, i.e. on the spelling, so the
+  // explicit `0` form vanished from the window that starts at its own onset.
+  const explicit = annotation(0.5, 'ExplicitZero', 0);
+  const omitted = annotation(0.5, 'OmittedDuration');
+
+  it('includes both at a window that starts exactly on the onset', () => {
+    for (const event of [explicit, omitted]) {
+      expect(
+        filterAnnotationsByTime([event], { startSeconds: 0.5, durationSeconds: 0.5 }).map(
+          (a) => a.text,
+        ),
+      ).toEqual([event.text]);
+    }
+  });
+
+  it('leaves neither in the window that ends on the onset', () => {
+    for (const event of [explicit, omitted]) {
+      expect(filterAnnotationsByTime([event], { startSeconds: 0, durationSeconds: 0.5 })).toEqual(
+        [],
+      );
+    }
+  });
+
+  it('gives an adjacent-window partition exactly one home for each', () => {
+    // The sharp end of the defect: an explicitly-zero event fell out of the window starting at its
+    // onset AND out of the one before it, so a partition of the recording lost it entirely.
+    const events = [explicit, omitted];
+    const seen = Array.from({ length: 4 }, (_, i) =>
+      filterAnnotationsByTime(events, { startSeconds: i * 0.5, durationSeconds: 0.5 }),
+    ).flat();
+    expect(seen.map((a) => a.text).sort()).toEqual(['ExplicitZero', 'OmittedDuration']);
+  });
+
+  it('includes an explicit zero at t = 0, the first window of any partition', () => {
+    const atZero = annotation(0, 'Start', 0);
+    expect(
+      filterAnnotationsByTime([atZero], { startSeconds: 0, durationSeconds: 30 }).map(
+        (a) => a.text,
+      ),
+    ).toEqual(['Start']);
+  });
+
+  it('agrees with annotationsAt, which already treated the two alike', () => {
+    for (const event of [explicit, omitted]) {
+      expect(annotationsAt([event], 0.5).map((a) => a.text)).toEqual([event.text]);
+      expect(filterAnnotationsByTime([event], { startSeconds: 0.5, durationSeconds: 0.5 })).toEqual(
+        annotationsAt([event], 0.5),
+      );
+    }
+  });
+
+  it('still excludes a positive-duration event that ends exactly at the window start', () => {
+    // The fix must not turn the half-open rule into a closed one for real intervals.
+    const epoch = annotation(0, 'Epoch', 0.5);
+    expect(filterAnnotationsByTime([epoch], { startSeconds: 0.5, durationSeconds: 0.5 })).toEqual(
+      [],
+    );
+  });
+});
