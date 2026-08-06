@@ -259,5 +259,12 @@ export async function readAnnotations(
   options?: DecodeAnnotationsOptions & ReadOptions,
 ): Promise<EdfAnnotationsResult> {
   const bytes = await readRecordBytes(recording.source, recording.header, records, options);
-  return decodeAnnotations(recording.header, bytes, records, options);
+  // The timeline knows record 0's sub-second start offset; a range that does not contain record 0
+  // cannot derive it, and on an EDF+D file the derivation gives a value outside [0, 1) and the
+  // rebasing switches off. Passing it makes the same annotation read the same way from a partial
+  // decode as from a whole-file one — which is the point of `readAnnotations(edf, chunk.records)`.
+  return decodeAnnotations(recording.header, bytes, records, {
+    startOffsetTicks: recording.timeline.startOffsetTicks,
+    ...options,
+  });
 }

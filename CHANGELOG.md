@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.28
+
+- **Fixed** `readAnnotations` answering on the header's axis for any record range that does not
+  start at record 0, on a file that declares a sub-second start offset. The rebasing origin was
+  derived from the first observed onset, which only works while the records in between are
+  contiguous — on an EDF+D file the derivation lands outside `[0, 1)` and the rebasing switches off
+  entirely. So the same annotation read 10 s from a whole-file decode and 10.25 s from a partial
+  one, while `readWindow` reported the record starting at 10 s either way. The pairing the docs
+  recommend, `readAnnotations(recording, chunk.records)` beside a `readWindow`, is exactly the call
+  that hit it. Sixth instance of the nominal-grid defect, and the first one the 0.2.25 property
+  test caught rather than a user.
+- **Added** `DecodeAnnotationsOptions.startOffsetTicks`. The offset is a property of the file, not
+  of the range; `readAnnotations` passes `timeline.startOffsetTicks` for you, and a direct
+  `decodeAnnotations` call on a partial range should pass it too.
+
 ## 0.2.27
 
 Three defects in one place: the CLI's argument handling did not match its own documented exit-code

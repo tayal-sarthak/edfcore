@@ -456,6 +456,7 @@ export function decodeAnnotations(
     recordOnsetTicks,
     baseTicks,
     firstObserved,
+    options,
   );
 
   pending.sort(compareAnnotations);
@@ -512,6 +513,7 @@ function resolveStartOffsetTicks(
   recordOnsetTicks: BigInt64Array,
   baseTicks: bigint,
   firstObserved: ObservedOnset | undefined,
+  options: DecodeAnnotationsOptions | undefined,
 ): bigint {
   if (records.count === 0) return 0n;
 
@@ -522,6 +524,12 @@ function resolveStartOffsetTicks(
         ? `raw timekeeping onset "${firstObserved.raw}"`
         : `derived from record ${firstObserved.recordIndex}, timekeeping onset ` +
           `"${firstObserved.raw}"`;
+
+  // A caller who knows the file's own offset outranks any derivation: the offset is a property of
+  // the recording, and deriving it from an observed onset only works while the records in between
+  // are contiguous. `readAnnotations` always knows it, from the timeline.
+  const supplied = options?.startOffsetTicks;
+  if (supplied !== undefined) return supplied;
 
   if (records.start === 0) {
     const onset = recordOnsetTicks[0] ?? 0n;

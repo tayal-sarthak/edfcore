@@ -588,6 +588,21 @@ export interface DecodeAnnotationsOptions extends ParseOptions {
   /** Defaults to every annotation signal. Only the first carries timekeeping. */
   readonly signalIndices?: readonly number[];
   /**
+   * Record 0's sub-second start offset, in ticks — the origin `onsetTicksFromFirstRecord` and
+   * `onsetSecondsFromFirstRecord` are measured from.
+   *
+   * This is a property of the FILE, not of the range being decoded, but a range that does not
+   * contain record 0 cannot see it: the derivation from an observed onset only works when the
+   * records in between are contiguous, so on an EDF+D file it produces a value outside [0, 1) and
+   * the rebasing switches off. The same annotation then reads one way from a whole-file decode and
+   * another from a partial one, differing by the offset — while `readWindow` reports the record's
+   * true start either way.
+   *
+   * `readAnnotations` passes `timeline.startOffsetTicks` for you. Pass it yourself when calling
+   * `decodeAnnotations` directly on a range that does not start at record 0.
+   */
+  readonly startOffsetTicks?: bigint;
+  /**
    * The recording's own time origin, for deriving the onset of a record whose timekeeping TAL
    * is missing.
    *

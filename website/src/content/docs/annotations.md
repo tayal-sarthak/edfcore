@@ -182,6 +182,14 @@ event.onsetRaw;                    // '+1.25' — the digits exactly as the file
 
 Both exact fields exist because both axes are needed. `onsetTicks` is the number the file wrote,
 which is what you want when reconciling against a wall clock or another system's export.
+`readAnnotations` supplies the rebasing origin from the timeline, so a partial range answers the
+same as a whole-file one. It could not derive that origin on its own: a range that does not contain
+record 0 has to infer it from an observed onset, which only works while the records in between are
+contiguous, and on an EDF+D file the inference lands outside `[0, 1)` and the rebasing switches off.
+Before 0.2.28, `readAnnotations(recording, chunk.records)` — the pairing this page recommends —
+reported the same event a quarter of a second later than a whole-file decode did. Calling
+`decodeAnnotations` directly on such a range still needs `startOffsetTicks` passed by hand.
+
 `onsetTicksFromFirstRecord` is the axis every read in edfcore uses — `resolveTimeWindow`,
 `readWindow`, `readEnvelope` all put `t = 0` at the start of record 0 — so it is the one to compare
 against a window you have read. It is `onsetSecondsFromFirstRecord` without the float.

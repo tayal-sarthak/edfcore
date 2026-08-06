@@ -341,3 +341,68 @@ describe('a sub-second start offset does not shift the axis either', () => {
     }
   });
 });
+
+describe('a partial record range answers the same as a whole-file one', () => {
+  // The pairing the docs encourage is `readAnnotations(recording, chunk.records)` beside a
+  // `readWindow` — `readAnnotations` requires an explicit range precisely so nobody scans a whole
+  // file by accident. Before 0.2.28 the rebasing origin was only resolved when the range started
+  // at record 0: a partial range had to derive it from an observed onset, which only works while
+  // the records in between are contiguous, so on an EDF+D file it came out outside [0, 1) and the
+  // rebasing switched off. The same annotation then read one way whole-file and another partial.
+  const OFFSET = 0.25;
+
+  async function offsetGapRecording(): Promise<EdfRecording> {
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: RECORDS,
+      recordDurationSeconds: 1,
+      startOffsetSeconds: OFFSET,
+      recordOnsetSeconds: (r: number) => trueOnsetSeconds(r) + OFFSET,
+      signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD, sample: sampleValue }],
+      annotationSignals: [
+        {
+          samplesPerRecord: 60,
+          tals: (r: number) => [{ onset: trueOnsetSeconds(r) + OFFSET, texts: [`mark${r}`] }],
+        },
+      ],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    return { ...recording, index: await buildRecordIndex(recording) };
+  }
+
+  const marks = (result: {
+    annotations: readonly { text: string; onsetTicksFromFirstRecord: bigint }[];
+  }) =>
+    result.annotations
+      .filter((a) => a.text.startsWith('mark'))
+      .map((a) => [a.text, a.onsetTicksFromFirstRecord] as const);
+
+  it('reports one annotation at one time, whichever range decoded it', async () => {
+    const recording = await offsetGapRecording();
+    const whole = marks(await readAnnotations(recording, { start: 0, count: RECORDS }));
+    const tail = marks(await readAnnotations(recording, { start: 3, count: 3 }));
+
+    // Every mark must carry its own record's true onset, from either decode.
+    for (const [text, ticks] of whole) {
+      expect(ticks, `${text} whole-file`).toBe(trueOnsetTicks(Number(text.slice(4))));
+    }
+    for (const [text, ticks] of tail) {
+      expect(ticks, `${text} partial`).toBe(trueOnsetTicks(Number(text.slice(4))));
+    }
+    // And the two decodes agree with each other on the overlap.
+    expect(tail).toEqual(whole.slice(3));
+  });
+
+  it('agrees with the record start readWindow reports for the same records', async () => {
+    const recording = await offsetGapRecording();
+    for (let r = 3; r < RECORDS; r += 1) {
+      const chunk = await readRecords(recording, {
+        signalIndices: [0],
+        records: { start: r, count: 1 },
+      });
+      const partial = marks(await readAnnotations(recording, { start: r, count: 1 }));
+      expect(chunk.startSeconds, `record ${r}`).toBe(trueOnsetSeconds(r));
+      expect(partial[0]?.[1], `record ${r}`).toBe(trueOnsetTicks(r));
+    }
+  });
+});
