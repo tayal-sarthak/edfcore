@@ -122,6 +122,7 @@ const FUNCTIONS: readonly string[] = [
   'contiguityOf',
   'readEnvelopeAtResolution',
   'annotationsAt',
+  'mergeChunks',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

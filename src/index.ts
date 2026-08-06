@@ -171,6 +171,7 @@ export {
   filterAnnotationsByTime,
 } from './annotations-query.js';
 export { decodeStatusWord, getStatusSignal, readTriggers } from './biosemi.js';
+export { mergeChunks } from './chunks.js';
 export {
   envelopeOfSamples,
   readEnvelope,

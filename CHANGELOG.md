@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.8
+
+- **Added** `mergeChunks(chunks)`. `readWindow` splits at every discontinuity, and joining the
+  pieces by hand is where the gap gets lost: concatenating two runs five minutes apart dates every
+  sample after the join five minutes early, with nothing in the result to say so. This refuses,
+  and refuses a chunk already narrowed by `trimToWindow` too — that one is invisible to a record
+  adjacency check.
+- **Fixed** the 200,000-record call-stack test timing out under load. It ran within a few hundred
+  milliseconds of vitest's 5 s default on its own, so it failed intermittently in a full run and
+  the failure read as a regression in code it does not touch.
+
 ## 0.2.7
 
 - **Added** `edfcore gaps <file>`. Runs a full scan rather than reading the two probes `openEdf`

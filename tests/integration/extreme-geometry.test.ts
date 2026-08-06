@@ -76,6 +76,10 @@ describe('a diagnostic per record does not blow the call stack', () => {
   // TIMEKEEPING_TAL_MISSING is deliberately per-record, so a long recording with a zeroed
   // annotation section reaches six figures honestly. push(...array) passes each element as a
   // call argument and V8 gives up at roughly 125,000 of them.
+  // The trailing 30 s is not slack for a slow machine. Sweeping 200,000 records and collecting a
+  // diagnostic for each is the point of the test, and it lands within a few hundred milliseconds
+  // of vitest's 5 s default on its own — so it tipped over whenever the rest of the suite ran
+  // beside it, and the failure read as a regression in code it does not touch.
   for (const records of [130_000, 200_000]) {
     it(`validateRecording reports all ${records} diagnostics instead of throwing`, async () => {
       const recording = await openEdf(
@@ -84,7 +88,7 @@ describe('a diagnostic per record does not blow the call stack', () => {
 
       const report = await validateRecording(recording);
       expect(report.diagnostics.length).toBeGreaterThanOrEqual(records);
-    });
+    }, 30_000);
   }
 
   it('readAnnotations already handled it, and still does', async () => {
@@ -98,7 +102,7 @@ describe('a diagnostic per record does not blow the call stack', () => {
       count: recording.header.recordCount,
     });
     expect(result.diagnostics).toHaveLength(130_000);
-  });
+  }, 30_000);
 });
 
 describe('a declared span past the representable tick range is refused', () => {
