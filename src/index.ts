@@ -194,4 +194,9 @@ export {
   sampleStartSeconds,
   sampleStartTicks,
 } from './sample-grid.js';
+export {
+  sampleAt,
+  sampleStartSecondsOf,
+  sampleStartTicksOf,
+} from './sample-locate.js';
 export { streamRecords } from './stream.js';

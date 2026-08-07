@@ -1,0 +1,212 @@
+/**
+ * Time and sample index, on the recording's own axis.
+ *
+ * Layer 7. The recording-aware counterpart to `sample-grid.ts`, and the reason it exists is stated
+ * plainly there: `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` take
+ * `(signal, value, recordDurationTicks)` — no index, no timeline — so a gap is not in their
+ * arguments and no arithmetic inside them could find one. They measure the signal's own SAMPLE
+ * GRID, which equals elapsed recording time only when the recording is contiguous.
+ *
+ * These two take the recording, so they can answer the question people actually mean. On a
+ * contiguous file they agree with the grid functions exactly. On an EDF+D file they differ by the
+ * gaps, and `sampleAt` can answer something the grid functions structurally cannot: that an
+ * instant has NO sample at all, because it falls in a hole.
+ *
+ * Both refuse a probed index on a file whose records do not cover its span, for the reason
+ * `segmentAt` does: `undefined` from `sampleAt` means "no sample exists here", and an index that
+ * has read record 0 and the last record cannot say that about anything in between. Merging "there
+ * is a gap here" with "nobody looked" is the confusion this whole area of the API avoids.
+ */
+
+import { EdfChannelNotFoundError } from './errors.js';
+import { segmentAt } from './record-index.js';
+import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import type { EdfRecording, EdfSampleLocation, EdfSegment, EdfSignal } from './types.js';
+
+/** `b` must be positive. Bigint `/` truncates toward zero, so negatives need the correction. */
+function floorDiv(a: bigint, b: bigint): bigint {
+  const quotient = a / b;
+  return a % b === 0n || a > 0n ? quotient : quotient - 1n;
+}
+
+function resolveSignal(recording: EdfRecording, signalIndex: number, caller: string): EdfSignal {
+  const signal = recording.header.signals[signalIndex];
+  if (signal === undefined) {
+    throw new EdfChannelNotFoundError(
+      `${caller}(): signalIndex ${signalIndex} is outside the ` +
+        `${recording.header.signals.length} signals this file declares. Next: pass an index from ` +
+        'header.dataSignalIndices, or resolve one with getSignal(header, label).',
+      {
+        selector: signalIndex,
+        availableLabels: recording.header.signals.map((s) => s.label),
+      },
+    );
+  }
+  if (signal.kind === 'annotations') {
+    throw new RangeError(
+      `${caller}(): signal ${signalIndex} (${JSON.stringify(signal.label)}) is an annotations ` +
+        'channel, whose region holds TAL text rather than samples, so it has no sample grid. ' +
+        'Next: use onsetTicksFromFirstRecord on the annotations themselves.',
+    );
+  }
+  if (signal.samplesPerRecord <= 0) {
+    throw new RangeError(
+      `${caller}(): signal ${signalIndex} (${JSON.stringify(signal.label)}) declares ` +
+        `${signal.samplesPerRecord} samples per record, so it has no sample grid to index. ` +
+        'Next: check header.diagnostics for ZERO_SAMPLES_PER_RECORD.',
+    );
+  }
+  if (recording.header.recordDurationTicks <= 0n) {
+    throw new RangeError(
+      `${caller}(): this file declares a record duration of zero, so records do not advance in ` +
+        'time and no elapsed time maps to a sample. This is legal EDF and a scoring file relies ' +
+        'on it. Next: index by record with readRecords().',
+    );
+  }
+  return signal;
+}
+
+/**
+ * The record a segment places at a given position, and that record's true start in ticks.
+ *
+ * `segment.startTicks` is already on the recording's axis, and records inside one segment are
+ * contiguous by construction, so this is exact.
+ */
+function recordStartTicks(
+  recording: EdfRecording,
+  segment: EdfSegment | undefined,
+  recordIndex: number,
+): bigint {
+  const duration = recording.header.recordDurationTicks;
+  if (segment === undefined) return BigInt(recordIndex) * duration;
+  return segment.startTicks + BigInt(recordIndex - segment.records.start) * duration;
+}
+
+/** The segment holding a record, on a scanned index; `undefined` when the file is contiguous. */
+function segmentOfRecord(recording: EdfRecording, recordIndex: number): EdfSegment | undefined {
+  const segments = recording.index.segments;
+  if (segments === undefined) return undefined;
+  for (const segment of segments) {
+    const first = segment.records.start;
+    if (recordIndex >= first && recordIndex < first + segment.records.count) return segment;
+  }
+  return undefined;
+}
+
+/**
+ * Whether this recording needs a scanned index before a time can be located at all.
+ *
+ * A file whose records cover exactly its span is contiguous, and the nominal grid IS the true one
+ * — so a probed index is enough and no scan is demanded of the caller for nothing.
+ */
+function requiresScan(recording: EdfRecording): boolean {
+  return recording.timeline.spanSeconds !== recording.timeline.coveredSeconds;
+}
+
+/**
+ * The sample covering `seconds`, or `undefined` when no sample does.
+ *
+ * `undefined` is a real answer rather than a failure: on an EDF+D file an instant inside a gap has
+ * no sample, and so does any time before the recording starts or after it ends. That is the case
+ * `sampleIndexAt` cannot express — given only a signal and a record duration it always returns an
+ * index, even one past the end of the file.
+ *
+ * Floor, not round, and in exact integer arithmetic on ticks: a sample covers the half-open
+ * interval from its own start to the next one's, so the sample "at" a time is the one already
+ * running when that time arrives.
+ */
+export function sampleAt(
+  recording: EdfRecording,
+  signalIndex: number,
+  seconds: number,
+): EdfSampleLocation | undefined {
+  const signal = resolveSignal(recording, signalIndex, 'sampleAt');
+  if (!Number.isFinite(seconds)) {
+    throw new RangeError(`sampleAt(): seconds must be a finite number, received ${seconds}.`);
+  }
+
+  const duration = recording.header.recordDurationTicks;
+  const perRecord = BigInt(signal.samplesPerRecord);
+  const ticks = secondsToTicks(seconds);
+
+  if (!requiresScan(recording)) {
+    // Contiguous: the nominal grid is the true one, but the answer is still bounded by the file.
+    const recordIndex = Number(floorDiv(ticks, duration));
+    if (recordIndex < 0 || recordIndex >= recording.header.recordCount) return undefined;
+    const withinTicks = ticks - BigInt(recordIndex) * duration;
+    const sampleWithinRecord = Number(floorDiv(withinTicks * perRecord, duration));
+    return {
+      sampleIndex: recordIndex * signal.samplesPerRecord + sampleWithinRecord,
+      recordIndex,
+      sampleWithinRecord,
+    };
+  }
+
+  // Discontinuous: `segmentAt` owns the "is there data here at all" question, and throws for a
+  // probed index rather than guessing.
+  const segment = segmentAt(recording.index, seconds);
+  if (segment === undefined) return undefined;
+
+  const offsetTicks = ticks - segment.startTicks;
+  const recordIndex = segment.records.start + Number(floorDiv(offsetTicks, duration));
+  const withinTicks = offsetTicks - floorDiv(offsetTicks, duration) * duration;
+  const sampleWithinRecord = Number(floorDiv(withinTicks * perRecord, duration));
+  return {
+    sampleIndex: recordIndex * signal.samplesPerRecord + sampleWithinRecord,
+    recordIndex,
+    sampleWithinRecord,
+  };
+}
+
+/**
+ * When a sample starts, in exact ticks on the recording's axis.
+ *
+ * The inverse of `sampleAt`, and the recording-aware form of `sampleStartTicks`. On a contiguous
+ * file the two agree exactly; on an EDF+D file this one includes the gaps that precede the sample
+ * and `sampleStartTicks` does not.
+ *
+ * Rounds UP to a whole tick, as `sampleStartTicks` does: a sample boundary need not fall on one —
+ * 128 samples over 0.3 s puts sample 1 at 23,437.5 ticks — and truncating would return a tick
+ * lying inside the previous sample, which `sampleAt` would then map straight back to that
+ * previous sample.
+ */
+export function sampleStartTicksOf(
+  recording: EdfRecording,
+  signalIndex: number,
+  sampleIndex: number,
+): bigint {
+  const signal = resolveSignal(recording, signalIndex, 'sampleStartTicksOf');
+  if (!Number.isSafeInteger(sampleIndex)) {
+    throw new RangeError(
+      `sampleStartTicksOf(): sampleIndex must be a whole number, received ${sampleIndex}.`,
+    );
+  }
+
+  const perRecord = signal.samplesPerRecord;
+  const duration = recording.header.recordDurationTicks;
+  const recordIndex = Math.floor(sampleIndex / perRecord);
+  const within = BigInt(sampleIndex - recordIndex * perRecord);
+
+  if (requiresScan(recording) && recording.index.segments === undefined) {
+    throw new RangeError(
+      'sampleStartTicksOf(): this file has gaps and its index has not been scanned, so the true ' +
+        'start of a record after a gap is not known. Next: await buildRecordIndex(recording) and ' +
+        'read the result into the recording.',
+    );
+  }
+
+  const start = recordStartTicks(recording, segmentOfRecord(recording, recordIndex), recordIndex);
+  const numerator = within * duration;
+  const offset = numerator / BigInt(perRecord);
+  // Ceil, matching `sampleStartTicks`.
+  return start + (numerator % BigInt(perRecord) === 0n ? offset : offset + 1n);
+}
+
+/** `sampleStartTicksOf` as float64 seconds. Compare with the ticks, never with this. */
+export function sampleStartSecondsOf(
+  recording: EdfRecording,
+  signalIndex: number,
+  sampleIndex: number,
+): number {
+  return ticksToSeconds(sampleStartTicksOf(recording, signalIndex, sampleIndex));
+}

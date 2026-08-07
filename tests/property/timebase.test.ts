@@ -38,7 +38,8 @@ import { readEnvelope, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex, gapAt, segmentAt } from '../../src/record-index.js';
 import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
-import { sampleIndexAt, sampleStartSeconds } from '../../src/sample-grid.js';
+import { sampleIndexAt, sampleStartSeconds, sampleStartTicks } from '../../src/sample-grid.js';
+import { sampleAt, sampleStartSecondsOf, sampleStartTicksOf } from '../../src/sample-locate.js';
 import { streamRecords } from '../../src/stream.js';
 import type { EdfRecording } from '../../src/types.js';
 import { buildEdf } from '../support/writer.js';
@@ -480,5 +481,96 @@ describe('the sample grid is the signal own grid, not the recording clock', () =
     // And the function that CAN answer, does.
     expect(segmentAt(edf.index, 10)?.records.start).toBe(3);
     expect(segmentAt(edf.index, 5)).toBeUndefined();
+  });
+});
+
+describe('the recording-aware sample functions are on the recording axis', () => {
+  // The pair added in 0.2.60, and the point of them: they take the RECORDING, so a gap is in their
+  // arguments and they can answer what the grid functions structurally cannot.
+
+  it('agrees with the grid functions exactly on a contiguous file', async () => {
+    // The common case must not diverge, or the new pair would be a second answer rather than a
+    // better one.
+    const edf = await openEdf(
+      byteSource(
+        buildEdf({
+          plus: 'C',
+          recordCount: 4,
+          recordDurationSeconds: 1,
+          signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD, sample: sampleValue }],
+          annotationSignals: [{ samplesPerRecord: 40 }],
+        }),
+      ),
+    );
+    const signal = edf.header.signals[0];
+    if (signal === undefined) throw new Error('setup failed');
+    const durationTicks = edf.header.recordDurationTicks;
+
+    for (let index = 0; index < 4 * SAMPLES_PER_RECORD; index += 1) {
+      expect(sampleStartTicksOf(edf, 0, index), `sample ${index}`).toBe(
+        sampleStartTicks(signal, index, durationTicks),
+      );
+    }
+    for (let tenths = 0; tenths < 40; tenths += 1) {
+      const seconds = tenths / 10;
+      expect(sampleAt(edf, 0, seconds)?.sampleIndex, `${seconds}s`).toBe(
+        sampleIndexAt(signal, seconds, durationTicks).sampleIndex,
+      );
+    }
+  });
+
+  it('places a post-gap sample at its true time, where the grid function cannot', async () => {
+    // Record 3 holds samples 12..15 and truly begins at 10 s. The grid says 3 s, because on the
+    // grid it IS the twelfth sample; both are correct about different things and only one of them
+    // is the recording's clock.
+    const edf = await scanned();
+    const signal = edf.header.signals[0];
+    if (signal === undefined) throw new Error('setup failed');
+    const first = 3 * SAMPLES_PER_RECORD;
+
+    expect(sampleStartSecondsOf(edf, 0, first)).toBe(trueOnsetSeconds(3));
+    expect(sampleStartTicksOf(edf, 0, first)).toBe(trueOnsetTicks(3));
+    // The grid function still answers on the grid, unchanged.
+    expect(sampleStartSeconds(signal, first, edf.header.recordDurationTicks)).toBe(3);
+  });
+
+  it('says an instant inside a gap has no sample at all', async () => {
+    // The answer `sampleIndexAt` cannot express: given only a signal and a record duration it
+    // always returns an index, even one past the end of the file.
+    const edf = await scanned();
+    const signal = edf.header.signals[0];
+    if (signal === undefined) throw new Error('setup failed');
+
+    expect(sampleAt(edf, 0, 5)).toBeUndefined();
+    expect(gapAt(edf.index, 5)).toBeDefined();
+    // Whereas the grid function names a record that does not exist in this file.
+    expect(sampleIndexAt(signal, 5, edf.header.recordDurationTicks).recordIndex).toBe(5);
+    expect(edf.header.recordCount).toBe(RECORDS);
+  });
+
+  it('bounds its answer by the file, before and after', async () => {
+    const edf = await scanned();
+    expect(sampleAt(edf, 0, -1)).toBeUndefined();
+    expect(sampleAt(edf, 0, 100)).toBeUndefined();
+    expect(sampleAt(edf, 0, trueOnsetSeconds(RECORDS - 1) + 0.5)).toBeDefined();
+  });
+
+  it('round-trips: the sample at a sample start is that sample', async () => {
+    // The invariant tying the pair together, across the gap.
+    const edf = await scanned();
+    for (let index = 0; index < RECORDS * SAMPLES_PER_RECORD; index += 1) {
+      const seconds = sampleStartSecondsOf(edf, 0, index);
+      expect(sampleAt(edf, 0, seconds)?.sampleIndex, `sample ${index} at ${seconds}s`).toBe(index);
+    }
+  });
+
+  it('refuses rather than guessing when the index was never scanned', async () => {
+    // Same rule as `segmentAt`: a probed index has read record 0 and the last record, so it cannot
+    // say where a post-gap record starts, and inventing an answer is the defect this whole area
+    // exists to avoid.
+    const probed = await openEdf(byteSource(discontinuousFile()));
+    expect(probed.index.coverage).toBe('probed');
+    expect(() => sampleStartTicksOf(probed, 0, 12)).toThrow(/buildRecordIndex/);
+    expect(() => sampleAt(probed, 0, 10)).toThrow(/buildRecordIndex/);
   });
 });

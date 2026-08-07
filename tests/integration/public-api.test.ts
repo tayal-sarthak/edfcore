@@ -127,6 +127,9 @@ const FUNCTIONS: readonly string[] = [
   'segmentAt',
   'summarizeDiagnostics',
   'gapAt',
+  'sampleAt',
+  'sampleStartTicksOf',
+  'sampleStartSecondsOf',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

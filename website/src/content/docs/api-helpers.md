@@ -310,10 +310,27 @@ These do the arithmetic in integers on `(record, sampleWithinRecord)` — the sa
 > signal, a number and a record duration — no index, no timeline — so a gap is not in their
 > arguments and nothing inside them could find it.
 >
-> For a file that may be discontinuous: `index.locate(seconds)` maps time to record,
-> `segmentAt`/`gapAt` say whether an instant has data at all, and `chunk.firstSampleIndex` gives
-> the sample index a read actually produced. `contiguityOf(index)` tells you which regime you are
-> in.
+> For a file that may be discontinuous, use the recording-aware pair below instead.
+
+### The recording-aware form
+
+```ts
+import { sampleAt, sampleStartTicksOf, sampleStartSecondsOf } from 'edfcore';
+
+sampleAt(recording, eeg.index, 3612.5);          // EdfSampleLocation, or undefined
+sampleStartSecondsOf(recording, eeg.index, 940); // when sample 940 actually starts
+```
+
+These take the **recording**, so a gap is in their arguments and they answer the question people
+usually mean. On a contiguous file they agree with the grid functions exactly — a test asserts that
+sample by sample. On a discontinuous one they differ by the gaps, and `sampleAt` can say something
+the grid functions structurally cannot: **`undefined`**, meaning no sample exists at that instant
+because it falls in a hole, or before the recording, or after it. `sampleIndexAt` given only a
+signal and a record duration always returns an index — including one past the end of the file.
+
+They refuse a probed index on a file with gaps rather than guessing, for the reason `segmentAt`
+does. `index.locate(seconds)` remains the read-based form; `contiguityOf(index)` tells you which
+regime you are in.
 
 `sampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
 over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit edfcore has. Truncating

@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.60
+
+- **Added** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` — the recording-aware
+  counterpart to the sample-grid family, and the groundwork for 0.3.0.
+- 0.2.32 documented why the existing three cannot be fixed in place: they take
+  `(signal, value, recordDurationTicks)`, so a gap is not in their arguments and no arithmetic
+  inside them could find one. These take the RECORDING. On a contiguous file they agree with the
+  grid functions exactly — asserted sample by sample — and on a discontinuous one they differ by
+  the gaps.
+- `sampleAt` can return **`undefined`**, which is the answer the grid form structurally cannot
+  give: no sample exists at that instant, because it falls in a gap, before the recording, or after
+  it. `sampleIndexAt(signal, 5, d)` on a six-record file with a hole at 5 s names record 5; there
+  is no record 5 at that time.
+- Both refuse a probed index on a file with gaps rather than guessing, the same rule `segmentAt`
+  follows. A round-trip test pins the pair together across the gap: the sample at a sample's start
+  is that sample, for every sample in the file.
+
 ## 0.2.59
 
 - **Added** `calib.rec` from edfplus.info — the last corpus the README named. It was written by
