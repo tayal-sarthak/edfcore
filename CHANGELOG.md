@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.64
+
+- **Added** a migration guide for 0.3.0, published before the release rather than after it:
+  [Migrating to 0.3](https://edfcore.vercel.app/docs/migrating-to-0-3). Three functions are
+  renamed, nothing else changes, and no arithmetic changes.
+- It says what a rename is worth a minor bump for. The grid functions were never wrong; their names
+  simply did not say which of two quantities they returned, and six releases of this project were
+  spent on that exact confusion elsewhere — a stimulus latched at 10 s reported as 2 s, events in
+  the neighbouring window, a gap `mergeChunks` could not see. Each was found because two functions
+  disagreed, not because one looked wrong. `gridSampleStartSeconds` cannot be called in the belief
+  that it returns elapsed recording time.
+- Includes the find-and-replace, with word boundaries, and a note on why: `sampleStartTicks` and
+  `sampleStartTicksOf` are distinct names and a substring replace would damage the second.
+
 ## 0.2.63
 
 - **Added** a test that drives essentially the whole public barrel over every corpus file — six
