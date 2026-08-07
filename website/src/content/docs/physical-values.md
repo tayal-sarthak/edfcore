@@ -48,6 +48,18 @@ fp1.scale;  // { bitValue: 0.015259021896696421, offset: 0.5 }
             // from -500..500 uV over -32768..32767
 ```
 
+### Verified against pyEDFlib
+
+Since 0.2.34 this is a measured claim rather than an argument. `scripts/golden/generate.py` writes
+EDF and BDF fixtures with pyEDFlib's own writer, reads them back with pyEDFlib, and records every
+physical sample as its exact IEEE-754 bit pattern; the test compares edfcore's output with
+`Object.is`, so a one-ULP difference is a failure. Nothing in the golden files was produced by
+edfcore.
+
+Substituting the numerically better textbook expression fails it on 140 of 256 samples of the
+symmetric fixture — for example `-492.15686274509807` where pyEDFlib says `-492.156862745098`.
+That is the whole reason the EDFlib form is pinned, and it is now the reason a test gives.
+
 ### The EDFlib expression
 
 The form above is EDFlib's, kept verbatim, so edfcore's float64 output can be compared bit for

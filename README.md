@@ -291,10 +291,17 @@ the reason to trust the reader.
 **0.1 — reads everything, lies about nothing.** All six variants, the primitive/I/O/convenience
 layers, `inspectEdf`, `edfcore/validate`, six source adapters, the full diagnostic vocabulary.
 
-**Before 1.0.** Validation against public corpora (sleep-edfx, CHB-MIT, the BioSemi and
-edfplus.info test files) and a golden-value harness cross-checking physical values against
-pyEDFlib and MNE. Until that harness exists this README makes no numerical-interop claim, and it
-will not make one that a test did not produce.
+**Numerical interop, as of 0.2.34.** edfcore reproduces **pyEDFlib's float64 physical values bit
+for bit** on EDF and 24-bit BDF, across symmetric and asymmetric ranges. That is a test, not a
+belief: `scripts/golden/generate.py` writes the fixtures with pyEDFlib's own writer, reads them
+back with pyEDFlib, and records every sample as its exact IEEE-754 bit pattern;
+`tests/corpus/golden-values.test.ts` compares with `Object.is`, so one ULP is a failure. Nothing in
+`tests/corpus/golden/` was produced by edfcore. Substituting the numerically better textbook
+expression fails it on 140 of 256 samples — which is why the EDFlib form is pinned.
+
+**Still open before 1.0.** The same harness against MNE, and validation across public corpora
+(sleep-edfx, CHB-MIT, the BioSemi and edfplus.info test files). Those claims are not made here
+until a test produces them.
 
 **Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
 `readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration

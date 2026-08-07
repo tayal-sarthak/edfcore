@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.34
+
+- **Added** the golden-value harness this README has withheld a numerical-interop claim for since
+  0.1.0. edfcore now **reproduces pyEDFlib's float64 physical values bit for bit** on EDF and
+  24-bit BDF, across symmetric and asymmetric declared ranges. `scripts/golden/generate.py` writes
+  the fixtures with pyEDFlib's own writer, reads them back with pyEDFlib, and records every sample
+  as its exact IEEE-754 bit pattern; the test compares with `Object.is`, so one ULP is a failure.
+  Nothing under `tests/corpus/golden/` was produced by edfcore, and the goldens are committed so
+  CI never needs Python.
+
+  Every previous test of the pinned scaling expression re-derived that same expression inside the
+  test, which proved edfcore agrees with itself and nothing more. This is the first evidence that
+  the choice to keep EDFlib's numerically worse form was worth making: substituting the textbook
+  `physicalMinimum + (digital - digitalMinimum) * gain` fails on 140 of 256 samples of the
+  symmetric fixture — `-492.15686274509807` where pyEDFlib says `-492.156862745098` — and a test
+  asserts that the goldens can tell the two apart, so the parity is a real constraint rather than
+  a coincidence of the fixtures.
+
+  Still not claimed, because no test produces it yet: parity with MNE, and validation across the
+  public corpora.
+
 ## 0.2.33
 
 - **Fixed** annotations being dropped with no diagnostic naming them. `TIMEKEEPING_TAL_NONCONFORMANT`
