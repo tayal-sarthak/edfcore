@@ -21,8 +21,8 @@
  * number — which is why the distinction is easy to miss.
  *
  * ON A DISCONTINUOUS FILE THEY ARE NOT THE SAME. Samples are adjacent in the array across a gap
- * while their times are not, so `sampleStartSeconds(signal, 12, d)` answers 3 s for a sample whose
- * record truly begins at 10 s, and `sampleIndexAt(signal, 10, d)` answers with a record index past
+ * while their times are not, so `gridSampleStartSeconds(signal, 12, d)` answers 3 s for a sample whose
+ * record truly begins at 10 s, and `gridSampleIndexAt(signal, 10, d)` answers with a record index past
  * the end of a six-record file. These functions receive a signal, a number and a record duration —
  * no index, no timeline — so they CANNOT detect a gap, cannot bound the answer by the record
  * count, and are not being modest about it: the information is not in their arguments.
@@ -33,11 +33,12 @@
  * in. On a contiguous file — the common case, and every plain EDF or EDF+C — these are exact and
  * are what you want.
  *
- * RENAMED IN 0.3.0. These three keep their behaviour and lose their misleading names: they become
- * `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds`. The `grid` prefix is
- * the whole fix — the functions were never wrong, the names simply did not say which of two
- * different quantities they returned, and six releases of this project were spent on exactly that
- * confusion in other places. Nothing about the arithmetic changes.
+ * THE `grid` PREFIX IS LOAD-BEARING. These were `sampleIndexAt`, `sampleStartTicks` and
+ * `sampleStartSeconds` until 0.3.0, and the arithmetic has not changed since — only the name. The
+ * old names did not say which of two different quantities they returned, and seven releases of
+ * this project were spent on exactly that confusion elsewhere. You cannot call
+ * `gridSampleStartSeconds` while believing you asked for elapsed recording time, which is the
+ * entire point.
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
@@ -74,13 +75,8 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint): void {
  * Floor, not round: a sample covers the half-open interval from its own start to the next one's,
  * so the sample "at" a time is the one whose interval contains it. Rounding would return the
  * NEXT sample for anything past the halfway point, which puts a window boundary one sample late.
- *
- * @deprecated Renamed to `gridSampleIndexAt` in 0.3.0. The behaviour is unchanged — only the
- * name, which never said which of two different quantities it returns. For a file that may
- * have gaps, use `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf`, which take the
- * recording and can therefore see one.
  */
-export function sampleIndexAt(
+export function gridSampleIndexAt(
   signal: EdfSignal,
   seconds: number,
   recordDurationTicks: bigint,
@@ -116,15 +112,10 @@ export function sampleIndexAt(
  * Rounded UP to a whole tick, which matters more than it looks. A sample boundary need not fall
  * on one: 128 samples over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit
  * edfcore has. Truncating would return 23,437 — a tick that lies inside sample 0 — so
- * `sampleIndexAt` would send it straight back to the previous sample. Taking the first whole
+ * `gridSampleIndexAt` would send it straight back to the previous sample. Taking the first whole
  * tick at or after the exact start keeps the two functions inverse for every index.
- *
- * @deprecated Renamed to `gridSampleStartTicks` in 0.3.0. The behaviour is unchanged — only the
- * name, which never said which of two different quantities it returns. For a file that may
- * have gaps, use `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf`, which take the
- * recording and can therefore see one.
  */
-export function sampleStartTicks(
+export function gridSampleStartTicks(
   signal: EdfSignal,
   sampleIndex: number,
   recordDurationTicks: bigint,
@@ -132,7 +123,7 @@ export function sampleStartTicks(
   assertGrid(signal, recordDurationTicks);
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
-      `sampleStartTicks(): sampleIndex must be a whole number, received ${sampleIndex}.`,
+      `gridSampleStartTicks(): sampleIndex must be a whole number, received ${sampleIndex}.`,
     );
   }
   const perRecord = BigInt(signal.samplesPerRecord);
@@ -144,18 +135,13 @@ export function sampleStartTicks(
   return numerator > 0n ? quotient + 1n : quotient;
 }
 
-/** `sampleStartTicks` in seconds, for display. Compare ticks, not this. *
- * @deprecated Renamed to `gridSampleStartSeconds` in 0.3.0. The behaviour is unchanged — only the
- * name, which never said which of two different quantities it returns. For a file that may
- * have gaps, use `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf`, which take the
- * recording and can therefore see one.
- */
-export function sampleStartSeconds(
+/** `gridSampleStartTicks` in seconds, for display. Compare ticks, not this. */
+export function gridSampleStartSeconds(
   signal: EdfSignal,
   sampleIndex: number,
   recordDurationTicks: bigint,
 ): number {
-  const ticks = sampleStartTicks(signal, sampleIndex, recordDurationTicks);
+  const ticks = gridSampleStartTicks(signal, sampleIndex, recordDurationTicks);
   const whole = ticks / TICKS_PER_SECOND;
   const remainder = ticks % TICKS_PER_SECOND;
   return Number(whole) + Number(remainder) / Number(TICKS_PER_SECOND);

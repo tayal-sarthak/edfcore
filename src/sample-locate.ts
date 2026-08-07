@@ -2,7 +2,7 @@
  * Time and sample index, on the recording's own axis.
  *
  * Layer 7. The recording-aware counterpart to `sample-grid.ts`, and the reason it exists is stated
- * plainly there: `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` take
+ * plainly there: `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds` take
  * `(signal, value, recordDurationTicks)` — no index, no timeline — so a gap is not in their
  * arguments and no arithmetic inside them could find one. They measure the signal's own SAMPLE
  * GRID, which equals elapsed recording time only when the recording is contiguous.
@@ -122,7 +122,7 @@ function probedIndexNeedsScan(recording: EdfRecording): boolean {
  *
  * `undefined` is a real answer rather than a failure: on an EDF+D file an instant inside a gap has
  * no sample, and so does any time before the recording starts or after it ends. That is the case
- * `sampleIndexAt` cannot express — given only a signal and a record duration it always returns an
+ * `gridSampleIndexAt` cannot express — given only a signal and a record duration it always returns an
  * index, even one past the end of the file.
  *
  * Floor, not round, and in exact integer arithmetic on ticks: a sample covers the half-open
@@ -195,11 +195,11 @@ export function sampleAt(
 /**
  * When a sample starts, in exact ticks on the recording's axis.
  *
- * The inverse of `sampleAt`, and the recording-aware form of `sampleStartTicks`. On a contiguous
+ * The inverse of `sampleAt`, and the recording-aware form of `gridSampleStartTicks`. On a contiguous
  * file the two agree exactly; on an EDF+D file this one includes the gaps that precede the sample
- * and `sampleStartTicks` does not.
+ * and `gridSampleStartTicks` does not.
  *
- * Rounds UP to a whole tick, as `sampleStartTicks` does: a sample boundary need not fall on one —
+ * Rounds UP to a whole tick, as `gridSampleStartTicks` does: a sample boundary need not fall on one —
  * 128 samples over 0.3 s puts sample 1 at 23,437.5 ticks — and truncating would return a tick
  * lying inside the previous sample, which `sampleAt` would then map straight back to that
  * previous sample.
@@ -244,7 +244,7 @@ export function sampleStartTicksOf(
   const start = recordStartTicks(recording, segmentOfRecord(recording, recordIndex), recordIndex);
   const numerator = within * duration;
   const offset = numerator / BigInt(perRecord);
-  // Ceil, matching `sampleStartTicks`.
+  // Ceil, matching `gridSampleStartTicks`.
   return start + (numerator % BigInt(perRecord) === 0n ? offset : offset + 1n);
 }
 

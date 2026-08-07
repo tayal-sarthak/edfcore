@@ -192,9 +192,9 @@ export { formatHeader } from './format-header.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';
 export {
-  sampleIndexAt,
-  sampleStartSeconds,
-  sampleStartTicks,
+  gridSampleIndexAt,
+  gridSampleStartSeconds,
+  gridSampleStartTicks,
 } from './sample-grid.js';
 export {
   sampleAt,

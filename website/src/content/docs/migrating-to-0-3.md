@@ -3,12 +3,12 @@ title: Migrating to 0.3
 description: What changes in 0.3.0, why, and the find-and-replace that covers most of it.
 section: Guides
 order: 9
-lead: One rename, no behaviour change. If your recordings are contiguous — every plain EDF and every EDF+C — a find-and-replace is the whole migration.
+lead: 0.3.0 renamed three functions and changed nothing else. If your recordings are contiguous — every plain EDF and every EDF+C — a find-and-replace is the whole migration.
 ---
 
 ## The change
 
-Three functions are renamed. Nothing else in the public API changes, and no arithmetic changes.
+Three functions were renamed in 0.3.0. Nothing else in the public API changed, and no arithmetic changed.
 
 | 0.2 | 0.3 |
 |---|---|
@@ -16,8 +16,8 @@ Three functions are renamed. Nothing else in the public API changes, and no arit
 | `sampleStartTicks` | `gridSampleStartTicks` |
 | `sampleStartSeconds` | `gridSampleStartSeconds` |
 
-Same arguments, same return values, same rounding. They were marked `@deprecated` in 0.2.62, so an
-editor has been pointing at the replacement for a release already.
+Same arguments, same return values, same rounding. They were marked `@deprecated` in 0.2.62, a
+release ahead of the change, so an editor pointed at the replacement before it landed.
 
 ## Why a rename is worth a minor bump
 
@@ -30,17 +30,18 @@ On a **discontinuous** file they part company. Samples are adjacent in the array
 their times are not, so on a file with a seven-second hole after record 2:
 
 ```ts
-sampleStartSeconds(signal, 12, d);   // 3   — the twelfth sample on the grid
+gridSampleStartSeconds(signal, 12, d);   // 3   — the twelfth sample on the grid
 // record 3 truly begins at 10 s
 ```
 
 Both numbers are correct about different things. The name said neither.
 
-This project has shipped six separate fixes for one defect: a function deriving a time from the
+This project has shipped seven separate fixes for one defect: a function deriving a time from the
 nominal grid while every other function used the record's true onset. `readTriggers` reported a
 stimulus latched at 10 s as 2 s; `filterAnnotationsByTime` put events in the neighbouring window;
-`mergeChunks` could not see a gap. Each was found late, and each was found because two functions
-disagreed rather than because one looked wrong. The `grid` prefix is what stops the seventh: you
+`mergeChunks` could not see a gap; and `sampleAt` itself shipped with the seventh in 0.2.61 and
+was fixed in 0.2.68. Each was found late, and each was found because two functions disagreed
+rather than because one looked wrong. The `grid` prefix is what stops the seventh: you
 cannot call `gridSampleStartSeconds` and believe you asked for elapsed recording time.
 
 The functions themselves were never wrong, and they are not deprecated in favour of nothing — they
@@ -92,6 +93,6 @@ regimes side by side against one fixture.
 
 ## What is not changing
 
-- No behaviour, anywhere. The 0.3.0 release renames symbols and nothing else.
+- No behaviour, anywhere. The 0.3.0 release renamed symbols and nothing else.
 - No other export is removed or renamed.
 - The three entry points, the error hierarchy, and the `ByteSource` contract are untouched.

@@ -23,7 +23,7 @@
  * The expected onsets come from `trueOnsetSeconds` below, which is the same arithmetic the fixture
  * writer is given — never from another edfcore call.
  *
- * `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` are covered too, but they are the
+ * `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds` are covered too, but they are the
  * one family that is NOT on this axis, and the last section pins that as a stated contract rather
  * than leaving it to be rediscovered. They receive a signal, a number and a record duration — no
  * index, no timeline — so a gap is not in their arguments and no arithmetic inside them could find
@@ -38,7 +38,11 @@ import { readEnvelope, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex, contiguityOf, gapAt, segmentAt } from '../../src/record-index.js';
 import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
-import { sampleIndexAt, sampleStartSeconds, sampleStartTicks } from '../../src/sample-grid.js';
+import {
+  gridSampleIndexAt,
+  gridSampleStartSeconds,
+  gridSampleStartTicks,
+} from '../../src/sample-grid.js';
 import { sampleAt, sampleStartSecondsOf, sampleStartTicksOf } from '../../src/sample-locate.js';
 import { streamRecords } from '../../src/stream.js';
 import type { EdfRecording } from '../../src/types.js';
@@ -442,10 +446,10 @@ describe('the sample grid is the signal own grid, not the recording clock', () =
         records: { start: r, count: 1 },
       });
       const firstSample = chunk.signals[0]?.firstSampleIndex ?? -1;
-      expect(sampleStartSeconds(signal, firstSample, durationTicks), `record ${r}`).toBe(
+      expect(gridSampleStartSeconds(signal, firstSample, durationTicks), `record ${r}`).toBe(
         chunk.startSeconds,
       );
-      expect(sampleIndexAt(signal, chunk.startSeconds, durationTicks).recordIndex).toBe(r);
+      expect(gridSampleIndexAt(signal, chunk.startSeconds, durationTicks).recordIndex).toBe(r);
     }
   });
 
@@ -457,7 +461,7 @@ describe('the sample grid is the signal own grid, not the recording clock', () =
     const { signal, durationTicks } = await signalAndDuration(edf);
     const firstSampleOfRecord3 = 3 * SAMPLES_PER_RECORD;
 
-    expect(sampleStartSeconds(signal, firstSampleOfRecord3, durationTicks)).toBe(3);
+    expect(gridSampleStartSeconds(signal, firstSampleOfRecord3, durationTicks)).toBe(3);
     expect(trueOnsetSeconds(3)).toBe(10);
 
     // The recording axis is available, from the index, and it is the one every read uses.
@@ -472,12 +476,12 @@ describe('the sample grid is the signal own grid, not the recording clock', () =
   });
 
   it('answers past the end of the file rather than bounding, having no record count', async () => {
-    // `sampleIndexAt(signal, 10, d)` names record 10 of a six-record file. It is given no record
+    // `gridSampleIndexAt(signal, 10, d)` names record 10 of a six-record file. It is given no record
     // count, so it cannot refuse; `segmentAt` is what answers whether an instant has data.
     const edf = await scanned();
     const { signal, durationTicks } = await signalAndDuration(edf);
 
-    expect(sampleIndexAt(signal, 10, durationTicks).recordIndex).toBe(10);
+    expect(gridSampleIndexAt(signal, 10, durationTicks).recordIndex).toBe(10);
     expect(edf.header.recordCount).toBe(RECORDS);
     // And the function that CAN answer, does.
     expect(segmentAt(edf.index, 10)?.records.start).toBe(3);
@@ -509,13 +513,13 @@ describe('the recording-aware sample functions are on the recording axis', () =>
 
     for (let index = 0; index < 4 * SAMPLES_PER_RECORD; index += 1) {
       expect(sampleStartTicksOf(edf, 0, index), `sample ${index}`).toBe(
-        sampleStartTicks(signal, index, durationTicks),
+        gridSampleStartTicks(signal, index, durationTicks),
       );
     }
     for (let tenths = 0; tenths < 40; tenths += 1) {
       const seconds = tenths / 10;
       expect(sampleAt(edf, 0, seconds)?.sampleIndex, `${seconds}s`).toBe(
-        sampleIndexAt(signal, seconds, durationTicks).sampleIndex,
+        gridSampleIndexAt(signal, seconds, durationTicks).sampleIndex,
       );
     }
   });
@@ -532,11 +536,11 @@ describe('the recording-aware sample functions are on the recording axis', () =>
     expect(sampleStartSecondsOf(edf, 0, first)).toBe(trueOnsetSeconds(3));
     expect(sampleStartTicksOf(edf, 0, first)).toBe(trueOnsetTicks(3));
     // The grid function still answers on the grid, unchanged.
-    expect(sampleStartSeconds(signal, first, edf.header.recordDurationTicks)).toBe(3);
+    expect(gridSampleStartSeconds(signal, first, edf.header.recordDurationTicks)).toBe(3);
   });
 
   it('says an instant inside a gap has no sample at all', async () => {
-    // The answer `sampleIndexAt` cannot express: given only a signal and a record duration it
+    // The answer `gridSampleIndexAt` cannot express: given only a signal and a record duration it
     // always returns an index, even one past the end of the file.
     const edf = await scanned();
     const signal = edf.header.signals[0];
@@ -545,7 +549,7 @@ describe('the recording-aware sample functions are on the recording axis', () =>
     expect(sampleAt(edf, 0, 5)).toBeUndefined();
     expect(gapAt(edf.index, 5)).toBeDefined();
     // Whereas the grid function names a record that does not exist in this file.
-    expect(sampleIndexAt(signal, 5, edf.header.recordDurationTicks).recordIndex).toBe(5);
+    expect(gridSampleIndexAt(signal, 5, edf.header.recordDurationTicks).recordIndex).toBe(5);
     expect(edf.header.recordCount).toBe(RECORDS);
   });
 

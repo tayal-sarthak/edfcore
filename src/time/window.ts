@@ -177,7 +177,7 @@ export function resolveTimeWindow(
  * the seconds and the ticks together. Bigint `/` and `%` agree in sign, so a negative chunk start
  * (a pre-stimulus window) sums correctly.
  */
-function sampleStartSeconds(
+function gridSampleStartSeconds(
   chunkStartTicks: bigint,
   firstIndex: bigint,
   durationTicks: bigint,
@@ -299,6 +299,11 @@ export function trimToWindow(
     signal,
     firstIndex,
     sampleCount,
-    sampleStartSeconds(chunkStartTicks, BigInt(firstIndex), durationTicks, samplesPerRecordTicks),
+    gridSampleStartSeconds(
+      chunkStartTicks,
+      BigInt(firstIndex),
+      durationTicks,
+      samplesPerRecordTicks,
+    ),
   );
 }

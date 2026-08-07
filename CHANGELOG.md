@@ -6,6 +6,48 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.0
+
+**One rename. No behaviour change, anywhere.**
+
+| 0.2 | 0.3 |
+|---|---|
+| `sampleIndexAt` | `gridSampleIndexAt` |
+| `sampleStartTicks` | `gridSampleStartTicks` |
+| `sampleStartSeconds` | `gridSampleStartSeconds` |
+
+Same arguments, same return values, same rounding. Marked `@deprecated` in 0.2.62, a release ahead
+of the change, so an editor pointed at the replacement before it landed.
+[Migrating to 0.3](https://edfcore.vercel.app/docs/migrating-to-0-3) has the find-and-replace.
+
+### Why a rename earns a minor bump
+
+These functions measure the signal's own SAMPLE GRID: sample `n` is the `n`th sample the file
+stores, at `n * recordDuration / samplesPerRecord`. On a contiguous recording that is also elapsed
+recording time and the two ideas are the same number — which is exactly why the difference kept
+escaping. On a discontinuous file they part company by the gaps.
+
+This project has now shipped **seven** fixes for one defect: a function deriving a time from the
+nominal grid while every other function used the record's true onset. `readTriggers` reported a
+stimulus latched at 10 s as 2 s (0.2.18). `filterAnnotationsByTime` put events in the neighbouring
+window (0.2.10). `mergeChunks` could not see a gap (0.2.19). `readAnnotations` answered on the
+header axis for a partial range (0.2.28). And `sampleAt` — added in 0.2.61 to FIX this class —
+shipped with the seventh instance and was fixed in 0.2.68.
+
+Every one was found because two functions disagreed, never because one looked wrong on its own.
+The functions renamed here were not wrong at all; their names simply did not say which of two
+quantities they returned. `gridSampleStartSeconds` cannot be called in the belief that it returns
+elapsed recording time, and that is the whole fix.
+
+They are not deprecated in favour of nothing. They remain the right tool when you have a signal and
+no recording, which is why they take no index. For a file that may have gaps, use `sampleAt`,
+`sampleStartTicksOf` and `sampleStartSecondsOf`, added in 0.2.61.
+
+### Not changing
+
+No other export is removed or renamed. The three entry points, the error hierarchy, the
+`ByteSource` contract and every diagnostic code are untouched.
+
 ## 0.2.69
 
 - **Documented and pinned** how an overlap is reported, after investigating whether it was reported

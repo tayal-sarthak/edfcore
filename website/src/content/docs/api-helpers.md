@@ -288,15 +288,15 @@ and it breaks three ways.
 | Rounding rather than flooring | a window boundary lands one sample late |
 
 ```ts
-import { sampleIndexAt, sampleStartTicks, sampleStartSeconds } from 'edfcore';
+import { gridSampleIndexAt, gridSampleStartTicks, gridSampleStartSeconds } from 'edfcore';
 
-const { sampleIndex, recordIndex, sampleWithinRecord } = sampleIndexAt(
+const { sampleIndex, recordIndex, sampleWithinRecord } = gridSampleIndexAt(
   eeg,
   3600,
   recording.header.recordDurationTicks,
 );
 
-const ticks = sampleStartTicks(eeg, sampleIndex, recording.header.recordDurationTicks);
+const ticks = gridSampleStartTicks(eeg, sampleIndex, recording.header.recordDurationTicks);
 ```
 
 These do the arithmetic in integers on `(record, sampleWithinRecord)` — the same rule
@@ -310,8 +310,8 @@ These do the arithmetic in integers on `(record, sampleWithinRecord)` — the sa
 >
 > On a **discontinuous** file they part company. Samples are adjacent in the array across a gap
 > while their times are not, so on a file with a seven-second hole after record 2,
-> `sampleStartSeconds(signal, 12, d)` answers `3` for a sample whose record truly begins at `10`,
-> and `sampleIndexAt(signal, 10, d)` names record `10` of a six-record file. They are handed a
+> `gridSampleStartSeconds(signal, 12, d)` answers `3` for a sample whose record truly begins at `10`,
+> and `gridSampleIndexAt(signal, 10, d)` names record `10` of a six-record file. They are handed a
 > signal, a number and a record duration — no index, no timeline — so a gap is not in their
 > arguments and nothing inside them could find it.
 >
@@ -330,23 +330,20 @@ These take the **recording**, so a gap is in their arguments and they answer the
 usually mean. On a contiguous file they agree with the grid functions exactly — a test asserts that
 sample by sample. On a discontinuous one they differ by the gaps, and `sampleAt` can say something
 the grid functions structurally cannot: **`undefined`**, meaning no sample exists at that instant
-because it falls in a hole, or before the recording, or after it. `sampleIndexAt` given only a
+because it falls in a hole, or before the recording, or after it. `gridSampleIndexAt` given only a
 signal and a record duration always returns an index — including one past the end of the file.
 
 They refuse a probed index on a file with gaps rather than guessing, for the reason `segmentAt`
 does. `index.locate(seconds)` remains the read-based form; `contiguityOf(index)` tells you which
 regime you are in.
 
-> **Renaming in 0.3.0.** `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` become
-> `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds`. **The behaviour does not
-> change** — only the name, which never said which of two different quantities it returns. They are
-> marked `@deprecated` as of 0.2.62, so an editor will point at the replacement before the rename
-> lands. If you are on a contiguous file, the rename is the only thing that affects you and a
-> find-and-replace covers it.
+> **Renamed in 0.3.0.** These were `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds`.
+> The behaviour did not change — only the name, which never said which of two different quantities
+> it returns. See [Migrating to 0.3](/docs/migrating-to-0-3) for the find-and-replace.
 
-`sampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
+`gridSampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
 over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit edfcore has. Truncating
-would return a tick lying inside the previous sample, and `sampleIndexAt` would send it straight
+would return a tick lying inside the previous sample, and `gridSampleIndexAt` would send it straight
 back there. Rounding up keeps the two functions inverse for every index.
 
 ## The BioSemi Status channel
