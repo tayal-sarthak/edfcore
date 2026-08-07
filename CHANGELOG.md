@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.67
+
+Three defects in `formatHeader`, found by an adversarial sweep of the modules no earlier pass had
+covered.
+
+- **Fixed** the duration line losing a whole second. It computed `recordCount *
+  recordDurationSeconds` in float64 and truncated, and a record duration with no exact binary form
+  makes that product land just under the true value: 100 records of 0.29 s is exactly 29 s,
+  computes as 28.999999999999996, and printed `00:00:28`. It is now computed from
+  `recordDurationTicks`, which is exact. A genuine fraction still truncates rather than rounding —
+  7 × 0.7 s is 4.9 and prints `00:00:04`, because rounding would name a time the file never reaches.
+- **Fixed** control characters in a signal label being printed verbatim. EDF pads labels with
+  spaces and says nothing about what else may be in them, so a writer can put a newline there and
+  the label renders as TWO rows — forging a signal the file does not contain — while a tab shifts
+  every column after it. They are replaced with a dot in the rendering only; `signal.raw.label`
+  still holds the bytes.
+- **Fixed** the diagnostic severity summary being ordered by arrival, so two files with the same
+  diagnostics could summarise them differently. Now error-warning-info, matching
+  `formatValidationReport` since 0.2.15 and sharing its counting.
+
 ## 0.2.66
 
 - **Fixed** the changelog numbering, which had drifted a second time, and **fixed the cause** so it
