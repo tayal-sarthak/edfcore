@@ -331,14 +331,18 @@ It's the argument type for `readRecords` and `readAnnotations`, and it comes bac
 |---|---|---|
 | `recordCount` | `number` | records the timeline covers |
 | `recordDurationSeconds` | `number` | copied from the header |
+| `recordDurationTicks` | `bigint` | the same, exact |
 | `startOffsetSeconds` | `number` | record 0's sub-second start, in [0, 1) |
 | `startOffsetTicks` | `bigint` | the same value in exact 100 ns ticks |
 | `spanSeconds` | `number` | last record end minus first record start; includes gaps |
+| `spanTicks` | `bigint` | the same, exact |
 | `coveredSeconds` | `number` | sum of the record durations |
+| `coveredTicks` | `bigint` | the same, exact |
 | `diagnostics` | `readonly EdfDiagnostic[]` | including whatever decoding the probed records turned up |
 
-`spanSeconds` and `coveredSeconds` are computed independently rather than derived from each other.
-Their being equal is the statement "this file is contiguous as far as two reads can tell". On the
+The span and the coverage are computed independently rather than derived from each other. Their
+being equal is the statement "this file is contiguous as far as two reads can tell" — ask it of
+`spanTicks` and `coveredTicks`, which is what edfcore's own checks compare. On the
 discontinuous file used throughout this page (six one-second records with a ten-second gap in the
 middle) they are `16` and `6`.
 

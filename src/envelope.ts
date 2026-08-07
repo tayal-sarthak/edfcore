@@ -199,13 +199,16 @@ async function reduceRange(
     sampleCount: accumulator.consumed,
     firstSampleIndex: records.start * accumulator.signal.samplesPerRecord,
     startSeconds,
+    startTicks,
     outOfDigitalRangeCount: accumulator.outOfRange,
   }));
 
   return Object.freeze({
     records,
     startSeconds,
+    startTicks,
     durationSeconds,
+    durationTicks: spanTicks,
     bucketCount,
     secondsPerBucket: bucketCount > 0 ? durationSeconds / bucketCount : 0,
     byteLength,
@@ -376,6 +379,7 @@ export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number):
     sampleCount: total,
     firstSampleIndex: chunkSignal.firstSampleIndex,
     startSeconds: chunkSignal.startSeconds,
+    startTicks: chunkSignal.startTicks,
     outOfDigitalRangeCount: chunkSignal.outOfDigitalRangeCount,
   };
 }

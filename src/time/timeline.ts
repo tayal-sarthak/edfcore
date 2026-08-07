@@ -255,6 +255,7 @@ export function buildTimelineFromProbes(input: TimelineInput, options?: ParseOpt
     return {
       recordCount: 0,
       recordDurationSeconds: header.recordDurationSeconds,
+      recordDurationTicks: durationTicks,
       startOffsetSeconds: 0,
       startOffsetTicks: 0n,
       spanSeconds: 0,
@@ -287,6 +288,7 @@ export function buildTimelineFromProbes(input: TimelineInput, options?: ParseOpt
   return {
     recordCount,
     recordDurationSeconds: header.recordDurationSeconds,
+    recordDurationTicks: durationTicks,
     startOffsetSeconds: ticksToSeconds(startOffsetTicks),
     startOffsetTicks,
     spanSeconds: ticksToSeconds(spanTicks),

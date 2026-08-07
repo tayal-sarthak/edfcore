@@ -76,6 +76,7 @@ A plain struct with no methods and no hidden state, which is what makes `{ ...re
 | --- | --- | --- |
 | `recordCount` | `number` | Data records on the time axis. |
 | `recordDurationSeconds` | `number` | From the header. May legitimately be `0`. |
+| `recordDurationTicks` | `bigint` | The same, exact. |
 | `startOffsetSeconds` | `number` | Record 0's own timekeeping onset (the sub-second start the header clock cannot express). |
 | `startOffsetTicks` | `bigint` | The same value in exact 100 ns ticks. |
 | `spanSeconds` | `number` | Last record's end minus first record's start. Includes gaps. |
@@ -427,7 +428,9 @@ A **segment** is a maximal run of records with no gap inside it.
 | --- | --- | --- |
 | `recordIndex` | `number` | The record containing the instant. |
 | `recordStartSeconds` | `number` | That record's start in elapsed recording time. |
+| `recordStartTicks` | `bigint` | The same, exact. |
 | `offsetInRecordSeconds` | `number` | How far into the record the instant falls. |
+| `offsetInRecordTicks` | `bigint` | The same, exact. |
 
 ## readHeader
 

@@ -6,6 +6,42 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.8
+
+**0.3.7 claimed the exactness work "closes the set". It did not.** An audit of every public type
+found four more, and this ships them.
+
+`EdfLocation` gains `recordStartTicks` and `offsetInRecordTicks`. `EdfTimeline` gains
+`recordDurationTicks`. `EdfEnvelopeChunk` gains `startTicks` and `durationTicks`, and
+`EdfEnvelopeSignal` gains `startTicks`. Additive throughout.
+
+Every one of those values was already exact where it was produced — `index.locate` computes both of
+its numbers in ticks and converts them at the return, and so does `reduceRange` — and the missing
+`recordDurationTicks` had a real consequence: `resolveTimeWindow` takes no header, so it carried a
+helper that rounded `recordDurationSeconds` back with `secondsToTicks` and a comment arguing the
+trip was exact for anything a header can declare. The argument was fine. Not needing it is better,
+and the helper is gone.
+
+**Why the claim was wrong.** It was made from memory rather than from a check, at the end of three
+releases that each fixed the type in front of it. `tests/integration/exact-time-fields.test.ts` is
+the check that should have come first: it reads `src/types.ts` and fails when a reported type
+declares a `*Seconds` field with no `*Ticks` counterpart. It found `EdfTimeline.recordDurationTicks`
+and `EdfEnvelopeSignal.startTicks`, neither of which was on the list this release started from.
+
+Two kinds of exemption are written down rather than assumed, and a third assertion checks that each
+listed name still exists — an exemption for a type nobody has is an exemption nobody reads.
+
+- SELECTION types (`WindowSelection`, `TriggerSelection`, `EdfAnnotationWindow` and the rest) take
+  seconds from a caller. `secondsToTicks` rounds a caller's bound to the nearest tick by design, so
+  nothing exact is being discarded on the way in.
+- `EdfStartTime.secondsSinceMidnight` is a wall clock, whole seconds by construction, and
+  `EdfEnvelopeChunk.secondsPerBucket` is a resolution rather than an instant — a bucket boundary is
+  a rational that generally falls between ticks, so a tick counterpart would round and be less true
+  than the float.
+- `EdfAnnotation.onsetSecondsFromHeaderStart` has its counterpart under the older name `onsetTicks`.
+  The value has always been there; only the two names disagree. Renaming a shipped public field to
+  satisfy a test would be the test dictating the API, so the alias is recorded instead.
+
 ## 0.3.7
 
 **`EdfChunk` gains `startTicks` and `durationTicks`, `EdfChunkSignal` gains `startTicks`, and the

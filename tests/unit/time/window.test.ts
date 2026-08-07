@@ -61,6 +61,7 @@ function timelineOf(options: {
   return {
     recordCount: options.recordCount,
     recordDurationSeconds: options.recordDurationSeconds,
+    recordDurationTicks: toTicks(options.recordDurationSeconds),
     startOffsetSeconds: 0,
     startOffsetTicks: 0n,
     spanSeconds: span,

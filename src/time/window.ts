@@ -40,18 +40,6 @@ function clampToInt(value: bigint, low: number, high: number): number {
   return Number(value);
 }
 
-/**
- * The record duration in exact ticks, recovered from the timeline's float.
- *
- * `resolveTimeWindow`'s signature takes no header, so `header.recordDurationTicks` is not
- * available here. The round-trip is exact anyway: the seconds value was itself produced from a
- * header field of at most a few decimals, and `secondsToTicks` rounds to the nearest tick, so
- * every duration a file can declare below ~10^9 s comes back to the tick it came from.
- */
-function recordDurationTicksOf(timeline: EdfTimeline): bigint {
-  return secondsToTicks(timeline.recordDurationSeconds);
-}
-
 function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
   const signal = header.signals[signalIndex];
   if (signal !== undefined) return signal;
@@ -93,7 +81,10 @@ export function resolveTimeWindow(
   if (windowDurationTicks <= 0n) return NO_RANGES;
   const windowEndTicks = windowStartTicks + windowDurationTicks;
 
-  const durationTicks = recordDurationTicksOf(timeline);
+  // From the timeline, not recovered from its seconds. `resolveTimeWindow` takes no header, so
+  // until 0.3.8 this rounded `recordDurationSeconds` back with `secondsToTicks` and reasoned that
+  // the trip was exact for anything a header can declare. The timeline now carries the value.
+  const durationTicks = timeline.recordDurationTicks;
   const segments = index.segments;
   if (segments !== undefined) {
     const ranges: RecordRange[] = [];

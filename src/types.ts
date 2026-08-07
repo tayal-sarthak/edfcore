@@ -321,12 +321,16 @@ export interface EdfGap {
 export interface EdfLocation {
   readonly recordIndex: number;
   readonly recordStartSeconds: number;
+  readonly recordStartTicks: bigint;
   readonly offsetInRecordSeconds: number;
+  readonly offsetInRecordTicks: bigint;
 }
 
 export interface EdfTimeline {
   readonly recordCount: number;
   readonly recordDurationSeconds: number;
+  /** From the header, carried here so a timeline alone is enough to do exact arithmetic. */
+  readonly recordDurationTicks: bigint;
   /** Sub-second start carried by record 0's timekeeping TAL. In [0, 1). */
   readonly startOffsetSeconds: number;
   readonly startOffsetTicks: bigint;
@@ -440,6 +444,7 @@ export interface EdfEnvelopeSignal {
   readonly sampleCount: number;
   readonly firstSampleIndex: number;
   readonly startSeconds: number;
+  readonly startTicks: bigint;
   readonly outOfDigitalRangeCount: number;
 }
 
@@ -447,7 +452,10 @@ export interface EdfEnvelopeSignal {
 export interface EdfEnvelopeChunk {
   readonly records: RecordRange;
   readonly startSeconds: number;
+  readonly startTicks: bigint;
   readonly durationSeconds: number;
+  /** The chunk's SPAN in exact ticks, on the same terms as `EdfChunk.durationTicks`. */
+  readonly durationTicks: bigint;
   /** Buckets actually filled. Never more than requested, and fewer for a short run. */
   readonly bucketCount: number;
   readonly secondsPerBucket: number;

@@ -247,12 +247,16 @@ describe('a complete index over the MSLT file', () => {
     await expect(index.locate(0)).resolves.toEqual({
       recordIndex: 0,
       recordStartSeconds: 0,
+      recordStartTicks: 0n,
       offsetInRecordSeconds: 0,
+      offsetInRecordTicks: 0n,
     });
     await expect(index.locate(3600.5)).resolves.toEqual({
       recordIndex: 4,
       recordStartSeconds: 3600,
+      recordStartTicks: 36_000_000_000n,
       offsetInRecordSeconds: 0.5,
+      offsetInRecordTicks: 5_000_000n,
     });
     // Inside the first gap, and after the last record: no record covers either instant.
     await expect(index.locate(100)).resolves.toBeUndefined();

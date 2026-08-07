@@ -452,7 +452,9 @@ describe('index.locate costs O(log recordCount) probes and remembers what it rea
     expect(found).toEqual({
       recordIndex: 2000,
       recordStartSeconds: 2180, // 2000 s of records + 3 gaps x 60 s
+      recordStartTicks: 21_800_000_000n,
       offsetInRecordSeconds: 0.25,
+      offsetInRecordTicks: 2_500_000n,
     });
     expect(spy.reads.length).toBeLessThanOrEqual(LOG2_RECORDS);
     expect(spy.reads.length).toBeGreaterThan(0);

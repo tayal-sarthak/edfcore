@@ -210,7 +210,10 @@ function createIndex(input: IndexInput): EdfRecordIndex {
     const found = await findRecordAtOrBefore(targetTicks, options);
     if (found === undefined) return undefined;
 
-    const recordStartSeconds = ticksToSeconds(found.onsetTicks - startOffsetTicks);
+    // Both values are exact here and both are published as such. The record's start on the
+    // recording's axis is a rebased onset, and the offset is a difference of two onsets.
+    const recordStartTicks = found.onsetTicks - startOffsetTicks;
+    const recordStartSeconds = ticksToSeconds(recordStartTicks);
     if (recordDurationTicks === 0n) {
       // Zero-duration records occupy no time, so only the instant itself is inside one. The last
       // record sharing that instant is the one returned, which is what the search converges on.
@@ -218,16 +221,21 @@ function createIndex(input: IndexInput): EdfRecordIndex {
       return {
         recordIndex: found.recordIndex,
         recordStartSeconds,
+        recordStartTicks,
         offsetInRecordSeconds: 0,
+        offsetInRecordTicks: 0n,
       };
     }
 
     // Past the end of the record it follows: the time is in a gap, or after the recording.
     if (targetTicks >= found.onsetTicks + recordDurationTicks) return undefined;
+    const offsetInRecordTicks = targetTicks - found.onsetTicks;
     return {
       recordIndex: found.recordIndex,
       recordStartSeconds,
-      offsetInRecordSeconds: ticksToSeconds(targetTicks - found.onsetTicks),
+      recordStartTicks,
+      offsetInRecordSeconds: ticksToSeconds(offsetInRecordTicks),
+      offsetInRecordTicks,
     };
   }
 
