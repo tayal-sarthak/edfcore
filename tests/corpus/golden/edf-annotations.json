@@ -1,0 +1,38 @@
+{
+  "file": "edf-annotations.edf",
+  "producer": "pyedflib 0.1.42",
+  "recordDurationSeconds": 1.0,
+  "recordCount": 8,
+  "annotations": [
+    {
+      "onsetSeconds": 0.0,
+      "onsetBits": "0000000000000000",
+      "durationSeconds": -1.0,
+      "text": "Recording starts"
+    },
+    {
+      "onsetSeconds": 1.25,
+      "onsetBits": "3ff4000000000000",
+      "durationSeconds": 0.5,
+      "text": "Spindle"
+    },
+    {
+      "onsetSeconds": 3.0,
+      "onsetBits": "4008000000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 4.5,
+      "onsetBits": "4012000000000000",
+      "durationSeconds": -1.0,
+      "text": "Arousal"
+    },
+    {
+      "onsetSeconds": 6.125,
+      "onsetBits": "4018800000000000",
+      "durationSeconds": 0.25,
+      "text": "K complex"
+    }
+  ]
+}

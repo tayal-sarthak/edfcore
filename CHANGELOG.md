@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.44
+
+- **Added** annotation parity against pyEDFlib — the other axis, and the one edfcore has got wrong
+  most. The scaling harness checks arithmetic; this checks WHICH AXIS an onset is on. Six releases
+  were variants of "one function used the nominal grid while the rest used the record's true
+  onset", and every one was found by comparing edfcore against edfcore. The property test added in
+  0.2.25 makes that internal agreement a hard invariant; this makes it an external one, which is a
+  different kind of evidence — a shared misreading of the format satisfies the first and fails
+  here. Onsets match to the tick, and edfcore reports no diagnostic at all on a file a reference
+  writer produced.
+- The generator refuses to record fewer annotations than it wrote. `writeAnnotation` silently drops
+  an event that does not fit the region pyEDFlib sized, and the first run lost one — a golden file
+  recorded from that would have made the parity test compare an incomplete set and pass while doing
+  it.
+
 ## 0.2.43
 
 - **Added** parity against MNE — a second, independent reader. pyEDFlib and edfcore both descend
