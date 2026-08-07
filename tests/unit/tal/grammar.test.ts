@@ -356,6 +356,78 @@ describe('a malformed TAL is skipped and the rest of the region is still parsed'
     expect(issue.byteOffsetInRegion).toBe(0);
     expect(parse.tals).toHaveLength(2);
   });
+
+  it('does not let one defect describe another with the opposite disposition', () => {
+    /*
+     * `TAL_MALFORMED` covers nine structurally different defects, and their dispositions are
+     * opposites: a 0x15 inside a text run KEEPS the TAL, a bad onset DISCARDS it. Collapsing on
+     * the code alone let whichever came first own the `detail`, the offset and the `raw`, so this
+     * region — one of each — reported "the text was kept verbatim" with occurrences 2 while the
+     * "Seizure" annotation had in fact been thrown away. `TalIssue.detail` promises to state
+     * "what was wrong AND what was done about it" (fixed in 0.3.19).
+     */
+    const kept = concat(
+      ascii('+1'),
+      Uint8Array.of(MARK),
+      ascii('a'),
+      Uint8Array.of(SEP),
+      ascii('b'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const discarded = concat(
+      ascii('??'),
+      Uint8Array.of(MARK),
+      ascii('Seizure'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(48, kept, discarded), 0, 48);
+
+    // One TAL survived, so exactly one of the two dispositions applied to each.
+    expect(parse.tals).toHaveLength(1);
+    expect(parse.issues).toHaveLength(2);
+    expect(codes(parse)).toEqual(['TAL_MALFORMED', 'TAL_MALFORMED']);
+    expect(at(parse.issues, 0).detail).toContain('the text was kept verbatim');
+    expect(at(parse.issues, 1).detail).toContain('so the TAL was skipped');
+    for (const issue of parse.issues) expect(issue.occurrences).toBe(1);
+  });
+
+  it('reports the same two whichever order they appear in', () => {
+    // Reversed, the old behaviour told the mirror-image lie: "so the TAL was skipped" with
+    // occurrences 2, about a region whose second TAL was kept.
+    const kept = concat(
+      ascii('+1'),
+      Uint8Array.of(MARK),
+      ascii('a'),
+      Uint8Array.of(SEP),
+      ascii('b'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const discarded = concat(
+      ascii('??'),
+      Uint8Array.of(MARK),
+      ascii('Seizure'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(48, discarded, kept), 0, 48);
+
+    expect(parse.tals).toHaveLength(1);
+    expect(parse.issues).toHaveLength(2);
+    expect(at(parse.issues, 0).detail).toContain('so the TAL was skipped');
+    expect(at(parse.issues, 1).detail).toContain('the text was kept verbatim');
+  });
+
+  it('still collapses many occurrences of the SAME defect', () => {
+    // The property the collapsing exists for. Three TALs whose onsets are all differently
+    // malformed are one issue with occurrences 3 — the key is the defect kind, not the detail
+    // string, and several details interpolate the bytes they found.
+    const bad = (raw: string) =>
+      concat(ascii(raw), Uint8Array.of(MARK), ascii('x'), Uint8Array.of(MARK, NUL));
+    const parse = parseTalRegion(padRegion(48, bad('??'), bad('!!'), bad('##')), 0, 48);
+
+    expect(parse.issues).toHaveLength(1);
+    expect(at(parse.issues, 0).occurrences).toBe(3);
+    expect(parse.tals).toHaveLength(0);
+  });
 });
 
 describe('a TAL with no terminating 0x00', () => {

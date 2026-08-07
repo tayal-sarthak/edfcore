@@ -101,3 +101,79 @@ describe('a timekeeping TAL that swallowed an annotation', () => {
     expect(diagnostics.filter((d) => d.code === 'TIMEKEEPING_TAL_NONCONFORMANT')).toHaveLength(3);
   });
 });
+
+describe('a timekeeping TAL that carries a duration AS WELL AS text', () => {
+  /**
+   * The combination 0.2.33 left uncovered. That release split the once-per-call flag between the
+   * benign and the destructive kinds and left the CHECK ORDER alone, and the fixture above builds
+   * a merged TAL with text and no duration — so nothing exercised a TAL that is wrong in both ways
+   * at once. `timekeepingDefect` returns at the first match and asked about the duration first, so
+   * such a TAL was classified as losing nothing, capped at one report, and described by a message
+   * ending "nothing was lost".
+   *
+   * A writer that merges a scored epoch into the timekeeping TAL writes exactly this:
+   * `+onset 0x15 30 0x14 Sleep stage W 0x14 0x14 0x00`.
+   */
+  async function mergedEpochs(withDuration: boolean) {
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: RECORDS,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+      annotationSignals: [{ samplesPerRecord: 40, tals: () => [] }],
+      recordOnsetSeconds: (r: number) => r,
+    });
+    const probe = await openEdf(byteSource(bytes));
+    const header = probe.header;
+    const signal = header.signals[header.annotationSignalIndices[0] as number];
+    if (signal === undefined) throw new Error('fixture has no annotations channel');
+
+    for (let r = 0; r < RECORDS; r += 1) {
+      const offset =
+        header.headerByteLength + r * header.recordByteLength + signal.recordByteOffset;
+      bytes.fill(0, offset, offset + signal.recordByteLength);
+      bytes.set(
+        [
+          ...encode(`+${r}`),
+          ...(withDuration ? [0x15, ...encode('30')] : []),
+          0x14,
+          ...encode('Sleep stage W'),
+          0x14,
+          0x14,
+          0x00,
+        ],
+        offset,
+      );
+    }
+    return openEdf(byteSource(bytes));
+  }
+
+  it('names every record whose epoch was dropped, not one blaming the duration', async () => {
+    const recording = await mergedEpochs(true);
+    const { annotations, diagnostics } = await readAnnotations(recording, {
+      start: 0,
+      count: RECORDS,
+    });
+
+    // All six epochs are gone from the result — the format's fault, not a bug.
+    expect(annotations).toEqual([]);
+
+    const dropped = diagnostics.filter(
+      (d) => d.code === 'TIMEKEEPING_TAL_NONCONFORMANT' && d.message.includes('dropped'),
+    );
+    expect(dropped.map((d) => d.recordIndex)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(dropped[0]?.message).toContain('"Sleep stage W"');
+    // The stray duration is still mentioned; it is just no longer the headline.
+    expect(dropped[0]?.message).toContain('the duration "30"');
+    // And the message that said otherwise is gone.
+    expect(JSON.stringify(diagnostics)).not.toContain('nothing was lost');
+  });
+
+  it('reports the same six with the duration removed', async () => {
+    // Adding a duration to the same TAL used to turn six loud reports into one misleading one.
+    const recording = await mergedEpochs(false);
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: RECORDS });
+    const dropped = diagnostics.filter((d) => d.message.includes('dropped'));
+    expect(dropped.map((d) => d.recordIndex)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+});

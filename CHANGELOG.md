@@ -6,6 +6,35 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.19
+
+**Two places where content was dropped under a diagnostic saying it was not.** Both are annotation
+data going missing quietly, which is the failure this package exists to refuse.
+
+- **Fixed** a timekeeping TAL carrying a duration AND text being classified as harmless. A writer
+  that merges a scored epoch into the timekeeping TAL writes
+  `+onset 0x15 30 0x14 Sleep stage W 0x14 0x14 0x00`, and every one of those epochs is dropped.
+  edfcore reported **one** diagnostic, naming record 0, blaming the duration field, and ending
+  "nothing was lost". Remove the duration from the same file and it correctly emitted six, each
+  naming the event it lost — so adding a duration turned six loud reports into one misleading one.
+  `timekeepingDefect` returns at the first matching branch and asked about the benign duration
+  before the destructive text; the text check now comes first, and a stray duration is mentioned
+  inside that same message.
+- 0.2.33 fixed the same swallowing by splitting the once-per-call flag between the two kinds and
+  left the check ORDER alone. Its test builds a merged TAL with text and no duration, so the
+  combination was never exercised. Both fixtures now live in that file.
+- **Fixed** `TAL_MALFORMED` collapsing nine structurally different defects onto one report.
+  Their dispositions are opposites: a 0x15 inside a text run and a missing onset sign KEEP the TAL,
+  while a bad onset, an over-long field, an out-of-range onset, a bad duration and an unterminated
+  timestamp DISCARD it. Whichever came first in a region won the `detail`, the offset and the raw
+  bytes, so a region holding one of each reported *"the text was kept verbatim"* with occurrences 2
+  while an annotation had in fact been thrown away — and reversing the two TALs produced the
+  mirror-image lie. `TalIssue.detail` promises to state "what was wrong AND what was done about it".
+- The issue log is keyed on the defect KIND rather than the code, from a closed set of twelve. Not
+  on the `detail` string: several details interpolate the bytes they found, so keying on those
+  would be unbounded — and bounding the per-region issue count is the whole reason the collapsing
+  exists. Many occurrences of the same defect still collapse to one entry with a count.
+
 ## 0.3.18
 
 - **Fixed** `inspectEdf` discarding every diagnostic the parse had already found when a fatal check

@@ -273,6 +273,26 @@ interface TimekeepingDefect {
 }
 
 function timekeepingDefect(tal: ParsedTal): TimekeepingDefect | undefined {
+  // TEXT IS TESTED FIRST, and the order is the whole point. A TAL can be wrong in more than one
+  // way at once, and this returns at the first match — so asking about the benign duration before
+  // the destructive text classified a TAL that loses an annotation as one that loses nothing. It
+  // was then capped at one report per call, under a message ending "nothing was lost".
+  //
+  // 0.2.33 fixed the same swallowing by splitting the once-per-call flag between the two kinds,
+  // and left this order alone; the test written for it builds a timekeeping TAL with text and NO
+  // duration, so the combination stayed uncovered. A writer that merges a scored epoch into the
+  // timekeeping TAL writes both (fixed in 0.3.19).
+  const texts = tal.texts.map((run) => run.text).filter((text) => text.length > 0);
+  if (texts.length > 0) {
+    const strayDuration =
+      tal.durationRaw === undefined ? '' : ` (and the duration "${tal.durationRaw}")`;
+    return {
+      reason:
+        `carries the text ${texts.map((text) => `"${text}"`).join(', ')}${strayDuration}, which ` +
+        'is dropped: the timekeeping TAL is not an annotation',
+      destructive: true,
+    };
+  }
   if (tal.durationRaw !== undefined) {
     return {
       reason: `carries the duration "${tal.durationRaw}", which a timekeeping TAL never has`,
@@ -285,15 +305,6 @@ function timekeepingDefect(tal: ParsedTal): TimekeepingDefect | undefined {
         'omits the mandatory empty text and is written "+onset 0x14 0x00" — the widespread ' +
         'shorthand, which EDFlib rejects outright',
       destructive: false,
-    };
-  }
-  const texts = tal.texts.map((run) => run.text).filter((text) => text.length > 0);
-  if (texts.length > 0) {
-    return {
-      reason:
-        `carries the text ${texts.map((text) => `"${text}"`).join(', ')}, which is dropped: the ` +
-        'timekeeping TAL is not an annotation',
-      destructive: true,
     };
   }
   if (tal.texts.length > 1) {

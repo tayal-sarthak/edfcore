@@ -133,7 +133,8 @@ interface MutableTalIssue {
   raw: string;
 }
 
-type IssueLog = Map<TalIssueCode, MutableTalIssue>;
+/** Keyed by `${code}|${kind}`, not by code alone. See `TalIssueKind`. */
+type IssueLog = Map<string, MutableTalIssue>;
 
 interface TalScan {
   readonly tal: ParsedTal | undefined;
@@ -210,20 +211,53 @@ export function previewBytes(bytes: Uint8Array, offset: number, length: number):
   return length > shown ? `${text}...` : text;
 }
 
+/**
+ * Which defect this is, within its code. A FIXED, closed set.
+ *
+ * `TAL_MALFORMED` covers nine structurally different defects, and their dispositions are
+ * opposites: a 0x15 inside a text run and a missing onset sign KEEP the TAL, while a bad onset, an
+ * over-long field, an out-of-range onset, a bad duration and an unterminated timestamp DISCARD it.
+ * Collapsing on the code alone let the first one in a region win the `detail`, the offset and the
+ * `raw`, so a region holding one of each reported "the text was kept verbatim" with occurrences 2
+ * while an annotation had in fact been thrown away — and reversing the two TALs produced the
+ * mirror-image lie. `TalIssue.detail` promises to state "what was wrong AND what was done about
+ * it", which is exactly what that broke (fixed in 0.3.19).
+ *
+ * The key is this tag rather than the `detail` string, because several details interpolate the
+ * bytes they found — `the onset "??" is not …` — and keying on those would be unbounded. The
+ * per-region issue count stays bounded by the number of KINDS, which is what the collapsing
+ * exists to protect.
+ */
+type TalIssueKind =
+  | 'text-not-utf8'
+  | 'tal-unterminated'
+  | 'timestamp-unterminated'
+  | 'onset-field-too-long'
+  | 'onset-grammar'
+  | 'onset-unsigned'
+  | 'onset-out-of-range'
+  | 'duration-field-too-long'
+  | 'duration-grammar'
+  | 'last-text-unterminated'
+  | 'text-contains-separator'
+  | 'region-tail-not-nul';
+
 function logIssue(
   log: IssueLog,
   code: TalIssueCode,
+  kind: TalIssueKind,
   region: Uint8Array,
   offset: number,
   length: number,
   detail: string,
 ): void {
-  const existing = log.get(code);
+  const key = `${code}|${kind}`;
+  const existing = log.get(key);
   if (existing !== undefined) {
     existing.occurrences += 1;
     return;
   }
-  log.set(code, {
+  log.set(key, {
     code,
     byteOffsetInRegion: offset,
     byteLength: length,
@@ -271,6 +305,7 @@ function decodeTextRun(region: Uint8Array, start: number, length: number, log: I
   logIssue(
     log,
     'ANNOTATION_TEXT_NOT_UTF8',
+    'text-not-utf8',
     region,
     start,
     length,
@@ -306,6 +341,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     logIssue(
       log,
       'TAL_TRUNCATED_AT_REGION_END',
+      'tal-unterminated',
       region,
       start,
       regionLength - start,
@@ -321,6 +357,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     logIssue(
       log,
       'TAL_MALFORMED',
+      'timestamp-unterminated',
       region,
       start,
       bodyEnd - start,
@@ -336,6 +373,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     logIssue(
       log,
       'TAL_MALFORMED',
+      'onset-field-too-long',
       region,
       start,
       onsetEnd - start,
@@ -356,6 +394,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
       logIssue(
         log,
         'TAL_MALFORMED',
+        'onset-grammar',
         region,
         start,
         Math.max(onsetEnd - start, 1),
@@ -368,6 +407,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     logIssue(
       log,
       'TAL_MALFORMED',
+      'onset-unsigned',
       region,
       start,
       onsetEnd - start,
@@ -379,6 +419,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     logIssue(
       log,
       'TAL_MALFORMED',
+      'onset-out-of-range',
       region,
       start,
       onsetEnd - start,
@@ -397,6 +438,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
       logIssue(
         log,
         'TAL_MALFORMED',
+        'duration-field-too-long',
         region,
         durationStart,
         durationLength,
@@ -411,6 +453,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
       logIssue(
         log,
         'TAL_MALFORMED',
+        'duration-grammar',
         region,
         durationStart,
         Math.max(durationLength, 1),
@@ -435,6 +478,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     logIssue(
       log,
       'TAL_MALFORMED',
+      'last-text-unterminated',
       region,
       runStart,
       bodyEnd - runStart,
@@ -463,6 +507,7 @@ function readTextRun(region: Uint8Array, start: number, end: number, log: IssueL
     logIssue(
       log,
       'TAL_MALFORMED',
+      'text-contains-separator',
       region,
       start,
       end - start,
@@ -502,6 +547,7 @@ export function parseTalRegion(
       logIssue(
         log,
         'TAL_REGION_NOT_NUL_TERMINATED',
+        'region-tail-not-nul',
         region,
         scan,
         regionBytes - scan,
