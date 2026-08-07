@@ -29,6 +29,7 @@ import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readAnnotations, readRecords } from '../../src/recording.js';
+import { validateRecording } from '../../src/validate.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FILES = join(HERE, 'files');
@@ -46,6 +47,9 @@ interface Signal {
   readonly label: string;
   readonly dimension: string;
   readonly sampleCount: number;
+  /** Over the WHOLE signal, not the sampled windows. */
+  readonly observedDigitalMin: number;
+  readonly observedDigitalMax: number;
   readonly windows: readonly Window[];
 }
 
@@ -326,4 +330,74 @@ describe('the hypnogram is the hard case, and is checked as one', () => {
     }
     expect(new Set(golden.annotations.map((a) => a.text)).size).toBeGreaterThan(3);
   });
+});
+
+describe.each(CASES)('%s — the full validation sweep', (name) => {
+  const enabled = available(name);
+  const maybe = enabled ? it : it.skip;
+
+  maybe(
+    'observes the same digital extremes pyEDFlib does, over every sample',
+    async () => {
+      // `validateRecording({ scanSamples: true })` reads every sample of the file and reports what
+      // it saw. That is the one number in the report derived from all the data rather than from the
+      // header, so it is the one worth checking against another reader — and a sampled window
+      // cannot check it, because the extremes of a 22-hour recording are very unlikely to fall in
+      // the 256 samples the goldens happened to record.
+      const { golden, bytes } = load(name);
+      if (golden.signals.length === 0) return; // a scoring file has no samples to scan
+
+      const recording = await openEdf(byteSource(bytes));
+      const report = await validateRecording(recording, { scanSamples: true });
+
+      expect(report.recordsScanned).toBe(golden.recordCount);
+      for (const expected of golden.signals) {
+        const stats = report.signalStats.find((s) => s.signalIndex === expected.index);
+        expect(stats, `${expected.label} was not scanned`).toBeDefined();
+        expect(stats?.observedDigitalMin, `${expected.label} min`).toBe(
+          expected.observedDigitalMin,
+        );
+        expect(stats?.observedDigitalMax, `${expected.label} max`).toBe(
+          expected.observedDigitalMax,
+        );
+        expect(stats?.sampleCount, `${expected.label} count`).toBe(expected.sampleCount);
+      }
+    },
+    60_000,
+  );
+
+  maybe(
+    'counts as out-of-range exactly the samples outside the declared bounds',
+    async () => {
+      // `outOfDigitalRangeCount` is a claim about the declaration, not about the samples: a non-zero
+      // count means the header's digital range is wrong, and edfcore never clamps. Recomputing it
+      // from pyEDFlib's own observed extremes is the independent check.
+      const { golden, bytes } = load(name);
+      if (golden.signals.length === 0) return;
+
+      const recording = await openEdf(byteSource(bytes));
+      const report = await validateRecording(recording, { scanSamples: true });
+
+      for (const expected of golden.signals) {
+        const signal = recording.header.signals[expected.index];
+        const stats = report.signalStats.find((s) => s.signalIndex === expected.index);
+        if (signal === undefined || stats === undefined) throw new Error('missing signal');
+
+        const low = Math.min(signal.digitalMinimum, signal.digitalMaximum);
+        const high = Math.max(signal.digitalMinimum, signal.digitalMaximum);
+        const couldBeOutside =
+          expected.observedDigitalMin < low || expected.observedDigitalMax > high;
+
+        if (!couldBeOutside) {
+          expect(stats.outOfDigitalRangeCount, `${expected.label} is entirely in range`).toBe(0);
+        } else {
+          expect(
+            stats.outOfDigitalRangeCount,
+            `${expected.label} exceeds its declaration`,
+          ).toBeGreaterThan(0);
+        }
+      }
+    },
+    60_000,
+  );
 });

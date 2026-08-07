@@ -73,12 +73,18 @@ def record(name):
                     "physicalBits": [bits(float(v)) for v in physical],
                 }
             )
+        # The observed digital extremes over the WHOLE signal, which is what edfcore's sample
+        # scan reports. A spot window cannot check that: the extremes of a 22-hour recording are
+        # very unlikely to fall inside the 256 samples we happened to record.
+        whole = reader.readSignal(index, digital=True)
         signals.append(
             {
                 "index": index,
                 "label": reader.getLabel(index).strip(),
                 "dimension": reader.getPhysicalDimension(index).strip(),
                 "sampleCount": total,
+                "observedDigitalMin": int(whole.min()),
+                "observedDigitalMax": int(whole.max()),
                 "windows": entries,
             }
         )

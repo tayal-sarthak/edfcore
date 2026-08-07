@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.53
+
+- **Added** a check that `validateRecording`'s sample scan sees what pyEDFlib sees. The observed
+  digital minimum and maximum are the only numbers in a validation report derived from every sample
+  rather than from the header, so they are the ones worth checking against another reader — and a
+  sampled window cannot check them, because the extremes of a 22-hour recording are very unlikely
+  to fall inside the 256 samples the goldens record. The whole-signal extremes now come from
+  pyEDFlib, across all five corpus files.
+- Also pins `outOfDigitalRangeCount` against those extremes. It is a claim about the DECLARATION
+  rather than about the samples — a non-zero count means the header's digital range is wrong, and
+  edfcore never clamps — so recomputing whether any sample could be outside the declared bounds
+  from pyEDFlib's own observations is the independent form of that check.
+
 ## 0.2.52
 
 - **Added** streaming equivalence on the 22-hour recording. The documented claim is that a streamed

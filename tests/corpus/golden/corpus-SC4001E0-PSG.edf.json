@@ -12,6 +12,8 @@
       "label": "EEG Fpz-Cz",
       "dimension": "uV",
       "sampleCount": 7950000,
+      "observedDigitalMin": -2048,
+      "observedDigitalMax": 1819,
       "windows": [
         {
           "window": "start",
@@ -860,6 +862,8 @@
       "label": "EEG Pz-Oz",
       "dimension": "uV",
       "sampleCount": 7950000,
+      "observedDigitalMin": -1778,
+      "observedDigitalMax": 2047,
       "windows": [
         {
           "window": "start",
@@ -1703,6 +1707,8 @@
       "label": "EOG horizontal",
       "dimension": "uV",
       "sampleCount": 7950000,
+      "observedDigitalMin": -1039,
+      "observedDigitalMax": 1049,
       "windows": [
         {
           "window": "start",
@@ -2547,6 +2553,8 @@
       "label": "Resp oro-nasal",
       "dimension": "",
       "sampleCount": 79500,
+      "observedDigitalMin": -1748,
+      "observedDigitalMax": 1806,
       "windows": [
         {
           "window": "start",
@@ -3393,6 +3401,8 @@
       "label": "EMG submental",
       "dimension": "uV",
       "sampleCount": 79500,
+      "observedDigitalMin": -54,
+      "observedDigitalMax": 1905,
       "windows": [
         {
           "window": "start",
@@ -4247,6 +4257,8 @@
       "label": "Temp rectal",
       "dimension": "DegC",
       "sampleCount": 79500,
+      "observedDigitalMin": -2190,
+      "observedDigitalMax": 403,
       "windows": [
         {
           "window": "start",
@@ -5096,6 +5108,8 @@
       "label": "Event marker",
       "dimension": "",
       "sampleCount": 79500,
+      "observedDigitalMin": 136,
+      "observedDigitalMax": 980,
       "windows": [
         {
           "window": "start",

@@ -12,6 +12,8 @@
       "label": "F4",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -8192,
+      "observedDigitalMax": 8192,
       "windows": [
         {
           "window": "start",
@@ -873,6 +875,8 @@
       "label": "F3",
       "dimension": "uV",
       "sampleCount": 90000,
+      "observedDigitalMin": -8200,
+      "observedDigitalMax": 8200,
       "windows": [
         {
           "window": "start",
@@ -1732,6 +1736,8 @@
       "label": "X10",
       "dimension": "mV",
       "sampleCount": 180000,
+      "observedDigitalMin": -16384,
+      "observedDigitalMax": 16384,
       "windows": [
         {
           "window": "start",
@@ -2564,6 +2570,8 @@
       "label": "FP2",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -32768,
+      "observedDigitalMax": 32767,
       "windows": [
         {
           "window": "start",
@@ -3430,6 +3438,8 @@
       "label": "P4",
       "dimension": "uV",
       "sampleCount": 45000,
+      "observedDigitalMin": -8175,
+      "observedDigitalMax": 8175,
       "windows": [
         {
           "window": "start",
@@ -4290,6 +4300,8 @@
       "label": "C4",
       "dimension": "uV",
       "sampleCount": 90000,
+      "observedDigitalMin": -8175,
+      "observedDigitalMax": 8175,
       "windows": [
         {
           "window": "start",
@@ -5150,6 +5162,8 @@
       "label": "P3",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -8182,
+      "observedDigitalMax": 8182,
       "windows": [
         {
           "window": "start",
@@ -6007,6 +6021,8 @@
       "label": "C3",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -8175,
+      "observedDigitalMax": 8175,
       "windows": [
         {
           "window": "start",
@@ -6867,6 +6883,8 @@
       "label": "X9",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -8175,
+      "observedDigitalMax": 8175,
       "windows": [
         {
           "window": "start",
@@ -7724,6 +7742,8 @@
       "label": "FP1",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -8192,
+      "observedDigitalMax": 8192,
       "windows": [
         {
           "window": "start",
@@ -8578,6 +8598,8 @@
       "label": "F8",
       "dimension": "uV",
       "sampleCount": 180000,
+      "observedDigitalMin": -7094,
+      "observedDigitalMax": 7094,
       "windows": [
         {
           "window": "start",
@@ -9426,6 +9448,8 @@
       "label": "F7",
       "dimension": "mV",
       "sampleCount": 180000,
+      "observedDigitalMin": -8200,
+      "observedDigitalMax": 8200,
       "windows": [
         {
           "window": "start",
@@ -10285,6 +10309,8 @@
       "label": "DC01",
       "dimension": "V",
       "sampleCount": 180000,
+      "observedDigitalMin": 0,
+      "observedDigitalMax": 16384,
       "windows": [
         {
           "window": "start",
@@ -11127,6 +11153,8 @@
       "label": "DC04",
       "dimension": "%",
       "sampleCount": 22500,
+      "observedDigitalMin": 2730,
+      "observedDigitalMax": 2730,
       "windows": [
         {
           "window": "start",
@@ -11984,6 +12012,8 @@
       "label": "DC03",
       "dimension": "BPM",
       "sampleCount": 22500,
+      "observedDigitalMin": 1638,
+      "observedDigitalMax": 1638,
       "windows": [
         {
           "window": "start",
@@ -12841,6 +12871,8 @@
       "label": "DC02",
       "dimension": "",
       "sampleCount": 22500,
+      "observedDigitalMin": 16384,
+      "observedDigitalMax": 16384,
       "windows": [
         {
           "window": "start",

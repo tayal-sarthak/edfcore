@@ -25,6 +25,8 @@
       "label": "squarewave",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
@@ -904,6 +906,8 @@
       "label": "ramp",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 830472,
       "windows": [
         {
           "window": "start",
@@ -1780,6 +1784,8 @@
       "label": "pulse",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": 0,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
@@ -2608,6 +2614,8 @@
       "label": "ECG",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -145594,
+      "observedDigitalMax": 515621,
       "windows": [
         {
           "window": "start",
@@ -3451,6 +3459,8 @@
       "label": "noise",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": 0,
+      "observedDigitalMax": 830472,
       "windows": [
         {
           "window": "start",
@@ -4323,6 +4333,8 @@
       "label": "sine 1 Hz",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
@@ -5200,6 +5212,8 @@
       "label": "sine 8 Hz",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -837205,
+      "observedDigitalMax": 837205,
       "windows": [
         {
           "window": "start",
@@ -6075,6 +6089,8 @@
       "label": "sine 8.5 Hz",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
@@ -6953,6 +6969,8 @@
       "label": "sine 15 Hz",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
@@ -7828,6 +7846,8 @@
       "label": "sine 17 Hz",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
@@ -8706,6 +8726,8 @@
       "label": "sine 50 Hz",
       "dimension": "uV",
       "sampleCount": 120000,
+      "observedDigitalMin": -838860,
+      "observedDigitalMax": 838860,
       "windows": [
         {
           "window": "start",
