@@ -22,6 +22,9 @@ defect; those are called out below.
   them, not as an amplitude.
 - I first wrote the gain up as "a power of two". It is not; log2 of it is -5.356. The corrected
   claim and a test pinning the distinction are both in the file, so nobody simplifies it back.
+- The coverage guard added in 0.2.50 earned its place on the way: it failed this release because
+  the new corpus file had no parity golden yet. That is exactly the drift it exists to catch, and
+  it caught it before the release rather than after.
 
 ## 0.2.58
 

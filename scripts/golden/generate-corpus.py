@@ -134,5 +134,8 @@ for name in [
     # A second real clinical recording, from a different institution, instrument and decade:
     # 23 channels at 256 Hz in one-second records, against sleep-edfx's 7 at mixed rates in 30 s.
     "chb01_01.edf",
+    # The format author's own calibration file. Its expectations come from its design rather than
+    # from pyEDFlib, but a golden keeps it inside the same parity sweep as everything else.
+    "calib.rec",
 ]:
     record(name)
