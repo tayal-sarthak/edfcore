@@ -46,15 +46,28 @@ import type {
 
 export { formatValidationReport } from './format-report.js';
 /**
- * The three shapes only this subpath produces, re-exported from where they are declared.
+ * Every shape this subpath's own signatures mention, re-exported from where it is declared.
  *
  * They live in `types.ts` with everything else — one file holds every public data shape — but a
  * consumer of `edfcore/validate` must be able to name a `ValidationReport` without reaching into
  * the universal entry for it.
+ *
+ * That has to include the types the signatures REFER to, not only the ones they produce.
+ * `validateHeader` takes an `EdfHeader` and returns `EdfDiagnostic[]`, and
+ * `FormatReportOptions.header` is an `EdfHeader` — so a consumer who imported only this subpath
+ * could call all three functions and still not name the type of anything they passed or received.
+ * `tests/types/validate-entry.test-d.ts` pins the set.
  */
 export type {
+  EdfDiagnostic,
+  EdfDiagnosticCode,
+  EdfHeader,
+  EdfRecordIndex,
+  EdfSeverity,
+  EdfSignal,
   FormatReportOptions,
   ObservedSignalStats,
+  RecordRange,
   ValidateOptions,
   ValidationReport,
 } from './types.js';

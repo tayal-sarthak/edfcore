@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.40
+
+- **Added** the types `edfcore/validate`'s own signatures mention to that subpath's exports:
+  `EdfHeader`, `EdfDiagnostic`, `EdfDiagnosticCode`, `EdfSeverity`, `EdfSignal`, `EdfRecordIndex`
+  and `RecordRange`. The entry already re-exported the shapes it PRODUCES so a consumer could name
+  a `ValidationReport` without reaching into the universal entry — but `validateHeader` takes an
+  `EdfHeader` and returns `EdfDiagnostic[]`, and `FormatReportOptions.header` is an `EdfHeader`, so
+  someone importing only this subpath could call every function in it and still not name the type
+  of anything they passed or got back. A type-only test now pins the set, so it fails at
+  `npm run typecheck` rather than in a consumer's project.
+
 ## 0.2.39
 
 - **Added** tests pinning which date defect produces which diagnostic. `DATE_IMPLAUSIBLE` is
