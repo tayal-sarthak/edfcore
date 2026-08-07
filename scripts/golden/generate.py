@@ -131,3 +131,30 @@ case(
          "digital_min": -8388608, "digital_max": 8388607},
     ],
 )
+
+case(
+    "edf-negative-gain",
+    "FILETYPE_EDFPLUS",
+    [
+        # physicalMinimum > physicalMaximum is legal and encodes a negative amplifier gain
+        # (EDF FAQ Q6). edfcore never swaps the two, because a silent polarity flip is a
+        # clinically wrong result that looks completely normal — so parity here is the check that
+        # edfcore and pyEDFlib agree about the SIGN as well as the magnitude.
+        {"label": "Inverted", "rate": 32, "physical_min": 500.0, "physical_max": -500.0,
+         "digital_min": -32768, "digital_max": 32767},
+    ],
+)
+
+case(
+    "edf-narrow-digital",
+    "FILETYPE_EDFPLUS",
+    [
+        # A narrow digital range with a wide physical one: the largest bitValue of the set, where
+        # the two expressions' disagreement is coarsest.
+        {"label": "Coarse", "rate": 16, "physical_min": -1000.0, "physical_max": 1000.0,
+         "digital_min": -8, "digital_max": 7},
+        # And the opposite: a wide digital range mapped to a tiny physical one.
+        {"label": "Fine", "rate": 16, "dimension": "mV", "physical_min": -0.5,
+         "physical_max": 0.5, "digital_min": -32768, "digital_max": 32767},
+    ],
+)

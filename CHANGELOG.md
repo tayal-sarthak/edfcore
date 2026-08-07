@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.42
+
+- **Added** three cases to the pyEDFlib parity harness, chosen for where the two scaling
+  expressions diverge most or where a mistake would be least visible:
+  - **negative gain** (`physicalMinimum > physicalMaximum`, a legal EDF FAQ Q6 declaration). Parity
+    alone would not catch a field swap that pyEDFlib also made, so the POLARITY is asserted against
+    the file's own declaration too: physical values must fall as digital values rise, in both
+    libraries. A silent polarity flip is a clinically wrong result that looks completely normal.
+  - **a 16-step digital range** mapped to a 2000-unit physical one — the coarsest `bitValue` of the
+    set.
+  - **a full 16-bit range** mapped to one millivolt — the finest.
+
 ## 0.2.41
 
 - **Added** a `samplesPerRecord` column to `edfcore signals`, and **fixed** the documentation,

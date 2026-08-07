@@ -48,7 +48,17 @@ interface Golden {
   readonly signals: readonly GoldenSignal[];
 }
 
-const CASES = ['edf-symmetric', 'edf-asymmetric', 'bdf-24bit'] as const;
+const CASES = [
+  'edf-symmetric',
+  'edf-asymmetric',
+  'bdf-24bit',
+  // physicalMinimum > physicalMaximum is a legal negative amplifier gain (EDF FAQ Q6). edfcore
+  // never swaps the two, because a silent polarity flip is a clinically wrong result that looks
+  // completely normal — so this case checks that edfcore and pyEDFlib agree about the SIGN.
+  'edf-negative-gain',
+  // The extreme bitValue ratios, where the pinned and textbook expressions diverge most coarsely.
+  'edf-narrow-digital',
+] as const;
 
 function goldenDir(name: string): string {
   return fileURLToPath(new URL(`./golden/${name}`, import.meta.url));
@@ -168,5 +178,46 @@ describe('the parity is a real constraint, not an accident of these fixtures', (
 
     // Not "some": a specific, large fraction, so a change that quietly makes them agree is visible.
     expect(differing).toBeGreaterThan(expected.sampleCount / 4);
+  });
+});
+
+describe('the negative-gain file keeps its polarity', () => {
+  it('decreases as the digital value increases, in edfcore and in pyEDFlib alike', async () => {
+    // `physicalMinimum > physicalMaximum` is a legal negative amplifier gain. edfcore never swaps
+    // the two fields, because a silent polarity flip is a clinically wrong result that looks
+    // completely normal — the traces keep the right amplitude, frequency content and artifacts.
+    // Bit-parity alone would not catch a swap that pyEDFlib also made, so the SHAPE is asserted
+    // against the file's own declaration rather than against pyEDFlib.
+    const { golden, bytes } = load('edf-negative-gain');
+    const expected = golden.signals[0];
+    if (expected === undefined) throw new Error('fixture missing');
+    expect(expected.physicalMinimum).toBeGreaterThan(expected.physicalMaximum);
+
+    const recording = await openEdf(byteSource(bytes));
+    const signal = recording.header.signals[expected.index];
+    if (signal === undefined) throw new Error('no signal');
+    expect(signal.scale?.bitValue).toBeLessThan(0);
+
+    const [chunk] = await readWindow(recording, {
+      signalIndices: [expected.index],
+      startSeconds: 0,
+      durationSeconds: recording.timeline.spanSeconds,
+    });
+    const digital = chunk?.signals[0]?.digital;
+    if (digital === undefined) throw new Error('no samples');
+    const physical = toPhysical(signal, digital);
+
+    // The fixture ramps digital from its minimum to its maximum, so physical must run the other
+    // way — from the declared physicalMinimum end down to the physicalMaximum end.
+    expect(physical[0] as number).toBeGreaterThan(physical[physical.length - 1] as number);
+    for (let i = 1; i < physical.length; i += 1) {
+      if ((digital[i] as number) > (digital[i - 1] as number)) {
+        expect(physical[i] as number, `sample ${i}`).toBeLessThan(physical[i - 1] as number);
+      }
+    }
+    // And pyEDFlib's own values run the same way, so neither library swapped the fields.
+    const first = fromBits(expected.physicalBits[0] as string);
+    const last = fromBits(expected.physicalBits[expected.sampleCount - 1] as string);
+    expect(first).toBeGreaterThan(last);
   });
 });
