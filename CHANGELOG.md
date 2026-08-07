@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.59
+
+- **Added** `calib.rec` from edfplus.info — the last corpus the README named. It was written by
+  **Bob Kemp, who wrote the EDF specification**, expressly to check that a reader gets amplitude
+  and POLARITY right, which makes it the closest thing this format has to a conformance test.
+- It is the only fixture in the suite whose expected values come from neither edfcore nor another
+  library, but from the file's own design. Its declared range is ±100 µV over ±4096 digital units,
+  so the gain is 25/1024 — a small integer over a power of two, exactly representable in float64 —
+  and the offset is exactly zero. Digital `-2048` is therefore exactly `-50 µV`, checkable from the
+  header by hand, and every level in the file is asserted with no tolerance.
+- The polarity assertions are the point. A reader that swapped the physical bounds returns the
+  right magnitudes with the wrong sign — plausible microvolts that invert the clinical reading of
+  the trace — so the extremes are asserted as signed values tied to the digital codes that produced
+  them, not as an amplitude.
+- I first wrote the gain up as "a power of two". It is not; log2 of it is -5.356. The corrected
+  claim and a test pinning the distinction are both in the file, so nobody simplifies it back.
+
 ## 0.2.58
 
 - **Added** CHB-MIT to the corpus, closing a gap the README has named since 0.1. It is chosen to be

@@ -341,8 +341,17 @@ also supplies something no synthetic fixture here had — a montage that names o
 which is what `EdfAmbiguousChannelError` exists for and had until now only ever been raised against
 a fixture written to raise it.
 
-**Still open before 1.0.** The edfplus.info conformance files. Not claimed here until a test
-produces them.
+**The format author's own calibration file, as of 0.2.59.** `calib.rec` was written by Bob Kemp —
+who wrote the EDF specification — expressly to check that a reader gets amplitude *and polarity*
+right. It is the only fixture here whose expected values come from neither edfcore nor another
+library but from the file's own design: its gain is 25/1024, exactly representable in binary, so
+digital `-2048` is exactly `-50 µV` and a human can check it from the header by hand. edfcore
+returns the exact levels, and the negative extreme comes from the negative code — which is the
+whole point, since a reader that swapped the bounds would return plausible microvolts of the wrong
+sign and invert the clinical reading of the trace.
+
+**Still open before 1.0.** Nothing named. The remaining work is API, not verification — see the
+0.3 note in [CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/CHANGELOG.md).
 
 **Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
 `readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration

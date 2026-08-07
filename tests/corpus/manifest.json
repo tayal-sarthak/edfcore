@@ -68,6 +68,16 @@
       "source": "PhysioNet CHB-MIT Scalp EEG Database v1.0.0 (chb01)",
       "licence": "Open Data Commons Attribution License v1.0. De-identified pediatric scalp EEG. Downloaded on demand and never redistributed; see tests/README.md.",
       "purpose": "A second real clinical recording from a different institution, instrument and decade to sleep-edfx: 23 EEG channels at 256 Hz in one-second records, where sleep-edfx is 7 channels at mixed rates in 30-second records. Named in the README as an open gap since 0.1."
+    },
+    {
+      "name": "calib.rec",
+      "url": "https://www.edfplus.info/downloads/files/edfcalib.zip",
+      "archiveEntry": "calib.rec",
+      "bytes": 4512,
+      "sha256": "ded71b845ccbf6522fd3070fbf5606ca503a740b15e307f8dbb82712292db724",
+      "source": "edfplus.info calibration files, by Bob Kemp (author of the EDF format)",
+      "licence": "No licence stated. A synthetic calibration signal, not patient data. Downloaded on demand and never redistributed; see tests/README.md.",
+      "purpose": "A conformance file from the format's own author, written to check that a reader gets amplitude AND POLARITY right. Its gain is exactly 200/8192, a power of two, so every physical value is exact in float64 and the expected numbers are round: digital -2048 is exactly -50 uV. The expectations therefore come from the file's design rather than from another library."
     }
   ]
 }
