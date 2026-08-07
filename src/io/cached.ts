@@ -64,8 +64,14 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
     }
   }
 
+  // Set by `close()`. A read that was already in flight when close was called still resolves, and
+  // its `.then` still runs — after `blocks.clear()` — so without this the cache repopulated itself
+  // AFTER being closed and then served that data on later reads, from a source whose own `close`
+  // had already run. `admit` is where that happens, so `admit` is where it is stopped.
+  let closed = false;
+
   function admit(index: number, block: Uint8Array): void {
-    if (blocks.has(index)) return;
+    if (closed || blocks.has(index)) return;
     blocks.set(index, block);
     cachedBytes += block.byteLength;
     evict();
@@ -108,7 +114,11 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
       assertReadRange(offset, length, byteLength);
       if (length === 0) return new Uint8Array(0);
       // A read wider than the entire budget cannot benefit from the cache and would evict every
-      // block on its way through, so it goes straight to the source.
+      // block on its way through, so it goes straight to the source. The array is the wrapped
+      // source's own, not a copy, and that is correct rather than an oversight: the "a cache hands
+      // back a copy" rule exists because a cache RETAINS its blocks, and nothing is retained here.
+      // This path is exactly as safe as calling the wrapped source directly, because that is what
+      // it does.
       if (length > maxBytes) {
         return assertExactRead(await source.read(offset, length, options), offset, length);
       }
@@ -133,6 +143,9 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
       return assertExactRead(out, offset, length);
     },
     async close(): Promise<void> {
+      // Order matters only in that `closed` must be set before anything awaits: an in-flight read
+      // can resolve during `source.close()` and would otherwise re-admit its block.
+      closed = true;
       blocks.clear();
       inflight.clear();
       cachedBytes = 0;

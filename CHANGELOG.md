@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.36
+
+- **Fixed** `cachedSource` repopulating itself after `close()`. A read already in flight when close
+  was called still resolves, and its continuation still runs — after `blocks.clear()` — so the
+  cache refilled itself after being closed and then served that data on later reads, from a source
+  whose own `close` had already run. Admission is now refused once closed, so the cache stays empty
+  and every later read is delegated to the wrapped source, which behaves exactly as it would
+  without the wrapper.
+- **Documented** why the oversized-read path returns the wrapped source's own array rather than a
+  copy. It looks like a violation of the "a cache hands back a copy" rule and is not: that rule
+  exists because a cache RETAINS its blocks, and a read wider than the whole budget bypasses the
+  cache entirely and retains nothing. The path is exactly as safe as calling the wrapped source
+  directly, which is what it does.
+
 ## 0.2.35
 
 - **Fixed** `byteSource` building a source over an argument that is not bytes, so the caller's

@@ -394,3 +394,73 @@ describe('deleting cachedSource changes results not at all — same bytes, more 
     expect(cachedSpy.reads.length).toBeLessThan(plainSpy.reads.length);
   });
 });
+
+describe('close', () => {
+  /** A source whose reads block until released, so a read can be in flight across close(). */
+  function gated(bytes: Uint8Array) {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let closed = false;
+    let reads = 0;
+    const source: ByteSource = {
+      byteLength: bytes.byteLength,
+      async read(offset, length) {
+        reads += 1;
+        await gate;
+        return bytes.subarray(offset, offset + length);
+      },
+      async close() {
+        closed = true;
+      },
+    };
+    return { source, release: () => release?.(), isClosed: () => closed, reads: () => reads };
+  }
+
+  it('does not let an in-flight read repopulate the cache after close', async () => {
+    // The read's `.then` runs after `blocks.clear()`, so before 0.2.36 the cache refilled itself
+    // AFTER being closed and then served that data — from a source whose own close had run.
+    const bytes = new Uint8Array(4096).fill(7);
+    const { source, release, isClosed, reads } = gated(bytes);
+    const cache = cachedSource(source, { blockBytes: 1024, maxBytes: 4096 });
+
+    const inflight = cache.read(0, 16);
+    await cache.close();
+    release();
+    await inflight;
+
+    expect(isClosed()).toBe(true);
+    const before = reads();
+    await cache.read(0, 16);
+    // The later read went to the wrapped source rather than to a cache that should be empty.
+    expect(reads()).toBeGreaterThan(before);
+  });
+
+  it('stays empty after close, so every later read is delegated', async () => {
+    const bytes = new Uint8Array(4096).fill(3);
+    const { source, release, reads } = gated(bytes);
+    const cache = cachedSource(source, { blockBytes: 1024, maxBytes: 4096 });
+    release();
+
+    await cache.read(0, 16);
+    const warm = reads();
+    await cache.read(0, 16);
+    // Warm cache: the second read costs nothing.
+    expect(reads()).toBe(warm);
+
+    await cache.close();
+    await cache.read(0, 16);
+    await cache.read(0, 16);
+    // Cold and staying cold: two more delegated reads, not zero and not one.
+    expect(reads()).toBe(warm + 2);
+  });
+
+  it('delegates close to the wrapped source', async () => {
+    const { source, release, isClosed } = gated(new Uint8Array(64));
+    release();
+    const cache = cachedSource(source, { blockBytes: 32, maxBytes: 64 });
+    await cache.close();
+    expect(isClosed()).toBe(true);
+  });
+});
