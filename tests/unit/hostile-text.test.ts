@@ -95,6 +95,34 @@ describe('formatHeader', () => {
   });
 });
 
+describe('formatHeader, the identification lines', () => {
+  it('cannot forge a signal row or a header line from the patient and recording fields', () => {
+    // 0.3.2 swept this class through five outputs and missed these two: the lines print only
+    // under `includePatientId`, so nothing exercised them. Both fields are 80 arbitrary bytes.
+    const bytes = buildEdf({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      raw: {
+        patientId: `X${NEWLINE}  0  99 signals${TAB}data`,
+        recordingId: `Y${NEWLINE}record       9 s`,
+      },
+    });
+    const header = parseHeader(bytes, bytes.byteLength);
+    const out = formatHeader(header, { includePatientId: true });
+
+    // One row per signal in the table, and no forged `record` line beside the real one.
+    const rows = out.split(NEWLINE).filter((line) => /^\s+\d+\s{2}/.test(line));
+    expect(rows).toHaveLength(header.signals.length);
+    expect(out.split(NEWLINE).filter((line) => line.startsWith('record  '))).toHaveLength(1);
+
+    expect(out).toContain('patient      X.  0  99 signals.data');
+    expect(out).toContain('recording    Y.record       9 s');
+    // The bytes as written are still on the header; only the rendering is sanitised.
+    expect(header.patient.raw).toContain(NEWLINE);
+  });
+});
+
 describe('formatValidationReport', () => {
   it('cannot be given an extra line by a signal label', async () => {
     const recording = await openEdf(byteSource(hostileFile()));

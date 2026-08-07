@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.16
+
+- **Fixed** `formatHeader` printing the patient and recording identification fields raw under
+  `includePatientId`, so a file could forge lines in the summary describing it. Both are 80
+  arbitrary bytes. A newline in the patient field opened a row matching the signal table's shape
+  exactly — `  0  99 signals · 0 records` — and one in the recording field forged
+  `record       9 s` at the left margin, contradicting the real geometry three lines above it.
+- **0.3.2 swept this class through five outputs and missed these two.** Both lines are off by
+  default, so nothing exercised them: the test written for that release built a hostile file and
+  never asked for the fields that are hidden unless requested. The case now lives in
+  `tests/unit/hostile-text.test.ts` beside the rest of the class, which is where the next one
+  should be found rather than discovered.
+- Control characters are replaced with `.`, exactly as for every other field. `header.patient.raw`
+  and `header.recording.raw` still hold the bytes as written.
+
 ## 0.3.15
 
 - **Fixed** `validateRecording` reporting a different set of diagnostics depending on how large its

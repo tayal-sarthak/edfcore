@@ -94,8 +94,14 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   }
 
   if (options?.includePatientId === true) {
-    lines.push(`patient      ${header.patient.raw.trim() || 'unknown'}`);
-    lines.push(`recording    ${header.recording.raw.trim() || 'unknown'}`);
+    // Through `printable`, for the reason every other field here is: these are 80 arbitrary bytes
+    // each. 0.3.2 fixed this class in five outputs and missed these two, because the lines are off
+    // by default and no test asked for them. A newline in the patient field opened a row matching
+    // the signal-table shape exactly — `  0  99 signals · 0 records` — and one in the recording
+    // field forged a `record       9 s` line at the left margin, contradicting the real geometry
+    // three lines above it (fixed in 0.3.16).
+    lines.push(`patient      ${printable(header.patient.raw.trim()) || 'unknown'}`);
+    lines.push(`recording    ${printable(header.recording.raw.trim()) || 'unknown'}`);
   }
 
   lines.push('');
