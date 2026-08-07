@@ -14,6 +14,7 @@
 import { trimEdfField } from '../bytes/latin1.js';
 import { BDF_ANNOTATIONS_LABEL, EDF_ANNOTATIONS_LABEL } from '../constants.js';
 import { EdfAmbiguousChannelError, EdfChannelNotFoundError } from '../errors.js';
+import { ticksToSeconds } from '../tal/ticks.js';
 import type { EdfHeader, EdfSignal } from '../types.js';
 
 /**
@@ -130,7 +131,16 @@ export function matchSignals(
 /**
  * The recording's total declared length in seconds.
  *
- * `recordCount * recordDurationSeconds`, which is the arithmetic every caller writes by hand.
+ * The arithmetic every caller writes by hand — except that the hand-written version is
+ * `recordCount * recordDurationSeconds`, and that product is float64. A record duration with no
+ * exact binary representation lands just under the true value: 100 records of 0.29 s is exactly
+ * 29 s and multiplies out to 28.999999999999996. The count is exact and the duration is exact in
+ * ticks, so the product is computed there and converted once.
+ *
+ * That is the same defect `formatHeader`'s duration line was fixed for in 0.2.67, and until 0.3.1
+ * the two disagreed about the same file: the header line said `00:00:29` while this returned a
+ * number that floors to 28.
+ *
  * Zero for a file whose record duration is zero — legal EDF, and the honest answer, since such a
  * file's records do not advance in time.
  *
@@ -138,5 +148,5 @@ export function matchSignals(
  * gaps between records are not covered by any record; `timeline.spanSeconds` is that number.
  */
 export function declaredDurationSeconds(header: EdfHeader): number {
-  return header.recordCount * header.recordDurationSeconds;
+  return ticksToSeconds(BigInt(header.recordCount) * header.recordDurationTicks);
 }

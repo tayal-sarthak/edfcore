@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { formatHeader } from '../../src/format-header.js';
 import { declaredDurationSeconds } from '../../src/header/lookup.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
@@ -17,6 +18,28 @@ describe('declaredDurationSeconds', () => {
       byteSource(minimalEdf({ recordCount: 120, recordDurationSeconds: 30 })),
     );
     expect(declaredDurationSeconds(r.header)).toBe(3600);
+  });
+
+  it('is exact for a record duration with no binary representation', async () => {
+    // 100 x 0.29 s is exactly 29 s. In float64 the product is 28.999999999999996, which floors
+    // to 28 — a recording reported a whole second short. The count is exact and the duration is
+    // exact in ticks, so the multiplication happens there (fixed in 0.3.1).
+    const r = await openEdf(
+      byteSource(minimalEdf({ recordCount: 100, recordDurationSeconds: 0.29 })),
+    );
+    expect(declaredDurationSeconds(r.header)).toBe(29);
+    expect(100 * r.header.recordDurationSeconds).not.toBe(29);
+  });
+
+  it('agrees with the duration formatHeader prints', async () => {
+    // The two are independent implementations of one number, and that is exactly how this was
+    // found: formatHeader was fixed in 0.2.67 and this was not, so the header line said 00:00:29
+    // about a file this reported as 28.999999999999996.
+    const r = await openEdf(
+      byteSource(minimalEdf({ recordCount: 100, recordDurationSeconds: 0.29 })),
+    );
+    expect(formatHeader(r.header)).toContain('00:00:29');
+    expect(Math.floor(declaredDurationSeconds(r.header))).toBe(29);
   });
 
   it('is zero for a zero record duration, which is legal EDF', async () => {

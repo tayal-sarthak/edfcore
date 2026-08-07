@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.1
+
+- **Fixed** `declaredDurationSeconds` returning a length up to a whole second short. It computed
+  `recordCount * recordDurationSeconds` in float64, and a record duration with no exact binary
+  representation makes that product land just under the true value: 100 records of 0.29 s is
+  exactly 29 s and multiplies out to 28.999999999999996, which floors to 28. Both inputs are exact
+  — an integer count and a tick-valued duration — so the product is now computed in ticks and
+  converted once.
+- This is the same defect `formatHeader`'s duration line was fixed for in **0.2.67**, and it was
+  found the way this project keeps finding things: two functions disagreeing about one file. The
+  header line printed `00:00:29` while `declaredDurationSeconds` returned a number that floors to
+  28. The fix there left a comment naming `recordCount * recordDurationSeconds` as the wrong way to
+  do it, and the one function still doing it was three modules away.
+
 ## 0.3.0
 
 **One rename. No behaviour change, anywhere.**
