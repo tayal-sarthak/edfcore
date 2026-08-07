@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.37
+
+- **Fixed** `fileHandleSource` and `fileSource` ignoring an abort signal that flipped while a read
+  was in flight. The abort check ran at the top of each loop iteration, and the common case is one
+  syscall that returns everything — so the check ran once, before it, and a caller who gave up
+  during the read got the data anyway. `blobSource` has always re-checked after its await, with a
+  test saying why; one adapter honouring a signal that another quietly ignores is worse than either
+  rule alone.
+
 ## 0.2.36
 
 - **Fixed** `cachedSource` repopulating itself after `close()`. A read already in flight when close

@@ -30,6 +30,7 @@ import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
 import { readHeader, readRecordBytes } from '../../src/io/read.js';
 import { assertExactRead } from '../../src/io/source.js';
+import { fileHandleSource } from '../../src/node.js';
 import { openEdf, readAnnotations, readRecords } from '../../src/recording.js';
 import type { BlobLike, ByteSource } from '../../src/types.js';
 import { failingSource, shortReadingSource, spySource } from '../support/spy-source.js';
@@ -598,5 +599,47 @@ describe('byteSource refuses an argument that is not bytes', () => {
     const source = byteSource(middle);
     expect(source.byteLength).toBe(8);
     expect(Array.from(await source.read(0, 4))).toEqual([8, 9, 10, 11]);
+  });
+});
+
+describe('fileHandleSource honours a signal that flips mid-read', () => {
+  it('rejects a read that was already in flight when the caller gave up', async () => {
+    // The common case is one syscall that returns everything, so the loop's abort check ran once,
+    // before it. A signal that flipped while the syscall was in flight was ignored and the data
+    // returned — while `blobSource` has always rejected in exactly that situation (see above).
+    const bytes = minimalEdf();
+    const signal = { aborted: false };
+    const handle = {
+      async read(buffer: Uint8Array, at: number, length: number, position: number) {
+        // The caller gives up while the platform is reading.
+        signal.aborted = true;
+        buffer.set(bytes.subarray(position, position + length), at);
+        return { bytesRead: length };
+      },
+      async close() {},
+    };
+
+    const source = fileHandleSource(handle, bytes.byteLength);
+    await expect(source.read(0, 256, { signal })).rejects.toThrow(
+      expect.objectContaining({ name: 'AbortError' }) as Error,
+    );
+  });
+
+  it('still returns the bytes when nothing aborted', async () => {
+    const bytes = minimalEdf();
+    let reads = 0;
+    const handle = {
+      async read(buffer: Uint8Array, at: number, length: number, position: number) {
+        reads += 1;
+        buffer.set(bytes.subarray(position, position + length), at);
+        return { bytesRead: length };
+      },
+      async close() {},
+    };
+    const source = fileHandleSource(handle, bytes.byteLength);
+    const read = await source.read(0, 256);
+    expect(read.length).toBe(256);
+    expect(Array.from(read.subarray(0, 8))).toEqual(Array.from(bytes.subarray(0, 8)));
+    expect(reads).toBe(1);
   });
 });

@@ -96,6 +96,12 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): By
         if (bytesRead <= 0) break;
         filled += bytesRead;
       }
+      // Checked again AFTER the syscalls, not only before each one. The common case is a single
+      // read that returns everything, so the loop's check ran once, before it — and a signal that
+      // flipped while the syscall was in flight was ignored and the data returned anyway.
+      // `blobSource` has always rejected in that situation, and one adapter honouring a signal
+      // that another quietly ignores is worse than either rule on its own.
+      throwIfAborted(options);
       return assertExactRead(buffer.subarray(0, filled), offset, length);
     },
     async close(): Promise<void> {
