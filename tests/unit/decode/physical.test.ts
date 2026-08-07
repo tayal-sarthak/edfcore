@@ -585,6 +585,53 @@ describe('refusing to invent a gain', () => {
     expect((thrown as EdfScalingError).code).toBe(reported[0]?.code);
   });
 
+  it.each([
+    ['the conventional -1/1 declaration', undefined],
+    ['a degenerate 0/0 declaration', { physicalMinimum: '0', physicalMaximum: '0' }],
+  ])('names the annotations channel for what it is, given %s', (_name, raw) => {
+    /*
+     * `parseSignalHeaders` deliberately does not run `buildScale` over an annotations channel:
+     * its physical and digital fields describe nothing a caller may use, and checking them
+     * "would report a defect about a number nobody may use". So such a signal has no scale AND
+     * no diagnostic — and re-running the four data-signal tests over those unused fields named a
+     * cause the header never evaluated.
+     *
+     * A 0/0 annotations channel was refused with DEGENERATE_PHYSICAL_RANGE asserting a header
+     * defect, and the conventional -1/1 one with "the header recorded the reason" — both sending
+     * the reader to a `header.diagnostics` entry that does not exist (fixed in 0.3.22).
+     */
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20, ...(raw === undefined ? {} : { raw }) }],
+    });
+    const header = parseHeader(bytes, bytes.byteLength);
+    const annotations = header.signals[header.annotationSignalIndices[0] as number] as EdfSignal;
+
+    // The premise: no scale, and nothing in header.diagnostics about this signal.
+    expect(annotations.scale).toBeUndefined();
+    expect(header.diagnostics.filter((d) => d.signalIndex === annotations.index)).toEqual([]);
+
+    try {
+      toPhysical(annotations, Int32Array.from([0]));
+      expect.unreachable('an annotations channel has no physical units');
+    } catch (error) {
+      expect((error as EdfScalingError).code).toBe('SCALE_UNAVAILABLE');
+      const message = (error as Error).message;
+      expect(message).toContain('annotations channel');
+      expect(message).toContain('EDF+ TAL text rather than measurements');
+      // It must not claim the header recorded something, or blame the unused fields.
+      expect(message).not.toContain('the header recorded the reason');
+      expect(message).not.toContain('DEGENERATE');
+      // And the next step is the one that works. `decodeDigital` on this channel produces
+      // numbers that look exactly like a signal, which is the failure this package prevents.
+      expect(message).toContain('readAnnotations');
+      expect(message).not.toContain('decodeDigital() still works');
+    }
+  });
+
   it('admits it does not know rather than naming the nearest-looking cause', () => {
     // A signal whose scale is missing for none of the four documented reasons — here an
     // unreadable physical minimum. Naming a wrong cause is worse than admitting the cause is

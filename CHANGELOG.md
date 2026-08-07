@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.22
+
+- **Fixed** `toPhysical` inventing a header defect when called on an annotations channel.
+  `parseSignalHeaders` deliberately never runs `buildScale` over one — its physical and digital
+  fields describe nothing a caller may use, and checking them "would report a defect about a number
+  nobody may use" — so such a signal has no scale AND no diagnostic. `describeScalingFailure` was
+  applied to it anyway, re-running the four data-signal tests over those unused fields and
+  confidently naming a cause the header never evaluated.
+- A channel declaring `0`/`0` was refused with **`DEGENERATE_PHYSICAL_RANGE`**, a message asserting
+  a header defect. The conventional `-1`/`1` one was refused with `SCALE_UNAVAILABLE` and the words
+  *"the header recorded the reason rather than the signal"*. Both sent the caller to a
+  `header.diagnostics` entry that does not exist, and neither ever said the actual reason.
+- It now says what the channel is: its bytes are EDF+ TAL text rather than measurements, so no
+  scale was ever built for it. `describeScalingFailure` only ever names a cause `buildScale`
+  actually evaluated, which is what its own comment promises.
+- The next step changed too. Every other scaling failure ends "decodeDigital() still works on this
+  signal", which is true for a data signal whose ranges are unusable and **false here** — decoding
+  TAL text as samples produces numbers that look exactly like a signal, the one failure this
+  package exists to prevent. For the annotations channel it points at `readAnnotations` instead.
+- `physical-values.md` said "Each condition also appears in `header.diagnostics` at parse time".
+  That was false for every annotations channel; the exception is now written down beside the rule.
+
 ## 0.3.21
 
 - **Fixed** a non-finite `maxMaterializeBytes` producing two different wrong diagnoses, neither

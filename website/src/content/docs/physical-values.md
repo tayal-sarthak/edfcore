@@ -228,6 +228,15 @@ exactly `Filtered` marks a logarithmically transformed channel. edfcore detects 
 Each condition also appears in `header.diagnostics` at parse time, at `error` severity, with the
 byte offset and the raw field text. You can report the problem before anyone calls `toPhysical`.
 
+The **annotations channel** is the exception, and deliberately: `buildScale` is never run over it,
+because its physical and digital fields describe nothing a caller may use and checking them would
+report a defect about a number nobody may read. So it has no `scale` and no diagnostic. Calling
+`toPhysical` on it throws `SCALE_UNAVAILABLE` saying so — that its bytes are EDF+ TAL text rather
+than measurements — and points at `readAnnotations`. Until 0.3.22 it re-derived a cause from those
+unused fields instead: a channel declaring `0`/`0` was refused with `DEGENERATE_PHYSICAL_RANGE`
+asserting a header defect, and the conventional `-1`/`1` one was told "the header recorded the
+reason", both sending the reader to a `header.diagnostics` entry that does not exist.
+
 > **Note**
 > A fifth, rarer condition exists: four finite fields whose *derived* pair is not usable, such as
 > a physical range that underflows or overflows float64 against the digital range. The header

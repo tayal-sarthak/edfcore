@@ -27,6 +27,12 @@ interface ScalingFailure {
   /** Completes the sentence `signal 7 "EMG Chin" ...`. */
   readonly reason: string;
   readonly specReference: string | undefined;
+  /**
+   * What to do instead. Defaults to "decodeDigital still works on this signal", which is true for
+   * every DATA signal whose header ranges are unusable — and false for the annotations channel,
+   * where decoding TAL text as samples is the exact mistake this package exists to prevent.
+   */
+  readonly nextStep?: string;
 }
 
 function assertWithinBudget(
@@ -59,6 +65,30 @@ function assertWithinBudget(
 function describeScalingFailure(signal: EdfSignal): ScalingFailure {
   const digitalSpec =
     'EDF+ additional specification 5: "Digital maximum must be larger than Digital minimum"';
+  // FIRST, and ahead of the four re-derived tests. `parseSignalHeaders` deliberately does not run
+  // `buildScale` over an annotations channel — its physical and digital fields describe nothing a
+  // caller may use, and checking them "would report a defect about a number nobody may use". So
+  // such a signal has no scale AND no diagnostic, and re-running the four tests over those unused
+  // fields named a cause the header never evaluated: an annotations channel declaring 0/0 was
+  // refused with DEGENERATE_PHYSICAL_RANGE asserting a header defect, and the conventional -1/1
+  // one with SCALE_UNAVAILABLE saying "the header recorded the reason" — sending the reader to a
+  // `header.diagnostics` entry that does not exist, in both cases. Neither ever said the real
+  // reason (fixed in 0.3.22).
+  if (signal.kind === 'annotations') {
+    return {
+      code: 'SCALE_UNAVAILABLE',
+      reason:
+        "is this file's annotations channel: its bytes are EDF+ TAL text rather than " +
+        'measurements, so no scale was ever built for it and its physical fields describe ' +
+        'nothing',
+      specReference: 'EDF+ specification 2.2.4 (the EDF Annotations signal)',
+      // NOT "decodeDigital() still works on this signal". It does, and it produces numbers that
+      // look exactly like a signal — the one failure this package exists to prevent.
+      nextStep:
+        'Next: read this channel with readAnnotations(recording, records), and pass only ' +
+        'header.dataSignalIndices to a sample read.',
+    };
+  }
   if (signal.digitalMinimum === signal.digitalMaximum) {
     return {
       code: 'DEGENERATE_DIGITAL_RANGE',
@@ -111,7 +141,8 @@ function scalingError(signal: EdfSignal): EdfScalingError {
     `physical minimum "${signal.raw.physicalMinimum}", physical maximum ` +
     `"${signal.raw.physicalMaximum}", physical dimension "${signal.raw.physicalDimension}". ` +
     (failure.specReference === undefined ? '' : `${failure.specReference}. `) +
-    'Next: decodeDigital() still works on this signal; edfcore will not invent a gain.';
+    (failure.nextStep ??
+      'Next: decodeDigital() still works on this signal; edfcore will not invent a gain.');
   return new EdfScalingError(message, {
     code: failure.code,
     signalIndex: signal.index,
