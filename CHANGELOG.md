@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.15
+
+- **Fixed** `validateRecording` reporting a different set of diagnostics depending on how large its
+  scan chunks were. On an EDF+C file with a real gap — the single most likely thing a conformance
+  sweep is pointed at — one 60-record file produced **1, 2, 4, 7, 16 or 31** occurrences of
+  `START_OFFSET_OUT_OF_RANGE`, varying nothing but `maxMaterializeBytes`. None of them described
+  the file. Each named a chunk boundary the caller never chose, and the report's "by code" block —
+  which exists to show which code affects most of the file — ranked them first.
+- `traverse` states the broken invariant two lines above the call that broke it: *"The origin is
+  the recording's, so the sweep's verdict does not depend on its chunk size."*
+- Same root cause as 0.3.14, in the other direction. Record 0's offset was resolved from
+  `startOffsetTicks` only, so the three callers that pass `originTicks` instead — the validation
+  sweep, the index scan and the envelope fold — re-derived it from whichever record their chunk
+  began on, and a chunk starting after a gap derives a value outside [0, 1). The two names are one
+  quantity and each now falls back to the other, so all three are fixed at the derivation rather
+  than at the call sites that happened to be found.
+- **A record 0 offset that really is out of range is still reported, and still exactly once** — it
+  comes from the open-time timeline probe, which the sweep folds in. That is asserted, because a
+  fix that silenced the genuine check would look identical in the counts above.
+
 ## 0.3.14
 
 - **Fixed** `readAnnotations` deriving the onset of a record with no timekeeping TAL from an origin

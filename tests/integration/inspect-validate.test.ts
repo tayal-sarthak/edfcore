@@ -387,3 +387,79 @@ describe('validateRecording', () => {
     expect(report.recordsScanned).toBe(4);
   });
 });
+
+describe('a sweep reports the same thing whatever chunk size it ran in', () => {
+  /**
+   * `traverse` states this invariant two lines above the call it broke: "The origin is the
+   * recording's, so the sweep's verdict does not depend on its chunk size."
+   *
+   * It decoded each chunk with `originTicks` but not `startOffsetTicks`, and only the latter was
+   * consulted when resolving record 0's sub-second offset. So every chunk re-derived that offset
+   * from whichever record it happened to begin on. On an EDF+C file with a real gap — the single
+   * most likely thing a conformance sweep is pointed at — each chunk starting after the gap
+   * derived a value outside [0, 1) and reported START_OFFSET_OUT_OF_RANGE against a chunk
+   * boundary the caller never chose. `maxMaterializeBytes` alone moved the count from 1 to 31.
+   */
+  function continuousMarkerWithRealGap(): Uint8Array {
+    return buildEdf({
+      plus: 'C',
+      recordCount: 60,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 10 }],
+      annotationSignals: [{ samplesPerRecord: 40 }],
+      recordOnsetSeconds: (r: number) => (r < 30 ? r : r + 100),
+    });
+  }
+
+  function countByCode(diagnostics: readonly { code: string }[]): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const d of diagnostics) counts[d.code] = (counts[d.code] ?? 0) + 1;
+    return counts;
+  }
+
+  it('gives the same diagnostics at every budget from the default down to one record', async () => {
+    const recording = await openEdf(byteSource(continuousMarkerWithRealGap()));
+    // 100-byte records, so these are ~42000, 20, 10, 5, 2 and 1 records per chunk.
+    const budgets = [undefined, 2000, 1000, 500, 200, 100];
+
+    const reports = [];
+    for (const maxMaterializeBytes of budgets) {
+      const report = await validateRecording(
+        recording,
+        maxMaterializeBytes === undefined ? {} : { maxMaterializeBytes },
+      );
+      reports.push(countByCode(report.diagnostics));
+    }
+
+    // Every run identical to the first, and no START_OFFSET_OUT_OF_RANGE at all: record 0 of this
+    // file starts at 0 s, so there is nothing out of range to report.
+    for (const counts of reports) expect(counts).toEqual(reports[0]);
+    expect(reports[0]?.START_OFFSET_OUT_OF_RANGE).toBeUndefined();
+    // The real defect in this file is still found, and its count does not move either.
+    expect(reports[0]?.DISCONTINUITY_IN_CONTINUOUS_FILE).toBe(2);
+  });
+
+  it('still reports a record 0 offset that really is out of range', async () => {
+    // The check that must not have been silenced. Record 0 starts +5 s after the header start
+    // time, which is not a sub-second offset. It is reported once — from the open-time timeline
+    // probe, which the sweep folds in — and not once per chunk.
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 10 }],
+      annotationSignals: [{ samplesPerRecord: 40 }],
+      recordOnsetSeconds: (r: number) => 5 + r,
+    });
+    const recording = await openEdf(byteSource(bytes));
+    expect(recording.timeline.startOffsetTicks).toBe(50_000_000n);
+
+    for (const maxMaterializeBytes of [undefined, 100]) {
+      const report = await validateRecording(
+        recording,
+        maxMaterializeBytes === undefined ? {} : { maxMaterializeBytes },
+      );
+      expect(countByCode(report.diagnostics).START_OFFSET_OUT_OF_RANGE).toBe(1);
+    }
+  });
+});

@@ -582,7 +582,15 @@ function resolveStartOffsetTicks(
   // A caller who knows the file's own offset outranks any derivation: the offset is a property of
   // the recording, and deriving it from an observed onset only works while the records in between
   // are contiguous. `readAnnotations` always knows it, from the timeline.
-  const supplied = options?.startOffsetTicks;
+  //
+  // `originTicks` is the same quantity under the other name, and is accepted here for the same
+  // reason it accepts `startOffsetTicks` in the grid above. Until 0.3.15 it was not, and the three
+  // callers that pass only `originTicks` — the validation sweep, the index scan and the envelope
+  // fold — re-derived the offset from whichever record their chunk happened to start on. On an
+  // EDF+C file with a real gap every chunk beginning after it derived a value outside [0, 1) and
+  // reported START_OFFSET_OUT_OF_RANGE against a chunk boundary the caller never chose, so one
+  // file produced 1, 2, 4, 7, 16 or 31 of them purely as a function of `maxMaterializeBytes`.
+  const supplied = options?.startOffsetTicks ?? options?.originTicks;
   if (supplied !== undefined) return supplied;
 
   if (records.start === 0) {
