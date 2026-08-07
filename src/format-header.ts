@@ -70,10 +70,24 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
     `record       ${header.recordDurationSeconds} s · ${header.recordByteLength} bytes · ` +
       `${header.bytesPerSample} bytes/sample`,
   );
+  // "duration" is only honest for a file whose records run end to end. On an EDF+D file this
+  // number is what the records COVER, and the recording reaches further by however much the gaps
+  // add up to — a four-record file with an hour-long hole in it printed `duration 00:00:04` for a
+  // recording that spans 3604 s. Someone pasting that into a bug report says "a 4-second file".
+  //
+  // A header alone cannot know the span: it is the last record's onset minus the first's, and
+  // those live in the timekeeping TALs. What a header does know is that this file claims to have
+  // gaps, so the label says what the number is and the next line says where the span comes from.
+  const discontinuous = header.continuity === 'discontinuous';
+  const label = discontinuous ? 'covered     ' : 'duration    ';
   lines.push(
-    `duration     ${formatDurationTicks(header.recordDurationTicks * BigInt(header.recordCount))} ` +
+    `${label} ${formatDurationTicks(header.recordDurationTicks * BigInt(header.recordCount))} ` +
       `(${header.recordCount} × ${header.recordDurationSeconds} s)`,
   );
+  if (discontinuous) {
+    lines.push('             what the records cover; the gaps between them are not in it');
+    lines.push('             buildRecordIndex(recording) reports the span and where the gaps are');
+  }
   if (header.recordCountSource === 'sourceByteLength') {
     // Worth saying out loud: the count came from the file size, not from the header field.
     lines.push('             record count recovered from the source length');

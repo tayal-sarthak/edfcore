@@ -431,6 +431,13 @@ issue or a log, so the default is the safe one. The data is still on `header.pat
 Neither formatter invents a value. An unresolved date prints as `unknown`, and a rate that is
 genuinely undefined prints as an em dash rather than `0 Hz` or `Infinity`.
 
+The length line is labelled for what it measures. On a continuous file it is `duration`. On an
+**EDF+D or BDF+D** file it is `covered`, and two lines under it say that the gaps are not in the
+number and that `buildRecordIndex` is what reports the span. A header alone cannot know the span —
+it is the last record's onset minus the first's, and those live in the timekeeping TALs — so a
+four-record file with an hour-long hole in it used to print `duration 00:00:04` for a recording
+that reaches 3604 s.
+
 `formatAnnotations` is the third formatter, for a hypnogram or an event list:
 
 ```ts

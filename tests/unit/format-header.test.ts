@@ -109,6 +109,49 @@ describe('the duration line is computed in ticks, not in float seconds', () => {
   });
 });
 
+describe('the duration line does not overclaim on a discontinuous file', () => {
+  it('calls it "covered" and says the gaps are not in it', async () => {
+    // `recordCount * recordDuration` is the DECLARED coverage. On an EDF+D file the recording
+    // reaches further by whatever the gaps add up to, and calling that number the duration made a
+    // four-record file with an hour-long hole print `duration 00:00:04` — a summary someone pastes
+    // into a bug report as "a 4-second file" (fixed in 0.3.11).
+    const recording = await openEdf(
+      byteSource(
+        minimalEdfPlus({
+          plus: 'D',
+          recordCount: 4,
+          recordDurationSeconds: 1,
+          recordOnsetSeconds: (i: number) => (i < 2 ? i : i + 3600),
+        }),
+      ),
+    );
+    const out = formatHeader(recording.header);
+
+    expect(out).toContain('covered      00:00:04 (4 × 1 s)');
+    expect(out).not.toContain('duration');
+    expect(out).toContain('the gaps between them are not in it');
+    expect(out).toContain('buildRecordIndex');
+    // The number itself is unchanged and still correct for what it measures. The span is more
+    // than three orders of magnitude larger, and a header alone cannot know it.
+    expect(recording.timeline.coveredSeconds).toBe(4);
+    expect(recording.timeline.spanSeconds).toBe(3604);
+  });
+
+  it('still says "duration" for a file whose records run end to end', async () => {
+    const bytes = minimalEdfPlus({ plus: 'C', recordCount: 4, recordDurationSeconds: 1 });
+    const recording = await openEdf(byteSource(bytes));
+    const out = formatHeader(recording.header);
+    expect(out).toContain('duration     00:00:04 (4 × 1 s)');
+    expect(out).not.toContain('covered');
+  });
+
+  it('says "duration" for a plain EDF, which has no continuity marker at all', async () => {
+    const bytes = minimalEdf({ recordCount: 4, recordDurationSeconds: 1 });
+    const recording = await openEdf(byteSource(bytes));
+    expect(formatHeader(recording.header)).toContain('duration     00:00:04');
+  });
+});
+
 describe('a hostile label cannot forge a row or shift a column', () => {
   it('replaces control characters rather than printing them', () => {
     // EDF pads labels with spaces and says nothing about what else may be in them. A newline would

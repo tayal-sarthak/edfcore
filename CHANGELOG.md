@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.11
+
+- **Changed** `formatHeader` to stop calling the declared coverage the "duration" on a file that
+  says it has gaps. `recordCount * recordDuration` is what the records COVER; on an EDF+D or BDF+D
+  file the recording reaches further by whatever the gaps add up to. A four-record file with an
+  hour-long hole in it printed `duration 00:00:04` for a recording spanning 3604 s — and this
+  string exists to be pasted into a bug report, where it reads as "a 4-second file".
+- The line is now labelled `covered` on those files, with two lines under it saying that the gaps
+  are not in the number and that `buildRecordIndex(recording)` is what reports the span and where
+  the gaps are. Continuous files are untouched and still say `duration`.
+- The number itself has not changed and was never wrong; only its name was. A header ALONE cannot
+  report the span — that is the last record's onset minus the first's, and those live in the
+  timekeeping TALs, which `formatHeader` has never read. Saying which of the two quantities is on
+  screen is the whole fix, and it is the same fix 0.3.0 made to the sample-grid function names.
+
 ## 0.3.10
 
 - **Changed** `toPhysicalEnvelope` to return `NaN` for a bucket no sample landed in, instead of a
