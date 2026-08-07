@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.55
+
+- **Added** CLI coverage against the real corpus. Every existing CLI fixture is a few hundred bytes
+  written by this project, which checks the decisions — exit codes, flags, output shape — and
+  cannot check what a command does when pointed at 48 MB of clinical recording, or at a scoring
+  file with 154 events and a record duration of zero.
+- The load-bearing one: **`edfcore validate` exits 0 on a real recording from a real sleep lab.**
+  That is what makes the command usable as a CI gate at all; a validator that fails real files is
+  worse than no validator, because it teaches people to ignore it.
+- Also pins that the sleep-edfx PSG is plain **EDF, not EDF+** — it carries an `Event marker` data
+  channel rather than an annotations channel, which is how that dataset splits signals from
+  scoring. I had assumed EDF+ writing the test and the file said otherwise.
+
 ## 0.2.54
 
 - **Added** the random-access claim, measured over HTTP on the real 48 MB recording. A `fetch`
