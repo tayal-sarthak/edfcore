@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.50
+
+- **Added** a corpus-coverage report that always runs. Every other test in `tests/corpus/` skips
+  when the files are absent, which is right — a fresh clone must stay green and offline, and none
+  of the corpus is redistributed. But a skipped test is indistinguishable from a passing one in a
+  summary line, and the corpus is where this project's strongest claims live: `1487 passed` reads
+  the same whether the bit-for-bit check against a 22-hour clinical recording ran or not. It now
+  says which state the run is in, once, in a line a reader sees.
+- It also checks the parts that need no corpus: every manifest entry names a source, a licence and
+  a SHA-256, no committed golden refers to a file the manifest no longer lists, and every fetched
+  file has a parity golden. A golden that has drifted from the corpus definition still looks like
+  coverage, which is the failure this catches.
+
 ## 0.2.49
 
 - **Added** annotation, start-date and geometry parity on the real corpus, alongside the sample
