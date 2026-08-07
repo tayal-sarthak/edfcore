@@ -18,6 +18,7 @@
 import { decodeDigitalCounted } from './decode/digital.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
+import { gapBefore } from './recording.js';
 import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
@@ -121,6 +122,17 @@ function segmentContaining(
  * in-window sample always produces an event. That is the same rule a whole-file read already
  * follows — `t = 0` yields an event for whatever the first sample holds, transition or not — so an
  * aligned and an unaligned window behave alike. Filter on `trigger` if you only want assertions.
+ *
+ * A GAP IS A LEFT EDGE TOO. The running trigger state does not survive one, and the first
+ * in-window sample of every contiguous run produces an event carrying `precededByGap`. Until
+ * 0.3.13 the state carried across, on the reasoning that a code held over a gap should not be
+ * reported twice — but it is not the same observation twice. The records between two segments do
+ * not exist, so what the trigger did in between is unknown, and staying silent asserted that it
+ * did nothing. A file with one code held before and after a five-minute hole returned a SINGLE
+ * event, and a consumer differencing consecutive events read one 308-second epoch out of eight
+ * seconds of recording.
+ *
+ * A contiguous file has exactly one run, so nothing about it changes.
  */
 export async function readTriggers(
   recording: EdfRecording,
@@ -151,17 +163,22 @@ export async function readTriggers(
   const samplesPerRecord = status.samplesPerRecord;
 
   const events: EdfTriggerEvent[] = [];
-  // The last code SEEN, in the window or before it. Carried across runs so a trigger held over a
-  // gap is not reported twice, and updated for out-of-window samples too — that is what stops a
-  // code asserted before the window from being re-reported as a fresh onset inside it.
-  let previous: number | undefined;
-  // Whether anything has been reported yet. The first in-window sample is always an event: it
-  // carries the code in force at the window's left edge, which a transitions-only rule would lose.
-  let reported = false;
 
   for (const records of ranges) {
     // A range from `resolveTimeWindow` never spans a gap, so one segment covers all of it.
     const segment = segmentContaining(recording.index.segments, records.start);
+    // PER RUN, not per window. The last code SEEN within this run, updated for out-of-window
+    // samples too — that is what stops a code asserted before the window from being re-reported
+    // as a fresh onset inside it. It is deliberately NOT carried in from the previous run: the
+    // records between two segments do not exist, so the previous run's last code says nothing
+    // about what the hardware was doing when this one began.
+    let previous: number | undefined;
+    // Whether this run has reported yet. Its first in-window sample is always an event, carrying
+    // the code in force at that edge — which a transitions-only rule would lose.
+    let reported = false;
+    // What precedes this run, so a resume is distinguishable from a latch. `undefined` on a
+    // probed index, exactly as it is on `EdfChunk`.
+    const precededByGap = gapBefore(recording.index, records.start);
     const chunkRecords = scanChunkRecords(header, options?.maxMaterializeBytes);
     let scanned = 0;
     let scratch: Int32Array | undefined;
@@ -198,6 +215,7 @@ export async function readTriggers(
 
           if (ticks < windowStartTicks || ticks >= windowEndTicks) continue;
           if (reported && !changed) continue;
+          const firstOfRun = !reported;
           reported = true;
 
           events.push({
@@ -206,6 +224,8 @@ export async function readTriggers(
             ticks,
             trigger: word.trigger,
             status: word,
+            // The gap precedes the RUN, so it belongs to the run's first event and to no other.
+            precededByGap: firstOfRun ? precededByGap : undefined,
           });
         }
       }

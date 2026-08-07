@@ -269,4 +269,94 @@ describe('readTriggers times events on the recording axis, not the nominal grid'
     const events = await readTriggers(await scanned(), { startSeconds: 4, durationSeconds: 3 });
     expect(events).toEqual([]);
   });
+
+  it('marks the first event of each run with the gap before it', async () => {
+    const recording = await scanned();
+    const events = await readTriggers(recording, { startSeconds: 0, durationSeconds: 12 });
+    // Four events, and only the one where the recording resumes carries a gap.
+    expect(events.map((e) => e.precededByGap?.durationSeconds)).toEqual([
+      undefined,
+      undefined,
+      8,
+      undefined,
+    ]);
+    // The same gap object the index reports, not a reconstruction of it.
+    expect(events[2]?.precededByGap).toBe(recording.index.gaps?.[0]);
+  });
+});
+
+describe('a trigger held across a gap is not reported as one continuous epoch', () => {
+  /**
+   * The recording stops for five minutes with code 5 asserted and resumes with code 5 asserted.
+   * Those are two observations separated by an interval nobody recorded, not one long one.
+   */
+  function heldAcrossGap(): Uint8Array {
+    return buildEdf({
+      format: 'BDF',
+      plus: 'D',
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => (r < 4 ? r : r + 300),
+      signals: [
+        {
+          label: 'Status',
+          samplesPerRecord: 4,
+          physicalMinimum: -262144,
+          physicalMaximum: 262144,
+          digitalMinimum: -8388608,
+          digitalMaximum: 8388607,
+          sample: () => 5,
+        },
+      ],
+      annotationSignals: [{ samplesPerRecord: 60 }],
+    });
+  }
+
+  it('reports the code in force where the recording resumes', async () => {
+    const opened = await openEdf(byteSource(heldAcrossGap()));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    // Ground truth from the index, independent of readTriggers.
+    expect(recording.index.segments?.map((s) => [s.startSeconds, s.endSeconds])).toEqual([
+      [0, 4],
+      [304, 308],
+    ]);
+
+    const events = await readTriggers(recording, { startSeconds: 0, durationSeconds: 1000 });
+
+    // Until 0.3.13 this returned exactly ONE event — {0 s, code 5} — for a file with a
+    // five-minute hole in it. A consumer differencing consecutive events read a single
+    // 308-second epoch out of eight seconds of recording, and nothing in the array said so.
+    expect(events.map((e) => [e.seconds, e.trigger])).toEqual([
+      [0, 5],
+      [304, 5],
+    ]);
+    expect(events[1]?.precededByGap?.durationSeconds).toBe(300);
+    expect(events[0]?.precededByGap).toBeUndefined();
+  });
+
+  it('changes nothing for the same trigger pattern on a contiguous file', async () => {
+    // A contiguous file resolves to one run, so there is one left edge and one event — exactly
+    // what this returned before. The fix must not invent an event on an ordinary recording.
+    const bytes = buildEdf({
+      format: 'BDF',
+      plus: false,
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      signals: [
+        {
+          label: 'Status',
+          samplesPerRecord: 4,
+          physicalMinimum: -262144,
+          physicalMaximum: 262144,
+          digitalMinimum: -8388608,
+          digitalMaximum: 8388607,
+          sample: () => 5,
+        },
+      ],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const events = await readTriggers(recording, { startSeconds: 0, durationSeconds: 8 });
+    expect(events.map((e) => [e.seconds, e.trigger])).toEqual([[0, 5]]);
+    expect(events[0]?.precededByGap).toBeUndefined();
+  });
 });

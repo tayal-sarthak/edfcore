@@ -546,6 +546,16 @@ export interface EdfTriggerEvent {
   readonly ticks: bigint;
   readonly trigger: number;
   readonly status: EdfStatusWord;
+  /**
+   * The gap immediately before this event, when there is one — the same field `EdfChunk` carries,
+   * and it means the same thing.
+   *
+   * Set on the FIRST event of each contiguous run, so an event that reports the code in force
+   * where the recording RESUMED is distinguishable from a transition the hardware actually
+   * latched. `undefined` everywhere else, and always `undefined` on a probed index, because
+   * nobody has read the onsets in between.
+   */
+  readonly precededByGap: EdfGap | undefined;
 }
 
 export interface TriggerSelection {

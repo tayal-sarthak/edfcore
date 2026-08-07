@@ -404,6 +404,17 @@ aligned and an unaligned window behave alike. If you want assertions only, filte
 const onsets = (await readTriggers(recording, window)).filter((e) => e.trigger !== 0);
 ```
 
+A **gap is a left edge too.** The running trigger state does not survive one, so the first
+in-window sample of every contiguous run produces an event, and that event carries
+`precededByGap` — the same `EdfGap` an `EdfChunk` carries, and `undefined` on a probed index for
+the same reason.
+
+Until 0.3.13 the state carried across a gap, so a code held before and after a five-minute hole
+returned a **single** event and a consumer differencing consecutive events read one 308-second
+epoch out of eight seconds of recording. The records between two segments do not exist; what the
+trigger did in between is unknown, and staying silent asserted that it did nothing. A contiguous
+file has one run, so nothing about it changed.
+
 `decodeStatusWord` masks the sample back to 24 unsigned bits first. `decodeDigital` sign-extends
 BDF samples, as it must for a measurement, so a Status word with bit 23 set arrives negative.
 

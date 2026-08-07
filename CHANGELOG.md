@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.13
+
+- **Fixed** `readTriggers` carrying its running trigger state across a gap, so a code held before
+  and after a discontinuity was reported once and read as one continuous epoch. A BDF+D file with
+  code 5 asserted, a five-minute hole, and code 5 asserted again returned a SINGLE event at 0 s. A
+  consumer differencing consecutive events measured a 308-second trigger epoch out of eight seconds
+  of recording, and nothing in the returned array said a gap had happened.
+- The old reasoning was that a code held over a gap should not be reported twice. It is not the
+  same observation twice: the records between two segments do not exist, so what the trigger did in
+  between is unknown, and staying silent asserted that it did nothing. A gap is a left edge, and
+  the first in-window sample of every contiguous run now produces an event carrying the code in
+  force there — the same rule the window's own left edge has followed since 0.2.19.
+- **Added** `EdfTriggerEvent.precededByGap`, the same `EdfGap` an `EdfChunk` carries and meaning
+  the same thing. Set on the first event of each run, so a resume is distinguishable from a latch
+  the hardware actually made; `undefined` elsewhere, and always `undefined` on a probed index.
+- **A contiguous file resolves to one run, so nothing about it changes** — same events, same times,
+  one left edge. This is the last function in the package that returned a flat array spanning a
+  discontinuity; `readWindow` splits at one, `mergeChunks` refuses to join across one, and
+  `EdfChunk.precededByGap` has always reported one.
+
 ## 0.3.12
 
 - **Fixed** `error.name` becoming a mangled identifier in any minified consumer bundle. Every
