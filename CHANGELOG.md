@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.38
+
+- **Fixed** `onsetSecondsFromFirstRecord` and `onsetTicksFromFirstRecord` disagreeing about the
+  same event at the edge of the int64 tick range. The exact field saturated and the float field was
+  computed from the unsaturated difference, so one annotation reported 1,844,674,407,370.955 s in
+  one field and 922,337,203,685.4775 s in the other — a factor of two. My own inconsistency, added
+  with the exact field in 0.2.10. Both are now derived from one rebased value, which is what the
+  float field was always documented to be: the lossy view of the exact one.
+
 ## 0.2.37
 
 - **Fixed** `fileHandleSource` and `fileSource` ignoring an abort signal that flipped while a read

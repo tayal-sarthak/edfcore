@@ -237,3 +237,49 @@ describe('filterAnnotationsByText with a stateful regex', () => {
     expect(shared.lastIndex).toBe(3);
   });
 });
+
+describe('the two rebased onset fields are one value, seen two ways', () => {
+  it('agrees at the edge of the int64 tick range', async () => {
+    // `onsetTicksFromFirstRecord` saturates, for the same reason record onsets do. Computing the
+    // seconds field from the UNSATURATED difference made the two disagree for one event — by a
+    // factor of two at the edge. The float field is documented as the lossy view of the exact one,
+    // so it has to be a view OF it.
+    const { decodeAnnotations } = await import('../../src/tal/annotations.js');
+    const { parseHeader } = await import('../../src/header/parse.js');
+    const { buildEdf } = await import('../support/writer.js');
+
+    // Saturation needs the DIFFERENCE to leave the int64 range, so the rebasing origin has to pull
+    // the other way: record 0's timekeeping onset near the negative edge and the event near the
+    // positive one. The grammar admits both — `START_OFFSET_OUT_OF_RANGE` is reported and the value
+    // is used as written, which is what makes this reachable rather than theoretical.
+    const nearMax = '+922337203685.4775807';
+    const nearMin = '-922337203685.4775807';
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: () => nearMin,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [
+        { samplesPerRecord: 80, tals: () => [{ onset: nearMax, texts: ['Far'] }] },
+      ],
+    });
+    const header = parseHeader(bytes, bytes.byteLength);
+    const recordBytes = bytes.subarray(header.headerByteLength);
+    const { annotations } = decodeAnnotations(header, recordBytes, { start: 0, count: 1 });
+
+    const far = annotations.find((a) => a.text === 'Far');
+    expect(far).toBeDefined();
+    // Whatever the saturation produced, the two fields must describe the same instant.
+    expect(far?.onsetSecondsFromFirstRecord).toBe(
+      Number(far?.onsetTicksFromFirstRecord ?? 0n) / 10_000_000,
+    );
+  });
+
+  it('agrees on an ordinary file too, which is the case that must not regress', async () => {
+    const event = annotation(30.0000001, 'Spindle');
+    expect(event.onsetSecondsFromFirstRecord).toBe(
+      Number(event.onsetTicksFromFirstRecord) / 10_000_000,
+    );
+  });
+});

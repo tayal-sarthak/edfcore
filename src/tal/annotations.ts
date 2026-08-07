@@ -499,26 +499,33 @@ export function decodeAnnotations(
   );
 
   pending.sort(compareAnnotations);
-  const annotations: EdfAnnotation[] = pending.map((item) => ({
-    onsetSecondsFromHeaderStart: ticksToSeconds(item.onsetTicks),
-    onsetSecondsFromFirstRecord: ticksToSeconds(item.onsetTicks - startOffsetTicks),
-    onsetTicks: item.onsetTicks,
-    // The exact form of the line above. Saturating rather than wrapping, for the same reason
-    // record onsets do: an onset already at the edge of the int64 range must not come back as a
-    // large positive number after a subtraction.
-    onsetTicksFromFirstRecord: saturateToInt64(item.onsetTicks - startOffsetTicks),
-    onsetRaw: item.onsetRaw,
-    durationSeconds:
-      item.durationTicks === undefined ? undefined : ticksToSeconds(item.durationTicks),
-    durationTicks: item.durationTicks,
-    durationRaw: item.durationRaw,
-    text: item.text,
-    channelLabel: item.channelLabel,
-    signalIndex: item.signalIndex,
-    recordIndex: item.recordIndex,
-    byteOffsetInRecord: item.byteOffsetInRecord,
-    textEncoding: item.textEncoding,
-  }));
+  const annotations: EdfAnnotation[] = pending.map((item) => {
+    // ONE rebased value, and both published fields derived from it. Saturating rather than
+    // wrapping, for the same reason record onsets do: an onset already at the edge of the int64
+    // range must not come back as a large positive number after a subtraction.
+    //
+    // Computing the seconds from the UNSATURATED difference and the ticks from the saturated one
+    // made the two disagree — by a factor of two at the edge — for the same event. The float field
+    // is documented as the lossy view of the exact one, so it has to be a view OF it.
+    const rebasedTicks = saturateToInt64(item.onsetTicks - startOffsetTicks);
+    return {
+      onsetSecondsFromHeaderStart: ticksToSeconds(item.onsetTicks),
+      onsetSecondsFromFirstRecord: ticksToSeconds(rebasedTicks),
+      onsetTicks: item.onsetTicks,
+      onsetTicksFromFirstRecord: rebasedTicks,
+      onsetRaw: item.onsetRaw,
+      durationSeconds:
+        item.durationTicks === undefined ? undefined : ticksToSeconds(item.durationTicks),
+      durationTicks: item.durationTicks,
+      durationRaw: item.durationRaw,
+      text: item.text,
+      channelLabel: item.channelLabel,
+      signalIndex: item.signalIndex,
+      recordIndex: item.recordIndex,
+      byteOffsetInRecord: item.byteOffsetInRecord,
+      textEncoding: item.textEncoding,
+    };
+  });
 
   return {
     annotations: Object.freeze(annotations),
