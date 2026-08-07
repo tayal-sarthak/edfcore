@@ -20,8 +20,8 @@ import { describe, expect, it } from 'vitest';
 import { annotationsAt, filterAnnotationsByTime } from '../../src/annotations-query.js';
 import { TICKS_PER_SECOND } from '../../src/constants.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
-import { buildEdf } from '../support/writer.js';
+import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
+import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
 const START_OFFSET = 0.3;
 const RECORDS = 4;
@@ -192,5 +192,63 @@ describe('an explicit zero duration on disk', () => {
       filterAnnotationsByTime(annotations, { startSeconds: i, durationSeconds: 1 }),
     ).flat();
     expect(seen.map((a) => a.text)).toEqual(['ExplicitZero', 'OmittedDuration']);
+  });
+});
+
+describe('a record with no timekeeping TAL starts at the same instant however it was read', () => {
+  /**
+   * The 0.1.4 failure, still live on one path until 0.3.14: the same record reported two
+   * different start times depending on how many neighbours were decoded with it.
+   *
+   * `decodeAnnotations` derives the onset of a record whose timekeeping TAL is missing as
+   * `origin + recordIndex * recordDuration`, and the origin can only come from a caller who has
+   * already seen record 0. Two option names carry it — `originTicks` for this grid,
+   * `startOffsetTicks` for the annotation rebasing — and neither fell back to the other.
+   * `readAnnotations` passed only `startOffsetTicks`, so the one public function whose docs say
+   * "passes `timeline.startOffsetTicks` for you" was the one that did not supply this origin.
+   */
+  const OFFSET_TICKS = 2_500_000n; // 0.25 s, stated in record 0's timekeeping TAL.
+
+  function fileWithOneBrokenTimekeepingTal(): Uint8Array {
+    return minimalEdfPlus({
+      plus: 'C',
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      startOffsetSeconds: 0.25,
+      // Record 5's timekeeping onset fails the grammar outright, so that record has none.
+      recordOnsetSeconds: (r: number) => (r === 5 ? 'xx' : 0.25 + r),
+    });
+  }
+
+  it('gives record 5 the same onset alone as in a whole-file read', async () => {
+    const recording = await openEdf(byteSource(fileWithOneBrokenTimekeepingTal()));
+    expect(recording.timeline.startOffsetTicks).toBe(OFFSET_TICKS);
+
+    const whole = await readAnnotations(recording, { start: 0, count: 8 });
+    const alone = await readAnnotations(recording, { start: 5, count: 1 });
+
+    // 5.25 s on the header axis: the offset plus five whole records.
+    const expected = OFFSET_TICKS + 5n * TICKS_PER_SECOND;
+    expect(whole.recordOnsetTicks[5]).toBe(expected);
+    // Before 0.3.14 this was 50000000n — five seconds flat, the offset silently dropped.
+    expect(alone.recordOnsetTicks[0]).toBe(expected);
+
+    // The record really does lack a timekeeping TAL; without that the test proves nothing.
+    expect(alone.diagnostics.map((d) => d.code)).toContain('TIMEKEEPING_TAL_MISSING');
+  });
+
+  it('agrees with the record onsets every other path derives', async () => {
+    // readRecords decodes the same annotation regions through a caller that always passed
+    // originTicks, so its answer is the independent one.
+    const recording = await openEdf(byteSource(fileWithOneBrokenTimekeepingTal()));
+    const chunk = await readRecords(recording, {
+      records: { start: 5, count: 1 },
+      signalIndices: [0],
+    });
+    const alone = await readAnnotations(recording, { start: 5, count: 1 });
+
+    // chunk.startTicks is on the recording axis (t = 0 at record 0); the onset is on the header
+    // axis. They differ by exactly the start offset, and did not before the fix.
+    expect(alone.recordOnsetTicks[0]! - OFFSET_TICKS).toBe(chunk.startTicks);
   });
 });

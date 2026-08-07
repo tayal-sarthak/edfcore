@@ -687,6 +687,11 @@ export interface DecodeAnnotationsOptions extends ParseOptions {
    *
    * Pass `timeline.startOffsetTicks` whenever it is known. Decoding a range in isolation, as
    * `openEdf` does before any timeline exists, correctly omits it.
+   *
+   * `startOffsetTicks` above is the same quantity under the other name — record 0's true start —
+   * and is used when this is absent. The two are consumed in different places (this one by the
+   * record-onset grid, that one by the annotation rebasing), and until 0.3.14 neither fell back
+   * to the other, so a caller who passed only one got the origin applied in only one of them.
    */
   readonly originTicks?: bigint;
 }

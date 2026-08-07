@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.14
+
+- **Fixed** `readAnnotations` deriving the onset of a record with no timekeeping TAL from an origin
+  of zero instead of the recording's start. On a file that declares a sub-second start offset, the
+  same record reported one start time read alone and another read alongside a neighbour that did
+  carry a TAL: record 5 of a 0.25 s-offset file came back at **5.00 s** on its own and **5.25 s**
+  in a whole-file read. Every other decode path agreed on 5.25 s.
+- That is the 0.1.4 failure verbatim — "the same record reported two different start times
+  depending on how many neighbours were read with it" — surviving on one path. It is the seventh
+  place this project has found it and the eighth fix for the shape.
+- The cause was two option names for one quantity. `DecodeAnnotationsOptions.originTicks` feeds the
+  record-onset grid and `startOffsetTicks` feeds the annotation rebasing; both are documented as
+  "pass `timeline.startOffsetTicks`", and neither fell back to the other. `readAnnotations` passed
+  only the second — so the one public function whose docs say it "passes `timeline.startOffsetTicks`
+  for you" was the one that did not supply this origin. `originTicks` now falls back to
+  `startOffsetTicks`, which fixes any direct `decodeAnnotations` caller that passes one and not the
+  other, rather than only the call site that happened to be found.
+- A file with no start offset is unaffected, because the two origins coincide at zero. That is why
+  this survived: it is invisible on every file that does not bother to state its offset, and wrong
+  only on the ones careful enough to.
+
 ## 0.3.13
 
 - **Fixed** `readTriggers` carrying its running trigger state across a gap, so a code held before

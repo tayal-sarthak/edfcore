@@ -476,9 +476,17 @@ export function decodeAnnotations(
   // the range: the same record got one onset when read alone and another when read alongside a
   // neighbour that did carry a timekeeping TAL, which in turn made chunk boundaries, segment
   // boundaries and even a fatal TIMELINE_NOT_MONOTONIC a function of the scan chunk size.
+  //
+  // `startOffsetTicks` is the SAME quantity under the other name — record 0's true start — and
+  // both option docs say to pass `timeline.startOffsetTicks`. They are consumed in two places:
+  // `originTicks` by this grid, `startOffsetTicks` by the annotation rebasing below. Until 0.3.14
+  // neither fell back to the other, and `readAnnotations` passed only the second — so the one
+  // public function documented to handle the origin for you was the one that did not, and a
+  // record with no timekeeping TAL of its own moved by the start offset depending on how many
+  // neighbours shared the call.
   const baseTicks =
     firstObserved === undefined
-      ? (options?.originTicks ?? 0n)
+      ? (options?.originTicks ?? options?.startOffsetTicks ?? 0n)
       : firstObserved.ticks - BigInt(firstObserved.recordIndex) * durationTicks;
 
   const recordOnsetTicks = new BigInt64Array(records.count);
