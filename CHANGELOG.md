@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.39
+
+- **Added** tests pinning which date defect produces which diagnostic. `DATE_IMPLAUSIBLE` is
+  documented as covering two conditions with only the second reachable, and that was prose about an
+  INTERACTION between two modules: `resolveStartTime` refuses a date that names no real day and
+  leaves `resolvedDate` undefined, so `validateRecording`'s start-date branch never sees one. Both
+  sides are now asserted, so if the parser ever starts resolving a best-effort date instead of
+  refusing, a test says so rather than the branch quietly coming to life while the docs claim it is
+  dead. The branch itself is kept, with the reason written next to it — a missing guard is harder
+  to notice than an idle one.
+
 ## 0.2.38
 
 - **Fixed** `onsetSecondsFromFirstRecord` and `onsetTicksFromFirstRecord` disagreeing about the

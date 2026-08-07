@@ -92,6 +92,13 @@ fields outright when they do not name an existing day, which is what `DATE_UNPAR
 The birthdate check is the reachable one. Its usual cause is a two-digit header year resolved
 through the 1985–2084 rule for a recording made outside that window.
 
+Since 0.2.39 that is a test rather than a note: `tests/unit/dates-validation.test.ts` pins both
+sides, because the reason it holds is an interaction between two modules — `resolveStartTime`
+leaves `resolvedDate` undefined for an impossible date, so `validateRecording` never sees one. The
+idle branch is kept rather than deleted; if the parser ever starts resolving a best-effort date
+instead of refusing, that is the check which has to be there, and a missing guard is harder to
+notice than an idle one.
+
 ## validateRecording
 
 The full sweep. It reads, and it says how much it read.

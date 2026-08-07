@@ -302,6 +302,12 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
     );
   }
 
+  // Unreachable today, and kept deliberately rather than deleted. `resolveStartTime` leaves
+  // `resolvedDate` UNDEFINED for a date that names no real day and reports `DATE_UNPARSEABLE`
+  // instead, so this condition cannot currently hold — `tests/unit/dates-validation.test.ts` pins
+  // that interaction from both sides. It stays because the day `resolveStartTime` starts resolving
+  // a best-effort date rather than refusing one, this is the check that has to be here, and a
+  // missing guard is harder to notice than an idle one.
   const resolved = startTime.resolvedDate;
   if (resolved !== undefined && !isValidCalendarDate(resolved)) {
     into.push(
