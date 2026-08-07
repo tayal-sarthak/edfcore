@@ -7,13 +7,48 @@
  * and this adapter retains nothing the caller does not already hold.
  */
 
+import { EdfSourceError } from '../errors.js';
 import type { ByteSource, ReadOptions } from '../types.js';
-import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
+import { assertExactRead, assertReadRange, isByteArray, throwIfAborted } from './source.js';
+
+/**
+ * Describes what arrived, for an argument that is not bytes. Never prints the value: it could be
+ * anything, including something large.
+ */
+function describe(value: unknown): string {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  if (ArrayBuffer.isView(value)) return Object.prototype.toString.call(value).slice(8, -1);
+  if (Array.isArray(value)) return 'a plain Array';
+  return typeof value === 'object' ? 'a plain object' : `a ${typeof value}`;
+}
 
 export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
-  // `ArrayBuffer.isView` rather than `instanceof Uint8Array`: `instanceof` is false for a view
-  // that crossed a realm boundary (a worker, an iframe), and this is a public entry point.
-  const view: Uint8Array = ArrayBuffer.isView(bytes) ? bytes : new Uint8Array(bytes);
+  // Refused at CONSTRUCTION, because the alternative is worse than an error. `new Uint8Array(x)`
+  // accepts almost anything: a string, a plain object and `null` all yield an empty array, and a
+  // `number[]` yields one of the wrong length. The source was then built happily and the failure
+  // surfaced later as `[SOURCE_TOO_SMALL] the header is 0 bytes` — blaming the FILE for a mistake
+  // in the caller's argument, which is the one confusion this package works hardest to avoid.
+  //
+  // `Int8Array` is rejected too, and deliberately: it has one byte per element so it passes any
+  // length check, and its already-signed elements are sign-extended a second time during decode
+  // (see `assertExactRead`). Fabricated microvolts, with no error anywhere.
+  const isBuffer =
+    bytes instanceof ArrayBuffer ||
+    Object.prototype.toString.call(bytes) === '[object SharedArrayBuffer]';
+  if (!isBuffer && !isByteArray(bytes)) {
+    throw new EdfSourceError(
+      `byteSource() needs an ArrayBuffer or a Uint8Array, received ${describe(bytes)}. ` +
+        'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or the ' +
+        'ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, so it ' +
+        'would pass every length check and then decode to fabricated sample values.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
+
+  // `isByteArray` rather than `instanceof Uint8Array`: `instanceof` is false for a view that
+  // crossed a realm boundary (a worker, an iframe), and this is a public entry point.
+  const view: Uint8Array = isByteArray(bytes) ? bytes : new Uint8Array(bytes as ArrayBuffer);
   const byteLength = view.byteLength;
 
   return {

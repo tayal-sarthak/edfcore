@@ -38,10 +38,19 @@ import type { AbortSignalLike, ReadOptions } from '../types.js';
  */
 const BYTE_ARRAY_TAGS = new Set(['[object Uint8Array]', '[object Uint8ClampedArray]']);
 
+/**
+ * Whether a value is a real one-byte-per-element view: `Uint8Array`, `Uint8ClampedArray`, or
+ * Node's `Buffer` (a `Uint8Array` subclass, so it inherits the tag).
+ *
+ * Shared with `byteSource`, which has to reject the same set at construction time rather than
+ * building a source over something that is not bytes.
+ */
+export function isByteArray(value: unknown): value is Uint8Array {
+  return ArrayBuffer.isView(value) && BYTE_ARRAY_TAGS.has(Object.prototype.toString.call(value));
+}
+
 function receivedLengthOf(received: unknown): number | undefined {
-  if (!ArrayBuffer.isView(received)) return undefined;
-  if (!BYTE_ARRAY_TAGS.has(Object.prototype.toString.call(received))) return undefined;
-  return received.byteLength;
+  return isByteArray(received) ? received.byteLength : undefined;
 }
 
 /**

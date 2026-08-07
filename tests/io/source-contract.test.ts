@@ -22,7 +22,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { isEdfError } from '../../src/errors.js';
+import { EdfSourceError, isEdfError } from '../../src/errors.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { inspectEdf } from '../../src/inspect.js';
 import { blobSource } from '../../src/io/blob.js';
@@ -544,5 +544,59 @@ describe('an aborted signal stops the read', () => {
     const header = await readHeader(byteSource(minimalEdf()), { signal });
 
     expect(header.signals).toHaveLength(1);
+  });
+});
+
+describe('byteSource refuses an argument that is not bytes', () => {
+  // `new Uint8Array(x)` accepts almost anything: a string, a plain object and null all yield an
+  // empty array, and a number[] yields one of the wrong length. Before 0.2.35 the source was built
+  // happily and the caller was then told `[SOURCE_TOO_SMALL] the header is 0 bytes` — the file
+  // blamed for a mistake in the argument, which is the one confusion this package works to avoid.
+  it.each([
+    ['a plain object', {}],
+    ['a string', 'abcd'],
+    ['a number array', [1, 2, 3, 4]],
+    ['null', null],
+    ['undefined', undefined],
+  ])('refuses %s at construction, not at the first read', (_name, value) => {
+    expect(() => byteSource(value as never)).toThrow(EdfSourceError);
+    expect(() => byteSource(value as never)).toThrow(/needs an ArrayBuffer or a Uint8Array/);
+  });
+
+  it('refuses an Int8Array, naming why it is the dangerous one', () => {
+    // One byte per element, so it passes every length check, and its already-signed elements are
+    // sign-extended a second time during decode. Fabricated sample values with no error anywhere.
+    expect(() => byteSource(new Int8Array(512) as never)).toThrow(/Int8Array is not accepted/);
+  });
+
+  it('refuses a wider view and a DataView', () => {
+    for (const value of [
+      new Int32Array(64),
+      new Float64Array(32),
+      new DataView(new ArrayBuffer(8)),
+    ]) {
+      expect(() => byteSource(value as never)).toThrow(EdfSourceError);
+    }
+  });
+
+  it('still accepts everything legitimate, view offsets included', async () => {
+    const backing = new ArrayBuffer(64);
+    for (const value of [
+      backing,
+      new Uint8Array(backing),
+      new Uint8ClampedArray(backing),
+      Buffer.alloc(64),
+    ]) {
+      const source = byteSource(value as never);
+      expect(source.byteLength).toBe(64);
+      expect((await source.read(0, 8)).length).toBe(8);
+    }
+
+    // A view into the middle of a larger buffer keeps reading its own window.
+    const whole = Uint8Array.from({ length: 32 }, (_, i) => i);
+    const middle = whole.subarray(8, 16);
+    const source = byteSource(middle);
+    expect(source.byteLength).toBe(8);
+    expect(Array.from(await source.read(0, 4))).toEqual([8, 9, 10, 11]);
   });
 });

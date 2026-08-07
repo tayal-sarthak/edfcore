@@ -116,6 +116,13 @@ const view = envelope.subarray(16);
 const recording = await openEdf(byteSource(view));
 ```
 
+`byteSource` refuses an argument that is not bytes, at construction. `new Uint8Array(x)` accepts
+almost anything — a string, a plain object and `null` all yield an empty array, a `number[]` yields
+one of the wrong length — so before 0.2.35 the source was built happily and the failure surfaced
+later as `[SOURCE_TOO_SMALL] the header is 0 bytes`, blaming the file for a mistake in the
+argument. `Int8Array` is refused too, for the reason above: one byte per element, so it passes
+every length check and then decodes to fabricated values.
+
 ## blobSource: a browser File or Blob
 
 ```ts

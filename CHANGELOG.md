@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.35
+
+- **Fixed** `byteSource` building a source over an argument that is not bytes, so the caller's
+  mistake was reported as a defect in the file. `new Uint8Array(x)` accepts almost anything: a
+  string, a plain object and `null` all yield an empty array, and a `number[]` yields one of the
+  wrong length. The source was constructed happily and the failure surfaced later as
+  `[SOURCE_TOO_SMALL] the header is 0 bytes` — the file blamed for the argument, which is the one
+  confusion this package works hardest to avoid. It now refuses at construction and says what it
+  wanted. `Int8Array` is refused by name: one byte per element, so it passes every length check
+  and then decodes to fabricated sample values.
+
 ## 0.2.34
 
 - **Added** the golden-value harness this README has withheld a numerical-interop claim for since
