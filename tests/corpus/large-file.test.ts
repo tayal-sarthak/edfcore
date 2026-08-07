@@ -30,9 +30,10 @@ import { describe, expect, it } from 'vitest';
 import { readEnvelope } from '../../src/envelope.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { byteSource } from '../../src/io/bytes.js';
+import { httpSource } from '../../src/io/http.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import { streamRecords } from '../../src/stream.js';
-import type { ByteSource } from '../../src/types.js';
+import type { ByteSource, FetchLike } from '../../src/types.js';
 
 const PSG = join(dirname(fileURLToPath(import.meta.url)), 'files', 'SC4001E0-PSG.edf');
 const enabled = existsSync(PSG);
@@ -277,5 +278,89 @@ describe('streaming 22 hours', () => {
     const forFirstChunk = bytesRead - afterOpen;
     expect(forFirstChunk).toBeGreaterThan(0);
     expect(forFirstChunk).toBeLessThan(bytes.byteLength / 100);
+  });
+});
+
+describe('random access over HTTP, on a real 48 MB recording', () => {
+  /**
+   * A `fetch` that serves byte ranges out of the real file and counts what it hands over.
+   *
+   * Conformant on purpose: it answers 206 with a correct `Content-Range`, which is what
+   * `httpSource` has verified since 0.2.23. The point here is not the guard but the ACCESS
+   * PATTERN — how many bytes a window costs when the file is behind a network.
+   */
+  function ranged(bytes: Uint8Array) {
+    let served = 0;
+    let requests = 0;
+    const fetchImpl = (async (_url: string, init?: { method?: string; headers?: unknown }) => {
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      if ((init?.method ?? 'GET') === 'HEAD') {
+        return {
+          status: 200,
+          headers: {
+            get: (n: string) =>
+              n.toLowerCase() === 'content-length' ? String(bytes.byteLength) : null,
+          },
+          arrayBuffer: async () => new ArrayBuffer(0),
+        };
+      }
+      const match = /^bytes=(\d+)-(\d+)$/.exec(headers.Range ?? '');
+      if (match === null) throw new Error(`unexpected Range: ${headers.Range}`);
+      const first = Number(match[1]);
+      const last = Number(match[2]);
+      const slice = bytes.slice(first, last + 1);
+      served += slice.byteLength;
+      requests += 1;
+      return {
+        status: 206,
+        headers: {
+          get: (n: string) =>
+            n.toLowerCase() === 'content-range'
+              ? `bytes ${first}-${last}/${bytes.byteLength}`
+              : null,
+        },
+        arrayBuffer: async () => slice.buffer,
+      };
+    }) as unknown as FetchLike;
+    return { fetch: fetchImpl, served: () => served, requests: () => requests };
+  }
+
+  maybe('reads a 30-second window twelve hours in for kilobytes, not megabytes', async () => {
+    // This is the claim the whole package is built around, over the transport that makes it
+    // matter. A reader that has to download the file first cannot do this at all.
+    const bytes = new Uint8Array(readFileSync(PSG));
+    const { fetch, served, requests } = ranged(bytes);
+
+    const source = await httpSource('https://example.invalid/psg.edf', { fetch });
+    const recording = await openEdf(source);
+    const eeg = getSignal(recording.header, 'EEG Fpz-Cz');
+    const afterOpen = served();
+
+    const [chunk] = await readWindow(recording, {
+      signalIndices: [eeg.index],
+      startSeconds: 12 * 3600,
+      durationSeconds: 30,
+    });
+
+    expect(chunk?.records.count).toBe(1);
+    expect(chunk?.signals[0]?.sampleCount).toBe(3000);
+
+    const forWindow = served() - afterOpen;
+    // One 30-second record of this file is under 30 KB. The file is 48 MB.
+    expect(forWindow).toBeLessThan(64 * 1024);
+    expect(forWindow).toBeLessThan(bytes.byteLength / 1000);
+    expect(requests()).toBeGreaterThan(0);
+  });
+
+  maybe('opens the file without reading its data at all', async () => {
+    // `openEdf` probes the header and two records. On a 48 MB file that has to stay tiny, or
+    // "open then seek" is not a usable pattern over a network.
+    const bytes = new Uint8Array(readFileSync(PSG));
+    const { fetch, served } = ranged(bytes);
+
+    const recording = await openEdf(await httpSource('https://example.invalid/psg.edf', { fetch }));
+    expect(recording.header.recordCount).toBe(2650);
+    // Header is 2 KB; two probed records add a little. Anything near the file size is a failure.
+    expect(served()).toBeLessThan(bytes.byteLength / 500);
   });
 });

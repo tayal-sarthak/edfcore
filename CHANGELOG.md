@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.54
+
+- **Added** the random-access claim, measured over HTTP on the real 48 MB recording. A `fetch`
+  double serves byte ranges out of the file and counts what it hands over; reading a 30-second
+  window twelve hours in costs **under 64 KB**, and opening the file costs under a five-hundredth
+  of it. This is the property the whole package is built around, checked over the transport that
+  makes it matter — a reader that has to download the file first cannot do it at all, and until now
+  it was only demonstrated on fixtures small enough that the distinction did not exist.
+
 ## 0.2.53
 
 - **Added** a check that `validateRecording`'s sample scan sees what pyEDFlib sees. The observed
