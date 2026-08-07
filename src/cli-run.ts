@@ -15,6 +15,7 @@ import { formatValidationReport } from './format-report.js';
 import { byteSource } from './io/bytes.js';
 import { buildRecordIndex } from './record-index.js';
 import { openEdf, readAnnotations } from './recording.js';
+import { printable } from './text/printable.js';
 import { validateRecording } from './validate.js';
 
 /**
@@ -223,9 +224,12 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         // would put two lines of the same listing on different clocks.
         for (const event of annotations.slice(0, limit)) {
           const duration = event.durationSeconds === undefined ? '' : `${event.durationSeconds}`;
+          // `printable`, because this format is tab-separated and the text is arbitrary bytes
+          // from the file. A tab inside an annotation invents a column, so `cut -f4` returns the
+          // rest of the text instead of the channel; a newline invents a whole row.
           io.out(
-            `${event.onsetSecondsFromFirstRecord}\t${duration}\t${event.text}\t` +
-              `${event.channelLabel ?? ''}\n`,
+            `${event.onsetSecondsFromFirstRecord}\t${duration}\t${printable(event.text)}\t` +
+              `${printable(event.channelLabel ?? '')}\n`,
           );
         }
         // Say what was withheld. A silently truncated listing reads as a complete one.
@@ -236,7 +240,9 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       }
 
       for (const { text, count } of countAnnotationsByText(annotations)) {
-        io.out(`${String(count).padStart(8)}  ${text}\n`);
+        // Counted on the verbatim text — two labels differing only in a control byte are two
+        // labels — and printed through `printable`, so the count column cannot be split.
+        io.out(`${String(count).padStart(8)}  ${printable(text)}\n`);
       }
       return 0;
     }
@@ -273,10 +279,14 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         io.out(
           [
             signal.index,
-            signal.label,
+            // A label is arbitrary bytes. In a format whose whole purpose is `cut -f2`, a tab in
+            // one shifts every field after it for that row alone, so a script reading column 6
+            // gets a physical dimension where it expected a sample count — with no error, and
+            // only on the file that has the problem (fixed in 0.3.2).
+            printable(signal.label),
             signal.kind,
             signal.sampleRateHz ?? '',
-            signal.physicalDimension.trim(),
+            printable(signal.physicalDimension.trim()),
             signal.samplesPerRecord,
           ].join('\t') + '\n',
         );

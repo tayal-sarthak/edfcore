@@ -14,6 +14,7 @@
 
 import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
+import { printable } from './text/printable.js';
 import type { EdfCalendarDate, EdfHeader, FormatHeaderOptions } from './types.js';
 
 function formatDate(date: EdfCalendarDate | undefined): string {
@@ -39,16 +40,6 @@ function formatDurationTicks(ticks: bigint): string {
   const rest = whole % 60;
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${pad(hours)}:${pad(minutes)}:${pad(rest)}`;
-}
-
-/** Control characters become a dot, so one field can never become two rows or shift a column. */
-function printable(text: string): string {
-  let out = '';
-  for (const character of text) {
-    const code = character.codePointAt(0) ?? 0;
-    out += code < 0x20 || code === 0x7f ? '.' : character;
-  }
-  return out;
 }
 
 function formatRate(signal: EdfHeader['signals'][number]): string {

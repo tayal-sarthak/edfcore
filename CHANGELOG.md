@@ -6,6 +6,42 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.2
+
+**No output edfcore produces can be given a row, a column or a diagnostic by the file it is
+describing.** `formatHeader` was fixed for this in 0.2.67; the other five outputs were not, and
+this is the class.
+
+Every string edfcore prints that it did not write itself came out of a file. A label is 16
+arbitrary bytes and the specification says nothing about what may be in them; EDF+ annotation text
+is exposed verbatim, because the TAL grammar reserves 0x00, 0x14 and 0x15 and nothing else, so 0x0a
+and 0x09 reach `annotation.text` unchanged.
+
+- **`formatValidationReport`** printed the label raw in its sample-range block. A newline opened a
+  row reporting an observed range for a signal the file does not contain — in a conformance report,
+  which is read precisely because the file is already suspect.
+- **`formatAnnotations`** printed the text raw. A newline split one event into two rows, and the
+  second carried no time of its own, so it read as an event at the time above it.
+- **`formatDiagnostics`** printed `expected:` and `actual:` raw, and `actual` is usually the
+  field's bytes as written. Unlike `message`, whose continuation lines are indented, a detail line
+  is emitted whole — so a newline reached the left margin, where a line is indistinguishable from a
+  diagnostic edfcore itself reported. A label could forge
+  `error [NOTHING_IS_WRONG] this file is fine` into the report about it. Found by the test written
+  for the two above.
+- **`edfcore signals` and `edfcore events --list`** are tab-separated on purpose — the format
+  exists for `cut` and `awk`. A tab in a label added a field for one row, so column 6 returned a
+  physical dimension where a script expected a sample count, with no error and only on the file
+  that had the problem.
+
+Control characters are REPLACED with `.`, one character for one, never stripped and never escaped:
+stripping changes a padded column's width, and a two-character `\n` is wrong in a fixed-width cell.
+Only C0 and DEL are touched — a latin-1 letter above 0x7f is an ordinary character in an electrode
+label written on a European system. `header.signals[i].raw.label` and `annotation.text` still hold
+the bytes as written; only the rendering changed.
+
+`tests/unit/hostile-text.test.ts` is the guard, and it covers every output in one file so the next
+one is added there rather than discovered.
+
 ## 0.3.1
 
 - **Fixed** `declaredDurationSeconds` returning a length up to a whole second short. It computed

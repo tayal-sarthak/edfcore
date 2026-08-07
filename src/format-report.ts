@@ -13,6 +13,7 @@
 
 import { formatDiagnostics } from './diagnostics/format.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
+import { printable } from './text/printable.js';
 import type { EdfHeader, FormatReportOptions, ValidationReport } from './types.js';
 
 /** Enough to see the pattern, few enough to read. Override with `maxItems`. */
@@ -72,7 +73,10 @@ export function formatValidationReport(
     lines.push('observed sample ranges:');
     for (const stats of report.signalStats) {
       const signal = header?.signals[stats.signalIndex];
-      const name = signal === undefined ? `signal ${stats.signalIndex}` : signal.label;
+      // Through `printable` for the reason `formatHeader` does it: a label is arbitrary bytes
+      // from the file, and one holding a newline would open a row naming a signal that does not
+      // exist — in a conformance report, which is read precisely because the file is suspect.
+      const name = signal === undefined ? `signal ${stats.signalIndex}` : printable(signal.label);
       const overflow =
         stats.outOfDigitalRangeCount > 0
           ? `  ${stats.outOfDigitalRangeCount} outside the declared range`

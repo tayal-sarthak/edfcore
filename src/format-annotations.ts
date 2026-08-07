@@ -16,6 +16,7 @@
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
+import { printable } from './text/printable.js';
 import type { EdfAnnotation } from './types.js';
 
 export interface FormatAnnotationsOptions {
@@ -84,13 +85,17 @@ export function formatAnnotations(
   for (let i = 0; i < limit; i += 1) {
     const annotation = annotations[i];
     if (annotation === undefined) continue;
+    // Annotation text is exposed verbatim by design — the TAL grammar reserves 0x00, 0x14 and
+    // 0x15 and nothing else, so 0x0a and 0x09 reach `text` unchanged. One event holding a newline
+    // would print as two rows, and the second would carry no time of its own, so it reads as an
+    // event at the time above it. `annotation.text` still holds the bytes as written.
     const parts = [
       clock(annotation.onsetTicksFromFirstRecord),
       duration(annotation).padEnd(12),
-      annotation.text,
+      printable(annotation.text),
     ];
     if (options?.includeChannel === true && annotation.channelLabel !== undefined) {
-      parts.push(`@@${annotation.channelLabel}`);
+      parts.push(`@@${printable(annotation.channelLabel)}`);
     }
     rows.push(parts.join('  ').trimEnd());
   }

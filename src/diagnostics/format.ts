@@ -9,6 +9,7 @@
  * no iteration over an unordered collection, and no ANSI escapes unless `color` is requested.
  */
 
+import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
 
 export interface FormatDiagnosticsOptions {
@@ -136,8 +137,17 @@ function appendDiagnostic(
   if (diagnostic.rawBytes !== undefined && diagnostic.rawBytes.length > 0) {
     detail(lines, `bytes: ${hexDump(diagnostic.rawBytes)}`, color);
   }
-  if (diagnostic.expected !== undefined) detail(lines, `expected: ${diagnostic.expected}`, color);
-  if (diagnostic.actual !== undefined) detail(lines, `actual: ${diagnostic.actual}`, color);
+  // `expected` and `actual` frequently hold a field's bytes as written — `actual` is the label
+  // itself for a label diagnostic — and unlike `message`, whose continuation lines are indented,
+  // a detail line is emitted whole. A newline in one therefore lands at the left margin, where
+  // `error [ANY_CODE] this file is fine` is indistinguishable from a diagnostic edfcore reported.
+  // `printable`, not `quote`: these are unquoted values and a dot keeps the width honest.
+  if (diagnostic.expected !== undefined) {
+    detail(lines, `expected: ${printable(String(diagnostic.expected))}`, color);
+  }
+  if (diagnostic.actual !== undefined) {
+    detail(lines, `actual: ${printable(String(diagnostic.actual))}`, color);
+  }
   if (diagnostic.specReference !== undefined) {
     detail(lines, `spec: ${diagnostic.specReference}`, color);
   }
