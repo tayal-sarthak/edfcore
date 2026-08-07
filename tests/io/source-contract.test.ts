@@ -21,6 +21,7 @@
  * real `Blob` would test the platform instead.
  */
 
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { EdfSourceError, isEdfError } from '../../src/errors.js';
 import { parseHeader } from '../../src/header/parse.js';
@@ -599,6 +600,45 @@ describe('byteSource refuses an argument that is not bytes', () => {
     const source = byteSource(middle);
     expect(source.byteLength).toBe(8);
     expect(Array.from(await source.read(0, 4))).toEqual([8, 9, 10, 11]);
+  });
+
+  it('accepts an ArrayBuffer that crossed a realm boundary', async () => {
+    /*
+     * `instanceof ArrayBuffer` is false for a buffer created in another realm — an iframe, an
+     * Electron contextBridge, jsdom, a `vm` context — and the guard used it on the ArrayBuffer
+     * half while the SharedArrayBuffer half already used the built-in tag. A real, fully usable
+     * buffer was refused as "a plain object" and told to "pass the ArrayBuffer itself", which is
+     * what the caller had done. The same bytes wrapped in a view were accepted, because
+     * `isByteArray` was rewritten off `instanceof` in 0.2.23 and this line was missed.
+     *
+     * A `vm` context is the cheapest real realm; the browser cases differ only in how they arise.
+     */
+    const file = minimalEdf({ recordCount: 2, recordDurationSeconds: 1 });
+    const foreign = runInNewContext('new ArrayBuffer(n)', { n: file.byteLength }) as ArrayBuffer;
+    new Uint8Array(foreign).set(file);
+
+    // The premise: this really is a foreign buffer, and `instanceof` really does miss it.
+    expect(Object.prototype.toString.call(foreign)).toBe('[object ArrayBuffer]');
+    expect(foreign instanceof ArrayBuffer).toBe(false);
+
+    const recording = await openEdf(byteSource(foreign));
+    expect(recording.header.signals).toHaveLength(1);
+  });
+
+  it('names a buffer as a buffer if it ever does refuse one', () => {
+    // `describe()` had no buffer branch, so the refusal above called an ArrayBuffer "a plain
+    // object" — sending the reader after the wrong problem.
+    const message = (() => {
+      try {
+        byteSource({} as never);
+        return '';
+      } catch (error) {
+        return (error as Error).message;
+      }
+    })();
+    expect(message).toContain('a plain object');
+    // And a real buffer is no longer describable as one, because it is no longer refused.
+    expect(() => byteSource(new ArrayBuffer(8))).not.toThrow();
   });
 });
 

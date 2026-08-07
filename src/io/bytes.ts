@@ -20,8 +20,27 @@ function describe(value: unknown): string {
   if (value === undefined) return 'undefined';
   if (ArrayBuffer.isView(value)) return Object.prototype.toString.call(value).slice(8, -1);
   if (Array.isArray(value)) return 'a plain Array';
+  // Buffers are named too. Without this a refusal called them "a plain object", which sent the
+  // reader looking for the wrong problem entirely.
+  if (BUFFER_TAGS.has(Object.prototype.toString.call(value))) {
+    return Object.prototype.toString.call(value).slice(8, -1);
+  }
   return typeof value === 'object' ? 'a plain object' : `a ${typeof value}`;
 }
+
+/**
+ * The built-in tags, not `instanceof`.
+ *
+ * A tag comes from `Symbol.toStringTag` on the buffer prototype and every realm agrees on it;
+ * `instanceof ArrayBuffer` is false for a buffer that crossed a realm boundary — an iframe, an
+ * Electron contextBridge, jsdom, a Node `vm` context. Until 0.3.20 the ArrayBuffer half of the
+ * guard below used `instanceof` while the SharedArrayBuffer half already used the tag, so a real,
+ * fully usable ArrayBuffer from another realm was refused as "a plain object" and told to "pass
+ * the ArrayBuffer itself" — which is what the caller had done. `new Uint8Array(thatBuffer)` was
+ * accepted, because `isByteArray` twelve lines below was rewritten in 0.2.23 for this exact
+ * reason and this one was missed.
+ */
+const BUFFER_TAGS = new Set(['[object ArrayBuffer]', '[object SharedArrayBuffer]']);
 
 export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
   // Refused at CONSTRUCTION, because the alternative is worse than an error. `new Uint8Array(x)`
@@ -33,9 +52,7 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
   // `Int8Array` is rejected too, and deliberately: it has one byte per element so it passes any
   // length check, and its already-signed elements are sign-extended a second time during decode
   // (see `assertExactRead`). Fabricated microvolts, with no error anywhere.
-  const isBuffer =
-    bytes instanceof ArrayBuffer ||
-    Object.prototype.toString.call(bytes) === '[object SharedArrayBuffer]';
+  const isBuffer = BUFFER_TAGS.has(Object.prototype.toString.call(bytes));
   if (!isBuffer && !isByteArray(bytes)) {
     throw new EdfSourceError(
       `byteSource() needs an ArrayBuffer or a Uint8Array, received ${describe(bytes)}. ` +

@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.20
+
+- **Fixed** `byteSource` refusing an `ArrayBuffer` that crossed a realm boundary — an iframe, an
+  Electron contextBridge, jsdom, a Node `vm` context. The guard tested `bytes instanceof
+  ArrayBuffer`, which is false for a buffer created in another realm, so a real, fully usable
+  552-byte file was rejected.
+- The message made it worse twice over. `describe()` had no buffer branch, so it called the
+  ArrayBuffer **"a plain object"** — pointing the reader at the wrong problem entirely — and then
+  advised them to "pass ... the ArrayBuffer itself", which is exactly what they had done. Nothing
+  in it suggested the workaround that does work, `new Uint8Array(thatBuffer)`.
+- **This was the last realm-unsafe `instanceof` on a cross-realm value in the package**, and it sat
+  twelve lines above the comment explaining why `instanceof` is wrong here, beside `isByteArray`,
+  which was rewritten off `instanceof` in 0.2.23 for this exact reason. The `SharedArrayBuffer`
+  half of the same expression already used the built-in tag. So a cross-realm `Uint8Array` was
+  accepted while the buffer behind it was not.
+- Both halves now test `Object.prototype.toString`, which reads `Symbol.toStringTag` off the buffer
+  prototype and is a value every realm agrees on. It admits nothing new: a plain object, an Array,
+  a string and a number all report a different tag, and `Int8Array` is still refused for the
+  documented reason. `describe()` names buffers, so any future refusal says what it actually got.
+
 ## 0.3.19
 
 **Two places where content was dropped under a diagnostic saying it was not.** Both are annotation
