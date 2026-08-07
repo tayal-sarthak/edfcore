@@ -81,6 +81,7 @@ Each carries the context for its own failure, so you never have to parse the mes
 |---|---|---|
 | `code` | `EdfDiagnosticCode` | the diagnostic code that fired |
 | `diagnostic` | `EdfDiagnostic \| undefined` | the whole diagnostic it would otherwise have recorded |
+| `collected` | `readonly EdfDiagnostic[]` | everything already found when this became fatal, in order; empty when the fatal was raised before any collection existed |
 | `field` | `string \| undefined` | the header field at fault |
 | `byteOffset` | `number \| undefined` | where in the file |
 | `signalIndex` | `number \| undefined` | which signal |

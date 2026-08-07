@@ -29,7 +29,7 @@ import {
   HEADER_FIELDS,
   SIGNAL_FIELD_WIDTHS,
 } from '../constants.js';
-import { DiagnosticSink, fatalError } from '../diagnostics/collector.js';
+import { DiagnosticSink } from '../diagnostics/collector.js';
 import { parseUnsignedTicks, secondsToTicks } from '../tal/ticks.js';
 import type { EdfHeader, ParseOptions } from '../types.js';
 import { resolveStartTime } from './dates.js';
@@ -224,7 +224,7 @@ export function parseHeader(
 
   // ---- 1. The fixed header must be present at all. --------------------------------------
   if (headerBytes.length < EDF_HEADER_BLOCK_BYTES) {
-    throw fatalError({
+    throw sink.fatal({
       code: 'SOURCE_TOO_SMALL',
       message:
         `the header is ${headerBytes.length} bytes, but every EDF and BDF file begins with a ` +
@@ -251,7 +251,7 @@ export function parseHeader(
   // ---- 4. The whole header must be present, now that its size is known. -------------------
   const headerByteLength = EDF_HEADER_BLOCK_BYTES * (signalCount + 1);
   if (headerBytes.length < headerByteLength) {
-    throw fatalError({
+    throw sink.fatal({
       code: 'SOURCE_TOO_SMALL',
       message:
         `the header of a file declaring ${signalCount} signals is ${EDF_HEADER_BLOCK_BYTES} * ` +
@@ -289,7 +289,7 @@ export function parseHeader(
   // ---- 8. The record size, which every data offset in the file steps by. ------------------
   if (recordByteLength === 0) {
     const samplesBlockOffset = signalFieldOffset('samplesPerRecord', signalCount, 0);
-    throw fatalError({
+    throw sink.fatal({
       code: 'RECORD_SIZE_ZERO',
       message:
         `every one of the ${signalCount} signals declares 0 samples per data record, so a data ` +
@@ -349,7 +349,7 @@ export function parseHeader(
   // is enough to ask for it.
   const declaredSpanTicks = recordDurationTicks * BigInt(recordCount);
   if (declaredSpanTicks > MAX_REPRESENTABLE_TICKS) {
-    throw fatalError({
+    throw sink.fatal({
       code: 'RECORDING_SPAN_UNREPRESENTABLE',
       message:
         `the header declares ${recordCount} records of ${recordDurationSeconds} s, a total span ` +
@@ -371,7 +371,7 @@ export function parseHeader(
 
   // ---- 10. EDF+ without an annotations signal has no per-record timing to report. ---------
   if (variant.isPlus && parsed.annotationSignalIndices.length === 0) {
-    throw fatalError({
+    throw sink.fatal({
       code: 'EDFPLUS_WITHOUT_ANNOTATION_SIGNAL',
       message:
         `the reserved field at offset ${HEADER_FIELDS.reserved.offset} declares ` +

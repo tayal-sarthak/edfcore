@@ -168,6 +168,13 @@ export async function inspectEdf(
   } catch (error) {
     if (!isEdfError(error)) throw error;
     const failure = diagnosticOf(error);
+    // Everything the parse had ALREADY found, before the fatal. A header parse accumulates as it
+    // goes and reaches its fatal checks last, so a file can carry a degenerate physical range, a
+    // degenerate digital range and a duplicated label and still be stopped by "no annotations
+    // signal" — which names none of them. Returning only the fatal made `diagnostics` one entry
+    // where four were in hand, in the one call whose whole job is triaging unknown files, and
+    // contradicted its own documented "everything found" (fixed in 0.3.18).
+    const collected = error.edfErrorKind === 'format' ? (error as EdfFormatError).collected : [];
     return {
       ok: false,
       variant: variantHint(headerBytes),
@@ -175,7 +182,13 @@ export async function inspectEdf(
       byteLength,
       bytesRead,
       headerBytes,
-      diagnostics: Object.freeze(overBudget === undefined ? [failure] : [overBudget, failure]),
+      // The fatal comes LAST, after what led up to it: it is the reason parsing stopped, and a
+      // reader following the list downwards reaches it in the order the parse did.
+      diagnostics: Object.freeze([
+        ...(overBudget === undefined ? [] : [overBudget]),
+        ...collected,
+        failure,
+      ]),
     };
   }
 }

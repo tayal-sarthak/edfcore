@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.18
+
+- **Fixed** `inspectEdf` discarding every diagnostic the parse had already found when a fatal check
+  stopped it. A three-signal EDF+ file with a degenerate physical range, a degenerate digital range
+  and a duplicated label, and no annotations channel, returned exactly ONE entry:
+  `EDFPLUS_WITHOUT_ANNOTATION_SIGNAL`. The three real defects were found, recorded, and thrown away
+  with the sink.
+- It matters most in this call, because triaging unknown files is the whole job of it — and the
+  fatal is often the least informative of the set. None of those three has anything to do with
+  annotations, so the reader adds an annotations channel, re-runs, and only then learns the file
+  has three more problems. The documented contract said "everything found, including the fatal one
+  when parsing failed"; it was one thing.
+- **Added** `EdfFormatError.collected` — the diagnostics already in hand when the fatal was raised,
+  in the order they were found, empty when it was raised before any collection existed. A caller
+  who catches rather than inspects sees them too.
+- The mechanism is a `fatal()` on `DiagnosticSink`, so a fatal thrown where a sink EXISTS carries
+  what the sink has. `fatalError` stays the sinkless version for the paths that genuinely have
+  nothing to attach. `sink.report` does the same when a code is always fatal or `strict` is set,
+  so both routes are covered rather than the five call sites that happened to be found.
+- The fatal is reported LAST, after what led up to it: it is the reason parsing stopped, and a
+  reader going down the list arrives at it in the order the parse did.
+
 ## 0.3.17
 
 **`formatHeader` printed `00:00:00` for a starttime the file never stated.** The module's own

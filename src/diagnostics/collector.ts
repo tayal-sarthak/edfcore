@@ -80,11 +80,19 @@ export function createDiagnostic(init: DiagnosticInit): EdfDiagnostic {
  * The one way to turn a diagnostic into the error that carries it. `EdfFormatError` re-derives
  * `field`/`byteOffset`/`signalIndex`/`recordIndex` from the diagnostic, so they are not repeated.
  */
-export function toFormatError(diagnostic: EdfDiagnostic, cause?: unknown): EdfFormatError {
-  const init: EdfFormatErrorInit =
-    cause === undefined
-      ? { code: diagnostic.code, diagnostic }
-      : { code: diagnostic.code, diagnostic, cause };
+export function toFormatError(
+  diagnostic: EdfDiagnostic,
+  cause?: unknown,
+  collected?: readonly EdfDiagnostic[],
+): EdfFormatError {
+  const init: EdfFormatErrorInit = {
+    code: diagnostic.code,
+    diagnostic,
+    ...(cause === undefined ? {} : { cause }),
+    // A copy: the sink keeps collecting into its own array, and an error is evidence of the
+    // moment it was thrown.
+    ...(collected === undefined || collected.length === 0 ? {} : { collected: [...collected] }),
+  };
   return new EdfFormatError(`[${diagnostic.code}] ${diagnostic.message}`, init);
 }
 
@@ -124,10 +132,22 @@ export class DiagnosticSink {
    * year rule — so throwing on one would contradict what the severity means, and would make
    * `strict` reject conforming files. Every `info` note is still collected and readable.
    */
+  /**
+   * The fatal a caller raises directly, carrying what this sink has already found.
+   *
+   * `fatalError` is the sinkless version and stays that way. Where a sink DOES exist, throwing
+   * through it is what lets `inspectEdf` report the defects the parse had already accumulated
+   * rather than only the one that stopped it (added in 0.3.18).
+   */
+  fatal(init: DiagnosticInit, cause?: unknown): EdfFormatError {
+    return toFormatError(createDiagnostic(init), cause, this.#collected);
+  }
+
   report(init: DiagnosticInit): void {
     const diagnostic = createDiagnostic(init);
     if (isAlwaysFatal(diagnostic.code) || (this.strict && diagnostic.severity !== 'info')) {
-      throw toFormatError(diagnostic);
+      // Everything found before this one travels with it, for the same reason.
+      throw toFormatError(diagnostic, undefined, this.#collected);
     }
     this.#collected.push(diagnostic);
   }

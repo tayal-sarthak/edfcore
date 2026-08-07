@@ -13,9 +13,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { parseHeader } from '../../src/header/parse.js';
 import {
   buildRecordIndex,
   byteSource,
+  EdfFormatError,
   type EdfInspection,
   inspectEdf,
   openEdf,
@@ -140,6 +142,84 @@ describe('inspectEdf on files that cannot be parsed', () => {
 // ---------------------------------------------------------------------------
 // The 128 KiB ceiling
 // ---------------------------------------------------------------------------
+
+describe('inspectEdf reports what the parse had already found, not only the fatal', () => {
+  /**
+   * A header parse accumulates diagnostics as it goes and reaches its fatal checks last. When one
+   * of those threw, the sink and everything in it went with it and `inspectEdf` returned exactly
+   * one entry — while its own documented `diagnostics` field says "everything found, including the
+   * fatal one when parsing failed".
+   *
+   * It matters most here, in the one call whose job is triaging unknown files: the fatal is often
+   * the LEAST informative of the set. Below, "this EDF+ file has no annotations signal" is what
+   * stops the parse, and the three real defects it had already found say nothing about annotations.
+   */
+  function damaged(withAnnotations: boolean): Uint8Array {
+    return buildEdf({
+      plus: 'C',
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [
+        { label: 'Fp1', samplesPerRecord: 2, physicalMinimum: 5, physicalMaximum: 5 },
+        { label: 'Fp2', samplesPerRecord: 2, digitalMinimum: 7, digitalMaximum: 7 },
+        { label: 'Fp1', samplesPerRecord: 2 },
+      ],
+      ...(withAnnotations ? { annotationSignals: [{ samplesPerRecord: 20 }] } : {}),
+    });
+  }
+
+  it('keeps the defects found before the fatal, with the fatal last', async () => {
+    const inspection = await inspectEdf(byteSource(damaged(false)));
+
+    expect(inspection.ok).toBe(false);
+    expect(inspection.diagnostics.map((d) => d.code)).toEqual([
+      'DEGENERATE_PHYSICAL_RANGE',
+      'DEGENERATE_DIGITAL_RANGE',
+      'DUPLICATE_SIGNAL_LABEL',
+      // Last: the reason parsing stopped, reached in the order the parse reached it.
+      'EDFPLUS_WITHOUT_ANNOTATION_SIGNAL',
+    ]);
+  });
+
+  it('finds the same three defects the parse reports when the file is parseable', async () => {
+    // Ground truth: the identical file with an annotations channel added parses, and its header
+    // carries the same three. Without this the list above is just a list.
+    const bytes = damaged(true);
+    const header = parseHeader(bytes, bytes.byteLength);
+    expect(header.diagnostics.map((d) => d.code)).toEqual([
+      'DEGENERATE_PHYSICAL_RANGE',
+      'DEGENERATE_DIGITAL_RANGE',
+      'DUPLICATE_SIGNAL_LABEL',
+      'DATE_CLIPPED_TO_1985_2084',
+    ]);
+  });
+
+  it('carries them on the thrown error too, so a strict caller sees them', async () => {
+    // The evidence lives on `EdfFormatError.collected`, so a caller who catches rather than
+    // inspects gets it as well.
+    const error = await openEdf(byteSource(damaged(false)))
+      .then(() => undefined)
+      .catch((thrown: unknown) => thrown);
+
+    expect(error).toBeInstanceOf(EdfFormatError);
+    expect((error as EdfFormatError).code).toBe('EDFPLUS_WITHOUT_ANNOTATION_SIGNAL');
+    expect((error as EdfFormatError).collected.map((d) => d.code)).toEqual([
+      'DEGENERATE_PHYSICAL_RANGE',
+      'DEGENERATE_DIGITAL_RANGE',
+      'DUPLICATE_SIGNAL_LABEL',
+    ]);
+  });
+
+  it('is empty on a fatal raised before anything was collected', async () => {
+    // SOURCE_TOO_SMALL is checked first of all, so there is genuinely nothing to carry.
+    const error = await openEdf(byteSource(new Uint8Array(10)))
+      .then(() => undefined)
+      .catch((thrown: unknown) => thrown);
+
+    expect((error as EdfFormatError).code).toBe('SOURCE_TOO_SMALL');
+    expect((error as EdfFormatError).collected).toEqual([]);
+  });
+});
 
 describe('the bytes inspectEdf is allowed to read', () => {
   it('reads only the header of a large file, never the data', async () => {

@@ -312,7 +312,7 @@ if (!inspection.ok) {
 | `byteLength` | `number` | The source's size. |
 | `bytesRead` | `number` | What this call actually cost. |
 | `headerBytes` | `Uint8Array \| undefined` | The bytes read, for a hexdump. |
-| `diagnostics` | `readonly EdfDiagnostic[]` | Everything found, including the fatal one when parsing failed. |
+| `diagnostics` | `readonly EdfDiagnostic[]` | Everything found, in the order the parse found it, with the fatal one last when parsing failed. |
 
 ## buildTimeline
 

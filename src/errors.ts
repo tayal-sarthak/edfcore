@@ -13,6 +13,8 @@ import type { EdfDiagnostic, EdfDiagnosticCode, RecordRange } from './types.js';
 
 export type EdfErrorKind = 'format' | 'scaling' | 'range' | 'source' | 'budget' | 'channel';
 
+const EMPTY_DIAGNOSTICS: readonly EdfDiagnostic[] = Object.freeze([]);
+
 export abstract class EdfError extends Error {
   abstract readonly edfErrorKind: EdfErrorKind;
 
@@ -67,6 +69,8 @@ export function isEdfError(value: unknown): value is AnyEdfError {
 export interface EdfFormatErrorInit {
   readonly code: EdfDiagnosticCode;
   readonly diagnostic?: EdfDiagnostic;
+  /** Everything already found when this became fatal. See `EdfFormatError.collected`. */
+  readonly collected?: readonly EdfDiagnostic[];
   readonly field?: string;
   readonly byteOffset?: number;
   readonly signalIndex?: number;
@@ -82,6 +86,16 @@ export class EdfFormatError extends EdfError {
   readonly edfErrorKind = 'format' as const;
   readonly code: EdfDiagnosticCode;
   readonly diagnostic: EdfDiagnostic | undefined;
+  /**
+   * The diagnostics already collected when this one turned out to be fatal, in the order they
+   * were found. Empty when the fatal was raised before any collection existed.
+   *
+   * A header parse accumulates as it goes and reaches its fatal checks last, so by the time one
+   * throws it may have found several defects that have nothing to do with the fatal — and the
+   * fatal is often the least informative of the set. `inspectEdf` reports these alongside it;
+   * before 0.3.18 they were discarded with the sink and only the fatal survived.
+   */
+  readonly collected: readonly EdfDiagnostic[];
   readonly field: string | undefined;
   readonly byteOffset: number | undefined;
   readonly signalIndex: number | undefined;
@@ -92,6 +106,7 @@ export class EdfFormatError extends EdfError {
     this.name = 'EdfFormatError';
     this.code = init.code;
     this.diagnostic = init.diagnostic;
+    this.collected = init.collected ?? EMPTY_DIAGNOSTICS;
     this.field = init.field ?? init.diagnostic?.field;
     this.byteOffset = init.byteOffset ?? init.diagnostic?.byteOffset;
     this.signalIndex = init.signalIndex ?? init.diagnostic?.signalIndex;
