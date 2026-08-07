@@ -150,6 +150,25 @@ export function ticksToSeconds(ticks: bigint): number {
   return Number(wholeSeconds) + Number(remainder) / TICKS_PER_SECOND_FLOAT;
 }
 
+/**
+ * Integer division that rounds toward -Infinity and +Infinity respectively, `b` positive.
+ *
+ * Bigint `/` truncates toward zero, so both need a correction on the negative side, and the
+ * negative side is reached by ordinary input: a window that starts before record 0 is how a
+ * pre-stimulus epoch is spelled. They live here, beside the tick conversions, because every
+ * caller is dividing a tick count by another tick count and three modules had grown their own
+ * copies of the same four lines.
+ */
+export function floorDiv(a: bigint, b: bigint): bigint {
+  const quotient = a / b;
+  return a % b === 0n || a > 0n ? quotient : quotient - 1n;
+}
+
+export function ceilDiv(a: bigint, b: bigint): bigint {
+  const quotient = a / b;
+  return a % b === 0n || a < 0n ? quotient : quotient + 1n;
+}
+
 const INT64_MIN: bigint = -(2n ** 63n);
 const INT64_MAX: bigint = 2n ** 63n - 1n;
 

@@ -18,7 +18,7 @@
 
 import { TICKS_PER_SECOND } from '../constants.js';
 import { EdfChannelNotFoundError } from '../errors.js';
-import { secondsToTicks, ticksToSeconds } from '../tal/ticks.js';
+import { ceilDiv, floorDiv, secondsToTicks, ticksToSeconds } from '../tal/ticks.js';
 import type {
   EdfChunkSignal,
   EdfHeader,
@@ -32,17 +32,6 @@ const NO_RANGES: readonly RecordRange[] = Object.freeze([]);
 
 /** Exact: 10^7 is far below 2^53. */
 const TICKS_PER_SECOND_FLOAT = Number(TICKS_PER_SECOND);
-
-/** `b` must be positive. Bigint `/` truncates toward zero, so negatives need the correction. */
-function floorDiv(a: bigint, b: bigint): bigint {
-  const quotient = a / b;
-  return a % b === 0n || a > 0n ? quotient : quotient - 1n;
-}
-
-function ceilDiv(a: bigint, b: bigint): bigint {
-  const quotient = a / b;
-  return a % b === 0n || a < 0n ? quotient : quotient + 1n;
-}
 
 /** Clamping in bigint first, because `Number()` on a large bigint silently loses digits. */
 function clampToInt(value: bigint, low: number, high: number): number {

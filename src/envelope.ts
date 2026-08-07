@@ -27,7 +27,7 @@ import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
 import { gapBefore } from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
-import { ticksToSeconds } from './tal/ticks.js';
+import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
   EdfChunkSignal,
@@ -380,6 +380,12 @@ export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number):
   };
 }
 
+/** `Number()` on a large bigint silently loses digits, so the bound is applied in bigint first. */
+function clampToSafeInteger(value: bigint): number {
+  const limit = BigInt(Number.MAX_SAFE_INTEGER);
+  return value >= limit ? Number.MAX_SAFE_INTEGER : Math.max(1, Number(value));
+}
+
 /**
  * The envelope of a window, at a chosen time resolution rather than a chosen bucket count.
  *
@@ -427,16 +433,31 @@ export async function readEnvelopeAtResolution(
     selection.durationSeconds,
   );
 
-  const recordSeconds = recording.header.recordDurationSeconds;
+  // In exact ticks. `records.count * recordDurationSeconds` is a float64 product, and it lands
+  // just ABOVE the true value as readily as below: 3 x 0.1 s is 0.30000000000000004, which
+  // divided by a 0.1 s bucket ceils to FOUR buckets over a 0.3 s run. The extra bucket is not
+  // empty — the samples are spread across the count that was asked for — so every bucket came out
+  // 0.075 s wide, and a caller who asked for 0.1 s per bucket to put two runs on one axis got a
+  // resolution that was neither what it requested nor the same between runs. That is the exact
+  // failure this function was written to prevent, arriving by a second route (fixed in 0.3.5).
+  const durationTicks = recording.header.recordDurationTicks;
+  const bucketTicks = secondsToTicks(secondsPerBucket);
   const chunks: EdfEnvelopeChunk[] = [];
   for (const records of ranges) {
     // A run's span is exactly its record count times the record duration: records within one run
     // are contiguous by construction. A zero record duration is legal EDF and leaves no time axis
     // at all, so one bucket is the only honest answer for it.
-    const runSeconds = records.count * recordSeconds;
+    const runTicks = BigInt(records.count) * durationTicks;
     // Ceil, not round: 100 s at 30 s per bucket needs four buckets, not three. Three would
     // silently drop the last 10 s off the end of the picture.
-    const buckets = runSeconds > 0 ? Math.max(1, Math.ceil(runSeconds / secondsPerBucket)) : 1;
+    //
+    // A `secondsPerBucket` below one tick rounds to zero and has no whole-tick answer. The limit
+    // of the request is one bucket per tick, so that is what it gets; `reduceRange` then clamps to
+    // one bucket per sample, which is the finest picture the data can support either way.
+    const buckets =
+      runTicks > 0n
+        ? clampToSafeInteger(bucketTicks > 0n ? ceilDiv(runTicks, bucketTicks) : runTicks)
+        : 1;
     chunks.push(
       await reduceRange(
         recording,

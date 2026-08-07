@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.5
+
+- **Fixed** `readEnvelopeAtResolution` returning a bucket width that is not the one asked for. It
+  computed a run's length as `records.count * recordDurationSeconds`, a float64 product that lands
+  just ABOVE the true value as readily as below: 3 x 0.1 s is 0.30000000000000004, so a 0.3 s run
+  at 0.1 s per bucket ceiled to FOUR buckets. The extra bucket is not empty — the samples are
+  spread across whatever count is asked for — so every bucket came out 0.075 s wide.
+- That is the failure this function exists to prevent, reached by a second route. 0.2.31 fixed it
+  for a run being narrower than the window; this is the same wrong width with no gap, no chunking
+  and no window offset involved, on a contiguous file whose record duration is not a binary
+  fraction. A caller asking for a fixed 0.1 s so two runs share an axis got neither the resolution
+  it requested nor the same one in both.
+- The record count is an integer and the record duration is exact in ticks, so the run length and
+  the bucket width are computed there and divided with `ceilDiv`. The 0.2.5 ceiling rule is
+  unchanged: 40 s at 30 s per bucket is still two buckets, never one.
+- A `secondsPerBucket` below one 100 ns tick has no whole-tick answer. The limit of that request is
+  one bucket per tick, so that is what it gets, and `reduceRange`'s existing clamp to one bucket
+  per sample still applies — no new refusal.
+- `floorDiv` and `ceilDiv` now live in `src/tal/ticks.ts` instead of in private copies in three
+  modules. Same four lines, one home; every caller is dividing a tick count by a tick count.
+
 ## 0.3.4
 
 **`EdfTimeline` gains `spanTicks` and `coveredTicks`, and edfcore's contiguity check moves off

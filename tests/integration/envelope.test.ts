@@ -477,6 +477,32 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
     expect(actualResolution(chunk)).toBe(1);
   });
 
+  it('does not add a bucket to a run whose length is not a binary fraction', async () => {
+    // The second route to the same failure, and the one no chunking or window offset is involved
+    // in. 3 x 0.1 s is 0.30000000000000004 in float64, so `Math.ceil(runSeconds / 0.1)` was FOUR
+    // over a 0.3 s run. The extra bucket is not empty — the samples are spread over whatever
+    // count is asked for — so every bucket came out 0.075 s wide against a request for 0.1 s.
+    // The record count is an integer and the record duration is exact in ticks, so the product is
+    // computed there (fixed in 0.3.5).
+    const bytes = buildEdf({
+      recordCount: 3,
+      recordDurationSeconds: 0.1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 10 }],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 0.3,
+      secondsPerBucket: 0.1,
+    });
+    if (chunk === undefined) throw new Error('setup failed');
+    expect(chunk.bucketCount).toBe(3);
+    expect(actualResolution(chunk)).toBeCloseTo(0.1, 12);
+    // The premise: the float product really does overshoot, so this test is testing something.
+    expect(3 * 0.1).toBeGreaterThan(0.3);
+  });
+
   it('still ceils, so the tail of a window is never dropped', async () => {
     // The 0.2.5 rule, unchanged: 40 s at 30 s per bucket is two buckets, not one.
     const edf = await recording();

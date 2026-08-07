@@ -28,14 +28,8 @@
 
 import { EdfChannelNotFoundError } from './errors.js';
 import { segmentAt } from './record-index.js';
-import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { floorDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import type { EdfRecording, EdfSampleLocation, EdfSegment, EdfSignal } from './types.js';
-
-/** `b` must be positive. Bigint `/` truncates toward zero, so negatives need the correction. */
-function floorDiv(a: bigint, b: bigint): bigint {
-  const quotient = a / b;
-  return a % b === 0n || a > 0n ? quotient : quotient - 1n;
-}
 
 function resolveSignal(recording: EdfRecording, signalIndex: number, caller: string): EdfSignal {
   const signal = recording.header.signals[signalIndex];
