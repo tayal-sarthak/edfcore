@@ -426,7 +426,7 @@ describe('close', () => {
     const cache = cachedSource(source, { blockBytes: 1024, maxBytes: 4096 });
 
     const inflight = cache.read(0, 16);
-    await cache.close();
+    await cache.close?.();
     release();
     await inflight;
 
@@ -449,7 +449,7 @@ describe('close', () => {
     // Warm cache: the second read costs nothing.
     expect(reads()).toBe(warm);
 
-    await cache.close();
+    await cache.close?.();
     await cache.read(0, 16);
     await cache.read(0, 16);
     // Cold and staying cold: two more delegated reads, not zero and not one.
@@ -460,7 +460,7 @@ describe('close', () => {
     const { source, release, isClosed } = gated(new Uint8Array(64));
     release();
     const cache = cachedSource(source, { blockBytes: 32, maxBytes: 64 });
-    await cache.close();
+    await cache.close?.();
     expect(isClosed()).toBe(true);
   });
 });
