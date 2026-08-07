@@ -429,7 +429,7 @@ in this order, annotations channel included:
 | 5 | `physicalDimension` | trimmed |
 | 6 | `samplesPerRecord` | the authoritative count; index by this, never by the rate |
 
-Column 6 was added in 0.2.41 and appended rather than inserted, so nothing that parsed the first
+Column 6 was added in 0.2.42 and appended rather than inserted, so nothing that parsed the first
 five by position moved. Before that this page claimed the command emitted samples per record when
 it emitted `kind` instead, and the authoritative field was in no column at all. `gaps` runs a full scan rather
 than the two probes `openEdf` makes, because a probed index cannot see a gap in the middle and

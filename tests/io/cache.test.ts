@@ -419,7 +419,7 @@ describe('close', () => {
   }
 
   it('does not let an in-flight read repopulate the cache after close', async () => {
-    // The read's `.then` runs after `blocks.clear()`, so before 0.2.36 the cache refilled itself
+    // The read's `.then` runs after `blocks.clear()`, so before 0.2.37 the cache refilled itself
     // AFTER being closed and then served that data — from a source whose own close had run.
     const bytes = new Uint8Array(4096).fill(7);
     const { source, release, isClosed, reads } = gated(bytes);

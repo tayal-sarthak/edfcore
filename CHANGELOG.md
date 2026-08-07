@@ -6,7 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
-## 0.2.45
+## 0.2.47
+
+- **Fixed** this changelog. Every heading from `0.2.36` down to `0.2.45` named a version one lower
+  than the release that actually shipped it: `0.2.36` was consumed by a release run that failed its
+  typecheck after bumping the version, and I kept writing the next entry against the number I
+  expected rather than the tag that got cut. So the `cachedSource` fix was labelled `0.2.36` and
+  shipped in `0.2.37`, and everything after it was off by one — including the MNE claim in the
+  README, which named `0.2.43` for work that is in `0.2.44`. Verified against the tags rather than
+  reasoned about: `git show <tag>:CHANGELOG.md` for each. `0.2.36` is now listed as never released,
+  the way `0.2.29` already was.
+
+## 0.2.46
 
 - **Added** `scripts/golden/README.md`: how to regenerate every parity fixture, and — more usefully
   — what each of the three harnesses actually claims and how strong that claim is. Bit-for-bit for
@@ -18,7 +29,7 @@ defect; those are called out below.
 - **Documented** the same table on the physical-values page, so a reader who never opens the
   repository sees which claims are load-bearing and which are approximate.
 
-## 0.2.44
+## 0.2.45
 
 - **Added** annotation parity against pyEDFlib — the other axis, and the one edfcore has got wrong
   most. The scaling harness checks arithmetic; this checks WHICH AXIS an onset is on. Six releases
@@ -33,7 +44,7 @@ defect; those are called out below.
   recorded from that would have made the parity test compare an incomplete set and pass while doing
   it.
 
-## 0.2.43
+## 0.2.44
 
 - **Added** parity against MNE — a second, independent reader. pyEDFlib and edfcore both descend
   from EDFlib's arithmetic, so agreement between them shows edfcore copied it correctly rather than
@@ -49,7 +60,7 @@ defect; those are called out below.
   other. Channels MNE does not rescale — it leaves `degC` alone — are excluded rather than pushed
   through a factor that would make the comparison an artefact of the test.
 
-## 0.2.42
+## 0.2.43
 
 - **Added** three cases to the pyEDFlib parity harness, chosen for where the two scaling
   expressions diverge most or where a mistake would be least visible:
@@ -61,7 +72,7 @@ defect; those are called out below.
     set.
   - **a full 16-bit range** mapped to one millivolt — the finest.
 
-## 0.2.41
+## 0.2.42
 
 - **Added** a `samplesPerRecord` column to `edfcore signals`, and **fixed** the documentation,
   which claimed the command emitted it when it emitted `kind` instead. That left the authoritative
@@ -72,7 +83,7 @@ defect; those are called out below.
   five columns by position moved. The full six-column list is now pinned by a test, not only
   described.
 
-## 0.2.40
+## 0.2.41
 
 - **Added** the types `edfcore/validate`'s own signatures mention to that subpath's exports:
   `EdfHeader`, `EdfDiagnostic`, `EdfDiagnosticCode`, `EdfSeverity`, `EdfSignal`, `EdfRecordIndex`
@@ -83,7 +94,7 @@ defect; those are called out below.
   of anything they passed or got back. A type-only test now pins the set, so it fails at
   `npm run typecheck` rather than in a consumer's project.
 
-## 0.2.39
+## 0.2.40
 
 - **Added** tests pinning which date defect produces which diagnostic. `DATE_IMPLAUSIBLE` is
   documented as covering two conditions with only the second reachable, and that was prose about an
@@ -94,7 +105,7 @@ defect; those are called out below.
   dead. The branch itself is kept, with the reason written next to it — a missing guard is harder
   to notice than an idle one.
 
-## 0.2.38
+## 0.2.39
 
 - **Fixed** `onsetSecondsFromFirstRecord` and `onsetTicksFromFirstRecord` disagreeing about the
   same event at the edge of the int64 tick range. The exact field saturated and the float field was
@@ -103,7 +114,7 @@ defect; those are called out below.
   with the exact field in 0.2.10. Both are now derived from one rebased value, which is what the
   float field was always documented to be: the lossy view of the exact one.
 
-## 0.2.37
+## 0.2.38
 
 - **Fixed** `fileHandleSource` and `fileSource` ignoring an abort signal that flipped while a read
   was in flight. The abort check ran at the top of each loop iteration, and the common case is one
@@ -112,7 +123,7 @@ defect; those are called out below.
   test saying why; one adapter honouring a signal that another quietly ignores is worse than either
   rule alone.
 
-## 0.2.36
+## 0.2.37
 
 - **Fixed** `cachedSource` repopulating itself after `close()`. A read already in flight when close
   was called still resolves, and its continuation still runs — after `blocks.clear()` — so the
@@ -125,6 +136,12 @@ defect; those are called out below.
   exists because a cache RETAINS its blocks, and a read wider than the whole budget bypasses the
   cache entirely and retains nothing. The path is exactly as safe as calling the wrapped source
   directly, which is what it does.
+
+## 0.2.36
+
+Never released. A release run failed its typecheck after bumping the version, which consumed the
+number before a tag was cut — the same way `0.2.29` was lost earlier. The `cachedSource` fix that
+carried this heading while it was being written shipped in `0.2.37`, and is listed there.
 
 ## 0.2.35
 

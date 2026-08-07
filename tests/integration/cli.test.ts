@@ -146,7 +146,7 @@ describe('signals', () => {
     const lines = out.trim().split('\n');
     expect(lines.every((l) => l.includes('\t'))).toBe(true);
     // The column list is the contract for anything piping this into awk, so it is pinned here
-    // rather than left to the docs — which described a different list until 0.2.41.
+    // rather than left to the docs — which described a different list until 0.2.42.
     for (const line of lines) expect(line.split('\t')).toHaveLength(6);
     // Every signal, annotations channel included: this is the raw listing.
     expect(lines).toHaveLength(
