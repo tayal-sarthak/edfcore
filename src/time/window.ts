@@ -166,27 +166,34 @@ export function resolveTimeWindow(
 }
 
 /**
- * Sample `firstIndex` of the chunk, in seconds, as an exact rational.
+ * Sample `firstIndex` of the chunk, as an exact rational, in both units.
  *
  * The sample sits at `chunkStart + firstIndex * recordDuration / samplesPerRecord`, and that
  * division is usually not a whole number of ticks. The whole part goes through `ticksToSeconds`
  * and only the remainder is divided, so the sub-tick part costs one rounding instead of poisoning
- * the seconds and the ticks together. Bigint `/` and `%` agree in sign, so a negative chunk start
- * (a pre-stimulus window) sums correctly.
+ * the seconds and the ticks together.
+ *
+ * `ticks` is FLOORED — `floorDiv`, not bigint `/`, which truncates toward zero and would round a
+ * negative chunk start (a pre-stimulus window) the wrong way. Flooring is the rule every boundary
+ * decision in the package follows: a sample covers from its own start to the next one's, so the
+ * tick a sample starts in is the one it is already running in. The remainder is then non-negative
+ * and the two parts still sum to the same seconds.
  */
-function gridSampleStartSeconds(
+function gridSampleStart(
   chunkStartTicks: bigint,
   firstIndex: bigint,
   durationTicks: bigint,
   samplesPerRecord: bigint,
-): number {
+): { ticks: bigint; seconds: number } {
   const scaled = chunkStartTicks * samplesPerRecord + firstIndex * durationTicks;
-  const wholeTicks = scaled / samplesPerRecord;
-  const remainder = scaled % samplesPerRecord;
-  return (
-    ticksToSeconds(wholeTicks) +
-    Number(remainder) / (Number(samplesPerRecord) * TICKS_PER_SECOND_FLOAT)
-  );
+  const wholeTicks = floorDiv(scaled, samplesPerRecord);
+  const remainder = scaled - wholeTicks * samplesPerRecord;
+  return {
+    ticks: wholeTicks,
+    seconds:
+      ticksToSeconds(wholeTicks) +
+      Number(remainder) / (Number(samplesPerRecord) * TICKS_PER_SECOND_FLOAT),
+  };
 }
 
 function countOutOfDigitalRange(digital: Int32Array, signal: EdfSignal): number {
@@ -206,7 +213,7 @@ function trimmed(
   signal: EdfSignal,
   firstIndex: number,
   sampleCount: number,
-  startSeconds: number,
+  start: { ticks: bigint; seconds: number },
 ): EdfChunkSignal {
   const digital = chunkSignal.digital.subarray(firstIndex, firstIndex + sampleCount);
   const keptEverything = firstIndex === 0 && digital.length === chunkSignal.digital.length;
@@ -217,7 +224,8 @@ function trimmed(
     sampleCount: digital.length,
     digital,
     firstSampleIndex: chunkSignal.firstSampleIndex + firstIndex,
-    startSeconds,
+    startSeconds: start.seconds,
+    startTicks: start.ticks,
     // Re-counted only when it can have changed and only when there is something to find: a
     // chunk with no out-of-range samples cannot acquire one by being narrowed.
     outOfDigitalRangeCount:
@@ -257,10 +265,12 @@ export function trimToWindow(
 
   const windowStartTicks = secondsToTicks(startSeconds);
   const windowDurationTicks = secondsToTicks(durationSeconds);
-  // The chunk's own start is a float only because `EdfChunkSignal` publishes seconds; it was
-  // produced from exact ticks by `ticksToSeconds`, and rounding back to the nearest tick recovers
-  // them for any recording shorter than ~28.5 years.
-  const chunkStartTicks = secondsToTicks(chunkSignal.startSeconds);
+  // The chunk's own start, as the chunk itself recorded it. Until 0.3.7 `EdfChunkSignal` published
+  // only seconds, so this rounded them back — a round trip the comment here bounded at "any
+  // recording shorter than ~28.5 years", which is where 10^7 ticks per second passes 2^53. The
+  // library accepts declared spans up to the int64 tick range, three orders of magnitude past
+  // that, so the bound was reachable rather than theoretical. The value is now carried.
+  const chunkStartTicks = chunkSignal.startTicks;
 
   // Nothing advances in time within the chunk: a zero record duration puts every sample at the
   // chunk's start instant, and a signal with no samples per record has no grid at all. The chunk
@@ -270,9 +280,10 @@ export function trimToWindow(
       windowDurationTicks > 0n &&
       windowStartTicks <= chunkStartTicks &&
       chunkStartTicks < windowStartTicks + windowDurationTicks;
+    const unchanged = { ticks: chunkStartTicks, seconds: chunkSignal.startSeconds };
     return inside
-      ? trimmed(chunkSignal, signal, 0, available, chunkSignal.startSeconds)
-      : trimmed(chunkSignal, signal, 0, 0, chunkSignal.startSeconds);
+      ? trimmed(chunkSignal, signal, 0, available, unchanged)
+      : trimmed(chunkSignal, signal, 0, 0, unchanged);
   }
 
   const samplesPerRecordTicks = BigInt(samplesPerRecord);
@@ -296,11 +307,6 @@ export function trimToWindow(
     signal,
     firstIndex,
     sampleCount,
-    gridSampleStartSeconds(
-      chunkStartTicks,
-      BigInt(firstIndex),
-      durationTicks,
-      samplesPerRecordTicks,
-    ),
+    gridSampleStart(chunkStartTicks, BigInt(firstIndex), durationTicks, samplesPerRecordTicks),
   );
 }

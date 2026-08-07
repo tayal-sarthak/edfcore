@@ -130,6 +130,8 @@ function chunkSignalOf(options: {
     digital,
     firstSampleIndex: options.firstSampleIndex ?? 0,
     startSeconds: options.startSeconds,
+    // The exact counterpart, built from the same number so a fixture cannot make them disagree.
+    startTicks: BigInt(Math.round(options.startSeconds * Number(SECOND))),
     outOfDigitalRangeCount: options.outOfDigitalRangeCount ?? 0,
   };
 }

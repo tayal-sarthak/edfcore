@@ -173,6 +173,7 @@ async function readChunk(
       digital: decoded.digital,
       firstSampleIndex: records.start * signal.samplesPerRecord,
       startSeconds,
+      startTicks,
       outOfDigitalRangeCount: decoded.outOfDigitalRangeCount,
     };
   });
@@ -180,7 +181,9 @@ async function readChunk(
   return {
     records,
     startSeconds,
+    startTicks,
     durationSeconds: ticksToSeconds(spanTicks),
+    durationTicks: spanTicks,
     byteOffset,
     byteLength: bytes.length,
     signals: Object.freeze(chunkSignals),

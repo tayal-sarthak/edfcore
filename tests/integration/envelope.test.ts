@@ -400,6 +400,7 @@ describe('envelopeOfSamples treats sampleCount as authoritative', () => {
       sampleCount: 4,
       digital: padded,
       firstSampleIndex: 0,
+      startTicks: 0n,
       startSeconds: 0,
       outOfDigitalRangeCount: 0,
     };

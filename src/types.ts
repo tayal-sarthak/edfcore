@@ -386,6 +386,16 @@ export interface EdfChunkSignal {
    *  value, since they all begin at the same record; it becomes genuinely per-signal after
    *  `trimToWindow`, where each signal's own sample grid decides the boundary. */
   readonly startSeconds: number;
+  /**
+   * The same instant, exact. This is what `trimToWindow` measures a window from.
+   *
+   * It is not always a whole number of ticks: after a trim, a signal starts at
+   * `chunkStart + firstIndex * recordDuration / samplesPerRecord`, and that division rarely
+   * lands on a tick. `startTicks` is then the tick the sample starts in, floored, and
+   * `startSeconds` keeps the sub-tick remainder. The floor is the same one every boundary
+   * decision in the package uses: a sample covers from its own start to the next one's.
+   */
+  readonly startTicks: bigint;
   /** Counted during decode, so it costs nothing. A non-zero count means the declared
    *  digital range is wrong, not that the samples are. */
   readonly outOfDigitalRangeCount: number;
@@ -394,7 +404,15 @@ export interface EdfChunkSignal {
 export interface EdfChunk {
   readonly records: RecordRange;
   readonly startSeconds: number;
+  readonly startTicks: bigint;
   readonly durationSeconds: number;
+  /**
+   * The chunk's SPAN in exact ticks — its last record's end minus its first record's start.
+   *
+   * Equal to the time it covers for one contiguous run, which is what `readWindow` returns, and
+   * larger when a caller names records across a gap with `readRecords`.
+   */
+  readonly durationTicks: bigint;
   readonly byteOffset: number;
   /** Bytes actually read from the source. Makes overread visible instead of invisible. */
   readonly byteLength: number;

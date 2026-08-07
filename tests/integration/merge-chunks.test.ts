@@ -16,7 +16,7 @@ import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readRecords, readWindow } from '../../src/recording.js';
 import { trimToWindow } from '../../src/time/window.js';
 import type { EdfChunk, EdfRecording } from '../../src/types.js';
-import { minimalEdfPlus } from '../support/writer.js';
+import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
 const SAMPLES_PER_RECORD = 8;
 const RECORDS = 6;
@@ -258,5 +258,76 @@ describe('mergeChunks refuses a gap the index never looked for', () => {
     const chunks = await wholeFile(true);
     expect(indexed.index.coverage).toBe('complete');
     expect(() => mergeChunks(chunks)).toThrow(/gap of 5 s/);
+  });
+});
+
+describe('the joinability check reads the ticks off the chunks', () => {
+  // Until 0.3.7 it rounded them back out of the seconds — `secondsToTicks(startSeconds)` plus
+  // `secondsToTicks(durationSeconds)`, two independent roundings added together. The comment
+  // bounded that round trip at "any recording shorter than ~28.5 years", which is where 10^7
+  // ticks per second passes 2^53, and the library accepts declared spans three orders of
+  // magnitude past it. A single lost tick produced a refusal naming a discontinuity of 1e-7 s
+  // between chunks that are genuinely adjacent.
+  it('carries an exact tick counterpart for every second on a chunk', async () => {
+    const recording = await openEdf(
+      byteSource(minimalEdfPlus({ recordCount: 6, recordDurationSeconds: 1 })),
+    );
+    const chunk = await readRecords(recording, {
+      records: { start: 2, count: 3 },
+      signalIndices: [0],
+    });
+    expect(chunk.startTicks).toBe(20_000_000n);
+    expect(chunk.durationTicks).toBe(30_000_000n);
+    expect(chunk.startSeconds).toBe(Number(chunk.startTicks) / 1e7);
+    expect(chunk.durationSeconds).toBe(Number(chunk.durationTicks) / 1e7);
+    expect(chunk.signals[0]?.startTicks).toBe(chunk.startTicks);
+  });
+
+  it("lets trimToWindow measure from the chunk's own start rather than a rounded one", async () => {
+    // 3 s records with 256 samples: a real geometry, and one where a sample starts every
+    // 117187.5 ticks — so a trimmed signal's start lands exactly halfway between two ticks. The
+    // old code reconstructed that start with `secondsToTicks`, which rounds to the NEAREST tick,
+    // moving the grid origin a half tick from where the samples actually are. `startTicks` is the
+    // tick the sample starts in, floored, and is carried rather than re-derived.
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds: 3,
+      signals: [{ label: 'Fp1', samplesPerRecord: 256 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const chunk = await readRecords(recording, {
+      records: { start: 0, count: 4 },
+      signalIndices: [0],
+    });
+    const signal = chunk.signals[0];
+    if (signal === undefined) throw new Error('setup failed');
+
+    // A window starting at 0.03 s takes sample 3 first, and sample 3 starts at
+    // 3 * 30000000 / 256 = 351562.5 ticks — exactly between two ticks.
+    const once = trimToWindow(recording.header, signal, 0.03, 6);
+    expect(once.firstSampleIndex).toBe(3);
+    // Floored: the tick the sample is already running in. The seconds keep the other half.
+    expect(once.startTicks).toBe(351_562n);
+    expect(once.startSeconds).toBe(0.03515625);
+    // What the old code would have recovered instead — the grid origin every later boundary is
+    // measured from, one tick past where the sample actually starts.
+    expect(BigInt(Math.round(once.startSeconds * 1e7))).toBe(351_563n);
+  });
+
+  it('still refuses two chunks that are record-adjacent but a tick apart in time', async () => {
+    // The check the round trip existed to make, and it still makes it.
+    const recording = await openEdf(
+      byteSource(minimalEdfPlus({ recordCount: 4, recordDurationSeconds: 1 })),
+    );
+    const first = await readRecords(recording, {
+      records: { start: 0, count: 2 },
+      signalIndices: [0],
+    });
+    const second = await readRecords(recording, {
+      records: { start: 2, count: 2 },
+      signalIndices: [0],
+    });
+    const shifted = { ...second, startTicks: second.startTicks + 1n };
+    expect(() => mergeChunks([first, shifted])).toThrow(/discontinuity/);
   });
 });

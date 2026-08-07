@@ -457,7 +457,9 @@ first.firstSampleIndex;// 300 — index on this signal's own sample grid
 |---|---|---|
 | `records` | `RecordRange` | the records this chunk holds |
 | `startSeconds` | `number` | the first record's true start, in elapsed recording time |
+| `startTicks` | `bigint` | the same instant, exact |
 | `durationSeconds` | `number` | the chunk's **span**: last record end minus first record start |
+| `durationTicks` | `bigint` | the same, exact |
 | `byteOffset` | `number` | `header.headerByteLength + records.start * header.recordByteLength` |
 | `byteLength` | `number` | bytes actually read from the source |
 | `signals` | `readonly EdfChunkSignal[]` | one entry per requested signal, in the order you asked |
@@ -466,6 +468,12 @@ first.firstSampleIndex;// 300 — index on this signal's own sample grid
 
 `durationSeconds` is a span, not a coverage. The two are equal for one contiguous run, which is
 what `readWindow` produces, and they differ when you name records across a gap yourself.
+
+`startTicks` is what `trimToWindow` measures a window from, and it is not always a whole number of
+ticks' worth of information: after a trim a signal starts at
+`chunkStart + firstIndex * recordDuration / samplesPerRecord`, and that division rarely lands on a
+tick — 3 s records of 256 samples put one every 117187.5. `startTicks` is then the tick the sample
+is already running in, floored, and `startSeconds` keeps the remainder. Compare in ticks.
 
 `byteLength` is on the object so overread is visible. `precededByGap` is `undefined` on a probed
 index for the same reason `index.segments` is: nobody has read the onsets in between. `diagnostics`
@@ -479,6 +487,7 @@ defect there is found while decoding the data you already asked for.
 | `digital` | `Int32Array` | the samples, sign-extended, unscaled and unclamped |
 | `firstSampleIndex` | `number` | `records.start * signal.samplesPerRecord`, on this signal's own grid |
 | `startSeconds` | `number` | the chunk's start; per-signal because `samplesPerRecord` differs between signals |
+| `startTicks` | `bigint` | the same instant, exact — floored to the tick the sample starts in |
 | `outOfDigitalRangeCount` | `number` | samples outside the **declared** digital range |
 
 `digital` is an `Int32Array` for both EDF and BDF, because a 24-bit sample doesn't fit an

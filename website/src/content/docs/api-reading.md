@@ -131,7 +131,9 @@ console.log(chunk.signals[0].sampleCount);
 | --- | --- | --- |
 | `records` | `RecordRange` | The records this chunk covers. |
 | `startSeconds` | `number` | The first record's *true* start, from its timekeeping TAL (not `start * recordDuration`). |
+| `startTicks` | `bigint` | The same instant, exact. |
 | `durationSeconds` | `number` | The chunk's **span**: last record's end minus first record's start. Equal to the covered time for one contiguous run, larger when you named records across a gap. |
+| `durationTicks` | `bigint` | The same, exact. |
 | `byteOffset` | `number` | Where these records begin in the file. |
 | `byteLength` | `number` | Bytes actually read from the source. |
 | `signals` | `readonly EdfChunkSignal[]` | One per entry of `signalIndices`, in that order. |
@@ -149,6 +151,7 @@ Every chunk carries the onsets of its own records, verified from bytes that had 
 | `digital` | `Int32Array` | Sign-extended sample values, still in digital units. |
 | `firstSampleIndex` | `number` | Index of the first sample on this signal's own sample grid (`records.start * samplesPerRecord`). |
 | `startSeconds` | `number` | When the first sample of *this* signal starts. Equal to `chunk.startSeconds` for a record-aligned chunk; after [`trimToWindow`](/docs/api-primitives#trimtowindow) it is this signal's own boundary sample, which differs between signals of different rates. |
+| `startTicks` | `bigint` | The same instant, floored to the tick the sample is already running in. This is what `trimToWindow` measures a window from; a trimmed start rarely lands on a whole tick, so `startSeconds` keeps the remainder and this keeps the tick. |
 | `outOfDigitalRangeCount` | `number` | Samples outside the declared digital range, counted during the decode so it costs nothing. edfcore never clamps: a non-zero count means the declared range is wrong, not that the samples are. |
 
 To get physical units, pass `digital` to [`toPhysical`](/docs/api-primitives#tophysical).

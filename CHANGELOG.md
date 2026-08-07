@@ -6,6 +6,38 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.7
+
+**`EdfChunk` gains `startTicks` and `durationTicks`, `EdfChunkSignal` gains `startTicks`, and the
+two functions that were rounding those values back out of the seconds stop.** Additive.
+
+The third and last type where an exact value was computed and thrown away, and the one where the
+cost was written down in the source. `trimToWindow` carried this comment:
+
+> The chunk's own start is a float only because `EdfChunkSignal` publishes seconds; it was produced
+> from exact ticks by `ticksToSeconds`, and rounding back to the nearest tick recovers them for any
+> recording shorter than ~28.5 years.
+
+`mergeChunks` did the same round trip on two values and added them, so a tick lost in either
+produced a refusal naming a discontinuity of 1e-7 s between chunks that are genuinely adjacent.
+
+**The bound is not the interesting part.** A trimmed signal does not start on a tick: sample `j`
+sits at `chunkStart + j * recordDuration / samplesPerRecord`, and 3 s records of 256 samples — a
+real geometry, and the one this package's own comments cite for why `sampleRateHz` is never used in
+a boundary — put a sample every 117187.5 ticks. Rounding those seconds back moves the grid origin
+to the wrong side of the sample, on an ordinary file, at ordinary times. `startTicks` is the tick
+the sample is already running in, floored, and `startSeconds` keeps the remainder; the two together
+are the exact rational, and `trimToWindow` now reads the tick instead of guessing it back.
+
+`mergeChunks` also derives the merged span from the ends in ticks and converts once, rather than
+performing three float operations on three already-converted numbers. It still refuses two chunks
+that are record-adjacent but a tick apart in time — that check is the reason the round trip existed,
+and it is now made on the values themselves.
+
+That closes the set: `EdfTimeline` (0.3.4), `EdfSegment` and `EdfGap` (0.3.6), `EdfChunk` and
+`EdfChunkSignal` (0.3.7). Every time edfcore reports is now available exactly, and no internal
+comparison recovers a tick by rounding a float.
+
 ## 0.3.6
 
 **`EdfSegment` and `EdfGap` carry their exact ticks, and `segmentAt` and `gapAt` decide boundaries

@@ -16,7 +16,7 @@
  */
 
 import { appendDiagnostics } from './diagnostics/collector.js';
-import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { ticksToSeconds } from './tal/ticks.js';
 import type { EdfChunk, EdfChunkSignal, EdfDiagnostic } from './types.js';
 
 /** Reads as one line at the call site, and keeps the `chunks[i]` non-null assertions out of it. */
@@ -63,13 +63,15 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
     );
   }
 
-  // In exact ticks, never in float seconds: both values were produced from ticks by
-  // `ticksToSeconds`, and rounding back recovers the tick they came from for any recording
-  // shorter than ~28.5 years — the same round trip `trimToWindow` relies on. A float comparison
-  // here would let a sub-tick discrepancy through, and an epsilon would let a real one through.
-  const previousEndTicks =
-    secondsToTicks(previous.startSeconds) + secondsToTicks(previous.durationSeconds);
-  const nextStartTicks = secondsToTicks(next.startSeconds);
+  // In exact ticks, never in float seconds: a float comparison here would let a sub-tick
+  // discrepancy through, and an epsilon would let a real one through.
+  //
+  // The ticks are read off the chunks. Until 0.3.7 they were rounded BACK out of the seconds,
+  // which recovered them only "for any recording shorter than ~28.5 years" — and rounded two
+  // values independently before adding them, so a single lost tick in either produced a refusal
+  // naming a discontinuity of 1e-7 s on chunks that are genuinely adjacent.
+  const previousEndTicks = previous.startTicks + previous.durationTicks;
+  const nextStartTicks = next.startTicks;
   if (previousEndTicks !== nextStartTicks) {
     const gapSeconds = ticksToSeconds(nextStartTicks - previousEndTicks);
     throw new RangeError(
@@ -161,6 +163,7 @@ export function mergeChunks(chunks: readonly EdfChunk[]): EdfChunk {
       digital,
       firstSampleIndex: firstSignal.firstSampleIndex,
       startSeconds: firstSignal.startSeconds,
+      startTicks: firstSignal.startTicks,
       outOfDigitalRangeCount: outOfRange,
     } satisfies EdfChunkSignal;
   });
@@ -180,9 +183,13 @@ export function mergeChunks(chunks: readonly EdfChunk[]): EdfChunk {
       count: last.records.start + last.records.count - first.records.start,
     },
     startSeconds: first.startSeconds,
-    // Two float operations against the ends, not a sum of N durations: adding the durations up
-    // accumulates rounding once per chunk, and the run is contiguous so the ends are the truth.
-    durationSeconds: last.startSeconds + last.durationSeconds - first.startSeconds,
+    startTicks: first.startTicks,
+    // Measured against the ENDS, not summed over N durations: the run is contiguous, so the ends
+    // are the truth. In ticks the distinction is about which value is right rather than about
+    // accumulated rounding, and the seconds are then one conversion of that one exact number
+    // instead of three float operations on three converted ones.
+    durationTicks: last.startTicks + last.durationTicks - first.startTicks,
+    durationSeconds: ticksToSeconds(last.startTicks + last.durationTicks - first.startTicks),
     byteOffset: first.byteOffset,
     byteLength,
     signals: Object.freeze(signals),
