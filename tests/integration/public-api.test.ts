@@ -279,11 +279,38 @@ describe('the error classes', () => {
       expect(error).toBeInstanceOf(Error);
       expect(defined(api[name], name)).toBe(error.constructor);
       expect(error.edfErrorKind).toBe(kind);
-      // `name` comes from `new.target`, so a stack trace names the concrete class.
+      // A stack trace names the concrete class.
       expect(error.name).toBe(name);
       // The supported discriminator: `instanceof` is false across an iframe, a worker, or two
       // copies of the package in one tree, and `isEdfError` is the one spelling of the check.
       expect(isEdfError(error)).toBe(true);
+    },
+  );
+
+  it.each(cases)(
+    '$name keeps its name when the class binding is renamed, as a minifier renames it',
+    ({ name, make }) => {
+      /*
+       * A minifier rewrites `class EdfFormatError` to `class t`, and `Function.prototype.name`
+       * follows it. `new.target.name` therefore produced `"t"` in any consumer bundle built with
+       * esbuild --minify, rollup+terser or webpack in production mode — which is precisely the
+       * browser build where `error.name` is what a consumer branches on, and precisely where this
+       * suite could not see it, because the suite runs against unminified source.
+       *
+       * Redefining the constructor's `name` is an exact simulation of that rewrite: it is the one
+       * property `new.target.name` reads. The name must now come from a literal, so this passes
+       * whatever the binding is called (fixed in 0.3.12).
+       */
+      const errorClass = defined(api[name], name) as { name: string };
+      const original = Object.getOwnPropertyDescriptor(errorClass, 'name');
+      Object.defineProperty(errorClass, 'name', { value: 'q', configurable: true });
+      try {
+        expect(errorClass.name).toBe('q');
+        expect(make().name).toBe(name);
+      } finally {
+        if (original !== undefined) Object.defineProperty(errorClass, 'name', original);
+      }
+      expect(errorClass.name).toBe(name);
     },
   );
 

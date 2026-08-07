@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.12
+
+- **Fixed** `error.name` becoming a mangled identifier in any minified consumer bundle. Every
+  edfcore error took its name from `new.target.name`, which reads `Function.prototype.name` — and
+  a minifier rewrites `class EdfFormatError` to `class t`, so the name follows it. Bundled with
+  `esbuild --minify`, `new EdfFormatError(...).name` came out as `"t"`.
+- That is exactly the build where it matters. `error.name` is what a consumer branches on in a
+  browser, `api-errors.md` states the value, and the package's own test asserts it — but the suite
+  runs against unminified source, so it could not see this. Each class now assigns its name as a
+  string literal.
+- The guard renames the class binding with `Object.defineProperty(cls, 'name', …)` before
+  constructing, which is an exact simulation of the rewrite: `Function.prototype.name` is the one
+  property `new.target.name` reads. Verified separately against a real `esbuild --minify` bundle
+  of `dist/`; the test needs no bundler, and edfcore keeps its five dev dependencies.
+- `new.target.name` remains in the abstract base as the fallback for a consumer who subclasses
+  `EdfError` themselves. Nothing else changed: `edfErrorKind` is still the supported discriminator,
+  because `instanceof` is false across a realm boundary and a name is not a type.
+
 ## 0.3.11
 
 - **Changed** `formatHeader` to stop calling the declared coverage the "duration" on a file that

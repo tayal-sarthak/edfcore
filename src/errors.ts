@@ -18,6 +18,11 @@ export abstract class EdfError extends Error {
 
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options as ErrorOptions | undefined);
+    // `new.target.name` is the FALLBACK, for a consumer who subclasses `EdfError` themselves.
+    // Every class in this file overwrites it with a literal in its own constructor, because
+    // `new.target.name` reads `Function.prototype.name` — which a minifier rewrites. Bundled
+    // with esbuild --minify, `new EdfFormatError(...).name` came out as `"t"`, in exactly the
+    // browser build where `error.name` is what a consumer branches on (fixed in 0.3.12).
     this.name = new.target.name;
   }
 }
@@ -84,6 +89,7 @@ export class EdfFormatError extends EdfError {
 
   constructor(message: string, init: EdfFormatErrorInit) {
     super(message, { cause: init.cause });
+    this.name = 'EdfFormatError';
     this.code = init.code;
     this.diagnostic = init.diagnostic;
     this.field = init.field ?? init.diagnostic?.field;
@@ -108,6 +114,7 @@ export class EdfScalingError extends EdfError {
     init: { code: EdfDiagnosticCode; signalIndex: number; label: string; cause?: unknown },
   ) {
     super(message, { cause: init.cause });
+    this.name = 'EdfScalingError';
     this.code = init.code;
     this.signalIndex = init.signalIndex;
     this.label = init.label;
@@ -125,6 +132,7 @@ export class EdfRangeError extends EdfError {
     init: { requested: RecordRange; available: RecordRange; cause?: unknown },
   ) {
     super(message, { cause: init.cause });
+    this.name = 'EdfRangeError';
     this.requested = init.requested;
     this.available = init.available;
   }
@@ -147,6 +155,7 @@ export class EdfSourceError extends EdfError {
     },
   ) {
     super(message, { cause: init.cause });
+    this.name = 'EdfSourceError';
     this.offset = init.offset;
     this.requestedLength = init.requestedLength;
     this.receivedLength = init.receivedLength;
@@ -168,6 +177,7 @@ export class EdfBudgetError extends EdfError {
     init: { requiredBytes: number; budgetBytes: number; cause?: unknown },
   ) {
     super(message, { cause: init.cause });
+    this.name = 'EdfBudgetError';
     this.requiredBytes = init.requiredBytes;
     this.budgetBytes = init.budgetBytes;
   }
@@ -187,6 +197,7 @@ export class EdfAmbiguousChannelError extends EdfError {
     init: { label: string; matchingIndices: readonly number[]; cause?: unknown },
   ) {
     super(message, { cause: init.cause });
+    this.name = 'EdfAmbiguousChannelError';
     this.label = init.label;
     this.matchingIndices = init.matchingIndices;
   }
@@ -202,6 +213,7 @@ export class EdfChannelNotFoundError extends EdfError {
     init: { selector: string | number; availableLabels: readonly string[]; cause?: unknown },
   ) {
     super(message, { cause: init.cause });
+    this.name = 'EdfChannelNotFoundError';
     this.selector = init.selector;
     this.availableLabels = init.availableLabels;
   }

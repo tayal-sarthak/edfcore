@@ -46,8 +46,13 @@ function isEdfError(value: unknown): value is EdfError;
 ```
 
 It tests for an object with a string `edfErrorKind` and nothing else. `EdfError` itself is
-exported. It's the abstract base every class below extends, and it sets `name` to the concrete
-constructor's name, so `error.name` is `'EdfFormatError'` rather than `'Error'`.
+exported. It's the abstract base every class below extends, and `error.name` is the concrete
+class's name — `'EdfFormatError'` rather than `'Error'` — so a stack trace says which one you got.
+
+That name is a **string literal**, not `new.target.name`. A minifier rewrites `class
+EdfFormatError` to `class t` and `Function.prototype.name` follows it, so until 0.3.12 any
+consumer bundle built with `esbuild --minify`, rollup + terser or webpack in production mode saw
+`error.name === 't'` — in exactly the browser build where `error.name` is what you branch on.
 
 ```ts
 type EdfErrorKind = 'format' | 'scaling' | 'range' | 'source' | 'budget' | 'channel';
