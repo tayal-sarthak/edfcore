@@ -417,8 +417,21 @@ The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every 
 `t = 0` is the start of record 0. A truncated listing says how many events it withheld, because a
 silently cut one reads as a complete one.
 
-`header` is for reading and `signals` is for piping — the second emits index, label, samples per
-record, rate and unit, tab-separated, annotations channel included. `gaps` runs a full scan rather
+`header` is for reading and `signals` is for piping. The second emits six tab-separated columns,
+in this order, annotations channel included:
+
+| # | Column | Note |
+|---|---|---|
+| 1 | `index` | |
+| 2 | `label` | trimmed |
+| 3 | `kind` | `data` or `annotations` |
+| 4 | `sampleRateHz` | **empty** for a legal zero record duration — it is derived |
+| 5 | `physicalDimension` | trimmed |
+| 6 | `samplesPerRecord` | the authoritative count; index by this, never by the rate |
+
+Column 6 was added in 0.2.41 and appended rather than inserted, so nothing that parsed the first
+five by position moved. Before that this page claimed the command emitted samples per record when
+it emitted `kind` instead, and the authoritative field was in no column at all. `gaps` runs a full scan rather
 than the two probes `openEdf` makes, because a probed index cannot see a gap in the middle and
 reporting "none" from it would be a claim nobody verified.
 

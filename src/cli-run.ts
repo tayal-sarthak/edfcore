@@ -262,6 +262,12 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
 
     case 'signals': {
       // Tab-separated and one line per signal: `header` is for reading, this is for piping.
+      //
+      // `samplesPerRecord` is last and was missing until 0.2.41. It is the AUTHORITATIVE field —
+      // `sampleRateHz` is derived from it and the record duration, and is empty for the legal
+      // zero-duration file — so a listing meant for a script that omitted it forced the reader
+      // back to `json` for the one number they could safely index by. Appended rather than
+      // inserted, so no existing column moves.
       const recording = await open(io, file);
       for (const signal of recording.header.signals) {
         io.out(
@@ -271,6 +277,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
             signal.kind,
             signal.sampleRateHz ?? '',
             signal.physicalDimension.trim(),
+            signal.samplesPerRecord,
           ].join('\t') + '\n',
         );
       }

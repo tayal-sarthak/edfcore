@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.41
+
+- **Added** a `samplesPerRecord` column to `edfcore signals`, and **fixed** the documentation,
+  which claimed the command emitted it when it emitted `kind` instead. That left the authoritative
+  field in no column at all: `sampleRateHz` is derived from `samplesPerRecord` and the record
+  duration, and is empty for the legal zero-duration file a real sleep-staging recording relies on
+  — so a listing meant for a script omitted the one number it could always index by, and sent the
+  reader back to `json` for it. Appended rather than inserted, so nothing that parsed the first
+  five columns by position moved. The full six-column list is now pinned by a test, not only
+  described.
+
 ## 0.2.40
 
 - **Added** the types `edfcore/validate`'s own signatures mention to that subpath's exports:

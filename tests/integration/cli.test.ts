@@ -145,6 +145,9 @@ describe('signals', () => {
     expect(code).toBe(0);
     const lines = out.trim().split('\n');
     expect(lines.every((l) => l.includes('\t'))).toBe(true);
+    // The column list is the contract for anything piping this into awk, so it is pinned here
+    // rather than left to the docs — which described a different list until 0.2.41.
+    for (const line of lines) expect(line.split('\t')).toHaveLength(6);
     // Every signal, annotations channel included: this is the raw listing.
     expect(lines).toHaveLength(
       (
@@ -316,5 +319,32 @@ describe('--help', () => {
     const { code, out } = await invoke([], {});
     expect(code).toBe(2);
     expect(out).toContain('npx edfcore header');
+  });
+});
+
+describe('signals columns', () => {
+  it('emits index, label, kind, rate, unit and samplesPerRecord, in that order', async () => {
+    const file = minimalEdfPlus({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'EEG Fpz-Cz', samplesPerRecord: 25, physicalDimension: 'uV' }],
+    });
+    const { out } = await invoke(['signals', 'a.edf'], { 'a.edf': file });
+    const [first] = out.trim().split('\n');
+    expect(first?.split('\t')).toEqual(['0', 'EEG Fpz-Cz', 'data', '25', 'uV', '25']);
+  });
+
+  it('leaves the rate column empty for a legal zero record duration, and still gives the count', async () => {
+    // sampleRateHz is derived and undefined when the record duration is zero — which a real
+    // sleep-staging file relies on. samplesPerRecord is the one a script can always index by.
+    const file = minimalEdfPlus({
+      recordCount: 2,
+      recordDurationSeconds: 0,
+      signals: [{ label: 'Stage', samplesPerRecord: 3 }],
+    });
+    const { out } = await invoke(['signals', 'a.edf'], { 'a.edf': file });
+    const columns = out.trim().split('\n')[0]?.split('\t');
+    expect(columns?.[3]).toBe('');
+    expect(columns?.[5]).toBe('3');
   });
 });

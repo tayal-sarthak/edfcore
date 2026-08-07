@@ -14,7 +14,7 @@ npx edfcore header overnight.edf          # signals, rates, ranges, diagnostics
 npx edfcore events hypnogram.edf          # annotations, counted by text
 npx edfcore events hypnogram.edf --list   # one event per line, with onsets
 npx edfcore gaps overnight.edf            # the discontinuities, after a full scan
-npx edfcore signals overnight.edf         # one line per signal, for grep and awk
+npx edfcore signals overnight.edf         # one tab-separated line per signal, for awk
 npx edfcore validate overnight.edf        # full conformance sweep; exits 1 on failure
 npx edfcore json overnight.edf            # the header as JSON, for jq
 ```
