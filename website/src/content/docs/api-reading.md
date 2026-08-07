@@ -404,16 +404,21 @@ A **segment** is a maximal run of records with no gap inside it.
 | `records` | `RecordRange` | The records it covers. |
 | `startSeconds` | `number` | Elapsed recording time at its first record. |
 | `startTicks` | `bigint` | The same, exact. |
-| `durationSeconds` | `number` | `records.count * recordDurationSeconds`. |
-| `endSeconds` | `number` | `startSeconds + durationSeconds`. |
+| `durationSeconds` | `number` | How long the run covers. |
+| `durationTicks` | `bigint` | The same, exact. |
+| `endSeconds` | `number` | First instant the run no longer covers. |
+| `endTicks` | `bigint` | The same, exact. |
 
 | `EdfGap` | Type | Meaning |
 | --- | --- | --- |
 | `beforeSegmentIndex` | `number` | Segment that ends at the gap. |
 | `afterSegmentIndex` | `number` | Segment that starts after it. |
 | `startSeconds` | `number` | When recording stopped. |
+| `startTicks` | `bigint` | The same, exact. |
 | `endSeconds` | `number` | When it resumed. |
+| `endTicks` | `bigint` | The same, exact. |
 | `durationSeconds` | `number` | How long nothing was recorded. |
+| `durationTicks` | `bigint` | The same, exact. Sum these to total the time lost. |
 
 | `EdfLocation` | Type | Meaning |
 | --- | --- | --- |

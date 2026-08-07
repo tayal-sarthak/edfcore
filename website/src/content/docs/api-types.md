@@ -394,16 +394,26 @@ one-sample overlap becomes invisible.
 | `records` | `RecordRange` | the records in this run |
 | `startSeconds` | `number` | elapsed recording time at the run's first record |
 | `startTicks` | `bigint` | the same instant, exact |
-| `durationSeconds` | `number` | `records.count * recordDurationSeconds` |
-| `endSeconds` | `number` | `startSeconds + durationSeconds` |
+| `durationSeconds` | `number` | how long the run covers |
+| `durationTicks` | `bigint` | the same, exact |
+| `endSeconds` | `number` | the first instant the run no longer covers |
+| `endTicks` | `bigint` | the same, exact |
 
 | `EdfGap` | type | meaning |
 |---|---|---|
 | `beforeSegmentIndex` | `number` | the segment that ends at the gap |
 | `afterSegmentIndex` | `number` | the segment that starts after it |
 | `startSeconds` | `number` | where the earlier segment ends |
+| `startTicks` | `bigint` | the same, exact |
 | `endSeconds` | `number` | where the later segment starts |
+| `endTicks` | `bigint` | the same, exact |
 | `durationSeconds` | `number` | `endSeconds - startSeconds` |
+| `durationTicks` | `bigint` | the same, exact |
+
+Every second on these two is a float64 conversion of the tick beside it. Compare and sum the
+**ticks**: `segmentAt` and `gapAt` decide their boundaries on `startTicks`/`endTicks`, so a caller
+who wants to agree with them must too, and totalling the time a recording lost is a sum over
+`durationTicks`.
 
 There is exactly one gap per adjacent pair of segments, so `gaps.length === segments.length - 1`
 (or `0`). A gap's duration is non-negative on any file whose onsets are monotonic and correctly

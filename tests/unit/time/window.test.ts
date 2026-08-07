@@ -109,7 +109,9 @@ function segmentOf(
     startSeconds: Number(startTicks) / 1e7,
     startTicks,
     durationSeconds: Number(durationTicks) / 1e7,
+    durationTicks,
     endSeconds: Number(startTicks + durationTicks) / 1e7,
+    endTicks: startTicks + durationTicks,
   };
 }
 
@@ -253,8 +255,11 @@ describe('resolveTimeWindow across a gap', () => {
       beforeSegmentIndex: 0,
       afterSegmentIndex: 1,
       startSeconds: 4,
+      startTicks: 4n * SECOND,
       endSeconds: 100,
+      endTicks: 100n * SECOND,
       durationSeconds: 96,
+      durationTicks: 96n * SECOND,
     },
   ];
   const timeline = timelineOf({ recordCount: 8, recordDurationSeconds: 1, spanSeconds: 104 });

@@ -281,21 +281,41 @@ export interface RecordRange {
   readonly count: number;
 }
 
+/**
+ * One contiguous run of records.
+ *
+ * Every second here is a float64 conversion of the tick beside it, and the ticks are what a
+ * boundary decision must use — `endTicks` is the first instant the run no longer covers, and it is
+ * exact. `segmentAt` searches on the ticks for that reason.
+ */
 export interface EdfSegment {
   readonly index: number;
   readonly records: RecordRange;
   readonly startSeconds: number;
   readonly startTicks: bigint;
   readonly durationSeconds: number;
+  readonly durationTicks: bigint;
   readonly endSeconds: number;
+  readonly endTicks: bigint;
 }
 
+/**
+ * The interval between two segments.
+ *
+ * A NEGATIVE duration is an OVERLAP, not a gap: the later segment starts before the earlier one
+ * ends, and `endTicks < startTicks` says so exactly. `validateRecording` reports it as
+ * `RECORD_ONSET_SPACING_VIOLATION`. Sum `durationTicks`, not `durationSeconds`, to total the time
+ * a recording lost — the ticks are exact and the sign is part of the answer.
+ */
 export interface EdfGap {
   readonly beforeSegmentIndex: number;
   readonly afterSegmentIndex: number;
   readonly startSeconds: number;
+  readonly startTicks: bigint;
   readonly endSeconds: number;
+  readonly endTicks: bigint;
   readonly durationSeconds: number;
+  readonly durationTicks: bigint;
 }
 
 export interface EdfLocation {

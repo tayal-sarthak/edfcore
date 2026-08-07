@@ -136,3 +136,59 @@ describe('gapAt is the complement of segmentAt', () => {
     expect(() => gapAt(index, Number.NaN)).toThrow(RangeError);
   });
 });
+
+describe('the boundaries are decided in ticks', () => {
+  // The seconds on a segment or a gap are float64 conversions of exact tick values, and a
+  // boundary is where a lossy conversion decides the answer. `sampleAt` picks a segment through
+  // `segmentAt` and then measures the offset from `segment.startTicks`, so the two must be
+  // deciding the same question in the same units (fixed in 0.3.6).
+  it('carries the exact ticks alongside every second', async () => {
+    const index = await scanned();
+    for (const segment of index.segments ?? []) {
+      expect(segment.startSeconds).toBe(Number(segment.startTicks) / 1e7);
+      expect(segment.endSeconds).toBe(Number(segment.endTicks) / 1e7);
+      expect(segment.durationSeconds).toBe(Number(segment.durationTicks) / 1e7);
+      // An end is a start plus a duration, exactly, with no float addition in between.
+      expect(segment.endTicks).toBe(segment.startTicks + segment.durationTicks);
+    }
+    for (const gap of index.gaps ?? []) {
+      expect(gap.startSeconds).toBe(Number(gap.startTicks) / 1e7);
+      expect(gap.endSeconds).toBe(Number(gap.endTicks) / 1e7);
+      expect(gap.durationTicks).toBe(gap.endTicks - gap.startTicks);
+    }
+  });
+
+  it('reads a gap straight off the segments it joins', async () => {
+    // The 5 s hole: segment 0 ends at 3 s and segment 1 starts at 8 s, to the tick.
+    const index = await scanned();
+    const [gap] = index.gaps ?? [];
+    const segments = index.segments ?? [];
+    if (gap === undefined) throw new Error('setup failed');
+    expect(gap.startTicks).toBe(segments[0]?.endTicks);
+    expect(gap.endTicks).toBe(segments[1]?.startTicks);
+    expect(gap.durationTicks).toBe(50_000_000n);
+  });
+
+  it('totals the time lost exactly, which summing the seconds does not promise', async () => {
+    // The reason `durationTicks` is on the gap at all: summing float seconds accumulates error,
+    // and this is the sum a caller writes to answer "how much of the recording is missing".
+    const index = await scanned();
+    const total = (index.gaps ?? []).reduce((sum, gap) => sum + gap.durationTicks, 0n);
+    expect(total).toBe(50_000_000n);
+  });
+
+  it('is half-open on the tick, at both ends of a gap', async () => {
+    const index = await scanned();
+    const [gap] = index.gaps ?? [];
+    if (gap === undefined) throw new Error('setup failed');
+    const tick = 1 / 1e7;
+    // The last instant with data belongs to the segment; the first instant of the hole does not.
+    expect(segmentAt(index, gap.startSeconds - tick)).toBeDefined();
+    expect(segmentAt(index, gap.startSeconds)).toBeUndefined();
+    expect(gapAt(index, gap.startSeconds)).toBe(gap);
+    // And the first instant with data again belongs to the next segment, not to the gap.
+    expect(gapAt(index, gap.endSeconds - tick)).toBe(gap);
+    expect(gapAt(index, gap.endSeconds)).toBeUndefined();
+    expect(segmentAt(index, gap.endSeconds)?.index).toBe(1);
+  });
+});

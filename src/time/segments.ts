@@ -31,12 +31,6 @@ const EMPTY_SEGMENTATION: Segmentation = Object.freeze({
   gaps: Object.freeze([]),
 });
 
-/** A segment's two ends in exact ticks, kept while building so gaps never re-derive them. */
-interface SegmentBounds {
-  readonly startTicks: bigint;
-  readonly endTicks: bigint;
-}
-
 /**
  * `onsetTicks` holds one entry per record, record 0 first — the `BigInt64Array` that
  * `decodeAnnotations` returns for a full-file range fits directly.
@@ -57,7 +51,6 @@ export function buildSegmentation(
   const origin = originTicks ?? firstOnset;
 
   const segments: EdfSegment[] = [];
-  const bounds: SegmentBounds[] = [];
 
   let segmentStart = 0;
   let segmentStartTicks = firstOnset;
@@ -73,9 +66,10 @@ export function buildSegmentation(
       startSeconds: ticksToSeconds(startTicks),
       startTicks,
       durationSeconds: ticksToSeconds(durationTicks),
+      durationTicks,
       endSeconds: ticksToSeconds(endTicks),
+      endTicks,
     });
-    bounds.push({ startTicks, endTicks });
   };
 
   for (let record = 1; record < recordCount; record += 1) {
@@ -91,17 +85,25 @@ export function buildSegmentation(
   }
   closeSegment(recordCount);
 
+  // The segments carry their own exact ends, so a gap is read straight off the two it joins —
+  // it never re-derives a boundary, and never derives one from the seconds.
   const gaps: EdfGap[] = [];
-  for (let index = 1; index < bounds.length; index += 1) {
-    const before = bounds[index - 1];
-    const after = bounds[index];
+  for (let index = 1; index < segments.length; index += 1) {
+    const before = segments[index - 1];
+    const after = segments[index];
     if (before === undefined || after === undefined) continue;
+    const startTicks = before.endTicks;
+    const endTicks = after.startTicks;
     gaps.push({
       beforeSegmentIndex: index - 1,
       afterSegmentIndex: index,
-      startSeconds: ticksToSeconds(before.endTicks),
-      endSeconds: ticksToSeconds(after.startTicks),
-      durationSeconds: ticksToSeconds(after.startTicks - before.endTicks),
+      startSeconds: ticksToSeconds(startTicks),
+      startTicks,
+      endSeconds: ticksToSeconds(endTicks),
+      endTicks,
+      // Negative for an overlap. The subtraction is exact, so a sum over gaps is too.
+      durationSeconds: ticksToSeconds(endTicks - startTicks),
+      durationTicks: endTicks - startTicks,
     });
   }
 

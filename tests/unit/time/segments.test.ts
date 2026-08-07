@@ -40,7 +40,9 @@ describe('a contiguous file is one segment and no gaps', () => {
       startSeconds: 0,
       startTicks: 0n,
       durationSeconds: 10,
+      durationTicks: 10n * SECOND,
       endSeconds: 10,
+      endTicks: 10n * SECOND,
     });
   });
 
@@ -102,8 +104,11 @@ describe('a gap between the first two records', () => {
       beforeSegmentIndex: 0,
       afterSegmentIndex: 1,
       startSeconds: 1, // record 0 ends at 1 s...
+      startTicks: SECOND,
       endSeconds: 5, // ...and record 1 starts at 5 s.
+      endTicks: 5n * SECOND,
       durationSeconds: 4,
+      durationTicks: 4n * SECOND,
     });
   });
 });
@@ -139,7 +144,9 @@ describe('the MSLT pattern from DESIGN section 7', () => {
         startSeconds: nap * 7200,
         startTicks: BigInt(nap) * STRIDE,
         durationSeconds: 1200,
+        durationTicks: BigInt(RECORDS_PER_NAP) * RECORD,
         endSeconds: nap * 7200 + 1200,
+        endTicks: BigInt(nap) * STRIDE + BigInt(RECORDS_PER_NAP) * RECORD,
       })),
     );
   });
@@ -150,8 +157,11 @@ describe('the MSLT pattern from DESIGN section 7', () => {
         beforeSegmentIndex: index,
         afterSegmentIndex: index + 1,
         startSeconds: index * 7200 + 1200,
+        startTicks: BigInt(index * 7200 + 1200) * SECOND,
         endSeconds: (index + 1) * 7200,
+        endTicks: BigInt(index + 1) * STRIDE,
         durationSeconds: 6000,
+        durationTicks: 6000n * SECOND,
       })),
     );
   });

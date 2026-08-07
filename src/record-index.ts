@@ -467,14 +467,20 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
     throw new RangeError(`segmentAt() needs a finite time in seconds, received ${seconds}.`);
   }
 
+  // The comparison is in TICKS. The bounds on a segment are float64 conversions of exact tick
+  // values, and a boundary is precisely where a lossy conversion decides the answer: `sampleAt`
+  // picks a segment through this function and then measures the offset from `segment.startTicks`,
+  // so a boundary resolved on the seconds and an offset measured in ticks can disagree about
+  // which segment an instant belongs to (fixed in 0.3.6).
+  const ticks = secondsToTicks(seconds);
   let low = 0;
   let high = segments.length - 1;
   while (low <= high) {
     const middle = (low + high) >> 1;
     const segment = segments[middle] as EdfSegment;
     // Half-open, so a segment that ends exactly where the next begins is not both.
-    if (seconds < segment.startSeconds) high = middle - 1;
-    else if (seconds >= segment.endSeconds) low = middle + 1;
+    if (ticks < segment.startTicks) high = middle - 1;
+    else if (ticks >= segment.endTicks) low = middle + 1;
     else return segment;
   }
   return undefined;
@@ -504,15 +510,18 @@ export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefine
     throw new RangeError(`gapAt() needs a finite time in seconds, received ${seconds}.`);
   }
 
+  // In ticks, for the reason `segmentAt` states: these two must agree about every boundary, and
+  // they can only be relied on to do that while they compare the same exact values.
+  const ticks = secondsToTicks(seconds);
   let low = 0;
   let high = gaps.length - 1;
   while (low <= high) {
     const middle = (low + high) >> 1;
     const gap = gaps[middle] as EdfGap;
-    // Half-open, matching `segmentAt`: `gap.endSeconds` is the first instant with data again, so
-    // it belongs to the segment after the gap and not to the gap.
-    if (seconds < gap.startSeconds) high = middle - 1;
-    else if (seconds >= gap.endSeconds) low = middle + 1;
+    // Half-open, matching `segmentAt`: `gap.endTicks` is the first instant with data again, so it
+    // belongs to the segment after the gap and not to the gap.
+    if (ticks < gap.startTicks) high = middle - 1;
+    else if (ticks >= gap.endTicks) low = middle + 1;
     else return gap;
   }
   return undefined;

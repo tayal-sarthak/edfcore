@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.6
+
+**`EdfSegment` and `EdfGap` carry their exact ticks, and `segmentAt` and `gapAt` decide boundaries
+on them.** Additive: `EdfSegment` gains `durationTicks` and `endTicks`, `EdfGap` gains `startTicks`,
+`endTicks` and `durationTicks`. Nothing is removed or renamed.
+
+The same shape as 0.3.4, in the other two time-bearing types. `buildSegmentation` computed every
+one of these exactly — it kept a private `SegmentBounds` array of tick values purely so gaps would
+not have to re-derive them — and then converted them away at the return. `EdfSegment` shipped
+`startTicks` and no matching end.
+
+**Why it is not only tidiness.** `segmentAt` and `gapAt` are binary searches, and their comparison
+was `seconds < segment.startSeconds` against float64 bounds. `sampleAt` picks a segment through
+`segmentAt` and then measures the offset from `segment.startTicks` — a boundary resolved in one
+unit feeding arithmetic done in another. Both searches now compare tick to tick, so the instant
+that lands on a boundary lands on the same side of it for every function that asks.
+
+A gap is now read straight off the two segments it joins, rather than from a parallel array, so
+there is one derivation of a boundary in the module instead of two that must agree.
+
+For a consumer: `durationTicks` is the field to sum to total the time a recording lost. Summing
+`durationSeconds` accumulates error and was the only way to ask before this. The sign still carries
+the meaning 0.2.69 pinned — negative is an overlap, not a gap — and `endTicks < startTicks` now says
+so exactly.
+
 ## 0.3.5
 
 - **Fixed** `readEnvelopeAtResolution` returning a bucket width that is not the one asked for. It
