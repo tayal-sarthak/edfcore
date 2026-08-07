@@ -4,6 +4,21 @@
   "recordCount": 600,
   "recordDurationSeconds": 1.0,
   "samplesPerWindow": 256,
+  "startDate": { "year": 2009, "month": 12, "day": 10, "hour": 12, "minute": 45, "second": 54 },
+  "annotations": [
+    {
+      "onsetSeconds": 0.0,
+      "onsetBits": "0000000000000000",
+      "durationSeconds": -1.0,
+      "text": "RECORD START"
+    },
+    {
+      "onsetSeconds": 600.0,
+      "onsetBits": "4082c00000000000",
+      "durationSeconds": -1.0,
+      "text": "REC STOP"
+    }
+  ],
   "signals": [
     {
       "index": 0,

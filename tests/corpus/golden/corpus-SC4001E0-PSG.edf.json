@@ -4,6 +4,8 @@
   "recordCount": 2650,
   "recordDurationSeconds": 30.0,
   "samplesPerWindow": 256,
+  "startDate": { "year": 1989, "month": 4, "day": 24, "hour": 16, "minute": 13, "second": 0 },
+  "annotations": [],
   "signals": [
     {
       "index": 0,

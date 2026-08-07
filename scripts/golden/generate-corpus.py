@@ -83,23 +83,44 @@ def record(name):
             }
         )
 
+    onsets, durations, descriptions = reader.readAnnotations()
+    start = reader.getStartdatetime()
+
     golden = {
         "file": name,
         "producer": f"pyedflib {pyedflib.__version__}",
         "recordCount": int(reader.datarecords_in_file),
         "recordDurationSeconds": float(reader.datarecord_duration),
         "samplesPerWindow": SAMPLES_PER_WINDOW,
+        # The header start time, so date resolution is checked on files whose two-digit year runs
+        # through the 1985-2084 rule — a 1989 recording is exactly that case.
+        "startDate": {
+            "year": start.year, "month": start.month, "day": start.day,
+            "hour": start.hour, "minute": start.minute, "second": start.second,
+        },
+        # pyEDFlib writes -1 for "no duration"; EDF+ omits the field.
+        "annotations": [
+            {"onsetSeconds": float(o), "onsetBits": bits(float(o)),
+             "durationSeconds": float(d), "text": str(t)}
+            for o, d, t in zip(onsets, durations, descriptions)
+        ],
         "signals": signals,
     }
     reader.close()
 
     (OUT / f"corpus-{name}.json").write_text(json.dumps(golden) + "\n")
     total_samples = sum(len(w["digital"]) for s in signals for w in s["windows"])
-    print(f"{name}: {len(signals)} signal(s), {total_samples} samples recorded")
+    print(
+        f"{name}: {len(signals)} signal(s), {total_samples} samples, "
+        f"{len(golden['annotations'])} annotation(s)"
+    )
 
 
 OUT.mkdir(parents=True, exist_ok=True)
 for name in [
+    # 154 sleep stages on a file whose record duration is legally ZERO — the case edfcore
+    # deliberately supports and the one most readers get wrong.
+    "SC4001EC-Hypnogram.edf",
     "SC4001E0-PSG.edf",
     "test_generator.edf",
     "test_generator_2.edf",

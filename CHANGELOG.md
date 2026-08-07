@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.49
+
+- **Added** annotation, start-date and geometry parity on the real corpus, alongside the sample
+  parity added in 0.2.48. The richest case is the sleep-edfx hypnogram: **154 sleep stages on a
+  file whose record duration is legally zero** — the case where `sampleRateHz` is `undefined` and
+  every rate-derived expression yields `NaN`, so a reader that indexes by rate rather than by
+  record cannot read it at all. edfcore finds the same 154 events at the same onsets with the same
+  durations as pyEDFlib, and the epochs tile the night with no gap, checked against pyEDFlib's
+  onsets rather than against edfcore's.
+- Start dates too. The sleep-edfx files were recorded in 1989 and carry a two-digit year, so
+  resolving them exercises the 1985-2084 pivot rule against a reader that implements it
+  independently.
+- No discrepancy was found. That is the result, and it is worth stating plainly rather than
+  implying the sweep found something.
+
 ## 0.2.48
 
 - **Added** bit-for-bit parity against pyEDFlib on the REAL corpus — the last thing the README

@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf, readRecords } from '../../src/recording.js';
+import { openEdf, readAnnotations, readRecords } from '../../src/recording.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FILES = join(HERE, 'files');
@@ -49,16 +49,35 @@ interface Signal {
   readonly windows: readonly Window[];
 }
 
+interface GoldenAnnotation {
+  readonly onsetSeconds: number;
+  readonly onsetBits: string;
+  /** pyEDFlib writes -1 for "no duration"; EDF+ omits the field entirely. */
+  readonly durationSeconds: number;
+  readonly text: string;
+}
+
 interface Golden {
   readonly file: string;
   readonly producer: string;
   readonly recordCount: number;
   readonly recordDurationSeconds: number;
   readonly samplesPerWindow: number;
+  readonly startDate: {
+    readonly year: number;
+    readonly month: number;
+    readonly day: number;
+    readonly hour: number;
+    readonly minute: number;
+    readonly second: number;
+  };
+  readonly annotations: readonly GoldenAnnotation[];
   readonly signals: readonly Signal[];
 }
 
 const CASES = [
+  // 154 sleep stages on a file whose record duration is legally ZERO.
+  'SC4001EC-Hypnogram.edf',
   'SC4001E0-PSG.edf',
   'test_generator.edf',
   'test_generator_2.edf',
@@ -119,12 +138,17 @@ describe.each(CASES)('%s', (name) => {
     const { golden } = load(name);
     expect(golden.file).toBe(name);
     expect(golden.producer).toMatch(/^pyedflib \d/);
-    expect(golden.signals.length).toBeGreaterThan(0);
-    // A window at the END is the one that catches record arithmetic drifting with distance.
-    const labels = new Set(golden.signals.flatMap((s) => s.windows.map((w) => w.window)));
-    expect(labels.has('start')).toBe(true);
-    if ((golden.signals[0]?.sampleCount ?? 0) > golden.samplesPerWindow) {
-      expect(labels.has('end')).toBe(true);
+    // A scoring file carries no signals at all — the hypnogram is 154 annotations and nothing
+    // else — so "has samples OR has events" is the real precondition, not "has samples".
+    expect(golden.signals.length + golden.annotations.length).toBeGreaterThan(0);
+
+    if (golden.signals.length > 0) {
+      // A window at the END is the one that catches record arithmetic drifting with distance.
+      const labels = new Set(golden.signals.flatMap((s) => s.windows.map((w) => w.window)));
+      expect(labels.has('start')).toBe(true);
+      if ((golden.signals[0]?.sampleCount ?? 0) > golden.samplesPerWindow) {
+        expect(labels.has('end')).toBe(true);
+      }
     }
   });
 
@@ -224,5 +248,82 @@ describe('the corpus comparison is exact where the plausibility one is not', () 
     expect(plausible).toBe(window.digital.length);
     // ...and a large share of them are not the number pyEDFlib produced.
     expect(differing).toBeGreaterThan(0);
+  });
+});
+
+describe.each(CASES)('%s — the header and the events', (name) => {
+  const enabled = available(name);
+  const maybe = enabled ? it : it.skip;
+
+  maybe('resolves the same start date, through the 1985-2084 rule', async () => {
+    // The sleep-edfx files were recorded in 1989 and carry a two-digit year, so resolving them
+    // exercises the pivot rule against a reader that implements it independently.
+    const { golden, bytes } = load(name);
+    const recording = await openEdf(byteSource(bytes));
+    const start = recording.header.startTime;
+
+    expect(start.resolvedDate).toEqual({
+      year: golden.startDate.year,
+      month: golden.startDate.month,
+      day: golden.startDate.day,
+    });
+    expect(start.clock).toEqual({
+      hour: golden.startDate.hour,
+      minute: golden.startDate.minute,
+      second: golden.startDate.second,
+    });
+  });
+
+  maybe('finds the same annotations, with the same onsets and durations', async () => {
+    const { golden, bytes } = load(name);
+    const recording = await openEdf(byteSource(bytes));
+    const { annotations } = await readAnnotations(recording, {
+      start: 0,
+      count: recording.header.recordCount,
+    });
+
+    expect(annotations.map((a) => a.text)).toEqual(golden.annotations.map((a) => a.text));
+
+    for (const [index, expected] of golden.annotations.entries()) {
+      const actual = annotations[index];
+      expect(actual?.onsetSecondsFromFirstRecord, expected.text).toBe(fromBits(expected.onsetBits));
+      if (expected.durationSeconds < 0) {
+        expect(actual?.durationSeconds, expected.text).toBeUndefined();
+      } else {
+        expect(actual?.durationSeconds, expected.text).toBe(expected.durationSeconds);
+      }
+    }
+  });
+});
+
+describe('the hypnogram is the hard case, and is checked as one', () => {
+  const enabled = available('SC4001EC-Hypnogram.edf');
+  const maybe = enabled ? it : it.skip;
+
+  maybe('reads 154 sleep stages from a file whose record duration is zero', async () => {
+    // A zero record duration is legal EDF and a real scoring file relies on it. It is also where
+    // `sampleRateHz` becomes undefined and every rate-derived expression yields NaN — so a reader
+    // that indexes by rate rather than by record cannot read this file at all.
+    const { golden, bytes } = load('SC4001EC-Hypnogram.edf');
+    const recording = await openEdf(byteSource(bytes));
+
+    expect(recording.header.recordDurationSeconds).toBe(0);
+    expect(golden.annotations.length).toBe(154);
+
+    const { annotations } = await readAnnotations(recording, {
+      start: 0,
+      count: recording.header.recordCount,
+    });
+    expect(annotations).toHaveLength(154);
+
+    // The staging really is staging, and the epochs tile the night without a gap: each stage
+    // begins where the previous one ended. That is a property of the FILE, checked against
+    // pyEDFlib's own onsets rather than against edfcore's.
+    let expectedNext = 0;
+    for (const stage of golden.annotations) {
+      expect(stage.onsetSeconds, stage.text).toBe(expectedNext);
+      expectedNext = stage.onsetSeconds + stage.durationSeconds;
+    }
+    expect(new Set(golden.annotations.map((a) => a.text)).size).toBeGreaterThan(3);
   });
 });

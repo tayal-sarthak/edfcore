@@ -1,0 +1,935 @@
+{
+  "file": "SC4001EC-Hypnogram.edf",
+  "producer": "pyedflib 0.1.42",
+  "recordCount": 1,
+  "recordDurationSeconds": 0.0,
+  "samplesPerWindow": 256,
+  "startDate": { "year": 1989, "month": 4, "day": 24, "hour": 16, "minute": 13, "second": 0 },
+  "annotations": [
+    {
+      "onsetSeconds": 0.0,
+      "onsetBits": "0000000000000000",
+      "durationSeconds": 30630.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 30630.0,
+      "onsetBits": "40dde98000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 30750.0,
+      "onsetBits": "40de078000000000",
+      "durationSeconds": 390.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 31140.0,
+      "onsetBits": "40de690000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 31170.0,
+      "onsetBits": "40de708000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 31200.0,
+      "onsetBits": "40de780000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 31350.0,
+      "onsetBits": "40de9d8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 31380.0,
+      "onsetBits": "40dea50000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 31440.0,
+      "onsetBits": "40deb40000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 31500.0,
+      "onsetBits": "40dec30000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 31530.0,
+      "onsetBits": "40deca8000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 31650.0,
+      "onsetBits": "40dee88000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 31680.0,
+      "onsetBits": "40def00000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 31800.0,
+      "onsetBits": "40df0e0000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 31830.0,
+      "onsetBits": "40df158000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 31890.0,
+      "onsetBits": "40df248000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 31950.0,
+      "onsetBits": "40df338000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 32070.0,
+      "onsetBits": "40df518000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 32100.0,
+      "onsetBits": "40df590000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 32130.0,
+      "onsetBits": "40df608000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 32250.0,
+      "onsetBits": "40df7e8000000000",
+      "durationSeconds": 210.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 32460.0,
+      "onsetBits": "40dfb30000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 32490.0,
+      "onsetBits": "40dfba8000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 32550.0,
+      "onsetBits": "40dfc98000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 32670.0,
+      "onsetBits": "40dfe78000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 32700.0,
+      "onsetBits": "40dfef0000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 32850.0,
+      "onsetBits": "40e00a4000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 32910.0,
+      "onsetBits": "40e011c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 32940.0,
+      "onsetBits": "40e0158000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 32970.0,
+      "onsetBits": "40e0194000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 33000.0,
+      "onsetBits": "40e01d0000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 33120.0,
+      "onsetBits": "40e02c0000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 33270.0,
+      "onsetBits": "40e03ec000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 33300.0,
+      "onsetBits": "40e0428000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 33330.0,
+      "onsetBits": "40e0464000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 33390.0,
+      "onsetBits": "40e04dc000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 33420.0,
+      "onsetBits": "40e0518000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 33510.0,
+      "onsetBits": "40e05cc000000000",
+      "durationSeconds": 1890.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 35400.0,
+      "onsetBits": "40e1490000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 35430.0,
+      "onsetBits": "40e14cc000000000",
+      "durationSeconds": 210.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 35640.0,
+      "onsetBits": "40e1670000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 35700.0,
+      "onsetBits": "40e16e8000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 35790.0,
+      "onsetBits": "40e179c000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 35940.0,
+      "onsetBits": "40e18c8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 35970.0,
+      "onsetBits": "40e1904000000000",
+      "durationSeconds": 870.0,
+      "text": "Sleep stage R"
+    },
+    {
+      "onsetSeconds": 36840.0,
+      "onsetBits": "40e1fd0000000000",
+      "durationSeconds": 180.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 37020.0,
+      "onsetBits": "40e2138000000000",
+      "durationSeconds": 240.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 37260.0,
+      "onsetBits": "40e2318000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 37290.0,
+      "onsetBits": "40e2354000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 37410.0,
+      "onsetBits": "40e2444000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 37500.0,
+      "onsetBits": "40e24f8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 37530.0,
+      "onsetBits": "40e2534000000000",
+      "durationSeconds": 930.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 38460.0,
+      "onsetBits": "40e2c78000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 38490.0,
+      "onsetBits": "40e2cb4000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 38520.0,
+      "onsetBits": "40e2cf0000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 38580.0,
+      "onsetBits": "40e2d68000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 38610.0,
+      "onsetBits": "40e2da4000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 38640.0,
+      "onsetBits": "40e2de0000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 38670.0,
+      "onsetBits": "40e2e1c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 38700.0,
+      "onsetBits": "40e2e58000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 38730.0,
+      "onsetBits": "40e2e94000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 38760.0,
+      "onsetBits": "40e2ed0000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 38910.0,
+      "onsetBits": "40e2ffc000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 38970.0,
+      "onsetBits": "40e3074000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 39060.0,
+      "onsetBits": "40e3128000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 39120.0,
+      "onsetBits": "40e31a0000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 39150.0,
+      "onsetBits": "40e31dc000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 39180.0,
+      "onsetBits": "40e3218000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 39240.0,
+      "onsetBits": "40e3290000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 39300.0,
+      "onsetBits": "40e3308000000000",
+      "durationSeconds": 180.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 39480.0,
+      "onsetBits": "40e3470000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 39540.0,
+      "onsetBits": "40e34e8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 39570.0,
+      "onsetBits": "40e3524000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 39600.0,
+      "onsetBits": "40e3560000000000",
+      "durationSeconds": 270.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 39870.0,
+      "onsetBits": "40e377c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 39900.0,
+      "onsetBits": "40e37b8000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 39960.0,
+      "onsetBits": "40e3830000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 39990.0,
+      "onsetBits": "40e386c000000000",
+      "durationSeconds": 210.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 40200.0,
+      "onsetBits": "40e3a10000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 40230.0,
+      "onsetBits": "40e3a4c000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 40290.0,
+      "onsetBits": "40e3ac4000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 40320.0,
+      "onsetBits": "40e3b00000000000",
+      "durationSeconds": 180.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 40500.0,
+      "onsetBits": "40e3c68000000000",
+      "durationSeconds": 870.0,
+      "text": "Sleep stage R"
+    },
+    {
+      "onsetSeconds": 41370.0,
+      "onsetBits": "40e4334000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 41400.0,
+      "onsetBits": "40e4370000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 41460.0,
+      "onsetBits": "40e43e8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 41490.0,
+      "onsetBits": "40e4424000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 41610.0,
+      "onsetBits": "40e4514000000000",
+      "durationSeconds": 870.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 42480.0,
+      "onsetBits": "40e4be0000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 42510.0,
+      "onsetBits": "40e4c1c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 42540.0,
+      "onsetBits": "40e4c58000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 42570.0,
+      "onsetBits": "40e4c94000000000",
+      "durationSeconds": 300.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 42870.0,
+      "onsetBits": "40e4eec000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 42900.0,
+      "onsetBits": "40e4f28000000000",
+      "durationSeconds": 390.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 43290.0,
+      "onsetBits": "40e5234000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 43320.0,
+      "onsetBits": "40e5270000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 43350.0,
+      "onsetBits": "40e52ac000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 43380.0,
+      "onsetBits": "40e52e8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 43410.0,
+      "onsetBits": "40e5324000000000",
+      "durationSeconds": 180.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 43590.0,
+      "onsetBits": "40e548c000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 43680.0,
+      "onsetBits": "40e5540000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 43710.0,
+      "onsetBits": "40e557c000000000",
+      "durationSeconds": 210.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 43920.0,
+      "onsetBits": "40e5720000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 43980.0,
+      "onsetBits": "40e5798000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 44010.0,
+      "onsetBits": "40e57d4000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 44040.0,
+      "onsetBits": "40e5810000000000",
+      "durationSeconds": 180.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 44220.0,
+      "onsetBits": "40e5978000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 44280.0,
+      "onsetBits": "40e59f0000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 44340.0,
+      "onsetBits": "40e5a68000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 44400.0,
+      "onsetBits": "40e5ae0000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 44520.0,
+      "onsetBits": "40e5bd0000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 44640.0,
+      "onsetBits": "40e5cc0000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 44670.0,
+      "onsetBits": "40e5cfc000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 4"
+    },
+    {
+      "onsetSeconds": 44700.0,
+      "onsetBits": "40e5d38000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 44730.0,
+      "onsetBits": "40e5d74000000000",
+      "durationSeconds": 240.0,
+      "text": "Sleep stage R"
+    },
+    {
+      "onsetSeconds": 44970.0,
+      "onsetBits": "40e5f54000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 45000.0,
+      "onsetBits": "40e5f90000000000",
+      "durationSeconds": 510.0,
+      "text": "Sleep stage R"
+    },
+    {
+      "onsetSeconds": 45510.0,
+      "onsetBits": "40e638c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 45540.0,
+      "onsetBits": "40e63c8000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 45660.0,
+      "onsetBits": "40e64b8000000000",
+      "durationSeconds": 480.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 46140.0,
+      "onsetBits": "40e6878000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 46230.0,
+      "onsetBits": "40e692c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 46260.0,
+      "onsetBits": "40e6968000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 46380.0,
+      "onsetBits": "40e6a58000000000",
+      "durationSeconds": 690.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 47070.0,
+      "onsetBits": "40e6fbc000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 47130.0,
+      "onsetBits": "40e7034000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 47160.0,
+      "onsetBits": "40e7070000000000",
+      "durationSeconds": 990.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48150.0,
+      "onsetBits": "40e782c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 48180.0,
+      "onsetBits": "40e7868000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48210.0,
+      "onsetBits": "40e78a4000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 48300.0,
+      "onsetBits": "40e7958000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48420.0,
+      "onsetBits": "40e7a48000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 48480.0,
+      "onsetBits": "40e7ac0000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48540.0,
+      "onsetBits": "40e7b38000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 48570.0,
+      "onsetBits": "40e7b74000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48600.0,
+      "onsetBits": "40e7bb0000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 48630.0,
+      "onsetBits": "40e7bec000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48660.0,
+      "onsetBits": "40e7c28000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 48780.0,
+      "onsetBits": "40e7d18000000000",
+      "durationSeconds": 210.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 48990.0,
+      "onsetBits": "40e7ebc000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 3"
+    },
+    {
+      "onsetSeconds": 49020.0,
+      "onsetBits": "40e7ef8000000000",
+      "durationSeconds": 120.0,
+      "text": "Sleep stage 2"
+    },
+    {
+      "onsetSeconds": 49140.0,
+      "onsetBits": "40e7fe8000000000",
+      "durationSeconds": 60.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 49200.0,
+      "onsetBits": "40e8060000000000",
+      "durationSeconds": 990.0,
+      "text": "Sleep stage R"
+    },
+    {
+      "onsetSeconds": 50190.0,
+      "onsetBits": "40e881c000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 50220.0,
+      "onsetBits": "40e8858000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 50370.0,
+      "onsetBits": "40e8984000000000",
+      "durationSeconds": 270.0,
+      "text": "Sleep stage R"
+    },
+    {
+      "onsetSeconds": 50640.0,
+      "onsetBits": "40e8ba0000000000",
+      "durationSeconds": 510.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 51150.0,
+      "onsetBits": "40e8f9c000000000",
+      "durationSeconds": 90.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 51240.0,
+      "onsetBits": "40e9050000000000",
+      "durationSeconds": 300.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 51540.0,
+      "onsetBits": "40e92a8000000000",
+      "durationSeconds": 30.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 51570.0,
+      "onsetBits": "40e92e4000000000",
+      "durationSeconds": 540.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 52110.0,
+      "onsetBits": "40e971c000000000",
+      "durationSeconds": 150.0,
+      "text": "Sleep stage 1"
+    },
+    {
+      "onsetSeconds": 52260.0,
+      "onsetBits": "40e9848000000000",
+      "durationSeconds": 27240.0,
+      "text": "Sleep stage W"
+    },
+    {
+      "onsetSeconds": 79500.0,
+      "onsetBits": "40f368c000000000",
+      "durationSeconds": 6900.0,
+      "text": "Sleep stage ?"
+    }
+  ],
+  "signals": []
+}
