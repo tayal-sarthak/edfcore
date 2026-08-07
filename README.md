@@ -299,9 +299,15 @@ back with pyEDFlib, and records every sample as its exact IEEE-754 bit pattern;
 `tests/corpus/golden/` was produced by edfcore. Substituting the numerically better textbook
 expression fails it on 140 of 256 samples — which is why the EDFlib form is pinned.
 
-**Still open before 1.0.** The same harness against MNE, and validation across public corpora
-(sleep-edfx, CHB-MIT, the BioSemi and edfplus.info test files). Those claims are not made here
-until a test produces them.
+**MNE, as of 0.2.43.** edfcore agrees with MNE to within 1e-12 relative — a weaker claim than the
+one above, and deliberately so. MNE returns SI units, so a microvolt channel arrives divided by
+1e6, and that division is lossy; the residue is MNE's unit conversion rather than a disagreement
+about the sample. Bit-parity is claimed for pyEDFlib alone. Both readers also agree with the file's
+own declaration about POLARITY on a negative-gain channel, which a value comparison alone could not
+establish.
+
+**Still open before 1.0.** Validation across public corpora (sleep-edfx, CHB-MIT, the BioSemi and
+edfplus.info test files). That claim is not made here until a test produces it.
 
 **Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
 `readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration

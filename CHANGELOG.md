@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.43
+
+- **Added** parity against MNE — a second, independent reader. pyEDFlib and edfcore both descend
+  from EDFlib's arithmetic, so agreement between them shows edfcore copied it correctly rather than
+  that the answer is right; MNE is a different implementation.
+- The claim is deliberately WEAKER than the pyEDFlib one and says so. MNE returns SI units, so a
+  microvolt channel arrives divided by 1e6 and that division is lossy — the two cannot be
+  bit-identical, and asserting otherwise would be asserting something false. The bound is 1e-12
+  relative, about a hundred times the worst observed and ten orders of magnitude below the
+  quantisation step of any real recording. Bit-parity remains claimed for pyEDFlib alone.
+- The bound is RELATIVE rather than an ULP count, which was the first instinct and is the wrong
+  measure: near 1e-6 the same relative rounding spans far more representable floats than it does
+  near 100, so an ULP bound tight enough to be meaningful at one magnitude is meaningless at the
+  other. Channels MNE does not rescale — it leaves `degC` alone — are excluded rather than pushed
+  through a factor that would make the comparison an artefact of the test.
+
 ## 0.2.42
 
 - **Added** three cases to the pyEDFlib parity harness, chosen for where the two scaling
