@@ -31,6 +31,8 @@ import { readEnvelope } from '../../src/envelope.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readWindow } from '../../src/recording.js';
+import { streamRecords } from '../../src/stream.js';
+import type { ByteSource } from '../../src/types.js';
 
 const PSG = join(dirname(fileURLToPath(import.meta.url)), 'files', 'SC4001E0-PSG.edf');
 const enabled = existsSync(PSG);
@@ -177,5 +179,103 @@ describe('a 22-hour clinical recording', () => {
     expect(chunk?.signals[1]?.sampleCount).toBe(30);
     expect(chunk?.signals[0]?.firstSampleIndex).toBe(eeg.sampleCount - 3000);
     expect(chunk?.signals[1]?.firstSampleIndex).toBe(temp.sampleCount - 30);
+  });
+});
+
+describe('streaming 22 hours', () => {
+  maybe(
+    'yields exactly the samples readWindow does, in the same order',
+    async () => {
+      // The documented claim is that a streamed chunk and a read chunk are the same object in every
+      // respect. On a 40-record fixture a chunking mistake often cancels out; over 2,650 records it
+      // cannot. Concatenating 22 hours and comparing element by element is the strongest form.
+      const recording = await psg();
+      const eeg = getSignal(recording.header, 'EEG Fpz-Cz');
+
+      const [whole] = await readWindow(recording, {
+        signalIndices: [eeg.index],
+        startSeconds: 0,
+        durationSeconds: recording.timeline.spanSeconds,
+      });
+      const expected = whole?.signals[0]?.digital;
+      if (expected === undefined) throw new Error('no samples');
+
+      const streamed = new Int32Array(expected.length);
+      let written = 0;
+      let chunks = 0;
+      let widest = 0;
+      for await (const chunk of streamRecords(recording, {
+        signalIndices: [eeg.index],
+        startSeconds: 0,
+        durationSeconds: recording.timeline.spanSeconds,
+        chunkRecords: 64,
+      })) {
+        const samples = chunk.signals[0]?.digital;
+        if (samples === undefined) throw new Error('a streamed chunk carried no samples');
+        streamed.set(samples.subarray(0, chunk.signals[0]?.sampleCount ?? 0), written);
+        written += chunk.signals[0]?.sampleCount ?? 0;
+        widest = Math.max(widest, samples.length);
+        chunks += 1;
+      }
+
+      expect(written).toBe(expected.length);
+
+      // A loop rather than `toEqual`: a deep-equality assertion over two 7.95-million-element typed
+      // arrays takes about forty seconds and, when it fails, prints a diff nobody can read. This
+      // names the first differing sample, which is the only part anyone would look at.
+      let firstDifference = -1;
+      for (let i = 0; i < expected.length; i += 1) {
+        if (streamed[i] !== expected[i]) {
+          firstDifference = i;
+          break;
+        }
+      }
+      expect(
+        firstDifference,
+        firstDifference < 0
+          ? ''
+          : `sample ${firstDifference}: streamed ${streamed[firstDifference]}, read ${expected[firstDifference]}`,
+      ).toBe(-1);
+
+      // And it really did arrive in pieces: 2,650 records at 64 per chunk.
+      expect(chunks).toBe(Math.ceil(2650 / 64));
+      // No chunk ever held more than its own records — the bounded-memory claim, as a number.
+      expect(widest).toBeLessThanOrEqual(64 * eeg.samplesPerRecord);
+      expect(widest).toBeLessThan(expected.length / 10);
+    },
+    60_000,
+  );
+
+  maybe('streams the first chunk without reading the whole file', async () => {
+    // Bounded memory is only half of it; the other half is that streaming does not have to read
+    // 48 MB before yielding anything. The byte counter is the evidence.
+    const bytes = new Uint8Array(readFileSync(PSG));
+    let bytesRead = 0;
+    const counting: ByteSource = {
+      byteLength: bytes.byteLength,
+      async read(offset, length) {
+        bytesRead += length;
+        return bytes.subarray(offset, offset + length);
+      },
+    };
+
+    const recording = await openEdf(counting);
+    const eeg = getSignal(recording.header, 'EEG Fpz-Cz');
+    const afterOpen = bytesRead;
+
+    for await (const chunk of streamRecords(recording, {
+      signalIndices: [eeg.index],
+      startSeconds: 0,
+      durationSeconds: recording.timeline.spanSeconds,
+      chunkRecords: 8,
+    })) {
+      expect(chunk.records.count).toBe(8);
+      break;
+    }
+
+    // Eight records of a 2,650-record file: well under one percent of it.
+    const forFirstChunk = bytesRead - afterOpen;
+    expect(forFirstChunk).toBeGreaterThan(0);
+    expect(forFirstChunk).toBeLessThan(bytes.byteLength / 100);
   });
 });

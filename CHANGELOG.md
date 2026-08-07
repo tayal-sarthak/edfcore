@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.52
+
+- **Added** streaming equivalence on the 22-hour recording. The documented claim is that a streamed
+  chunk and a read chunk are the same object in every respect; on a 40-record fixture a chunking
+  mistake often cancels out, and over 2,650 records it cannot. 7,950,000 samples are concatenated
+  from 42 streamed chunks and compared element by element with a single `readWindow`, and no chunk
+  is allowed to hold more than its own records.
+- Also pins that streaming yields its first chunk after reading under one percent of a 48 MB file.
+  Bounded memory is half the claim; not having to read the whole file before yielding anything is
+  the other half, and a byte counter is the evidence.
+- The comparison is a loop rather than `toEqual`. Deep equality over two 7.95-million-element typed
+  arrays took 45 seconds and, on failure, printed a diff nobody could read; the loop takes under a
+  second and names the first differing sample, which is the only part anyone would look at.
+
 ## 0.2.51
 
 - **Added** the tests only a real, large recording can support, against the 22-hour sleep-edfx
