@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_JSON = join(ROOT, 'package.json');
+const CHANGELOG = join(ROOT, 'CHANGELOG.md');
 const CONSTANTS = join(ROOT, 'src/constants.ts');
 
 const args = process.argv.slice(2);
@@ -97,6 +98,32 @@ const existingTags = capture('git', ['tag', '--list', tag]);
 if (existingTags) die(`Tag ${tag} already exists. Versions are never reused on npm.`);
 
 console.log(`\n  edfcore ${current} -> ${next}${dryRun ? '  (dry run)' : ''}\n`);
+
+// ---------------------------------------------------------------- the changelog must agree
+//
+// The changelog entry is written by hand BEFORE the release runs, against the version the author
+// expects to get. When a release fails after bumping — a lint error, a flaky test, an agent's
+// scratch file in the tree — that number is consumed and the next run produces a different one,
+// while the heading still names the old one. Every entry after it then inherits the drift.
+//
+// This has happened twice: 0.2.29 and 0.2.36 were both consumed that way, and both times every
+// heading after them was off by one until someone compared `git show <tag>:CHANGELOG.md` against
+// the tags by hand. Catching it here costs one file read and turns a silent documentation defect
+// into a message before anything is committed.
+
+const changelog = readFileSync(CHANGELOG, 'utf8');
+const firstHeading = /^## (\d+\.\d+\.\d+.*)$/m.exec(changelog);
+if (!firstHeading) {
+  die('CHANGELOG.md has no "## <version>" heading. Add the entry for this release first.');
+}
+if (firstHeading[1] !== next) {
+  die(
+    `CHANGELOG.md's top entry is "## ${firstHeading[1]}" but this release is ${next}.\n\n` +
+      `  Fix the heading to "## ${next}" and run again. If a number was skipped — a release that\n` +
+      '  failed after bumping consumes one — record it as never released, the way 0.2.29, 0.2.36\n' +
+      '  and 0.2.59 are.',
+  );
+}
 
 // ---------------------------------------------------------------- bump, in both places
 

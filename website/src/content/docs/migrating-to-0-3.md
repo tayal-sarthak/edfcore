@@ -16,7 +16,7 @@ Three functions are renamed. Nothing else in the public API changes, and no arit
 | `sampleStartTicks` | `gridSampleStartTicks` |
 | `sampleStartSeconds` | `gridSampleStartSeconds` |
 
-Same arguments, same return values, same rounding. They were marked `@deprecated` in 0.2.61, so an
+Same arguments, same return values, same rounding. They were marked `@deprecated` in 0.2.62, so an
 editor has been pointing at the replacement for a release already.
 
 ## Why a rename is worth a minor bump
@@ -49,7 +49,7 @@ index.
 
 ## If your file might have gaps
 
-Use the recording-aware forms added in 0.2.60. They take the recording, so a gap is in their
+Use the recording-aware forms added in 0.2.61. They take the recording, so a gap is in their
 arguments:
 
 ```ts

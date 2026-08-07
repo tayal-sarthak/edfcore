@@ -485,7 +485,7 @@ describe('the sample grid is the signal own grid, not the recording clock', () =
 });
 
 describe('the recording-aware sample functions are on the recording axis', () => {
-  // The pair added in 0.2.60, and the point of them: they take the RECORDING, so a gap is in their
+  // The pair added in 0.2.61, and the point of them: they take the RECORDING, so a gap is in their
   // arguments and they can answer what the grid functions structurally cannot.
 
   it('agrees with the grid functions exactly on a contiguous file', async () => {

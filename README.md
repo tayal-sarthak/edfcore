@@ -341,7 +341,7 @@ also supplies something no synthetic fixture here had — a montage that names o
 which is what `EdfAmbiguousChannelError` exists for and had until now only ever been raised against
 a fixture written to raise it.
 
-**The format author's own calibration file, as of 0.2.59.** `calib.rec` was written by Bob Kemp —
+**The format author's own calibration file, as of 0.2.60.** `calib.rec` was written by Bob Kemp —
 who wrote the EDF specification — expressly to check that a reader gets amplitude *and polarity*
 right. It is the only fixture here whose expected values come from neither edfcore nor another
 library but from the file's own design: its gain is 25/1024, exactly representable in binary, so

@@ -6,7 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
-## 0.2.64
+## 0.2.66
+
+- **Fixed** the changelog numbering, which had drifted a second time, and **fixed the cause** so it
+  cannot drift a third.
+- The mechanism, both times: the entry is written by hand before the release runs, against the
+  version the author expects. When a release fails AFTER bumping — a lint error, a flaky test, an
+  agent's scratch file in the tree — that number is consumed, the next run produces a different
+  one, and every heading from there on inherits the drift. `0.2.29` and `0.2.36` went that way in
+  the last round; `0.2.59` went that way in this one, consumed by its own coverage guard when a
+  corpus file was added without regenerating its parity golden.
+- `scripts/release.mjs` now refuses to release unless the top `## <version>` heading in
+  CHANGELOG.md equals the version being tagged, and its message says what to do — including
+  recording a skipped number as never released. One file read, and a silent documentation defect
+  becomes a message before anything is committed.
+- Headings `0.2.59` through `0.2.64` are shifted to the releases that actually carried them,
+  verified against `git show <tag>:CHANGELOG.md` rather than reasoned about, and `0.2.59` is
+  recorded as never released. Prose references in the README, the docs and one test are shifted to
+  match.
+
+## 0.2.65
 
 - **Added** a migration guide for 0.3.0, published before the release rather than after it:
   [Migrating to 0.3](https://edfcore.vercel.app/docs/migrating-to-0-3). Three functions are
@@ -20,7 +39,7 @@ defect; those are called out below.
 - Includes the find-and-replace, with word boundaries, and a note on why: `sampleStartTicks` and
   `sampleStartTicksOf` are distinct names and a substring replace would damage the second.
 
-## 0.2.63
+## 0.2.64
 
 - **Added** a test that drives essentially the whole public barrel over every corpus file — six
   files written by five pieces of software across twenty-one years — and asserts the results are
@@ -34,7 +53,7 @@ defect; those are called out below.
   nowhere written down, and the sleep-edfx hypnogram is a real file of exactly that shape. Now
   stated in the source, in the docs, and pinned by the test that found it.
 
-## 0.2.62
+## 0.2.63
 
 - **Added** `formatAnnotations`, the third formatter beside `formatHeader` and
   `formatDiagnostics`, and the one a hypnogram or an event list actually needs.
@@ -49,7 +68,7 @@ defect; those are called out below.
   the header start time, a recording may begin after its first annotation, and clamping to zero
   would silently move it.
 
-## 0.2.61
+## 0.2.62
 
 - **Deprecated** `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds`, which are renamed
   to `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds` in **0.3.0**. The
@@ -62,7 +81,7 @@ defect; those are called out below.
 - Nothing is removed here. An editor will point at the replacement a release before the rename
   lands, and for a contiguous file the rename is the only thing that affects a caller.
 
-## 0.2.60
+## 0.2.61
 
 - **Added** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` — the recording-aware
   counterpart to the sample-grid family, and the groundwork for 0.3.0.
@@ -79,7 +98,7 @@ defect; those are called out below.
   follows. A round-trip test pins the pair together across the gap: the sample at a sample's start
   is that sample, for every sample in the file.
 
-## 0.2.59
+## 0.2.60
 
 - **Added** `calib.rec` from edfplus.info — the last corpus the README named. It was written by
   **Bob Kemp, who wrote the EDF specification**, expressly to check that a reader gets amplitude
@@ -98,6 +117,12 @@ defect; those are called out below.
 - The coverage guard added in 0.2.50 earned its place on the way: it failed this release because
   the new corpus file had no parity golden yet. That is exactly the drift it exists to catch, and
   it caught it before the release rather than after.
+
+## 0.2.59
+
+Never released. The 0.2.59 release run failed its own coverage guard — a corpus file had been added
+without regenerating its parity golden — which consumed the number before a tag was cut. The
+calibration-file work that carried this heading while it was being written shipped in `0.2.60`.
 
 ## 0.2.58
 

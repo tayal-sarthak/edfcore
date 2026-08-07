@@ -340,7 +340,7 @@ regime you are in.
 > **Renaming in 0.3.0.** `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` become
 > `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds`. **The behaviour does not
 > change** — only the name, which never said which of two different quantities it returns. They are
-> marked `@deprecated` as of 0.2.61, so an editor will point at the replacement before the rename
+> marked `@deprecated` as of 0.2.62, so an editor will point at the replacement before the rename
 > lands. If you are on a contiguous file, the rename is the only thing that affects you and a
 > find-and-replace covers it.
 
