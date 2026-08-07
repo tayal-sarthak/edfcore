@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.57
+
+- **Documented** what the corpus work of 0.2.49-0.2.55 actually established. The README's
+  interop section stopped at sample parity, which was the state at 0.2.48 and has not been the
+  state since — annotation onsets, the zero-record-duration scoring file, the 1985-2084 year rule,
+  faithful decimation over 7,950,000 samples, chunk-independence, the memory bound, streaming
+  equivalence, HTTP random access costing under 64 KB for a window twelve hours into a 48 MB file,
+  and `validate` exiting 0 on a real clinical recording were all verified and none of them were
+  claimed. A reader deciding whether to trust this package should not have to reconstruct that
+  from a changelog.
+- Each row names how it is checked rather than only what it asserts, because "we test that" is the
+  kind of claim this project has spent forty releases learning not to make without saying how.
+
 ## 0.2.56
 
 - **Fixed** `tests/README.md`, which said "There are no binary fixtures in this repository" and

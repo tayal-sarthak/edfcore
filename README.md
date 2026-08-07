@@ -310,7 +310,25 @@ establish.
 chose: a **22-hour clinical polysomnogram** from sleep-edfx, and the teuniz generator files in EDF,
 EDF+ and 24-bit BDF+. Sampled at the start, the middle and the end of every signal — the end window
 being the one that catches record arithmetic drifting with distance, which a sample near record 0
-cannot. Those tests need the corpus and skip without it:
+cannot.
+
+What else those files establish, which synthetic fixtures cannot:
+
+| Claim | Checked how |
+|---|---|
+| Annotation onsets match pyEDFlib | 154 sleep stages from a real scoring file, to the tick |
+| A legally **zero** record duration works | that same file — where `sampleRateHz` is `undefined` and any rate-derived expression yields `NaN` |
+| The 1985–2084 year rule is right | a 1989 recording, against a reader that implements it independently |
+| Decimation keeps every extreme | 7,950,000 samples reduced to 1,000 buckets, compared with an exhaustive reduction |
+| The bucket grid ignores chunk size | 265 chunks versus a handful |
+| Memory is bounded by the chunk | that 22-hour envelope produced under a 512 KiB budget |
+| Streaming equals reading | 42 streamed chunks concatenated and compared sample by sample |
+| **Random access is real** | a 30-second window twelve hours in costs **under 64 KB** over HTTP |
+| `validate` is usable as a CI gate | exits 0 on a real recording from a real sleep lab |
+| The sample scan sees what pyEDFlib sees | whole-signal digital extremes, all five files |
+
+Those tests need the corpus and skip without it. `coverage.test.ts` always runs and says which
+state you are in, because a skipped test and a passing one look identical in a summary line:
 
 ```bash
 npm run corpus:fetch
