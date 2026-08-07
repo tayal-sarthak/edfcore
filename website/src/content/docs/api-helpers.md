@@ -55,7 +55,12 @@ scan already produced, with no reads. A viewer asking on every mouse move wants 
 
 It **throws** on a probed index rather than returning `undefined`, because `undefined` here means
 "no records cover this instant" and a probed index cannot say that about anything in the middle of
-the file. Merging "there is a gap here" with "nobody looked" is the one confusion this whole area
+the file.
+
+On a file whose record duration is **zero** it returns `undefined` for every time, and that is
+correct rather than a gap in the implementation: records then occupy no time, so each segment's
+half-open interval `[start, start)` is empty and no instant is inside one. A real sleep-staging
+file is shaped exactly like that. Index by record with `readRecords` instead. Merging "there is a gap here" with "nobody looked" is the one confusion this whole area
 of the API exists to prevent.
 
 ```ts

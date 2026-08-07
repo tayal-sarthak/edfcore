@@ -445,6 +445,12 @@ export function contiguityOf(index: EdfRecordIndex): 'contiguous' | 'discontinuo
  *
  * `seconds` is on the recording's own axis: `t = 0` is the start of record 0, matching
  * `segment.startSeconds`, `readWindow` and `readEnvelope`.
+ *
+ * ON A ZERO RECORD DURATION this returns `undefined` for every time, and that is correct rather
+ * than a gap in the implementation. Records then occupy no time at all, so each segment's
+ * half-open interval `[start, start)` is empty and no instant is inside one. A real sleep-staging
+ * file is shaped exactly like that — legal EDF, and the same reason `sampleAt` refuses such a file
+ * outright. Index by record with `readRecords` instead.
  */
 export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | undefined {
   const segments = index.segments;

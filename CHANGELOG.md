@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.63
+
+- **Added** a test that drives essentially the whole public barrel over every corpus file — six
+  files written by five pieces of software across twenty-one years — and asserts the results are
+  mutually consistent. Deliberately broad and shallow, because it catches a class the deep
+  single-function tests cannot: a function that is individually correct and disagrees with its
+  neighbour, or one that is correct on the fixtures written for it and throws on the first real
+  file with a zero record duration, a duplicate label, or no signals at all.
+- **Documented**, because it found one: `segmentAt` returns `undefined` for EVERY time on a file
+  whose record duration is zero. That is correct rather than a defect — records then occupy no
+  time, so each segment's half-open interval is empty and no instant is inside one — but it was
+  nowhere written down, and the sleep-edfx hypnogram is a real file of exactly that shape. Now
+  stated in the source, in the docs, and pinned by the test that found it.
+
 ## 0.2.62
 
 - **Added** `formatAnnotations`, the third formatter beside `formatHeader` and
