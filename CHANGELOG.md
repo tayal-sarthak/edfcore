@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.56
+
+- **Fixed** `tests/README.md`, which said "There are no binary fixtures in this repository" and
+  listed Tier 2 of its own fixture policy as "Not used". Both stopped being true in 0.2.34, when
+  the parity harness committed six small EDF/BDF files and their goldens — about 1.4 MB. I added
+  those without revisiting the policy that forbade them.
+- The policy is now stated as it actually is, with the reason: a parity fixture has to be bytes a
+  DIFFERENT implementation wrote, so regenerating it in memory with this project's own writer
+  would make the comparison circular and prove nothing. The licence rule is unchanged and was
+  never at risk — the committed files are generated locally by pyEDFlib, the downloaded corpus is
+  still gitignored, and only the JSON goldens reference it, by name and hash. None of it ships:
+  the package contains `dist`, `src` and the changelog.
+
 ## 0.2.55
 
 - **Added** CLI coverage against the real corpus. Every existing CLI fixture is a few hundred bytes
