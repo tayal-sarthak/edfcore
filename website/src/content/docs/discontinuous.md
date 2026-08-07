@@ -206,6 +206,29 @@ Every second here is elapsed recording time, measured from the start of record 0
 `endSeconds - startSeconds`. A negative one means records overlap in time, which is a spacing
 violation the [validation sweep](/docs/diagnostics) reports.
 
+### An overlap is a negative gap
+
+EDF+D lets a file spread its records out. It never lets a record start before the previous one
+ends — but files do it anyway, and edfcore reports what is there rather than reordering anything.
+
+There is no separate shape for it. `EdfGap.durationSeconds` simply goes **negative**, and the two
+segments it sits between overlap in time:
+
+```ts
+index.gaps.map((g) => g.durationSeconds);   // [-1, 1]  — the first pair overlaps by a second
+```
+
+`validateRecording` turns that into `RECORD_ONSET_SPACING_VIOLATION`, naming the segments. Two
+consequences worth knowing:
+
+- Summing `durationSeconds` to get "time lost to gaps" is only right if you expect a negative term.
+- Where two segments cover the same instant there is no single right answer, so `segmentAt` and
+  `sampleAt` return one of them. More than one sample genuinely exists at that time.
+
+A probed index cannot see any of this when the gap and the overlap cancel: net drift is then zero,
+the file opens with no diagnostic, and `contiguityOf` answers `'unknown'` — which is the honest
+answer and exactly why `buildRecordIndex` exists.
+
 ## Reading across a gap
 
 In the fragments below, `located` is the recording rebuilt around the complete index and `signal`

@@ -42,6 +42,7 @@ import { sampleIndexAt, sampleStartSeconds, sampleStartTicks } from '../../src/s
 import { sampleAt, sampleStartSecondsOf, sampleStartTicksOf } from '../../src/sample-locate.js';
 import { streamRecords } from '../../src/stream.js';
 import type { EdfRecording } from '../../src/types.js';
+import { validateRecording } from '../../src/validate.js';
 import { buildEdf } from '../support/writer.js';
 
 const RECORDS = 6;
@@ -666,5 +667,67 @@ describe('a file whose gaps and overlaps cancel in net', () => {
     });
     // Every sample of record 2 is shadowed by record 3, which starts at the same instant.
     expect(overlapping).toEqual([8, 9, 10, 11]);
+  });
+});
+
+describe('an overlap is a negative gap, and that is how it is reported', () => {
+  // Nothing invents a new shape for an overlap: `EdfGap.durationSeconds` simply goes negative,
+  // and `validateRecording` turns that into RECORD_ONSET_SPACING_VIOLATION. Worth pinning,
+  // because a caller summing gap durations to get "time lost" gets the right answer only if they
+  // know a negative one is possible.
+  const ONSETS = [0, 1, 2, 2, 3, 5];
+
+  async function overlapping(): Promise<EdfRecording> {
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => ONSETS[r] as number,
+      signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD, sample: sampleValue }],
+      annotationSignals: [{ samplesPerRecord: 60 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    return { ...recording, index: await buildRecordIndex(recording) };
+  }
+
+  it('reports the overlap as a negative gap duration', async () => {
+    const edf = await overlapping();
+    expect(edf.index.gaps?.map((g) => g.durationSeconds)).toEqual([-1, 1]);
+  });
+
+  it('is reported by validateRecording, which is where a scan can see it', async () => {
+    const edf = await overlapping();
+    const report = await validateRecording(edf);
+    expect(report.diagnostics.map((d) => d.code)).toContain('RECORD_ONSET_SPACING_VIOLATION');
+  });
+
+  it('is invisible to a probed index, which is expected rather than a defect', async () => {
+    // Two probes see net drift, and this file's gap and overlap cancel exactly. edfcore's docs
+    // say three times that this is why a probed index is not a proof of contiguity; this is that
+    // sentence as a test.
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => ONSETS[r] as number,
+      signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD }],
+      annotationSignals: [{ samplesPerRecord: 60 }],
+    });
+    const probed = await openEdf(byteSource(bytes));
+    expect(probed.timeline.diagnostics).toEqual([]);
+    expect(contiguityOf(probed.index)).toBe('unknown');
+  });
+
+  it('makes segmentAt answer from one of the overlapping segments, not both', async () => {
+    // Where two segments cover an instant there is no single right answer, and `segmentAt`
+    // binary-searches, so it returns one of them. Pinned so the behaviour is a stated limit
+    // rather than something rediscovered.
+    const edf = await overlapping();
+    const found = segmentAt(edf.index, 2.5);
+    const covering = (edf.index.segments ?? []).filter(
+      (s) => 2.5 >= s.startSeconds && 2.5 < s.endSeconds,
+    );
+    expect(covering.length).toBe(2);
+    expect(covering).toContain(found);
   });
 });

@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.69
+
+- **Documented and pinned** how an overlap is reported, after investigating whether it was reported
+  at all. It is: `EdfGap.durationSeconds` goes NEGATIVE, and `validateRecording` turns that into
+  `RECORD_ONSET_SPACING_VIOLATION` naming the segments. No new shape, no missing diagnostic — I
+  checked before changing anything, and there was nothing to fix.
+- What was missing is that none of it was written down. Two consequences now are: summing gap
+  durations to get "time lost" is right only if you expect a negative term, and where two segments
+  cover the same instant `segmentAt` and `sampleAt` return one of them because more than one sample
+  genuinely exists there.
+- Also pinned that a PROBED index sees none of this when a gap and an overlap cancel exactly — net
+  drift is zero, the file opens with no diagnostic, and `contiguityOf` answers `'unknown'`. That is
+  the honest answer and precisely why `buildRecordIndex` exists; the docs say so three times and
+  now a test does too.
+
 ## 0.2.68
 
 Two defects in `sample-locate.ts`, both introduced by me in 0.2.61 and found by an adversarial
