@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.51
+
+- **Added** the tests only a real, large recording can support, against the 22-hour sleep-edfx
+  polysomnogram. Three claims edfcore advertises are invisible on a hundred-byte fixture:
+  - **Envelope decimation is faithful.** 7,950,000 samples reduced to 1,000 buckets, compared with
+    an EXHAUSTIVE reduction of every one of them — not a spot check. This is the case the feature
+    exists for, and until now it was only demonstrated on 40 records.
+  - **The bucket grid does not move with the read chunk size.** 265 chunks versus a handful. A fold
+    that computed its bucket on the chunk's grid rather than the run's would diverge here and agree
+    on a two-record fixture.
+  - **Memory is bounded by the chunk, not the window.** The 22-hour envelope is produced under a
+    512 KiB budget; materialising the window would need ~32 MB, so the budget makes the claim
+    falsifiable rather than asserted.
+- Also pins that a 100 Hz and a 1 Hz channel keep their own sample grids across the whole file,
+  checked at the LAST 30 seconds — where a shared-grid error is largest, and nowhere else.
+- **Fixed** an unnecessary biome suppression added in 0.2.50 that was itself the only warning in
+  the tree.
+
 ## 0.2.50
 
 - **Added** a corpus-coverage report that always runs. Every other test in `tests/corpus/` skips

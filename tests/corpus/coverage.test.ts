@@ -82,7 +82,6 @@ describe('corpus coverage', () => {
     // Deliberately a log rather than a failure. Requiring the corpus would break `git clone &&
     // npm test`, which is the property the skipping exists to protect; leaving it unsaid is what
     // this file objects to.
-    // biome-ignore lint/suspicious/noConsole: the whole purpose of this test is to say this once.
     console.log(summary);
 
     expect(summary).toContain('corpus:');
