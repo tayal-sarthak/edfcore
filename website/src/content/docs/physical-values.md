@@ -60,6 +60,26 @@ Substituting the numerically better textbook expression fails it on 140 of 256 s
 symmetric fixture — for example `-492.15686274509807` where pyEDFlib says `-492.156862745098`.
 That is the whole reason the EDFlib form is pinned, and it is now the reason a test gives.
 
+Three harnesses, and they do not all claim the same strength:
+
+| Harness | Claim | Strength |
+|---|---|---|
+| pyEDFlib physical values | edfcore reproduces them exactly | **bit for bit** |
+| pyEDFlib annotation onsets | both place every event at the same time | exact, to the tick |
+| MNE | edfcore agrees | 1e-12 relative, **not** bit-exact |
+
+The MNE bound is weaker on purpose. MNE returns SI units, so a microvolt channel arrives divided by
+1e6 and that division is lossy — the two cannot be bit-identical, and claiming otherwise would be
+claiming something false.
+
+The cases cover a symmetric range, an asymmetric one, 24-bit BDF, a negative amplifier gain, and
+the coarsest and finest gains an 8-byte field can express. The negative-gain case is additionally
+asserted against the file's own declaration — physical values must fall as digital values rise —
+because a value comparison alone cannot catch a field swap that pyEDFlib made too.
+
+See [`scripts/golden/README.md`](https://github.com/tayal-sarthak/edfcore/blob/main/scripts/golden/README.md)
+to regenerate them.
+
 ### The EDFlib expression
 
 The form above is EDFlib's, kept verbatim, so edfcore's float64 output can be compared bit for

@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.45
+
+- **Added** `scripts/golden/README.md`: how to regenerate every parity fixture, and — more usefully
+  — what each of the three harnesses actually claims and how strong that claim is. Bit-for-bit for
+  pyEDFlib physical values, exact-to-the-tick for pyEDFlib annotation onsets, 1e-12 relative for
+  MNE, with the reason the last one is weaker stated where someone would otherwise assume it was an
+  oversight. Also records the rule for adding a case: pick where the two candidate expressions
+  diverge or where a mistake would be least visible, and remember that a value comparison alone
+  cannot catch a mistake both libraries make.
+- **Documented** the same table on the physical-values page, so a reader who never opens the
+  repository sees which claims are load-bearing and which are approximate.
+
 ## 0.2.44
 
 - **Added** annotation parity against pyEDFlib — the other axis, and the one edfcore has got wrong
