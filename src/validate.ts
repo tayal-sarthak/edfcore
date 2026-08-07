@@ -19,7 +19,7 @@
  */
 
 import { trimEdfField } from './bytes/latin1.js';
-import { DEFAULT_MAX_MATERIALIZE_BYTES, EDF_RECOMMENDED_MAX_RECORD_BYTES } from './constants.js';
+import { EDF_RECOMMENDED_MAX_RECORD_BYTES } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
 import { appendDiagnostics, createDiagnostic } from './diagnostics/collector.js';
 import { EdfBudgetError } from './errors.js';
@@ -71,6 +71,8 @@ export type {
   ValidateOptions,
   ValidationReport,
 } from './types.js';
+
+import { resolveMaterializeBudget } from './options.js';
 
 const LABEL_SPEC = 'EDF+ additional specification 9 (standard texts and labels)';
 const TIMEKEEPING_SPEC = 'EDF+ specification 2.2.1 (time keeping of data records)';
@@ -535,7 +537,7 @@ async function traverse(
     // failure this guard exists for: refusing a read that is genuinely small.
     const scratchRecords = Math.min(chunkRecords, Math.max(0, header.recordCount));
     const scratchBytes = scratchRecords * maxSamplesPerRecord * BYTES_PER_SCRATCH_SAMPLE;
-    const budgetBytes = options?.maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES;
+    const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
     if (scratchBytes > budgetBytes) {
       throw new EdfBudgetError(
         `Scanning samples needs a ${scratchBytes}-byte scratch buffer for ${scratchRecords} ` +

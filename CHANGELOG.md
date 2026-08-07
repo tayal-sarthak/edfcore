@@ -6,6 +6,33 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.21
+
+- **Fixed** a non-finite `maxMaterializeBytes` producing two different wrong diagnoses, neither
+  naming the argument that was wrong. `Number(process.env.EDF_BUDGET)` on an unset variable is
+  `NaN`, `ReadOptions` types the field as `number`, and every comparison against `NaN` is false —
+  so the guards did not fire and the failure surfaced elsewhere:
+  - `readWindow` and `readAnnotations` refused **every** read with an `EdfBudgetError` reporting a
+    *"NaN-byte maxMaterializeBytes budget"* and advising the caller to "read fewer records per
+    call" — advice no record count can satisfy.
+  - `validateRecording` and `buildRecordIndex` sized their scan chunks from it, so `chunkRecords`
+    became `NaN` and the failure arrived as an `EdfRangeError` about
+    `records { start: 0, count: NaN }`, telling the caller to "clamp the range against
+    `header.recordCount`" — a range neither function accepts as a parameter.
+- The option is now resolved once, in `src/options.ts`, and all four call sites go through it. A
+  bad value is a plain `RangeError` naming `options.maxMaterializeBytes` and pointing at the
+  expression that produced it. A negative budget is refused by name too, rather than refusing every
+  read that follows.
+- **`requireFiniteOption` was written for exactly this class in 0.1.3** — for `cachedSource`'s
+  `blockBytes`/`maxBytes` and `httpSource`'s `maxConcurrency` — and its own comment describes the
+  failure verbatim: *"guards written as `if (value < 1)` simply do not fire"*. It was never applied
+  to `maxMaterializeBytes`, the one option that reaches four modules across four layers. It has
+  moved to `src/options.ts` so every layer can reach it; a guard only one caller applies is not a
+  guard.
+- A real budget still behaves exactly as before, in both directions, and omitting it still means
+  the 256 MiB default. That is asserted, because a fix that disabled the budget would look
+  identical in the messages above.
+
 ## 0.3.20
 
 - **Fixed** `byteSource` refusing an `ArrayBuffer` that crossed a realm boundary — an iframe, an

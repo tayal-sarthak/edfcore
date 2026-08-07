@@ -20,14 +20,10 @@
 
 import { parseEdfInteger } from '../bytes/numbers.js';
 import { readAsciiField } from '../bytes/view.js';
-import {
-  DEFAULT_MAX_MATERIALIZE_BYTES,
-  EDF_HEADER_BLOCK_BYTES,
-  EDF_MAX_SIGNAL_COUNT,
-  HEADER_FIELDS,
-} from '../constants.js';
+import { EDF_HEADER_BLOCK_BYTES, EDF_MAX_SIGNAL_COUNT, HEADER_FIELDS } from '../constants.js';
 import { EdfBudgetError, EdfRangeError } from '../errors.js';
 import { parseHeader } from '../header/parse.js';
+import { resolveMaterializeBudget } from '../options.js';
 import type { ByteSource, EdfHeader, OpenOptions, ReadOptions, RecordRange } from '../types.js';
 import { assertExactRead } from './source.js';
 
@@ -111,7 +107,7 @@ function assertWithinBudget(
   records: RecordRange,
   options?: ReadOptions,
 ): void {
-  const budgetBytes = options?.maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES;
+  const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (requiredBytes <= budgetBytes) return;
   throw new EdfBudgetError(
     `Reading records ${describeRange(records)} needs a ${requiredBytes}-byte buffer, above the ` +

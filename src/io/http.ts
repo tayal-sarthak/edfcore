@@ -15,6 +15,7 @@
  */
 
 import { EdfSourceError } from '../errors.js';
+import { requireFiniteOption } from '../options.js';
 import type {
   AbortSignalLike,
   ByteSource,
@@ -23,12 +24,7 @@ import type {
   HttpSourceOptions,
   ReadOptions,
 } from '../types.js';
-import {
-  assertExactRead,
-  assertReadRange,
-  requireFiniteOption,
-  throwIfSignalAborted,
-} from './source.js';
+import { assertExactRead, assertReadRange, throwIfSignalAborted } from './source.js';
 
 /** Small enough to stay polite to a shared origin, large enough to hide latency. */
 const DEFAULT_MAX_CONCURRENCY = 4;

@@ -15,8 +15,9 @@
  * construction and has no access to a header, so there is no record size to align to.
  */
 
+import { requireFiniteOption } from '../options.js';
 import type { ByteSource, CacheOptions, ReadOptions } from '../types.js';
-import { assertExactRead, assertReadRange, requireFiniteOption, throwIfAborted } from './source.js';
+import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
 
 const DEFAULT_BLOCK_BYTES = 1024 * 1024;
 const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;

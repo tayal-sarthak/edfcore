@@ -26,10 +26,10 @@
  * full bytes, and reading less would mean reimplementing that rule here.
  */
 
-import { DEFAULT_MAX_MATERIALIZE_BYTES } from './constants.js';
 import { appendDiagnostics } from './diagnostics/collector.js';
 import { EdfRangeError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
+import { resolveMaterializeBudget } from './options.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { saturateToInt64, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { buildSegmentation } from './time/segments.js';
@@ -67,10 +67,7 @@ const SCAN_BLOCK_TARGET_BYTES = 4 * 1024 * 1024;
 
 /** Records per chunk of a full traversal: bounded memory, and never fewer than one record. */
 export function scanChunkRecords(header: EdfHeader, maxMaterializeBytes?: number): number {
-  const budget = Math.min(
-    SCAN_BLOCK_TARGET_BYTES,
-    maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES,
-  );
+  const budget = Math.min(SCAN_BLOCK_TARGET_BYTES, resolveMaterializeBudget(maxMaterializeBytes));
   if (header.recordByteLength <= 0) return 1;
   return Math.max(1, Math.floor(budget / header.recordByteLength));
 }

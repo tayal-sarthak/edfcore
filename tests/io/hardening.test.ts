@@ -14,7 +14,8 @@ import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
 import { httpSource } from '../../src/io/http.js';
 import { assertExactRead } from '../../src/io/source.js';
-import { openEdf } from '../../src/recording.js';
+import { buildRecordIndex } from '../../src/record-index.js';
+import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
 import type { FetchLike, HttpResponseLike } from '../../src/types.js';
 import { validateRecording } from '../../src/validate.js';
 import { minimalEdfPlus } from '../support/writer.js';
@@ -376,5 +377,78 @@ describe('validateRecording sizes its scan buffer from the records that exist', 
     await expect(
       validateRecording(recording, { scanSamples: true, maxMaterializeBytes: 1024 }),
     ).rejects.toThrow(/maxMaterializeBytes budget/);
+  });
+});
+
+describe('a maxMaterializeBytes that is not a number names itself', () => {
+  /**
+   * `Number(process.env.EDF_BUDGET)` on an unset variable is `NaN`, and `ReadOptions` types the
+   * field as `number`. Every comparison against `NaN` is false, so the guards did not fire and the
+   * failure surfaced somewhere else, twice over and in two different ways:
+   *
+   * - `readWindow` and `readAnnotations` refused every read with an `EdfBudgetError` reporting a
+   *   "NaN-byte maxMaterializeBytes budget" and advising "read fewer records per call" — advice no
+   *   record count can satisfy.
+   * - `validateRecording` and `buildRecordIndex` sized their scan chunks from it, so the failure
+   *   arrived as an `EdfRangeError` about `records { start: 0, count: NaN }`, telling the caller to
+   *   "clamp the range against header.recordCount" — a range neither function takes.
+   *
+   * One bad argument, two wrong diagnoses, neither naming the argument (fixed in 0.3.21).
+   * `requireFiniteOption` was written for this class in 0.1.3 and never applied to this option.
+   */
+  async function recording() {
+    return openEdf(byteSource(minimalEdfPlus({ recordCount: 8, recordDurationSeconds: 1 })));
+  }
+
+  const NOT_A_NUMBER = [
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+  ] as const;
+
+  it.each(NOT_A_NUMBER)('is refused by readWindow for %s', async (_name, maxMaterializeBytes) => {
+    const edf = await recording();
+    await expect(
+      readWindow(
+        edf,
+        { signalIndices: [0], startSeconds: 0, durationSeconds: 2 },
+        { maxMaterializeBytes },
+      ),
+    ).rejects.toThrow(/options\.maxMaterializeBytes must be a finite number/);
+  });
+
+  it.each(NOT_A_NUMBER)('is refused by the scanning paths for %s', async (_name, budget) => {
+    const edf = await recording();
+    await expect(validateRecording(edf, { maxMaterializeBytes: budget })).rejects.toThrow(
+      /options\.maxMaterializeBytes must be a finite number/,
+    );
+    await expect(buildRecordIndex(edf, { maxMaterializeBytes: budget })).rejects.toThrow(
+      /options\.maxMaterializeBytes must be a finite number/,
+    );
+    await expect(
+      readAnnotations(edf, { start: 0, count: 8 }, { maxMaterializeBytes: budget }),
+    ).rejects.toThrow(/options\.maxMaterializeBytes must be a finite number/);
+  });
+
+  it('refuses a negative budget by name rather than refusing every read', async () => {
+    const edf = await recording();
+    await expect(
+      readWindow(
+        edf,
+        { signalIndices: [0], startSeconds: 0, durationSeconds: 2 },
+        { maxMaterializeBytes: -1 },
+      ),
+    ).rejects.toThrow(/must not be negative/);
+  });
+
+  it('still honours a real budget, in both directions', async () => {
+    // The guard must not have swallowed the behaviour it protects.
+    const edf = await recording();
+    const selection = { signalIndices: [0], startSeconds: 0, durationSeconds: 2 } as const;
+    await expect(readWindow(edf, selection, { maxMaterializeBytes: 8 })).rejects.toThrow(
+      /maxMaterializeBytes budget/,
+    );
+    expect(await readWindow(edf, selection, { maxMaterializeBytes: 1_000_000 })).toHaveLength(1);
+    // And omitting it still means the 256 MiB default.
+    expect(await readWindow(edf, selection)).toHaveLength(1);
   });
 });

@@ -10,8 +10,8 @@
  * negative. Every offset below is plain arithmetic, exact to 2^53.
  */
 
-import { DEFAULT_MAX_MATERIALIZE_BYTES } from '../constants.js';
 import { EdfBudgetError, EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
+import { resolveMaterializeBudget } from '../options.js';
 import type { EdfHeader, EdfSignal, RecordRange } from '../types.js';
 
 const BYTES_PER_INT32 = 4;
@@ -51,7 +51,7 @@ function assertWithinBudget(
   what: string,
   options: MaterializeOptions | undefined,
 ): void {
-  const budgetBytes = options?.maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES;
+  const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (requiredBytes <= budgetBytes) return;
   throw new EdfBudgetError(
     `Decoding ${what} needs a ${requiredBytes}-byte array, above the ${budgetBytes}-byte ` +
