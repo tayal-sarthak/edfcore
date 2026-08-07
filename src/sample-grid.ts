@@ -28,10 +28,16 @@
  * count, and are not being modest about it: the information is not in their arguments.
  *
  * So the contract is stated rather than guessed at. For a file that may be discontinuous, use
- * `index.locate(seconds)` for time to record, `segmentAt`/`gapAt` to find out whether an instant
- * has data at all, and `chunk.firstSampleIndex` for the sample index a read actually produced.
- * `contiguityOf(index)` answers which regime you are in. On a contiguous file — the common case,
- * and every plain EDF or EDF+C — these are exact and are what you want.
+ * `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf` from `sample-locate.ts`, which take
+ * the recording and can therefore see a gap. `contiguityOf(index)` answers which regime you are
+ * in. On a contiguous file — the common case, and every plain EDF or EDF+C — these are exact and
+ * are what you want.
+ *
+ * RENAMED IN 0.3.0. These three keep their behaviour and lose their misleading names: they become
+ * `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds`. The `grid` prefix is
+ * the whole fix — the functions were never wrong, the names simply did not say which of two
+ * different quantities they returned, and six releases of this project were spent on exactly that
+ * confusion in other places. Nothing about the arithmetic changes.
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
@@ -68,6 +74,11 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint): void {
  * Floor, not round: a sample covers the half-open interval from its own start to the next one's,
  * so the sample "at" a time is the one whose interval contains it. Rounding would return the
  * NEXT sample for anything past the halfway point, which puts a window boundary one sample late.
+ *
+ * @deprecated Renamed to `gridSampleIndexAt` in 0.3.0. The behaviour is unchanged — only the
+ * name, which never said which of two different quantities it returns. For a file that may
+ * have gaps, use `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf`, which take the
+ * recording and can therefore see one.
  */
 export function sampleIndexAt(
   signal: EdfSignal,
@@ -107,6 +118,11 @@ export function sampleIndexAt(
  * edfcore has. Truncating would return 23,437 — a tick that lies inside sample 0 — so
  * `sampleIndexAt` would send it straight back to the previous sample. Taking the first whole
  * tick at or after the exact start keeps the two functions inverse for every index.
+ *
+ * @deprecated Renamed to `gridSampleStartTicks` in 0.3.0. The behaviour is unchanged — only the
+ * name, which never said which of two different quantities it returns. For a file that may
+ * have gaps, use `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf`, which take the
+ * recording and can therefore see one.
  */
 export function sampleStartTicks(
   signal: EdfSignal,
@@ -128,7 +144,12 @@ export function sampleStartTicks(
   return numerator > 0n ? quotient + 1n : quotient;
 }
 
-/** `sampleStartTicks` in seconds, for display. Compare ticks, not this. */
+/** `sampleStartTicks` in seconds, for display. Compare ticks, not this. *
+ * @deprecated Renamed to `gridSampleStartSeconds` in 0.3.0. The behaviour is unchanged — only the
+ * name, which never said which of two different quantities it returns. For a file that may
+ * have gaps, use `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf`, which take the
+ * recording and can therefore see one.
+ */
 export function sampleStartSeconds(
   signal: EdfSignal,
   sampleIndex: number,

@@ -332,6 +332,13 @@ They refuse a probed index on a file with gaps rather than guessing, for the rea
 does. `index.locate(seconds)` remains the read-based form; `contiguityOf(index)` tells you which
 regime you are in.
 
+> **Renaming in 0.3.0.** `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds` become
+> `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds`. **The behaviour does not
+> change** — only the name, which never said which of two different quantities it returns. They are
+> marked `@deprecated` as of 0.2.61, so an editor will point at the replacement before the rename
+> lands. If you are on a contiguous file, the rename is the only thing that affects you and a
+> find-and-replace covers it.
+
 `sampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
 over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit edfcore has. Truncating
 would return a tick lying inside the previous sample, and `sampleIndexAt` would send it straight

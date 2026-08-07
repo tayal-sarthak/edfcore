@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.61
+
+- **Deprecated** `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds`, which are renamed
+  to `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds` in **0.3.0**. The
+  behaviour does not change and neither do the arguments — only the name, which never said which of
+  two different quantities it returns. Six releases of this project were spent on exactly that
+  confusion elsewhere, and the `grid` prefix is what stops the seventh.
+- The tag is folded into each function's existing documentation rather than added as a second
+  comment above it, so an editor shows the original prose AND the replacement instead of replacing
+  one with the other.
+- Nothing is removed here. An editor will point at the replacement a release before the rename
+  lands, and for a contiguous file the rename is the only thing that affects a caller.
+
 ## 0.2.60
 
 - **Added** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` — the recording-aware
