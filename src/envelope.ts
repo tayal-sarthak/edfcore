@@ -53,6 +53,45 @@ interface Accumulator {
   consumed: number;
   outOfRange: number;
   scratch: Int32Array | undefined;
+  /**
+   * First sample position of each bucket, when the buckets are a fixed WIDTH IN TIME rather than
+   * an even division of the run.
+   *
+   * `undefined` for `readEnvelope`, whose contract is `buckets` — a plot's pixel width — and for
+   * which dividing the run evenly is exactly right. Present for `readEnvelopeAtResolution`, whose
+   * contract is the width itself. See `bucketStartsFor`.
+   */
+  bucketStarts: Float64Array | undefined;
+  /** Cursor into `bucketStarts`, advanced as samples arrive. Chunk boundaries do not reset it. */
+  bucket: number;
+}
+
+/**
+ * The first sample position of each bucket, for buckets of a fixed width in time.
+ *
+ * Bucket `b` covers `[b * bucketTicks, (b + 1) * bucketTicks)` of elapsed time within the run, and
+ * sample `p` of this signal sits at `p * recordDuration / samplesPerRecord`. So the first sample
+ * of bucket `b` is `ceil(b * bucketTicks * samplesPerRecord / recordDuration)`.
+ *
+ * Computed in bigint, once per signal per run — the array is a plot's worth of entries, not a
+ * recording's — so the per-sample loop compares two ordinary numbers. Every boundary is a whole
+ * sample index, well inside 2^53.
+ */
+function bucketStartsFor(
+  bucketCount: number,
+  bucketTicks: bigint,
+  samplesPerRecord: number,
+  recordDurationTicks: bigint,
+): Float64Array | undefined {
+  // Nothing advances in time: every sample of the run is at the same instant, so one bucket holds
+  // them all and the even-division rule already says so.
+  if (recordDurationTicks <= 0n || samplesPerRecord <= 0) return undefined;
+  const starts = new Float64Array(bucketCount);
+  const perRecord = BigInt(samplesPerRecord);
+  for (let bucket = 1; bucket < bucketCount; bucket += 1) {
+    starts[bucket] = Number(ceilDiv(BigInt(bucket) * bucketTicks * perRecord, recordDurationTicks));
+  }
+  return starts;
 }
 
 function assertPositiveInteger(value: number, name: string): void {
@@ -126,6 +165,12 @@ async function reduceRange(
   records: RecordRange,
   selection: EnvelopeSelection,
   options?: ReadOptions,
+  /**
+   * Set only by `readEnvelopeAtResolution`: the width every bucket must have, in exact ticks.
+   * When absent the run is divided evenly into `selection.buckets`, which is `readEnvelope`'s
+   * contract and the right rule for a pixel width.
+   */
+  bucketTicks?: bigint,
 ): Promise<EdfEnvelopeChunk> {
   const { source, header, timeline } = recording;
   const signals = resolveEnvelopeSignals(header, selection.signalIndices);
@@ -149,6 +194,16 @@ async function reduceRange(
     consumed: 0,
     outOfRange: 0,
     scratch: undefined,
+    bucketStarts:
+      bucketTicks === undefined || bucketTicks <= 0n
+        ? undefined
+        : bucketStartsFor(
+            bucketCount,
+            bucketTicks,
+            signal.samplesPerRecord,
+            header.recordDurationTicks,
+          ),
+    bucket: 0,
   }));
 
   const chunkRecords = scanChunkRecords(header, options?.maxMaterializeBytes);
@@ -210,7 +265,16 @@ async function reduceRange(
     durationSeconds,
     durationTicks: spanTicks,
     bucketCount,
-    secondsPerBucket: bucketCount > 0 ? durationSeconds / bucketCount : 0,
+    // The width the buckets ACTUALLY have. With a requested width that is the request itself, for
+    // every chunk — `durationSeconds / bucketCount` is the width only when the run divides evenly
+    // by it, and reporting that made two runs of one call disagree (fixed in 0.3.9). The last
+    // bucket of a run is short by whatever the division left over; its `counts` says how short.
+    secondsPerBucket:
+      bucketTicks !== undefined && bucketTicks > 0n
+        ? ticksToSeconds(bucketTicks)
+        : bucketCount > 0
+          ? durationSeconds / bucketCount
+          : 0,
     byteLength,
     signals: Object.freeze(envelopeSignals),
     // The same gap a readWindow chunk would carry. An envelope promises to mirror readWindow,
@@ -260,10 +324,23 @@ function foldChunk(
   const { min, max, counts } = accumulator;
   let position = accumulator.consumed;
 
+  const starts = accumulator.bucketStarts;
+  let cursor = accumulator.bucket;
+
   for (let i = 0; i < sampleCount; i += 1) {
     const value = samples[i] as number;
-    // Integer arithmetic on the run grid: floor(position * buckets / totalSamples).
-    const bucket = Math.min(bucketCount - 1, Math.floor((position * bucketCount) / totalSamples));
+    let bucket: number;
+    if (starts === undefined) {
+      // Integer arithmetic on the run grid: floor(position * buckets / totalSamples). Divides the
+      // run evenly, which is `readEnvelope`'s contract — the caller asked for a pixel width.
+      bucket = Math.min(bucketCount - 1, Math.floor((position * bucketCount) / totalSamples));
+    } else {
+      // Buckets of a fixed WIDTH IN TIME. The boundaries are sample positions computed once per
+      // run, so this is a cursor advance rather than a division, and it never resets at a chunk
+      // boundary — chunking bounds memory and must not change the answer.
+      while (cursor + 1 < bucketCount && position >= (starts[cursor + 1] as number)) cursor += 1;
+      bucket = cursor;
+    }
     const seen = counts[bucket] as number;
     if (seen === 0) {
       min[bucket] = value;
@@ -277,6 +354,7 @@ function foldChunk(
   }
 
   accumulator.consumed = position;
+  accumulator.bucket = cursor;
 }
 
 /**
@@ -406,6 +484,14 @@ function clampToSafeInteger(value: bigint): number {
  * 1 s per bucket came back as 0.27 s per bucket in one chunk and 0.09 s in the other, which are
  * not commensurable, so a viewer cannot place the two on one axis. That is the whole promise of
  * this function, so it is computed where the run's length is known (fixed in 0.2.31).
+ *
+ * The bucket count was only half of it. A bucket is a fixed WIDTH IN TIME here, and until 0.3.9
+ * the fold still divided each run evenly into its own count — so the width followed the run
+ * exactly as before whenever the span was not a whole multiple of the request. A 100 s run at 30 s
+ * per bucket got four buckets of 25 s, while a 60 s run in the same call got two of 30 s. The
+ * bucket a sample lands in is now decided by WHEN it is, so the last bucket of a run is short by
+ * whatever the division left over — the sliver this documentation always described — and every
+ * chunk of every call reports the width that was asked for.
  */
 export async function readEnvelopeAtResolution(
   recording: EdfRecording,
@@ -473,6 +559,7 @@ export async function readEnvelopeAtResolution(
           buckets,
         },
         options,
+        bucketTicks,
       ),
     );
   }

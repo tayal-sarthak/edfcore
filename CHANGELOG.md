@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.9
+
+- **Fixed** `readEnvelopeAtResolution` delivering a different bucket width in each chunk of one
+  call. Asked for 30 s per bucket over a window covering a 100 s run and a 60 s run, it returned
+  four buckets of **25 s** for the first and two of **30 s** for the second. Widths that disagree
+  cannot go on one axis, which is the entire reason this function exists apart from `readEnvelope`.
+- 0.2.31 fixed half of this. It made the bucket COUNT come from each run's own span instead of once
+  from the window, which was necessary and not sufficient: the fold still divided each run evenly
+  into that count, so the width went on following the run whenever its span was not a whole
+  multiple of the request. The 25 s above is 100 s divided by four.
+- The bucket a sample lands in is now decided by WHEN it is — `floor(elapsed / secondsPerBucket)`,
+  in exact integer arithmetic on ticks and sample positions. The last bucket of a run is therefore
+  short by whatever the division left over, which is the "sliver" this function's own documentation
+  described from the start and did not produce. Its `counts` entry says how short.
+- `chunk.secondsPerBucket` is the width the buckets actually have, so for this function it is now
+  the width that was requested, for every chunk. It was `durationSeconds / bucketCount`, which is
+  only the width when the run divides evenly — the same wrong number, reported.
+- `readEnvelope` is unchanged. Its contract is `buckets`, a plot's pixel width, and dividing the
+  run evenly into that count is exactly right; the two rules are now distinct in the code.
+- Boundaries are precomputed once per signal per run, so the per-sample loop advances a cursor
+  rather than dividing. It does not reset at a chunk boundary: chunking bounds memory and must
+  never move a sample between buckets, and the test for that reads a file large enough to force
+  more than one chunk with the boundary falling inside a bucket rather than on its edge.
+
 ## 0.3.8
 
 **0.3.7 claimed the exactness work "closes the set". It did not.** An audit of every public type

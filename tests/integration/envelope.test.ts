@@ -478,6 +478,76 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
     expect(actualResolution(chunk)).toBe(1);
   });
 
+  it('gives two runs of different length the SAME bucket width, not the same bucket count', async () => {
+    // The promise, tested where it actually breaks. Buckets were an even division of each run, so
+    // the width followed the run: a 100 s run at 30 s per bucket got 4 buckets of 25 s while a
+    // 60 s run in the same call got 2 of 30 s. Two chunks of one call at incommensurable
+    // resolutions — which is the failure 0.2.31 fixed for a different cause, reachable again
+    // whenever a run's span is not a whole multiple of the requested width (fixed in 0.3.9).
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 160,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 10 }],
+      annotationSignals: [{ samplesPerRecord: 40 }],
+      // Records 0-99 are 100 s; records 100-159 are 60 s, after a long gap.
+      recordOnsetSeconds: (i: number) => (i < 100 ? i : i + 500),
+    });
+    const opened = await openEdf(byteSource(bytes));
+    const edf = { ...opened, index: await buildRecordIndex(opened) };
+
+    const chunks = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 1000,
+      secondsPerBucket: 30,
+    });
+
+    expect(chunks.map((c) => c.durationSeconds)).toEqual([100, 60]);
+    // The bucket COUNTS differ, because the runs differ. The widths must not.
+    expect(chunks.map((c) => c.bucketCount)).toEqual([4, 2]);
+    for (const chunk of chunks) expect(chunk.secondsPerBucket).toBe(30);
+
+    // And the samples really are laid out at that width: 30 s of a 10 Hz signal is 300 samples,
+    // with the last bucket of the 100 s run short by exactly the 10 s the division left over.
+    expect(Array.from(chunks[0]?.signals[0]?.counts ?? [])).toEqual([300, 300, 300, 100]);
+    expect(Array.from(chunks[1]?.signals[0]?.counts ?? [])).toEqual([300, 300]);
+  });
+
+  it('puts a sample in the same bucket however the read was chunked', async () => {
+    // Chunking bounds memory and must never move a sample between buckets. The time-based rule
+    // carries a cursor across chunk boundaries, so this is the assertion that the cursor is right.
+    //
+    // The file is deliberately larger than one scan block (4 MiB), which is the only way to get
+    // more than one chunk: `scanChunkRecords` sizes a chunk from that block, not from an option.
+    // 700 records of 8000 bytes is 5.6 MB, so the fold runs in two chunks and the boundary at
+    // record 524 falls INSIDE bucket 17 rather than on its edge.
+    const RECORDS = 700;
+    const bytes = buildEdf({
+      recordCount: RECORDS,
+      recordDurationSeconds: 1,
+      signals: [
+        { label: 'Fp1', samplesPerRecord: 4000, sample: (r, i) => ((r * 4000 + i) % 997) - 498 },
+      ],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: RECORDS,
+      secondsPerBucket: 30,
+    });
+    if (chunk === undefined) throw new Error('setup failed');
+
+    // 24 buckets: 23 full ones of 30 s and a last one of 10 s. Every count is derived from the
+    // geometry, not from another call to the code under test.
+    expect(chunk.bucketCount).toBe(24);
+    expect(chunk.secondsPerBucket).toBe(30);
+    const counts = Array.from(chunk.signals[0]?.counts ?? []);
+    expect(counts).toEqual([...Array.from({ length: 23 }, () => 30 * 4000), 10 * 4000]);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(RECORDS * 4000);
+  });
+
   it('does not add a bucket to a run whose length is not a binary fraction', async () => {
     // The second route to the same failure, and the one no chunking or window offset is involved
     // in. 3 x 0.1 s is 0.30000000000000004 in float64, so `Math.ceil(runSeconds / 0.1)` was FOUR

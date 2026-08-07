@@ -147,15 +147,25 @@ const chunks = await readEnvelopeAtResolution(recording, {
 ```
 
 The bucket count is rounded UP: 40 seconds at 30 seconds per bucket is two buckets, not one.
-Rounding down would drop the last ten seconds off the picture entirely.
+Rounding down would drop the last ten seconds off the picture entirely. The **last bucket of a run
+is short** by whatever the division left over — 40 s at 30 s per bucket is one full bucket and one
+of 10 s — and its `counts` entry says by how much.
 
-It is computed per **run**, not once for the window, so every chunk of one call shares a bucket
-width. A chunk covers one record-aligned contiguous run, and a run is not the window: an EDF+D
-window spanning a gap gives two runs of different lengths, and even a contiguous window that does
-not begin on a record boundary gives a run wider than it asked for. Before 0.2.31 one count was
-derived from the window and handed to every chunk, so a window of 11 s asked at 1 s per bucket came
-back as 0.27 s per bucket in one chunk and 0.09 s in the other — widths that are not
-commensurable, so the two could not be drawn on one axis.
+Every chunk of one call has the width you asked for, whatever its own length. A chunk covers one
+record-aligned contiguous run, and a run is not the window: an EDF+D window spanning a gap gives
+two runs of different lengths, and even a contiguous window that does not begin on a record
+boundary gives a run wider than it asked for. Two things had to be right for that:
+
+- The bucket **count** comes from each run's own span, not once from the window. Before 0.2.31 one
+  count was handed to every chunk, so a window of 11 s asked at 1 s per bucket came back as 0.27 s
+  per bucket in one chunk and 0.09 s in the other.
+- The bucket a sample lands in is decided by **when it is**, not by dividing the run evenly into
+  that count. Before 0.3.9 it was the latter, so the width still followed the run whenever the span
+  was not a whole multiple of the request: a 100 s run at 30 s per bucket gave four buckets of
+  25 s while a 60 s run in the same call gave two of 30 s.
+
+Widths that disagree cannot be drawn on one axis, which is the entire reason this function exists
+separately from `readEnvelope`.
 
 ## Streaming iteration
 
