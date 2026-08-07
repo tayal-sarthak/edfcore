@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.10
+
+- **Changed** `toPhysicalEnvelope` to return `NaN` for a bucket no sample landed in, instead of a
+  number that looks like a measurement.
+- `EdfEnvelopeSignal.min` and `.max` are `Int32Array`s, so there is no sentinel available outside
+  the sample range and an empty bucket carries a digital `0` with `counts[i] === 0` beside it to
+  say so. In digital units a stray `0` at least reads as nothing. Through the affine transform it
+  stops reading as nothing: `bitValue * (offset + 0)` is `bitValue * offset`, which is mid-scale
+  for any channel whose declared range is not centred on zero. A channel declared 0..1000 over a
+  full signed 16-bit range converts an empty bucket to **500.008** — dead centre, and
+  indistinguishable from a real reading.
+- A viewer that plots `min`/`max` without consulting `counts` therefore drew a flat, plausible
+  trace across a hole in the recording. That is believable garbage, which this package's own fuzz
+  invariant says it never returns.
+- `counts` is unchanged and is still the authoritative answer to how many samples a bucket holds.
+  A caller already checking it sees no difference; one that was not now gets a value no plotting
+  library will draw and no reader will mistake for data.
+- The digital envelope is unchanged for the reason above — an `Int32Array` cannot hold `NaN` — so
+  `readEnvelope`, `readEnvelopeAtResolution` and `envelopeOfSamples` return exactly what they did.
+
 ## 0.3.9
 
 - **Fixed** `readEnvelopeAtResolution` delivering a different bucket width in each chunk of one

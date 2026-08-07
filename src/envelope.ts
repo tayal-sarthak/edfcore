@@ -401,8 +401,29 @@ export function toPhysicalEnvelope(
   const low = out === undefined ? new Float64Array(length) : out.min.subarray(0, length);
   const high = out === undefined ? new Float64Array(length) : out.max.subarray(0, length);
   const decreasing = scale.bitValue < 0;
+  const counts = envelope.counts;
 
   for (let i = 0; i < length; i += 1) {
+    /*
+     * A bucket no sample landed in is NaN, not a number.
+     *
+     * `min` and `max` are Int32Arrays, which cannot hold a sentinel outside the sample range, so
+     * an empty bucket carries a digital 0 and `counts[i] === 0` is what distinguishes it. In
+     * digital units a stray 0 at least looks like nothing. Through the affine transform it stops
+     * looking like nothing: `bitValue * (offset + 0)` is `bitValue * offset`, which for a channel
+     * declared 0..1000 over a full signed 16-bit range is 500.008 — dead centre of the scale, and
+     * indistinguishable from a real reading. A viewer that plots min/max without consulting
+     * `counts` therefore drew a flat trace at mid-scale across a hole in the recording.
+     *
+     * NaN is the one value that cannot be mistaken for a measurement, and every plotting library
+     * treats it as a break in the line. `counts` is unchanged and is still the authoritative
+     * answer to how many samples a bucket holds (fixed in 0.3.10).
+     */
+    if (counts[i] === 0) {
+      low[i] = Number.NaN;
+      high[i] = Number.NaN;
+      continue;
+    }
     const a = scale.bitValue * (scale.offset + (envelope.min[i] as number));
     const b = scale.bitValue * (scale.offset + (envelope.max[i] as number));
     low[i] = decreasing ? b : a;

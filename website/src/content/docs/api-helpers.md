@@ -123,6 +123,14 @@ to the largest physical one, so mapping `min` to `min` would produce an envelope
 sits above its upper bound, and a viewer would draw it inside out. `toPhysicalEnvelope` swaps the
 bounds when it has to.
 
+A bucket no sample landed in — `counts[i] === 0` — comes back as **`NaN`** in both arrays. `min`
+and `max` are `Int32Array`s and cannot hold a sentinel outside the sample range, so an empty bucket
+carries a digital `0`; through the transform that becomes `bitValue * offset`, which is mid-scale
+for any channel whose declared range is not centred on zero. On a 0..1000 channel it is 500 — a
+completely believable reading, drawn as a flat trace across a hole. `NaN` cannot be mistaken for a
+measurement, and plotting libraries break the line at it. `counts` is unchanged and remains the
+authoritative answer to how many samples a bucket holds.
+
 ### Samples already in hand
 
 ```ts

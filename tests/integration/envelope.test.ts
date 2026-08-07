@@ -216,6 +216,67 @@ describe('toPhysicalEnvelope', () => {
       expect(physical.min[i] as number).toBeLessThanOrEqual(physical.max[i] as number);
     }
   });
+
+  it('gives an empty bucket NaN rather than a plausible reading', async () => {
+    // `min` and `max` are Int32Arrays and cannot hold a sentinel outside the sample range, so an
+    // empty bucket carries a digital 0 and `counts` is what distinguishes it. In digital units a
+    // stray 0 looks like nothing. Through the affine transform it stops looking like nothing:
+    // `bitValue * (offset + 0)` is mid-scale for any channel whose declared range is not centred
+    // on zero, so a viewer that plots min/max without consulting `counts` drew a flat trace at a
+    // completely believable value across a hole (fixed in 0.3.10).
+    const edf = await openEdf(
+      byteSource(
+        minimalEdfPlus({
+          recordCount: 2,
+          recordDurationSeconds: 1,
+          signals: [
+            {
+              label: 'SpO2',
+              samplesPerRecord: 4,
+              physicalDimension: '%',
+              physicalMinimum: 0,
+              physicalMaximum: 1000,
+              digitalMinimum: -32768,
+              digitalMaximum: 32767,
+            },
+          ],
+        }),
+      ),
+    );
+    const signal = edf.header.signals[0];
+    if (signal === undefined) throw new Error('missing fixture');
+
+    const [envelope] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 2,
+      buckets: 4,
+    });
+    const populated = envelope?.signals[0];
+    if (populated === undefined) throw new Error('the envelope produced no signal');
+
+    // Bucket 2, emptied: counts 0 and the digital sentinel the accumulator leaves behind.
+    const withHole = {
+      ...populated,
+      counts: Int32Array.from(populated.counts, (c, i) => (i === 2 ? 0 : c)),
+      min: Int32Array.from(populated.min, (v, i) => (i === 2 ? 0 : v)),
+      max: Int32Array.from(populated.max, (v, i) => (i === 2 ? 0 : v)),
+    };
+
+    const physical = toPhysicalEnvelope(signal, withHole);
+    expect(physical.min[2]).toBeNaN();
+    expect(physical.max[2]).toBeNaN();
+    // The value it used to produce, and why it was dangerous: dead centre of a 0..1000 channel.
+    const scale = signal.scale;
+    if (scale === undefined) throw new Error('the fixture has no usable scale');
+    expect(scale.bitValue * scale.offset).toBeCloseTo(500, 1);
+    // Every populated bucket is untouched.
+    for (let i = 0; i < physical.min.length; i += 1) {
+      if (i === 2) continue;
+      expect(physical.min[i]).not.toBeNaN();
+      expect(physical.min[i] as number).toBeLessThanOrEqual(physical.max[i] as number);
+    }
+  });
 });
 
 describe('envelopeOfSamples', () => {
