@@ -306,8 +306,18 @@ about the sample. Bit-parity is claimed for pyEDFlib alone. Both readers also ag
 own declaration about POLARITY on a negative-gain channel, which a value comparison alone could not
 establish.
 
-**Still open before 1.0.** Validation across public corpora (sleep-edfx, CHB-MIT, the BioSemi and
-edfplus.info test files). That claim is not made here until a test produces it.
+**The public corpora, as of 0.2.48.** The bit-for-bit claim above also holds on files nobody here
+chose: a **22-hour clinical polysomnogram** from sleep-edfx, and the teuniz generator files in EDF,
+EDF+ and 24-bit BDF+. Sampled at the start, the middle and the end of every signal — the end window
+being the one that catches record arithmetic drifting with distance, which a sample near record 0
+cannot. Those tests need the corpus and skip without it:
+
+```bash
+npm run corpus:fetch
+```
+
+**Still open before 1.0.** CHB-MIT, and the edfplus.info conformance files. Those are not claimed
+here until a test produces them.
 
 **Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
 `readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration

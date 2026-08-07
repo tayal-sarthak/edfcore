@@ -1,0 +1,228 @@
+/**
+ * The real corpus, compared with pyEDFlib rather than with a plausibility argument.
+ *
+ * `corpus.test.ts` reads the same files and checks that what comes out is BELIEVABLE: an 8.5 Hz
+ * channel oscillates at 8.5 Hz, a rectal temperature lands near 37 degrees. That is a real
+ * cross-check and it is not an exact one — it would pass for a reader that was slightly wrong
+ * everywhere, which is precisely the failure mode a pinned scaling expression exists to prevent.
+ *
+ * `golden-values.test.ts` is exact, but on files this project caused to exist. These files were
+ * written by other people's software and hardware, years ago, and one of them is a 22-hour clinical
+ * polysomnogram. Exactness on those is the strongest evidence available short of a conformance
+ * suite that does not exist for this format.
+ *
+ * A BOUNDED WINDOW per signal — start, middle and end. The PSG is 48 MB; a golden holding every
+ * sample would be larger than the repository. The end window is the one that matters most: a
+ * reader whose record arithmetic drifts does so with distance from the start, and a sample near
+ * record 0 cannot show it.
+ *
+ * SKIPS when the corpus is absent, like every other test in this directory, so a fresh clone stays
+ * green and offline:
+ *     npm run corpus:fetch
+ *     .venv/bin/python scripts/golden/generate-corpus.py   # only to regenerate the goldens
+ */
+
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { toPhysical } from '../../src/decode/physical.js';
+import { byteSource } from '../../src/io/bytes.js';
+import { openEdf, readRecords } from '../../src/recording.js';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const FILES = join(HERE, 'files');
+const GOLDEN = join(HERE, 'golden');
+
+interface Window {
+  readonly window: string;
+  readonly firstSampleIndex: number;
+  readonly digital: readonly number[];
+  readonly physicalBits: readonly string[];
+}
+
+interface Signal {
+  readonly index: number;
+  readonly label: string;
+  readonly dimension: string;
+  readonly sampleCount: number;
+  readonly windows: readonly Window[];
+}
+
+interface Golden {
+  readonly file: string;
+  readonly producer: string;
+  readonly recordCount: number;
+  readonly recordDurationSeconds: number;
+  readonly samplesPerWindow: number;
+  readonly signals: readonly Signal[];
+}
+
+const CASES = [
+  'SC4001E0-PSG.edf',
+  'test_generator.edf',
+  'test_generator_2.edf',
+  'test_generator_2.bdf',
+] as const;
+
+function fromBits(hex: string): number {
+  const view = new DataView(new ArrayBuffer(8));
+  view.setBigUint64(0, BigInt(`0x${hex}`));
+  return view.getFloat64(0);
+}
+
+function available(name: string): boolean {
+  return existsSync(join(FILES, name)) && existsSync(join(GOLDEN, `corpus-${name}.json`));
+}
+
+function load(name: string): { golden: Golden; bytes: Uint8Array } {
+  return {
+    golden: JSON.parse(readFileSync(join(GOLDEN, `corpus-${name}.json`), 'utf8')) as Golden,
+    bytes: new Uint8Array(readFileSync(join(FILES, name))),
+  };
+}
+
+/**
+ * The samples of one signal over the records covering a window, read the way a consumer would.
+ *
+ * Every signal has its own sample grid, so the record range is derived from THIS signal's
+ * samplesPerRecord rather than from a shared rate.
+ */
+async function samplesAt(
+  bytes: Uint8Array,
+  signalIndex: number,
+  firstSampleIndex: number,
+  count: number,
+) {
+  const recording = await openEdf(byteSource(bytes));
+  const signal = recording.header.signals[signalIndex];
+  if (signal === undefined) throw new Error(`no signal ${signalIndex}`);
+  const perRecord = signal.samplesPerRecord;
+
+  const firstRecord = Math.floor(firstSampleIndex / perRecord);
+  const lastRecord = Math.floor((firstSampleIndex + count - 1) / perRecord);
+  const chunk = await readRecords(recording, {
+    signalIndices: [signalIndex],
+    records: { start: firstRecord, count: lastRecord - firstRecord + 1 },
+  });
+
+  const offset = firstSampleIndex - firstRecord * perRecord;
+  const digital = (chunk.signals[0]?.digital ?? new Int32Array(0)).subarray(offset, offset + count);
+  return { signal, digital, physical: toPhysical(signal, digital) };
+}
+
+describe.each(CASES)('%s', (name) => {
+  const enabled = available(name);
+  const maybe = enabled ? it : it.skip;
+
+  maybe('the golden is pyEDFlib output for this exact file', () => {
+    const { golden } = load(name);
+    expect(golden.file).toBe(name);
+    expect(golden.producer).toMatch(/^pyedflib \d/);
+    expect(golden.signals.length).toBeGreaterThan(0);
+    // A window at the END is the one that catches record arithmetic drifting with distance.
+    const labels = new Set(golden.signals.flatMap((s) => s.windows.map((w) => w.window)));
+    expect(labels.has('start')).toBe(true);
+    if ((golden.signals[0]?.sampleCount ?? 0) > golden.samplesPerWindow) {
+      expect(labels.has('end')).toBe(true);
+    }
+  });
+
+  maybe('edfcore agrees with pyEDFlib about the file geometry', async () => {
+    const { golden, bytes } = load(name);
+    const recording = await openEdf(byteSource(bytes));
+    expect(recording.header.recordCount).toBe(golden.recordCount);
+    expect(recording.header.recordDurationSeconds).toBe(golden.recordDurationSeconds);
+    for (const expected of golden.signals) {
+      const signal = recording.header.signals[expected.index];
+      expect(signal?.label, `signal ${expected.index}`).toBe(expected.label);
+      expect(signal?.physicalDimension.trim()).toBe(expected.dimension);
+      expect(signal?.sampleCount).toBe(expected.sampleCount);
+    }
+  });
+
+  maybe('reads the same digital samples, at the start, the middle and the end', async () => {
+    const { golden, bytes } = load(name);
+    for (const expected of golden.signals) {
+      for (const window of expected.windows) {
+        const { digital } = await samplesAt(
+          bytes,
+          expected.index,
+          window.firstSampleIndex,
+          window.digital.length,
+        );
+        expect(
+          Array.from(digital),
+          `${expected.label} @ ${window.window} (sample ${window.firstSampleIndex})`,
+        ).toEqual([...window.digital]);
+      }
+    }
+  });
+
+  maybe('reproduces the same physical values, bit for bit', async () => {
+    // Object.is per sample. On a 22-hour recording written by hardware nobody involved here
+    // controls — which is the whole point of using it.
+    const { golden, bytes } = load(name);
+    for (const expected of golden.signals) {
+      for (const window of expected.windows) {
+        const { physical } = await samplesAt(
+          bytes,
+          expected.index,
+          window.firstSampleIndex,
+          window.physicalBits.length,
+        );
+
+        let mismatches = 0;
+        let first = '';
+        for (let i = 0; i < window.physicalBits.length; i += 1) {
+          const want = fromBits(window.physicalBits[i] as string);
+          const got = physical[i] as number;
+          if (!Object.is(got, want)) {
+            mismatches += 1;
+            if (first === '') {
+              first = `sample ${window.firstSampleIndex + i}: digital ${window.digital[i]}, edfcore ${got}, pyEDFlib ${want}`;
+            }
+          }
+        }
+        expect(mismatches, `${expected.label} @ ${window.window}: ${first}`).toBe(0);
+      }
+    }
+  });
+});
+
+describe('the corpus comparison is exact where the plausibility one is not', () => {
+  const enabled = available('SC4001E0-PSG.edf');
+  const maybe = enabled ? it : it.skip;
+
+  maybe('the textbook expression would pass a plausibility check and fail this one', async () => {
+    // `corpus.test.ts` asserts a rectal temperature lands between 36 and 38 degrees. The textbook
+    // expression satisfies that comfortably — it is wrong by roughly 1e-14 — so the older check
+    // could not have distinguished the two. This one can, which is the reason it exists.
+    const { golden, bytes } = load('SC4001E0-PSG.edf');
+    const expected = golden.signals.find((s) => s.label.startsWith('Temp'));
+    const window = expected?.windows[0];
+    if (expected === undefined || window === undefined) throw new Error('fixture missing');
+
+    const recording = await openEdf(byteSource(bytes));
+    const signal = recording.header.signals[expected.index];
+    if (signal === undefined) throw new Error('no signal');
+
+    const gain =
+      (signal.physicalMaximum - signal.physicalMinimum) /
+      (signal.digitalMaximum - signal.digitalMinimum);
+
+    let plausible = 0;
+    let differing = 0;
+    for (let i = 0; i < window.digital.length; i += 1) {
+      const textbook =
+        signal.physicalMinimum + ((window.digital[i] as number) - signal.digitalMinimum) * gain;
+      if (textbook > 30 && textbook < 40) plausible += 1;
+      if (!Object.is(textbook, fromBits(window.physicalBits[i] as string))) differing += 1;
+    }
+
+    // Every textbook value is a believable body temperature...
+    expect(plausible).toBe(window.digital.length);
+    // ...and a large share of them are not the number pyEDFlib produced.
+    expect(differing).toBeGreaterThan(0);
+  });
+});

@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.48
+
+- **Added** bit-for-bit parity against pyEDFlib on the REAL corpus — the last thing the README
+  withheld. A 22-hour clinical polysomnogram from sleep-edfx and the three teuniz generator files
+  in EDF, EDF+ and 24-bit BDF+, compared with `Object.is` per sample.
+- These files matter because nobody here chose them: they were written by other people's software
+  and hardware, years ago. `corpus.test.ts` already read them, but it checked that the output was
+  BELIEVABLE — a rectal temperature near 37 degrees, an 8.5 Hz channel oscillating at 8.5 Hz — and
+  a check like that would pass for a reader that was slightly wrong everywhere, which is exactly
+  the failure the pinned scaling expression exists to prevent. A test in the new file demonstrates
+  that directly: on the PSG's temperature channel the textbook expression produces a believable
+  body temperature for every sample AND disagrees with pyEDFlib, so the old check could not have
+  told the two apart and the new one can.
+- Sampled at the start, the middle and the END of each signal rather than whole files — the PSG
+  alone is 48 MB. The end window is the one that earns its place: a reader whose record arithmetic
+  drifts does so with distance from the start.
+- Skips without the corpus, like every other test in that directory, so a fresh clone stays green
+  and offline.
+
 ## 0.2.47
 
 - **Fixed** this changelog. Every heading from `0.2.36` down to `0.2.45` named a version one lower
