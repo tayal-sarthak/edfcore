@@ -6,6 +6,32 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.17
+
+**`formatHeader` printed `00:00:00` for a starttime the file never stated.** The module's own
+promise, two paragraphs into the file and repeated in the published docs, is that a field edfcore
+could not resolve prints as `unknown` rather than as a plausible default. The date half honoured it
+and was pinned by a test. The clock half did not.
+
+- A blank starttime field, a `23.59.60`, and a file that genuinely started at midnight all rendered
+  the identical line `start        2019-03-11 00:00:00 (local, no timezone)`. Midnight is the most
+  believable start there is for a sleep study, so nothing in the string was a cue — in the one
+  output this package exists to have pasted into a bug report.
+- **Added** `EdfStartTime.clockSource: 'headerField' | 'none'`, the counterpart of the existing
+  `dateSource`. `EdfClockTime` admits no absent clock, so `clock` is still a substituted midnight;
+  this is how to tell that from a real one, and library consumers get the same signal `formatHeader`
+  now uses.
+- **Changed** `formatStartTimeNaive` to return `undefined` when the clock was refused, as it
+  already did for a refused date. It was returning `2019-03-11T00:00:00.000` for a file whose
+  starttime field says `23.59.60` — a wall-clock instant nothing in the file supports, from the one
+  function whose entire job is to report that instant. `api-errors.md` already told readers this
+  was the behaviour; now it is.
+- **Corrected three published claims about `DATE_UNPARSEABLE`.** It is emitted for a refused
+  startdate AND for a refused starttime, and `diagnostic.field` says which. The docs described only
+  the first: `validation.md` said it "means the file has no calendar date at all", `api-validate.md`
+  mapped it to `dateSource === 'none'`, and `api-errors.md` said `startTime.clock` "is still exact"
+  under it — which is exactly false in the case that motivated this release.
+
 ## 0.3.16
 
 - **Fixed** `formatHeader` printing the patient and recording identification fields raw under

@@ -129,6 +129,7 @@ EDF records local time at the patient with no timezone, so edfcore never produce
 | `resolvedDate` | `EdfCalendarDate \| undefined` | `recordingIdDate` when present, otherwise `headerDate`. |
 | `dateSource` | `'headerField' \| 'recordingIdField' \| 'none'` | Which one won. |
 | `clock` | `EdfClockTime` | `{ hour, minute, second }`. Reports midnight when the field was unparseable, and says so in a diagnostic. |
+| `clockSource` | `'headerField' \| 'none'` | Which of those two it is. Midnight is a believable start for a sleep study, so a refused clock is otherwise indistinguishable from a real one. |
 | `secondsSinceMidnight` | `number` | Derived from `clock`. |
 
 `EdfCalendarDate` is `{ year, month, day }` with `month` in 1–12, not a JavaScript month index. A disagreement between the two dates is always reported as `DATE_FIELDS_DISAGREE`, and both stay on the result.

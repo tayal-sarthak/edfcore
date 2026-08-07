@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { formatHeader } from '../../src/format-header.js';
+import { formatStartTimeNaive } from '../../src/header/dates.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
@@ -106,6 +107,49 @@ describe('the duration line is computed in ticks, not in float seconds', () => {
 
   it('keeps the declared arithmetic visible beside it', () => {
     expect(durationLine(100, 0.29)).toContain('(100 × 0.29 s)');
+  });
+});
+
+describe('the start line never invents a clock', () => {
+  function withStartTime(startTime: string): EdfHeader {
+    const bytes = buildEdf({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      startDate: '11.03.19',
+      raw: { startTime },
+    });
+    return parseHeader(bytes, bytes.byteLength);
+  }
+
+  const startLine = (header: EdfHeader): string => formatHeader(header).split('\n')[1] ?? '';
+
+  it('prints unknown for a starttime the file did not state', () => {
+    // The date half has always honoured "never invents a value"; the clock half printed a
+    // substituted midnight. For a sleep study midnight is the most believable start there is, so
+    // a refused clock and a real one were the same line (fixed in 0.3.17).
+    const blank = withStartTime('        ');
+    const midnight = withStartTime('00.00.00');
+
+    expect(startLine(blank)).toBe('start        2019-03-11 unknown (local, no timezone)');
+    expect(startLine(midnight)).toBe('start        2019-03-11 00:00:00 (local, no timezone)');
+    expect(startLine(blank)).not.toBe(startLine(midnight));
+  });
+
+  it('does the same for a clock that parses as digits but is not a time', () => {
+    // 23.59.60 is the leap-second spelling; EDF's grammar has no second 60.
+    expect(startLine(withStartTime('23.59.60'))).toContain('unknown');
+    expect(withStartTime('23.59.60').startTime.clockSource).toBe('none');
+    expect(withStartTime('23.59.59').startTime.clockSource).toBe('headerField');
+  });
+
+  it('gives formatStartTimeNaive nothing to return when the clock was refused', () => {
+    // A timestamp is a wall-clock instant, and there is none. api-errors.md already told readers
+    // this was the behaviour under DATE_UNPARSEABLE; until 0.3.17 it returned a fabricated one.
+    expect(formatStartTimeNaive(withStartTime('        ').startTime)).toBeUndefined();
+    expect(formatStartTimeNaive(withStartTime('09.30.00').startTime)).toBe(
+      '2019-03-11T09:30:00.000',
+    );
   });
 });
 

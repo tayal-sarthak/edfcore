@@ -435,6 +435,7 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
     resolvedDate,
     dateSource,
     clock,
+    clockSource: timeParse.clock === undefined ? 'none' : 'headerField',
     secondsSinceMidnight:
       clock.hour * SECONDS_PER_HOUR + clock.minute * SECONDS_PER_MINUTE + clock.second,
   };
@@ -449,5 +450,11 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
 export function formatStartTimeNaive(startTime: EdfStartTime): string | undefined {
   const date = startTime.resolvedDate;
   if (date === undefined) return undefined;
+  // A refused clock has no timestamp either. `clock` is a substituted midnight in that case, and
+  // returning `2019-03-11T00:00:00.000` for a file whose starttime field says `23.59.60` states a
+  // wall-clock instant the file never gave — which is what this function exists to report, so
+  // there is nothing left to return. `api-errors.md` already told readers this was the behaviour
+  // under DATE_UNPARSEABLE; until 0.3.17 it was not.
+  if (startTime.clockSource === 'none') return undefined;
   return `${formatCalendarDate(date)}T${formatClockTime(startTime.clock)}.000`;
 }

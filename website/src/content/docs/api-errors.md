@@ -265,7 +265,7 @@ Thirty-one codes. The file stays readable and what edfcore returns about it is t
 |---|---|---|
 | `DATE_CLIPPED_TO_1985_2084` | a two-digit year was resolved through the 85–99 / 00–84 rule | for an unambiguous year read `startTime.recordingIdDate`, which EDF+ spells out in four digits |
 | `DATE_FIELDS_DISAGREE` | the header `dd.mm.yy` field and the EDF+ `Startdate` subfield name different days | both stay on `header.startTime`; `dateSource` says which one was used |
-| `DATE_UNPARSEABLE` | neither field yielded a calendar date | `startTime.clock` is still exact and every elapsed time is unaffected; only `formatStartTimeNaive` has nothing to return |
+| `DATE_UNPARSEABLE` | the startdate yielded no calendar date, **or** the starttime yielded no clock — check `diagnostic.field` | every elapsed time is unaffected; `formatStartTimeNaive` has nothing to return, and `dateSource`/`clockSource` say which half was refused |
 | `PATIENT_ID_NONCONFORMANT` | the patient field does not follow the EDF+ four-subfield grammar | `header.patient` keeps every subfield that could be read plus the raw text; nothing about the samples changes |
 | `RECORDING_ID_NONCONFORMANT` | the recording field does not follow the EDF+ grammar | as above; a `Startdate` that could not be read leaves the two-digit year as the only date source |
 

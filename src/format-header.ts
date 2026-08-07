@@ -61,11 +61,18 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   lines.push(
     `${header.variant} · ${header.signals.length} signals · ${header.recordCount} records`,
   );
-  lines.push(
-    `start        ${formatDate(start.resolvedDate)} ${String(start.clock.hour).padStart(2, '0')}:` +
-      `${String(start.clock.minute).padStart(2, '0')}:${String(start.clock.second).padStart(2, '0')}` +
-      ` (local, no timezone)`,
-  );
+  // `unknown`, not a substituted midnight. The module promise two paragraphs up is that a field
+  // edfcore could not resolve prints as `unknown` rather than as a plausible default, and the date
+  // half has always honoured it. The clock half printed `00:00:00` for a starttime field that
+  // failed its grammar — byte-identical to a file that genuinely started at midnight, which for a
+  // sleep study is the most believable start there is (fixed in 0.3.17).
+  const clock =
+    start.clockSource === 'none'
+      ? 'unknown'
+      : `${String(start.clock.hour).padStart(2, '0')}:` +
+        `${String(start.clock.minute).padStart(2, '0')}:` +
+        `${String(start.clock.second).padStart(2, '0')}`;
+  lines.push(`start        ${formatDate(start.resolvedDate)} ${clock} (local, no timezone)`);
   lines.push(
     `record       ${header.recordDurationSeconds} s · ${header.recordByteLength} bytes · ` +
       `${header.bytesPerSample} bytes/sample`,

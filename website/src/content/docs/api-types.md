@@ -207,6 +207,7 @@ formatStartTimeNaive(startTime);  // '2002-03-02T22:30:00.000'
 | `resolvedDate` | `EdfCalendarDate \| undefined` | the one edfcore uses; `undefined` when neither could be read |
 | `dateSource` | `'headerField' \| 'recordingIdField' \| 'none'` | which field `resolvedDate` came from |
 | `clock` | `EdfClockTime` | always present; the header stores whole seconds |
+| `clockSource` | `'headerField' \| 'none'` | `'none'` when the starttime field was refused, so `clock` is a substituted midnight |
 | `secondsSinceMidnight` | `number` | `clock` as a single number |
 
 `recordingIdDate` wins when both are readable, because it is the only unambiguous four-digit year

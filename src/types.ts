@@ -143,7 +143,22 @@ export interface EdfStartTime {
   readonly recordingIdDate: EdfCalendarDate | undefined;
   readonly resolvedDate: EdfCalendarDate | undefined;
   readonly dateSource: 'headerField' | 'recordingIdField' | 'none';
+  /**
+   * The wall clock, or MIDNIGHT when the `hh.mm.ss` field could not be read — the type admits no
+   * absent clock. `clockSource` is how to tell those two apart, and `secondsSinceMidnight` is 0
+   * in the second case for the same reason.
+   */
   readonly clock: EdfClockTime;
+  /**
+   * `'none'` when the starttime field failed its grammar, so `clock` is a substituted midnight
+   * rather than a time the file states.
+   *
+   * The counterpart of `dateSource`, and added for the same reason: without it a refused clock
+   * and a genuine 00:00:00 are the same value, and midnight is an entirely believable start for
+   * a sleep study. `formatHeader` prints `unknown` on it and `formatStartTimeNaive` returns
+   * `undefined`, neither of which was possible before 0.3.17.
+   */
+  readonly clockSource: 'headerField' | 'none';
   readonly secondsSinceMidnight: number;
 }
 
