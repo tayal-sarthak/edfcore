@@ -257,12 +257,32 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         io.out(`no gaps in ${index.recordCount} records\n`);
         return 0;
       }
-      io.out(`${gaps.length} gap(s) in ${index.recordCount} records\n\n`);
+
+      // An OVERLAP travels in the same array with a negative duration — 0.2.69 documented that —
+      // and until 0.3.3 this command called every entry a gap and printed its duration with a
+      // hardcoded `+`, so an overlap came out as `+-1s` inside a line reading "2 gap(s)". A
+      // directory sweep counting gaps counted overlaps among them, which is the opposite claim:
+      // a gap is time no record covers, an overlap is one instant two records both claim.
+      const overlaps = gaps.filter((gap) => gap.durationSeconds < 0).length;
+      const counted =
+        overlaps === 0
+          ? `${gaps.length} gap(s)`
+          : `${gaps.length - overlaps} gap(s) and ${overlaps} overlap(s)`;
+      io.out(`${counted} in ${index.recordCount} records\n\n`);
+
       for (const gap of gaps) {
+        const overlap = gap.durationSeconds < 0;
+        // The kind is a FOURTH column, appended: columns 1-3 keep their meaning and position, so
+        // an existing `cut -f3` still reads a duration. The duration carries its own sign, and
+        // the interval is printed as the gap reports it — for an overlap it runs backwards,
+        // from where the earlier segment ends to where the later one already started.
         io.out(
-          `after segment ${gap.beforeSegmentIndex}\t${gap.startSeconds}s..${gap.endSeconds}s\t+${gap.durationSeconds}s\n`,
+          `after segment ${gap.beforeSegmentIndex}\t${gap.startSeconds}s..${gap.endSeconds}s\t` +
+            `${gap.durationSeconds}s\t${overlap ? 'overlap' : 'gap'}\n`,
         );
       }
+      // Exit 0 either way: this command reports, it does not gate. `edfcore validate` is the gate,
+      // and it already exits 1 on an overlap through RECORD_ONSET_SPACING_VIOLATION.
       return 0;
     }
 

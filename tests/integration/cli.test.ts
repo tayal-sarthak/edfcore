@@ -177,6 +177,33 @@ describe('gaps', () => {
     expect(code).toBe(0);
     expect(out).toContain('1 gap(s)');
     expect(out).toContain('after segment 0');
+    // The kind is the fourth column, and a real gap says so.
+    expect(out.split('\n').find((l) => l.startsWith('after segment 0'))).toMatch(/\tgap$/);
+  });
+
+  it('does not count an overlap as a gap, or print its duration as +-1s', async () => {
+    // An overlap travels in `index.gaps` with a NEGATIVE duration (documented in 0.2.69). This
+    // command called every entry a gap and prefixed a hardcoded `+`, so the output read
+    // "2 gap(s)" with a line saying `+-1s` — and a sweep counting gaps counted overlaps too.
+    //
+    // Onsets 0,1,2,2,3,5: an overlap of 1 s and a gap of 1 s, which also cancel in net drift, so
+    // this file opens with no diagnostic at all.
+    const overlapping = minimalEdfPlus({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (i: number) => [0, 1, 2, 2, 3, 5][i] ?? 0,
+    });
+    const { code, out } = await invoke(['gaps', 'o.edf'], { 'o.edf': overlapping });
+    expect(code).toBe(0);
+    expect(out).toContain('1 gap(s) and 1 overlap(s)');
+    expect(out).not.toContain('+-');
+
+    const rows = out.split('\n').filter((line) => line.startsWith('after segment'));
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.split('\t')).toHaveLength(4);
+    expect(rows[0]).toBe('after segment 0\t3s..2s\t-1s\toverlap');
+    expect(rows[1]).toBe('after segment 1\t4s..5s\t1s\tgap');
   });
 });
 

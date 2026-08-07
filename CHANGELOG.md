@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.3
+
+- **Fixed** `edfcore gaps` counting an overlap as a gap. An overlap travels in `index.gaps` with a
+  NEGATIVE duration — 0.2.69 documented that and pinned it — and this command called every entry a
+  gap, so a file with one gap and one overlap printed `2 gap(s) in 6 records`. Someone sweeping a
+  directory for discontinuities got a count that silently included the opposite condition. A gap is
+  time no record covers; an overlap is one instant two records both claim.
+- **Fixed** the duration printing as `+-1s`. The `+` was hardcoded on the assumption that a gap
+  duration is never negative. The value now carries its own sign.
+- The kind — `gap` or `overlap` — is a fourth column, APPENDED, so `cut -f3` still reads a
+  duration and no existing column moves. The same rule 0.2.42 followed when `signals` gained
+  `samplesPerRecord`.
+- The interval still prints as the gap reports it, which for an overlap runs backwards
+  (`3s..2s`): from where the earlier segment ends to where the later one had already started. With
+  the kind named beside it, that reads as what it is instead of as a corrupt line.
+- Exit code unchanged at 0. This command reports and does not gate; `edfcore validate` is the gate
+  and already exits 1 on an overlap through `RECORD_ONSET_SPACING_VIOLATION`.
+
 ## 0.3.2
 
 **No output edfcore produces can be given a row, a column or a diagnostic by the file it is
