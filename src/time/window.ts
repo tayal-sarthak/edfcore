@@ -87,7 +87,7 @@ function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
  *
  * With `index.segments` present (`coverage === 'complete'`) the answer is exact. With a probed
  * index it is exact only while the file is contiguous, which is precisely what
- * `spanSeconds === coveredSeconds` states; when it is not, the records a window maps to depend
+ * `spanTicks === coveredTicks` states; when it is not, the records a window maps to depend
  * on onsets nobody has read, and this function refuses rather than guessing them.
  */
 export function resolveTimeWindow(
@@ -144,12 +144,20 @@ export function resolveTimeWindow(
     return Object.freeze(ranges);
   }
 
-  if (timeline.spanSeconds !== timeline.coveredSeconds) {
+  // Ticks, not the seconds beside them: those are float64 conversions, and two different tick
+  // counts can round to the same one. On a long enough recording a real gap then vanished from
+  // this comparison and the window was mapped on the nominal grid (fixed in 0.3.4).
+  if (timeline.spanTicks !== timeline.coveredTicks) {
     throw new RangeError(
       `resolveTimeWindow() cannot map seconds to records on this file: its ${recordCount} ` +
         `records span ${timeline.spanSeconds} s but cover only ${timeline.coveredSeconds} s, so ` +
         'it contains at least one gap, and a probed index knows where neither the gap nor the ' +
-        'records after it start. Next: await buildRecordIndex(recording) and pass the index it ' +
+        'records after it start. ' +
+        // The two seconds above can PRINT the same on a long recording, since that is exactly the
+        // rounding this check stopped relying on. The ticks always differ here, so they are
+        // stated: a message that appears to contradict itself is a message nobody acts on.
+        `Exactly: ${timeline.spanTicks} against ${timeline.coveredTicks} ticks of 100 ns. ` +
+        'Next: await buildRecordIndex(recording) and pass the index it ' +
         'returns, or locate the window with index.locate(seconds).',
     );
   }

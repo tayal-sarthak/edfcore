@@ -114,7 +114,10 @@ function segmentOfRecord(recording: EdfRecording, recordIndex: number): EdfSegme
  * branch on a file whose scanned index reported gaps (fixed in 0.2.68).
  */
 function probedIndexNeedsScan(recording: EdfRecording): boolean {
-  return recording.timeline.spanSeconds !== recording.timeline.coveredSeconds;
+  // In ticks. The seconds beside them are lossy conversions of these, and on a long enough
+  // recording a real discontinuity rounds away — `sampleAt` then answered on the nominal grid
+  // instead of refusing, for a file whose scanned index reports two segments (fixed in 0.3.4).
+  return recording.timeline.spanTicks !== recording.timeline.coveredTicks;
 }
 
 /**

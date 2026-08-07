@@ -79,10 +79,14 @@ A plain struct with no methods and no hidden state, which is what makes `{ ...re
 | `startOffsetSeconds` | `number` | Record 0's own timekeeping onset (the sub-second start the header clock cannot express). |
 | `startOffsetTicks` | `bigint` | The same value in exact 100 ns ticks. |
 | `spanSeconds` | `number` | Last record's end minus first record's start. Includes gaps. |
-| `coveredSeconds` | `number` | `recordCount * recordDurationSeconds`. Sum of record durations. |
+| `spanTicks` | `bigint` | The same value in exact 100 ns ticks. |
+| `coveredSeconds` | `number` | Sum of record durations. |
+| `coveredTicks` | `bigint` | The same value in exact 100 ns ticks. |
 | `diagnostics` | `readonly EdfDiagnostic[]` | From decoding the probed records, plus the timeline's own checks. |
 
-`spanSeconds` and `coveredSeconds` are computed independently rather than one from the other. Equality is therefore a real statement: **as far as two probes can tell, this file is contiguous.** When they differ, the file has at least one gap. When they agree, a gap that an overlap elsewhere cancels exactly is still possible, and only a complete index rules it out.
+The span and the coverage are computed independently rather than one from the other. Equality is therefore a real statement: **as far as two probes can tell, this file is contiguous.** When they differ, the file has at least one gap. When they agree, a gap that an overlap elsewhere cancels exactly is still possible, and only a complete index rules it out.
+
+Compare `spanTicks` with `coveredTicks`, not the seconds. The seconds are float64 conversions of those two, and two different tick counts round to one float once an ulp of the span exceeds a tick — around 4 × 10⁸ seconds, which a free-form `recordDuration` field reaches in three bytes. edfcore's own contiguity checks were on the seconds until 0.3.4, and a file whose scanned index reports two segments read as contiguous.
 
 ## readRecords
 

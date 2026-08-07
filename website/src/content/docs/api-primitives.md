@@ -304,7 +304,7 @@ Returns one `RecordRange` per contiguous run the window overlaps, in time order.
 
 Ranges are record-aligned and are therefore usually wider than the window. A record is the smallest unit the file can be read by; [`trimToWindow`](#trimtowindow) is how you narrow the samples afterwards.
 
-With `index.segments` present (`coverage === 'complete'`) the answer is exact. With a probed index it is exact only while the file is contiguous, which is precisely what `spanSeconds === coveredSeconds` states. Otherwise this function throws a plain `RangeError` rather than guessing at onsets nobody has read.
+With `index.segments` present (`coverage === 'complete'`) the answer is exact. With a probed index it is exact only while the file is contiguous, which is precisely what `spanTicks === coveredTicks` states. Otherwise this function throws a plain `RangeError` rather than guessing at onsets nobody has read.
 
 Every comparison inside is integer or rational arithmetic on ticks, records and `samplesPerRecord`. `round(t * sampleRateHz)` appears nowhere. `sampleRateHz` is derived and often not representable (256/3 Hz is a real record duration of 3 s with 256 samples). Rounding through it walks the answer off by a sample near every large `t`.
 

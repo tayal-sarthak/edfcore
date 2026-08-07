@@ -53,13 +53,20 @@ function timelineOf(options: {
   spanSeconds?: number;
 }): EdfTimeline {
   const covered = options.recordCount * options.recordDurationSeconds;
+  const span = options.spanSeconds ?? covered;
+  // The ticks are what `resolveTimeWindow` compares; the seconds are carried alongside so the
+  // fixture stays readable. Built from the same two numbers, so a fixture cannot make the two
+  // pairs disagree with each other by accident.
+  const toTicks = (seconds: number): bigint => BigInt(Math.round(seconds * Number(SECOND)));
   return {
     recordCount: options.recordCount,
     recordDurationSeconds: options.recordDurationSeconds,
     startOffsetSeconds: 0,
     startOffsetTicks: 0n,
-    spanSeconds: options.spanSeconds ?? covered,
+    spanSeconds: span,
+    spanTicks: toTicks(span),
     coveredSeconds: covered,
+    coveredTicks: toTicks(covered),
     diagnostics: [],
   };
 }

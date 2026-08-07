@@ -6,6 +6,40 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.4
+
+**`EdfTimeline` gains `spanTicks` and `coveredTicks`, and edfcore's contiguity check moves off
+float64.** Additive: no field is removed or renamed.
+
+Both values were already computed exactly. `buildTimelineFromProbes` derives them in bigint — last
+record end minus first record start, against the sum of the record durations — and then discarded
+them at the return, keeping only the `ticksToSeconds` conversions. `startOffsetTicks` sits right
+beside `startOffsetSeconds`; these two were the pair that did not get the same treatment, and they
+are the pair edfcore asks its most consequential question of.
+
+**What it cost.** Two different tick counts round to one float once an ulp of the span exceeds a
+tick — from roughly 4 × 10⁸ seconds, which `recordDuration` reaches in three ASCII bytes, since
+that field is free-form and accepts exponent notation. `resolveTimeWindow` and `sampleAt` both
+decided "is this file contiguous" on the converted seconds, so on such a file:
+
+- `resolveTimeWindow` returned one range covering every record, where it is documented to REFUSE —
+  a probed index cannot say where the records after a gap begin.
+- `sampleAt` answered `record 9, sample 36` for an instant that lies inside the gap, while
+  `buildRecordIndex` on the same recording reports **two segments and one gap** and `sampleAt`
+  against that index correctly returns `undefined`.
+
+Two functions disagreeing about one file, which is how every instance of this project's recurring
+timebase defect has surfaced. The reproduction is in `tests/integration/extreme-geometry.test.ts`,
+and it asserts the premise — that the two seconds compare equal — so the test cannot quietly stop
+testing anything.
+
+The `RangeError` from `resolveTimeWindow` now states both tick counts. Its existing sentence quotes
+the seconds, and on exactly the files this fixes, those two print identically.
+
+Equality still means only what TWO PROBES can see. A gap that an overlap elsewhere cancels exactly
+leaves both ends where a contiguous file would put them; `buildRecordIndex()` reads every onset and
+is the only thing that rules it out. That was true before this change and is unaffected by it.
+
 ## 0.3.3
 
 - **Fixed** `edfcore gaps` counting an overlap as a gap. An overlap travels in `index.gaps` with a

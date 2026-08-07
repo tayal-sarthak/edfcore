@@ -222,10 +222,14 @@ function reportDrift(
 /**
  * `EdfTimeline` from the probed onsets plus the header.
  *
- * `spanSeconds` and `coveredSeconds` are computed independently — last record end minus first
- * record start, against the sum of the record durations — because their being equal is the
- * statement "this file is contiguous as far as two reads can tell". Deriving either from the
- * other would make that identity true by construction and worth nothing.
+ * The span and the coverage are computed independently — last record end minus first record start,
+ * against the sum of the record durations — because their being equal is the statement "this file
+ * is contiguous as far as two reads can tell". Deriving either from the other would make that
+ * identity true by construction and worth nothing.
+ *
+ * Both are RETURNED in ticks as well as in seconds, and the ticks are the pair to compare. They
+ * were computed exactly here from the first release and then discarded at the return, which left
+ * every caller asking the contiguity question of two float64 conversions of them.
  */
 export function buildTimelineFromProbes(input: TimelineInput, options?: ParseOptions): EdfTimeline {
   const header = input.header;
@@ -254,7 +258,9 @@ export function buildTimelineFromProbes(input: TimelineInput, options?: ParseOpt
       startOffsetSeconds: 0,
       startOffsetTicks: 0n,
       spanSeconds: 0,
+      spanTicks: 0n,
       coveredSeconds: 0,
+      coveredTicks: 0n,
       diagnostics: Object.freeze(priorDiagnostics.slice()),
     };
   }
@@ -284,7 +290,9 @@ export function buildTimelineFromProbes(input: TimelineInput, options?: ParseOpt
     startOffsetSeconds: ticksToSeconds(startOffsetTicks),
     startOffsetTicks,
     spanSeconds: ticksToSeconds(spanTicks),
+    spanTicks,
     coveredSeconds: ticksToSeconds(coveredTicks),
+    coveredTicks,
     diagnostics: Object.freeze([...priorDiagnostics, ...sink.diagnostics]),
   };
 }

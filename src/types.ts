@@ -312,8 +312,24 @@ export interface EdfTimeline {
   readonly startOffsetTicks: bigint;
   /** Last record end minus first record start. Includes gaps. */
   readonly spanSeconds: number;
-  /** Sum of record durations. Equals `spanSeconds` exactly when the file is contiguous. */
+  readonly spanTicks: bigint;
+  /** Sum of record durations. */
   readonly coveredSeconds: number;
+  /**
+   * `spanTicks === coveredTicks` is the two-probe contiguity verdict, and the ticks are what it
+   * must be asked of.
+   *
+   * The seconds beside them are float64 conversions of these, and two different tick counts can
+   * round to one float: once the span is large enough that an ulp exceeds a tick — around 4e8
+   * seconds, which a free-form `recordDuration` field reaches in three bytes — a real
+   * discontinuity disappears from the comparison. `resolveTimeWindow` then mapped a window on the
+   * nominal grid of a file its own scanned index reports two segments for (fixed in 0.3.4).
+   *
+   * Equality here is still only what TWO PROBES can see, which is net drift. A gap that an
+   * overlap elsewhere cancels exactly leaves both ends where a contiguous file would put them;
+   * only `buildRecordIndex()` reads every onset.
+   */
+  readonly coveredTicks: bigint;
   readonly diagnostics: readonly EdfDiagnostic[];
 }
 
