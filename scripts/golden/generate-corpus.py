@@ -131,5 +131,8 @@ for name in [
     "test_generator.edf",
     "test_generator_2.edf",
     "test_generator_2.bdf",
+    # A second real clinical recording, from a different institution, instrument and decade:
+    # 23 channels at 256 Hz in one-second records, against sleep-edfx's 7 at mixed rates in 30 s.
+    "chb01_01.edf",
 ]:
     record(name)

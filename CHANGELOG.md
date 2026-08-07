@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.58
+
+- **Added** CHB-MIT to the corpus, closing a gap the README has named since 0.1. It is chosen to be
+  UNLIKE sleep-edfx rather than to add volume: 23 channels at a uniform 256 Hz in one-second
+  records, recorded in 2010 at another institution on other equipment, against 7 channels at mixed
+  rates in 30-second records from 1989. Every real file in this suite came from one dataset until
+  now. Same bit-for-bit parity with pyEDFlib across all 23 channels.
+- It also supplies something no fixture in this project had: **a montage that names one derivation
+  twice.** `T8-P8` appears at index 14 and index 22, and the two carry identical samples — verified
+  against pyEDFlib over the whole hour rather than assumed; I had written the test expecting them
+  to differ. `EdfAmbiguousChannelError` had until now only ever been raised against a fixture
+  written to raise it.
+- That identity makes the refusal matter more, not less. If `getSignal` picked one arbitrarily, no
+  comparison of the returned numbers could reveal which it picked, so a caller would never learn
+  the question had two answers. The error is the only signal there is.
+- Downloaded on demand under the Open Data Commons Attribution License v1.0, hash-verified, never
+  redistributed — the same terms as every other corpus entry.
+
 ## 0.2.57
 
 - **Documented** what the corpus work of 0.2.49-0.2.55 actually established. The README's

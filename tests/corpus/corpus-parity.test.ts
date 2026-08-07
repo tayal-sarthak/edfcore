@@ -86,6 +86,8 @@ const CASES = [
   'test_generator.edf',
   'test_generator_2.edf',
   'test_generator_2.bdf',
+  // A second real clinical recording, from another institution and decade.
+  'chb01_01.edf',
 ] as const;
 
 function fromBits(hex: string): number {

@@ -334,8 +334,15 @@ state you are in, because a skipped test and a passing one look identical in a s
 npm run corpus:fetch
 ```
 
-**Still open before 1.0.** CHB-MIT, and the edfplus.info conformance files. Those are not claimed
-here until a test produces them.
+**CHB-MIT, as of 0.2.58.** A second real clinical recording, deliberately unlike the first: 23
+channels at a uniform 256 Hz in one-second records, recorded in 2010 at another institution, where
+sleep-edfx is 7 channels at mixed rates in 30-second records from 1989. Same bit-for-bit parity. It
+also supplies something no synthetic fixture here had — a montage that names one derivation twice,
+which is what `EdfAmbiguousChannelError` exists for and had until now only ever been raised against
+a fixture written to raise it.
+
+**Still open before 1.0.** The edfplus.info conformance files. Not claimed here until a test
+produces them.
 
 **Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
 `readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration

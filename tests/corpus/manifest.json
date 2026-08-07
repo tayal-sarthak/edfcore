@@ -49,7 +49,7 @@
       "sha256": "a4cf67694ade1b52a0ddd06d5817fd45d2d3e8bac5302f640f3e9cfbbf12a996",
       "source": "PhysioNet Sleep-EDF Database Expanded (sleep-edfx) 1.0.0",
       "licence": "Open Data Commons Attribution License v1.0 (ODC-By). De-identified.",
-      "exercises": "A real EDF+ scoring file with recordDuration = 0 and no ordinary signals — legal, and the case that breaks readers which divide by the record duration. 154 sleep-stage annotations."
+      "exercises": "A real EDF+ scoring file with recordDuration = 0 and no ordinary signals \u2014 legal, and the case that breaks readers which divide by the record duration. 154 sleep-stage annotations."
     },
     {
       "name": "SC4001E0-PSG.edf",
@@ -59,6 +59,15 @@
       "source": "PhysioNet Sleep-EDF Database Expanded (sleep-edfx) 1.0.0",
       "licence": "Open Data Commons Attribution License v1.0 (ODC-By). De-identified.",
       "exercises": "A real 22-hour polysomnography recording, 48 MB, 7 signals mixing 100 Hz and 1 Hz, 30-second data records. The random-access claim is measured against this file. Includes a rectal temperature channel in degrees Celsius, whose physical values are independently checkable against human body temperature."
+    },
+    {
+      "name": "chb01_01.edf",
+      "url": "https://physionet.org/files/chbmit/1.0.0/chb01/chb01_01.edf",
+      "bytes": 42399744,
+      "sha256": "92ec026f633dca94ee74c2e2b67cf9d58aa50da700b650a1696cf497dac073e3",
+      "source": "PhysioNet CHB-MIT Scalp EEG Database v1.0.0 (chb01)",
+      "licence": "Open Data Commons Attribution License v1.0. De-identified pediatric scalp EEG. Downloaded on demand and never redistributed; see tests/README.md.",
+      "purpose": "A second real clinical recording from a different institution, instrument and decade to sleep-edfx: 23 EEG channels at 256 Hz in one-second records, where sleep-edfx is 7 channels at mixed rates in 30-second records. Named in the README as an open gap since 0.1."
     }
   ]
 }
