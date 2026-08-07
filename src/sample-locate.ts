@@ -16,6 +16,14 @@
  * `segmentAt` does: `undefined` from `sampleAt` means "no sample exists here", and an index that
  * has read record 0 and the last record cannot say that about anything in between. Merging "there
  * is a gap here" with "nobody looked" is the confusion this whole area of the API avoids.
+ *
+ * ONE LIMIT, and it belongs to the file rather than to these functions. If two records cover the
+ * same instant — a timeline whose onsets repeat, which EDF+ does not forbid and which edfcore
+ * reports without a diagnostic — then more than one sample exists at that time and no function can
+ * return both. `sampleAt` returns the one whose segment `segmentAt` finds. The round-trip
+ * "the sample at a sample's start is that sample" therefore holds for files whose records do not
+ * overlap, which is every file anyone is likely to have; it is not a universal law and 0.2.60
+ * claimed it as one.
  */
 
 import { EdfChannelNotFoundError } from './errors.js';
@@ -94,12 +102,18 @@ function segmentOfRecord(recording: EdfRecording, recordIndex: number): EdfSegme
 }
 
 /**
- * Whether this recording needs a scanned index before a time can be located at all.
+ * Whether a PROBED recording needs a scan before a time can be located.
  *
- * A file whose records cover exactly its span is contiguous, and the nominal grid IS the true one
- * — so a probed index is enough and no scan is demanded of the caller for nothing.
+ * This is a statement about a probed index and nothing else. It compares net drift — span against
+ * coverage — which is what two probes can see, and edfcore's own documentation says three times
+ * that net drift is not a proof of contiguity: a gap that an overlap elsewhere cancels exactly
+ * leaves span equal to coverage and is still a gap.
+ *
+ * So it must never be consulted while a COMPLETE index is available; `resolveTimeWindow` gets that
+ * precedence right and this module originally did not, which made `sampleAt` take the nominal
+ * branch on a file whose scanned index reported gaps (fixed in 0.2.68).
  */
-function requiresScan(recording: EdfRecording): boolean {
+function probedIndexNeedsScan(recording: EdfRecording): boolean {
   return recording.timeline.spanSeconds !== recording.timeline.coveredSeconds;
 }
 
@@ -129,11 +143,27 @@ export function sampleAt(
   const perRecord = BigInt(signal.samplesPerRecord);
   const ticks = secondsToTicks(seconds);
 
-  if (!requiresScan(recording)) {
-    // Contiguous: the nominal grid is the true one, but the answer is still bounded by the file.
-    const recordIndex = Number(floorDiv(ticks, duration));
-    if (recordIndex < 0 || recordIndex >= recording.header.recordCount) return undefined;
-    const withinTicks = ticks - BigInt(recordIndex) * duration;
+  // A SCANNED index takes precedence over any statement about net drift, the same order
+  // `resolveTimeWindow` uses. Asking `probedIndexNeedsScan` first meant a file whose gap and
+  // overlap cancel — span equal to coverage, no diagnostic on open — took the nominal branch while
+  // a complete index sat on the same object reporting two gaps.
+  if (recording.index.segments !== undefined) {
+    // `segmentAt` owns "is there data here at all" and throws for a probed index rather than
+    // guessing; it cannot be reached with one here, because segments only exist on a scanned index.
+    const segment = segmentAt(recording.index, seconds);
+    if (segment === undefined) return undefined;
+
+    const offsetTicks = ticks - segment.startTicks;
+    const recordOffset = floorDiv(offsetTicks, duration);
+    // Bounded by the SEGMENT, as the nominal branch is bounded by the record count. `segmentAt`
+    // compares float seconds while this compares exact ticks, and `secondsToTicks` rounds to the
+    // nearest tick — so a time within half a tick of `segment.endSeconds` is inside the segment
+    // for one and at its end for the other, and without this it walked into the next segment or
+    // off the end of the file.
+    if (recordOffset < 0n || recordOffset >= BigInt(segment.records.count)) return undefined;
+
+    const recordIndex = segment.records.start + Number(recordOffset);
+    const withinTicks = offsetTicks - recordOffset * duration;
     const sampleWithinRecord = Number(floorDiv(withinTicks * perRecord, duration));
     return {
       sampleIndex: recordIndex * signal.samplesPerRecord + sampleWithinRecord,
@@ -142,14 +172,18 @@ export function sampleAt(
     };
   }
 
-  // Discontinuous: `segmentAt` owns the "is there data here at all" question, and throws for a
-  // probed index rather than guessing.
-  const segment = segmentAt(recording.index, seconds);
-  if (segment === undefined) return undefined;
+  if (probedIndexNeedsScan(recording)) {
+    throw new RangeError(
+      'sampleAt(): this file has gaps and its index has not been scanned, so which records cover ' +
+        'a time is not known. Next: await buildRecordIndex(recording) and read the result into ' +
+        'the recording.',
+    );
+  }
 
-  const offsetTicks = ticks - segment.startTicks;
-  const recordIndex = segment.records.start + Number(floorDiv(offsetTicks, duration));
-  const withinTicks = offsetTicks - floorDiv(offsetTicks, duration) * duration;
+  // Contiguous, probed: the nominal grid is the true one, and the answer is bounded by the file.
+  const recordIndex = Number(floorDiv(ticks, duration));
+  if (recordIndex < 0 || recordIndex >= recording.header.recordCount) return undefined;
+  const withinTicks = ticks - BigInt(recordIndex) * duration;
   const sampleWithinRecord = Number(floorDiv(withinTicks * perRecord, duration));
   return {
     sampleIndex: recordIndex * signal.samplesPerRecord + sampleWithinRecord,
@@ -187,7 +221,19 @@ export function sampleStartTicksOf(
   const recordIndex = Math.floor(sampleIndex / perRecord);
   const within = BigInt(sampleIndex - recordIndex * perRecord);
 
-  if (requiresScan(recording) && recording.index.segments === undefined) {
+  // Bounded by the file. An index past the end used to fall through `segmentOfRecord` to the
+  // nominal grid and come back EARLIER than the last real sample — on a file with a 7 s gap,
+  // sample 24 of a 24-sample file reported 6.75 s before sample 23. Refusing is the only honest
+  // answer for a sample that does not exist.
+  if (sampleIndex < 0 || recordIndex >= recording.header.recordCount) {
+    throw new RangeError(
+      `sampleStartTicksOf(): sample ${sampleIndex} is outside the ` +
+        `${recording.header.recordCount * perRecord} samples signal ${signalIndex} has. ` +
+        'Next: clamp the index, or read signal.sampleCount first.',
+    );
+  }
+
+  if (recording.index.segments === undefined && probedIndexNeedsScan(recording)) {
     throw new RangeError(
       'sampleStartTicksOf(): this file has gaps and its index has not been scanned, so the true ' +
         'start of a record after a gap is not known. Next: await buildRecordIndex(recording) and ' +

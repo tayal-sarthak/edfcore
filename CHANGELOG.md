@@ -6,6 +6,33 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.68
+
+Two defects in `sample-locate.ts`, both introduced by me in 0.2.61 and found by an adversarial
+sweep of it seven releases later.
+
+- **Fixed** `sampleAt` consulting the net-drift check before the scanned index. `spanSeconds !==
+  coveredSeconds` is what TWO PROBES can see, and this project's own documentation says three
+  times that it is not a proof of contiguity: a gap that an overlap elsewhere cancels exactly
+  leaves span equal to coverage. On such a file — which opens with no diagnostic at all —
+  `sampleAt` took the nominal branch while a complete index sat on the same object reporting two
+  gaps, and returned a sample one whole record away from the one `readWindow` reads. It also
+  reported a sample inside a hole that `gapAt`, `segmentAt`, `index.locate` and `readWindow` all
+  report as empty. `resolveTimeWindow` has always had this precedence right; this module inverted
+  it. **The seventh instance of the defect this project has spent six releases on, and the first
+  one I introduced myself.**
+- **Fixed** the discontinuous branch being unbounded. `segmentAt` compares float seconds and the
+  arithmetic after it compares exact ticks, so a time within half a tick of a segment end is inside
+  the segment for one and past it for the other: it named record 6 and sample 24 of a six-record,
+  24-sample file. `sampleStartTicksOf` had the matching hole — a sample index past the end fell
+  through to the nominal grid and came back 6.75 s EARLIER than the last real sample. Both are now
+  bounded, and the second refuses rather than answering.
+- **Corrected** an over-claim in the 0.2.61 entry. It said the round-trip "the sample at a sample's
+  start is that sample" was pinned "for every sample in the file". That is false when two records
+  cover the same instant — repeated onsets, which EDF+ does not forbid — because two samples exist
+  at that time and no function can return both. The claim holds for files whose records do not
+  overlap. Now stated in the source and pinned by a test that uses a genuinely overlapping fixture.
+
 ## 0.2.67
 
 Three defects in `formatHeader`, found by an adversarial sweep of the modules no earlier pass had

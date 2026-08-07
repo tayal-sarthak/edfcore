@@ -36,7 +36,7 @@ import { filterAnnotationsByTime } from '../../src/annotations-query.js';
 import { TICKS_PER_SECOND } from '../../src/constants.js';
 import { readEnvelope, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { buildRecordIndex, gapAt, segmentAt } from '../../src/record-index.js';
+import { buildRecordIndex, contiguityOf, gapAt, segmentAt } from '../../src/record-index.js';
 import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
 import { sampleIndexAt, sampleStartSeconds, sampleStartTicks } from '../../src/sample-grid.js';
 import { sampleAt, sampleStartSecondsOf, sampleStartTicksOf } from '../../src/sample-locate.js';
@@ -572,5 +572,99 @@ describe('the recording-aware sample functions are on the recording axis', () =>
     expect(probed.index.coverage).toBe('probed');
     expect(() => sampleStartTicksOf(probed, 0, 12)).toThrow(/buildRecordIndex/);
     expect(() => sampleAt(probed, 0, 10)).toThrow(/buildRecordIndex/);
+  });
+});
+
+describe('a file whose gaps and overlaps cancel in net', () => {
+  // The shape edfcore's own docs name three times as the reason two probes are not a proof of
+  // contiguity: a gap that an overlap elsewhere cancels exactly leaves `spanSeconds` equal to
+  // `coveredSeconds`, so the file opens with NO diagnostic and the net-drift check says
+  // "contiguous". Only a scanned index can tell.
+  const ONSETS = [0, 1, 2, 2, 3, 5];
+
+  async function cancelling(): Promise<EdfRecording> {
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => ONSETS[r] as number,
+      signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD, sample: sampleValue }],
+      annotationSignals: [{ samplesPerRecord: 60 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    return { ...recording, index: await buildRecordIndex(recording) };
+  }
+
+  it('really does hide its gap from the net-drift check', async () => {
+    // Without this the assertions below would pass for the wrong reason.
+    const edf = await cancelling();
+    expect(edf.timeline.spanSeconds).toBe(edf.timeline.coveredSeconds);
+    expect(edf.timeline.diagnostics).toEqual([]);
+    expect(contiguityOf(edf.index)).toBe('discontinuous');
+    expect(edf.index.gaps?.length).toBeGreaterThan(0);
+  });
+
+  it('locates a sample from the SCANNED index, not from net drift', async () => {
+    // The seventh instance of this project's recurring defect, and the first one I introduced:
+    // `sampleAt` asked the net-drift check before looking at the index, so it took the nominal
+    // branch while a complete index sat on the same object reporting two gaps.
+    const edf = await cancelling();
+    const chunks = await readWindow(edf, {
+      signalIndices: [0],
+      startSeconds: 3.5,
+      durationSeconds: 0.25,
+    });
+    const truth = (chunks[0]?.signals[0]?.firstSampleIndex ?? -1) + 2;
+    expect(sampleAt(edf, 0, 3.5)?.sampleIndex).toBe(truth);
+  });
+
+  it('reports no sample inside the hole, as every other function does', async () => {
+    const edf = await cancelling();
+    expect(gapAt(edf.index, 4.5)).toBeDefined();
+    expect(segmentAt(edf.index, 4.5)).toBeUndefined();
+    expect(await edf.index.locate(4.5)).toBeUndefined();
+    expect(sampleAt(edf, 0, 4.5)).toBeUndefined();
+  });
+
+  it('never names a record or sample the file does not have', async () => {
+    // A float within half a tick of a segment end is inside the segment for `segmentAt`, which
+    // compares float seconds, and at its end for the tick arithmetic that follows. Unbounded, that
+    // walked into the next segment or off the end of the file.
+    const edf = await cancelling();
+    for (const seconds of [2.9999999, 2.99999995, 2.99999999, 3, 5.99999999, 6]) {
+      const located = sampleAt(edf, 0, seconds);
+      if (located === undefined) continue;
+      expect(located.recordIndex, `${seconds}s`).toBeLessThan(edf.header.recordCount);
+      expect(located.sampleIndex, `${seconds}s`).toBeLessThan(
+        edf.header.recordCount * SAMPLES_PER_RECORD,
+      );
+    }
+  });
+
+  it('refuses a sample index the file does not have', async () => {
+    // Past the end used to fall through to the nominal grid and come back EARLIER than the last
+    // real sample: on this file sample 24 reported a time before sample 23.
+    const edf = await cancelling();
+    const total = edf.header.recordCount * SAMPLES_PER_RECORD;
+    expect(() => sampleStartTicksOf(edf, 0, total)).toThrow(RangeError);
+    expect(() => sampleStartTicksOf(edf, 0, -1)).toThrow(RangeError);
+    expect(sampleStartTicksOf(edf, 0, total - 1)).toBeGreaterThan(0n);
+  });
+
+  it('cannot round-trip where two records cover the same instant, and that is the file', async () => {
+    // Records 2 and 3 both begin at 2 s, so segments [0,3) and [2,4) overlap and the instant 2.5 s
+    // is covered by TWO samples. No function can return both, so the round-trip pinned in 0.2.60
+    // — "the sample at a sample's start is that sample, for every sample" — is false here. That
+    // claim was too strong: it holds for files whose records do not overlap, which is every file
+    // in the rest of this suite.
+    const edf = await cancelling();
+    expect(ONSETS[2]).toBe(ONSETS[3]);
+
+    const overlapping = [8, 9, 10, 11].filter((index) => {
+      const seconds = sampleStartSecondsOf(edf, 0, index);
+      return sampleAt(edf, 0, seconds)?.sampleIndex !== index;
+    });
+    // Every sample of record 2 is shadowed by record 3, which starts at the same instant.
+    expect(overlapping).toEqual([8, 9, 10, 11]);
   });
 });
