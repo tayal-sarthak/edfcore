@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.2.62
+
+- **Added** `formatAnnotations`, the third formatter beside `formatHeader` and
+  `formatDiagnostics`, and the one a hypnogram or an event list actually needs.
+- The clock is built from `onsetTicksFromFirstRecord` by integer division, never from the float
+  seconds. An event list is exactly where someone reads a number off the screen and types it into
+  something else, and a millisecond field derived from a float64 that came out of a division by
+  10,000,000 can be off by one. A test makes the two fields disagree deliberately, so only a
+  formatter reading the exact one passes.
+- Hours are not wrapped at 24 — a 30-hour recording is real, and `30:12` is more useful than
+  `06:12` on day two. Times truncate to the millisecond rather than rounding, so the printed
+  instant is never later than the event. A NEGATIVE onset prints as one: EDF+ measures onsets from
+  the header start time, a recording may begin after its first annotation, and clamping to zero
+  would silently move it.
+
 ## 0.2.61
 
 - **Deprecated** `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds`, which are renamed

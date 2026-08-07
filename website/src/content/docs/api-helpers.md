@@ -411,6 +411,23 @@ issue or a log, so the default is the safe one. The data is still on `header.pat
 Neither formatter invents a value. An unresolved date prints as `unknown`, and a rate that is
 genuinely undefined prints as an em dash rather than `0 Hz` or `Infinity`.
 
+`formatAnnotations` is the third formatter, for a hypnogram or an event list:
+
+```ts
+import { formatAnnotations } from 'edfcore';
+
+console.log(formatAnnotations(annotations, { maxItems: 20 }));
+// 00:00:00.000                Sleep stage W
+// 08:30:30.000  00:02:00.000  Sleep stage 1
+```
+
+The clock is built from `onsetTicksFromFirstRecord` by integer division, never from the float
+seconds — an event list is exactly where someone reads a number off the screen and types it into
+something else, and a millisecond field derived from a float can be off by one. Hours are not
+wrapped at 24, because a 30-hour recording is real and `30:12` beats `06:12` on day two. A negative
+onset prints as one: EDF+ measures onsets from the header start time, a recording may begin after
+its first annotation, and clamping to zero would silently move the event.
+
 `formatValidationReport` leads with the severity counts and the distinct codes sorted by how much
 of the file each affects, then a capped sample of individual entries. A sweep over a damaged file
 can produce six figures of diagnostics — `TIMEKEEPING_TAL_MISSING` is per record — and a wall of

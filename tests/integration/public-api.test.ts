@@ -130,6 +130,7 @@ const FUNCTIONS: readonly string[] = [
   'sampleAt',
   'sampleStartTicksOf',
   'sampleStartSecondsOf',
+  'formatAnnotations',
 ];
 
 const ERROR_CLASSES: readonly string[] = [

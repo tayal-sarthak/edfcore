@@ -186,6 +186,8 @@ export {
   readEnvelopeAtResolution,
   toPhysicalEnvelope,
 } from './envelope.js';
+export type { FormatAnnotationsOptions } from './format-annotations.js';
+export { formatAnnotations } from './format-annotations.js';
 export { formatHeader } from './format-header.js';
 export { inspectEdf } from './inspect.js';
 export { openEdf, readAnnotations, readRecords, readWindow } from './recording.js';
