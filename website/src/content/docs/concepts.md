@@ -121,7 +121,7 @@ decodeDigital(header, bytes, records, signal.index);   // still works
 
 The digital samples are real data and they keep working. It's the *interpretation* that is unavailable. `scale` is optional in the type system, so the compiler can point at a `toPhysical` call you haven't guarded.
 
-The conversion itself is `physical = bitValue * (offset + digital)`, in float64 throughout. That expression is numerically worse than the obvious rearrangement, and it's EDFlib's exact form. Keeping it means edfcore's float64 output *can* be compared bit for bit against pyEDFlib and EDFlib. That's a design target rather than a measured result: the cross-implementation harness does not exist yet in 0.1. See [physical values](/docs/physical-values) for what is and is not established.
+The conversion itself is `physical = bitValue * (offset + digital)`, in float64 throughout. That expression is numerically worse than the obvious rearrangement, and it's EDFlib's exact form. Keeping it means edfcore's float64 output *can* be compared bit for bit against pyEDFlib and EDFlib. The harness that proves it has existed since 0.2.34-0.2.48, so for the expression itself that is a measured result rather than a design target. See [physical values](/docs/physical-values) for exactly what the harness covers and what it does not.
 
 Physical values are `Float64Array`. Float32 carries 24 significand bits, so a 24-bit BDF sample scaled into it loses about a quarter of a quantisation step. That's a quarter of the smallest difference the hardware can express, and it stays in the data permanently.
 

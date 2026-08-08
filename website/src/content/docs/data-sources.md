@@ -435,6 +435,6 @@ try {
 }
 ```
 
-Closing a source does not invalidate the `EdfRecording` built from it. The header, the timeline and the segment list are plain data and stay readable after the handle is gone. Anything that goes back for bytes fails: `readRecords`, `readWindow`, `readAnnotations`, and `index.locate` on a file whose onsets it has not already memoised. edfcore has no other lifetime mechanism in 0.1, because `Symbol.asyncDispose` is not Baseline yet, so there's no `using` form to reach for.
+Closing a source does not invalidate the `EdfRecording` built from it. The header, the timeline and the segment list are plain data and stay readable after the handle is gone. Anything that goes back for bytes fails: `readRecords`, `readWindow`, `readAnnotations`, and `index.locate` on a file whose onsets it has not already memoised. edfcore has no other lifetime mechanism yet, because `Symbol.asyncDispose` is not Baseline yet, so there's no `using` form to reach for.
 
 Next: [reading signals](/docs/reading-signals) covers what to do with the recording once it's open, and [validation](/docs/validation) covers checking a file for conformance.

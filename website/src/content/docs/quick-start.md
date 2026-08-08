@@ -79,7 +79,7 @@ Two things in that output are worth pausing on. `values` is a `Float64Array`, be
 
 ## How do I read an EDF file in Node.js?
 
-It's identical after the first line. `fileSource` returns a promise because it opens a file handle, and you close it when you're done. edfcore has no other lifetime mechanism in 0.1, so wrap the work in `try`/`finally`.
+It's identical after the first line. `fileSource` returns a promise because it opens a file handle, and you close it when you're done. edfcore has no other lifetime mechanism yet, so wrap the work in `try`/`finally`.
 
 ```ts
 import { getSignal, openEdf, readWindow, toPhysical } from 'edfcore';

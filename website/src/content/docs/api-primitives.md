@@ -511,7 +511,7 @@ info [DATE_CLIPPED_TO_1985_2084] startdate field (8 bytes at offset 168) is "01.
 | `BDF_DIGITAL_MAX` | `8388607` | |
 | `EDF_RECOMMENDED_MAX_RECORD_BYTES` | `61440` | An EDF specification *recommendation*, not a limit. Exceeding it is a warning, never an error. Reads are record-aligned, so it is also the smallest amount of data any read of that file can return. |
 | `TICKS_PER_SECOND` | `10000000n` | A `bigint`. Time is compared in exact 100 ns ticks, never in floats. Float equality on event times is how ERP alignment breaks. |
-| `VERSION` | `'0.1.0'` | The published package version, kept in sync with `package.json` by a test. |
+| `VERSION` | `string` | The published package version, kept in sync with `package.json` by a test. Printing it into a bug report is the point; the docs do not spell it out, because a number written here goes stale the next release. |
 
 ```ts
 import { TICKS_PER_SECOND, EDF_DIGITAL_MAX, VERSION } from 'edfcore';
@@ -521,4 +521,4 @@ const saturated = digital.filter((v) => v === EDF_DIGITAL_MAX).length;
 console.log(`edfcore ${VERSION}`);
 ```
 
-`VERSION` is `'0.1.0'` at the time of writing, and that number is meant literally. edfcore is checked against real public corpora (see the [installation page](/docs/installation)). It has not been compared element by element against pyEDFlib or MNE, so treat what it tells you about a file as a well-argued claim rather than a settled one.
+edfcore is pre-1.0, and that is meant literally: the API surface can still move. It is checked against real public corpora (see the [installation page](/docs/installation)), and the physical-value expression is compared bit for bit against pyEDFlib by the harness described on the [physical values](/docs/physical-values) page. Claims outside what that harness covers are well-argued rather than settled.

@@ -207,7 +207,7 @@ From `edfcore/node`. Opens a file for reading and exposes it as a `ByteSource`.
 
 The size comes from the open handle rather than from a separate `stat(path)` call. The size and the bytes therefore describe the same file even if the path is replaced between the two, which happens on a rotating log or an rsync target. When the operating system reports a size that is not a safe non-negative integer, `fileSource` throws `EdfSourceError`. Its message tells you to check that the path names a regular file rather than a directory, a pipe or a device.
 
-The handle is closed if anything goes wrong before it has an owner. After that, **closing is yours**. Call `source.close()` when you're done. edfcore has no other lifetime mechanism in 0.1; `Symbol.asyncDispose` is not Baseline yet.
+The handle is closed if anything goes wrong before it has an owner. After that, **closing is yours**. Call `source.close()` when you're done. edfcore has no other lifetime mechanism yet; `Symbol.asyncDispose` is not Baseline yet.
 
 ```ts
 import { fileSource } from 'edfcore/node';

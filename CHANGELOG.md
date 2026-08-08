@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.64
+
+- **Fixed** the pre-0.2 status text still on the website, which contradicted the package and, in one
+  case, the page it linked to in the same sentence.
+  - `concepts.md` said the pyEDFlib comparison harness "does not exist yet in 0.1" and linked, in
+    that sentence, to `physical-values.md`, which says it has existed since 0.2.34-0.2.48. So the
+    one claim a reader would check was denied by the page they were sent to check it on.
+  - `installation.md` said "edfcore is at 0.1.0" and that an element-by-element comparison against
+    pyEDFlib is "still missing"; `api-primitives.md` tabled `VERSION` as `'0.1.0'` and repeated it
+    in prose as "at the time of writing".
+  - Three pages scoped a still-true statement to a dead series — "edfcore has no other lifetime
+    mechanism in 0.1". The claim holds (`Symbol.asyncDispose` is not Baseline); the version scope
+    did not.
+- The `VERSION` row no longer spells a number at all. A version written into a table is stale the
+  next release, which is how this started.
+- `tests/integration/readme-status.test.ts` now sweeps every docs page for two present-tense shapes:
+  "edfcore is at X.Y.Z" that is not the published version, and "in X.Y" scoping a claim to a series
+  that is no longer this one. Past-tense history — "renamed in 0.3.0", "fixed in 0.2.63", "since
+  0.2.34-0.2.48" — is correct forever and is deliberately not matched.
+
 ## 0.3.63
 
 - **Fixed** `diagnostics.md`'s always-fatal table, which said "Nine codes are always fatal", listed
