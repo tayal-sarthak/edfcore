@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.57
+
+- **Fixed** the zero-record chunk's start time, which was read off a segment on the wrong axis and
+  only for a record a segment BEGINS at. Both halves were introduced by 0.3.38's fix for the same
+  field.
+  - `segment.startTicks` is **rebased** — `buildSegmentation` stores `absoluteOnset - originTicks`
+    with `originTicks = timeline.startOffsetTicks` — while `readChunk` consumed it as a header-axis
+    value and subtracted the offset a second time. On an EDF+ file whose record 0 begins part-way
+    into a second, which is exactly what record 0's timekeeping TAL is for,
+    `readRecords({ start: 0, count: 0 })` reported **-0.25 s**: before the instant that defines
+    `t = 0`. At a segment boundary it reported 99.75 s while carrying a gap ending at 100 s — the
+    self-contradiction 0.3.38 existed to remove, reintroduced one line away by its own fix.
+  - The lookup matched only a segment's first record, so a mid-segment record fell through to the
+    nominal grid, which knows nothing about gaps: `{ start: 5, count: 0 }` answered **5 s** where
+    `{ start: 5, count: 1 }` answered **101 s**, for the same record of the same file.
+  - The helper now reads the segment that CONTAINS the record and adds the origin back, so both
+    forms answer identically at every record — boundary or not, offset or not.
+- The 0.3.38 test asserted `gap.endTicks === chunk.startTicks + startOffsetTicks`. Both values are
+  on the rebased axis, so the real invariant is equality; the extra term was only ever right
+  because that fixture's offset is zero. A guard that states a relation which holds only at zero
+  would have accepted this bug back, so it now states the relation itself, and the new test gives
+  the file an offset.
+
 ## 0.3.56
 
 - **Fixed** `trimToWindow` dropping the sample whose own start time the window was aligned to.

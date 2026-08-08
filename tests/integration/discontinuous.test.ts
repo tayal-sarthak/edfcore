@@ -363,12 +363,60 @@ describe('a zero-record chunk does not contradict the gap it carries', () => {
       signalIndices: [0],
     });
 
-    // The empty chunk sits where record 3 sits, which is where the gap before it ends.
+    // The empty chunk sits where record 3 sits, which is where the gap before it ends. Both are
+    // on the rebased axis, so they are equal outright; the `+ startOffsetTicks` this assertion
+    // used to carry was only ever right because this fixture's offset is zero (see the test
+    // below, which gives it one).
     expect(empty.startTicks).toBe(real.startTicks);
     expect(empty.durationTicks).toBe(0n);
-    expect(empty.precededByGap?.endTicks).toBe(
-      empty.startTicks + recording.timeline.startOffsetTicks,
-    );
+    expect(empty.precededByGap?.endTicks).toBe(empty.startTicks);
+  });
+
+  it('is on the header axis, so a start offset is not subtracted twice', async () => {
+    // `segment.startTicks` is REBASED against `timeline.startOffsetTicks`, and `readChunk` rebases
+    // again. On a file whose record 0 begins part-way into a second — what record 0's timekeeping
+    // TAL is for — the empty chunk at record 0 came back at -0.25 s, before the instant that
+    // defines t = 0, and the one at a segment boundary said 99.75 s while carrying a gap ending at
+    // 100 s: the contradiction 0.3.38 removed, reintroduced one line away by its own fix.
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+      recordOnsetSeconds: (r: number) => (r < 4 ? 0.25 + r : 100.25 + (r - 4)),
+    });
+    const opened = await openEdf(byteSource(bytes));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    expect(recording.timeline.startOffsetTicks).toBe(2_500_000n);
+
+    // Every record, at a segment boundary or in the middle of one, must answer the same way with
+    // and without data — including record 5, which no segment BEGINS at.
+    for (const start of [0, 2, 4, 5, 7]) {
+      const empty = await readRecords(recording, {
+        records: { start, count: 0 },
+        signalIndices: [0],
+      });
+      const real = await readRecords(recording, {
+        records: { start, count: 1 },
+        signalIndices: [0],
+      });
+      expect(empty.startTicks, `record ${start}`).toBe(real.startTicks);
+    }
+
+    // Record 0 defines t = 0, so nothing may place it before that.
+    const first = await readRecords(recording, {
+      records: { start: 0, count: 0 },
+      signalIndices: [0],
+    });
+    expect(first.startTicks).toBe(0n);
+
+    // And the empty chunk at a segment boundary still agrees with the gap it carries.
+    const resumed = await readRecords(recording, {
+      records: { start: 4, count: 0 },
+      signalIndices: [0],
+    });
+    expect(resumed.precededByGap?.endTicks).toBe(resumed.startTicks);
   });
 
   it('still uses the nominal grid when no scanned index can say otherwise', async () => {

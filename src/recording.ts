@@ -40,6 +40,7 @@ import type {
   EdfRecordIndex,
   EdfRecording,
   EdfSignal,
+  EdfTimeline,
   OpenOptions,
   ReadOptions,
   RecordRange,
@@ -102,14 +103,43 @@ export function resolveSignals(
 }
 
 /**
- * The header-axis onset of the segment that BEGINS at `recordStart`, when a scanned index knows.
+ * The header-axis onset of `recordStart`, when a scanned index knows where that record is.
  *
- * `undefined` for a probed index, and for a record that is not a segment boundary — in both cases
- * nothing better than the nominal grid is available, which is what the caller falls back to.
+ * `undefined` for a probed index, where nothing better than the nominal grid is available and the
+ * caller falls back to it.
+ *
+ * Two things here are easy to get wrong, and 0.3.38 got both wrong at once.
+ *
+ * `segment.startTicks` is REBASED — `buildSegmentation` stores `absoluteOnset - originTicks` with
+ * `originTicks = timeline.startOffsetTicks` — while the caller consumes this as a header-axis
+ * value and subtracts the offset again. On a file whose record 0 begins part-way into a second,
+ * which is exactly what record 0's timekeeping TAL is for, a zero-record chunk at record 0 came
+ * back at **-0.25 s**: before the instant that defines t = 0. At a segment boundary it reported
+ * 99.75 s while carrying a gap that ends at 100 s — the self-contradiction 0.3.38 existed to
+ * remove, reintroduced one line away by the fix for it.
+ *
+ * And it matched only a segment's FIRST record, so a mid-segment record fell through to the
+ * nominal grid, which knows nothing about gaps: `readRecords({ start: 5, count: 0 })` said 5 s
+ * where `{ start: 5, count: 1 }` said 101 s, for the same record of the same file. Reading the
+ * segment that CONTAINS the record answers both the same way (fixed in 0.3.57).
  */
-function segmentStartTicks(index: EdfRecordIndex, recordStart: number): bigint | undefined {
-  const segment = index.segments?.find((candidate) => candidate.records.start === recordStart);
-  return segment?.startTicks;
+function recordOnsetTicks(
+  index: EdfRecordIndex,
+  timeline: EdfTimeline,
+  recordStart: number,
+  durationTicks: bigint,
+): bigint | undefined {
+  const segment = index.segments?.find(
+    (candidate) =>
+      candidate.records.start <= recordStart &&
+      recordStart < candidate.records.start + candidate.records.count,
+  );
+  if (segment === undefined) return undefined;
+  return (
+    timeline.startOffsetTicks +
+    segment.startTicks +
+    BigInt(recordStart - segment.records.start) * durationTicks
+  );
 }
 
 /**
@@ -175,7 +205,7 @@ async function readChunk(
   // A scanned index knows where that record is, and `gapBefore` below already reads it from the
   // same place. Consulting it costs nothing and makes the two fields agree (fixed in 0.3.38).
   const nominalFirstTicks =
-    segmentStartTicks(index, records.start) ??
+    recordOnsetTicks(index, timeline, records.start, durationTicks) ??
     timeline.startOffsetTicks + BigInt(records.start) * durationTicks;
   const firstOnsetTicks = onsets[0] ?? nominalFirstTicks;
   const lastOnsetTicks =
