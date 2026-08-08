@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.60
+
+- **Fixed** `validateRecording` and `readEnvelope` reporting a different number of diagnostics for
+  the same file depending on `maxMaterializeBytes`, which is a memory budget and must never change
+  an answer.
+  - `tal/annotations.ts` caps `NEGATIVE_ANNOTATION_ONSET` at one report per `decodeAnnotations`
+    **call** — every onset is in the result, so a second report carries nothing — and both of these
+    fold a recording one **scan chunk** at a time, calling `decodeAnnotations` per chunk. The cap
+    reset at every chunk boundary, so the count became "how many chunks happened to contain one",
+    and the chunk size is `scanChunkRecords(header, maxMaterializeBytes)`.
+  - On an eight-record file where every record carries a negative onset, `validateRecording`
+    reported it **3, 4, 5 or 10 times** for the same bytes, and `readEnvelope` 1, 2, 3 or 8.
+  - Both now share `appendChunkDiagnostics`, which holds the cap across the whole sweep rather than
+    across one chunk. Two call sites, one rule, in the module that owns diagnostic collection.
+- **Not covered, deliberately:** `TIMEKEEPING_TAL_NONCONFORMANT` has the same per-call cap for its
+  non-destructive kind, but its **destructive** kind shares the code and is reported per record on
+  purpose — each one names a different annotation that was lost. Collapsing by code alone would drop
+  those, which is a worse defect than this one. Separating them needs `decodeAnnotations` to publish
+  which kind it emitted, and that is more than this release should carry.
+- `tests/integration/budget-invariance.test.ts` asserts the general property — whatever these two
+  calls report, they report the same census at every budget — rather than the one code, since this
+  is the fourth time the shape has been swept out of the package. It first checks the fixture really
+  does span several chunks at the small budgets, so it cannot pass vacuously.
+
 ## 0.3.59
 
 - **Fixed** `mergeChunks`' exact-tick refusal calling an overlap "a discontinuity of **-0.2** s"

@@ -21,7 +21,11 @@
 import { trimEdfField } from './bytes/latin1.js';
 import { EDF_RECOMMENDED_MAX_RECORD_BYTES } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
-import { appendDiagnostics, createDiagnostic } from './diagnostics/collector.js';
+import {
+  appendChunkDiagnostics,
+  appendDiagnostics,
+  createDiagnostic,
+} from './diagnostics/collector.js';
 import { EdfBudgetError } from './errors.js';
 import { calendarDatesEqual, formatCalendarDate, isValidCalendarDate } from './header/dates.js';
 import { signalFieldOffset } from './header/signals.js';
@@ -551,6 +555,10 @@ async function traverse(
   const recordCount = header.recordCount;
   const onsets = new BigInt64Array(recordCount);
   const diagnostics: EdfDiagnostic[] = [];
+  // Across the whole sweep, not across one chunk: the codes `decodeAnnotations` caps per CALL are
+  // capped per SWEEP here, because this loop makes one call per scan chunk and the chunk size is a
+  // memory budget. See `appendChunkDiagnostics`.
+  const cappedSeen = new Set<string>();
 
   const accumulators: StatsAccumulator[] = scanSamples
     ? header.dataSignalIndices.map((signalIndex) => ({
@@ -620,7 +628,7 @@ async function traverse(
       originTicks: recording.timeline.startOffsetTicks,
     });
     onsets.set(decoded.recordOnsetTicks, records.start);
-    appendDiagnostics(diagnostics, decoded.diagnostics);
+    appendChunkDiagnostics(diagnostics, decoded.diagnostics, cappedSeen);
 
     for (const accumulator of accumulators) {
       const digital = decodeDigitalCounted(

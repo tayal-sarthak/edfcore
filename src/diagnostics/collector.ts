@@ -56,6 +56,48 @@ export function appendDiagnostics(target: EdfDiagnostic[], source: readonly EdfD
   for (const diagnostic of source) target.push(diagnostic);
 }
 
+/**
+ * Codes `decodeAnnotations` caps at one report per CALL, for a caller that makes many calls.
+ *
+ * `tal/annotations.ts` bounds diagnostic volume by one test: does another occurrence carry
+ * information available nowhere else? `NEGATIVE_ANNOTATION_ONSET` does not — the onsets are in the
+ * result — so it is emitted once per call and says so in its own message.
+ *
+ * A whole-file sweep is not one call. `validateRecording` and `readEnvelope` both fold a recording
+ * one SCAN CHUNK at a time and call `decodeAnnotations` per chunk, so the cap reset at every chunk
+ * boundary and the count became the number of chunks that happened to contain one. The chunk size
+ * is `scanChunkRecords(header, maxMaterializeBytes)` — a pure memory knob — so the same file
+ * reported this code 3, 4, 5 or 10 times depending on a budget that must not change an answer
+ * (fixed in 0.3.60).
+ *
+ * `TIMEKEEPING_TAL_NONCONFORMANT` has the same cap for its non-destructive kind and is NOT in this
+ * set: the destructive kind shares the code and is deliberately reported per record, because each
+ * one names a different annotation that was lost. Collapsing by code alone would drop those, which
+ * is a worse defect than the one this fixes. Separating them needs `decodeAnnotations` to publish
+ * which kind it emitted, which is more than this belongs in.
+ */
+const ONCE_PER_ANNOTATION_CALL: ReadonlySet<string> = new Set(['NEGATIVE_ANNOTATION_ONSET']);
+
+/**
+ * `appendDiagnostics` for a caller folding one `decodeAnnotations` call per scan chunk.
+ *
+ * `seen` is the fold's own state and must live across the whole sweep, not across one chunk —
+ * that is the entire point.
+ */
+export function appendChunkDiagnostics(
+  target: EdfDiagnostic[],
+  source: readonly EdfDiagnostic[],
+  seen: Set<string>,
+): void {
+  for (const diagnostic of source) {
+    if (ONCE_PER_ANNOTATION_CALL.has(diagnostic.code)) {
+      if (seen.has(diagnostic.code)) continue;
+      seen.add(diagnostic.code);
+    }
+    target.push(diagnostic);
+  }
+}
+
 export function createDiagnostic(init: DiagnosticInit): EdfDiagnostic {
   return {
     code: init.code,

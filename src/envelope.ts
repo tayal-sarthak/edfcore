@@ -22,6 +22,7 @@
  */
 
 import { decodeDigitalCounted } from './decode/digital.js';
+import { appendChunkDiagnostics } from './diagnostics/collector.js';
 import { EdfBudgetError, EdfChannelNotFoundError, EdfScalingError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
@@ -192,6 +193,9 @@ async function reduceRange(
   const { source, header, timeline } = recording;
   const signals = resolveEnvelopeSignals(header, selection.signalIndices);
   const diagnostics: EdfDiagnostic[] = [];
+  // Across the whole run, not across one scan chunk. See `appendChunkDiagnostics`: this fold makes
+  // one `decodeAnnotations` call per chunk, and the chunk size is `maxMaterializeBytes`.
+  const cappedSeen = new Set<string>();
 
   /*
    * The densest-samples clamp belongs to the EVEN-DIVISION rule and to it alone.
@@ -278,7 +282,7 @@ async function reduceRange(
     const annotations = decodeAnnotations(header, bytes, slice, {
       originTicks: timeline.startOffsetTicks,
     });
-    for (const diagnostic of annotations.diagnostics) diagnostics.push(diagnostic);
+    appendChunkDiagnostics(diagnostics, annotations.diagnostics, cappedSeen);
     const onsets = annotations.recordOnsetTicks;
     if (firstOnsetTicks === undefined) firstOnsetTicks = onsets[0];
     const lastInSlice = onsets[slice.count - 1];
