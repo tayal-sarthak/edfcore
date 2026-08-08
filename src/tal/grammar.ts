@@ -68,6 +68,8 @@ export interface TalIssue {
   readonly detail: string;
   /** The first occurrence's bytes, escaped and truncated, for the diagnostic message. */
   readonly raw: string;
+  /** The same bytes UNESCAPED, for `EdfDiagnostic.raw`, which `formatDiagnostics` quotes itself. */
+  readonly rawText: string;
 }
 
 /** One TAL that survived parsing. Times are exact ticks; the digits they came from are kept. */
@@ -130,7 +132,10 @@ interface MutableTalIssue {
   byteLength: number;
   occurrences: number;
   detail: string;
+  /** Escaped, for interpolation into `detail`'s message. */
   raw: string;
+  /** Unescaped, for `EdfDiagnostic.raw`, which `formatDiagnostics` quotes itself. */
+  rawText: string;
 }
 
 /** Keyed by `${code}|${kind}`, not by code alone. See `TalIssueKind`. */
@@ -230,6 +235,24 @@ export function previewBytes(bytes: Uint8Array, offset: number, length: number):
 }
 
 /**
+ * The same bounded run, decoded and NOT escaped.
+ *
+ * `previewBytes` is for a MESSAGE, which is one line of prose, so it escapes. `EdfDiagnostic.raw`
+ * is a data field documented as "those bytes as text, exactly as written including padding", and
+ * `formatDiagnostics` escapes it itself with `quote()`. Putting the escaped preview there made the
+ * public field a 13-character string `\\x01\\x0a\\x1bA` for four bytes, and the rendered detail
+ * line escaped the backslashes a second time (fixed in 0.3.68).
+ *
+ * Still bounded and still Latin-1: a diagnostic must not carry an unbounded copy of a record, and
+ * every byte must map to exactly one character even when the run is the invalid UTF-8 being
+ * complained about.
+ */
+export function rawBytesText(bytes: Uint8Array, offset: number, length: number): string {
+  const shown = Math.min(length, TAL_PREVIEW_MAX_BYTES);
+  return decodeHeaderLatin1(sliceBytes(bytes, offset, shown));
+}
+
+/**
  * Which defect this is, within its code. A FIXED, closed set.
  *
  * `TAL_MALFORMED` covers nine structurally different defects, and their dispositions are
@@ -283,6 +306,7 @@ function logIssue(
     occurrences: 1,
     detail,
     raw: previewBytes(region, offset, length),
+    rawText: rawBytesText(region, offset, length),
   });
 }
 

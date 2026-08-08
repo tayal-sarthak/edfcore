@@ -214,7 +214,12 @@ function reportIssue(sink: DiagnosticSink, context: RegionContext, issue: TalIss
     byteOffset: context.fileOffset + issue.byteOffsetInRegion,
     byteLength: issue.byteLength,
     rawBytes: sliceBytes(context.bytes, context.offset + issue.byteOffsetInRegion, evidenceLength),
-    raw: issue.raw,
+    // `rawText`, not `raw`. `issue.raw` is the ESCAPED preview built for the message above;
+    // `EdfDiagnostic.raw` is documented as "those bytes as text, exactly as written including
+    // padding", and `formatDiagnostics` escapes it itself with `quote()`. Using the preview made
+    // the public field a 13-character string for four bytes and rendered `\\x01` where the byte
+    // was 0x01 (fixed in 0.3.68).
+    raw: issue.rawText,
     signalIndex: context.signal.index,
     recordIndex: context.recordIndex,
     specReference: ISSUE_SPEC_REFERENCES[issue.code],

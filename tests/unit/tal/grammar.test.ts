@@ -23,6 +23,7 @@ import {
   type ParsedTal,
   parseTalRegion,
   previewBytes,
+  rawBytesText,
   splitChannelLabel,
   TAL_PREVIEW_MAX_BYTES,
   type TalRegionParse,
@@ -895,5 +896,43 @@ describe('previewBytes turns evidence into a readable, bounded string', () => {
 
   it('reads from the offset it was given', () => {
     expect(previewBytes(ascii('abcdef'), 2, 3)).toBe('cde');
+  });
+
+  it('has an unescaped sibling for the data field, which the formatter escapes itself', () => {
+    /*
+     * `previewBytes` builds a MESSAGE, one line of prose, so it escapes. `EdfDiagnostic.raw` is a
+     * data field documented as "those bytes as text, exactly as written including padding", and
+     * `formatDiagnostics` runs it through `quote()`. A TAL diagnostic carried the escaped preview
+     * there, so four bytes became a thirteen-character string and the rendered detail line escaped
+     * the backslashes a second time — `\\x01` where the byte was 0x01 (fixed in 0.3.68).
+     */
+    const bytes = Uint8Array.of(0x01, 0x0a, 0x1b, 0x41);
+    expect(previewBytes(bytes, 0, 4)).toHaveLength(13);
+    expect(rawBytesText(bytes, 0, 4)).toBe('\u0001\n\u001bA');
+    expect(rawBytesText(bytes, 0, 4)).toHaveLength(4);
+
+    // Latin-1 and bounded, exactly like the preview.
+    expect(rawBytesText(Uint8Array.of(0xe9), 0, 1)).toBe('é');
+    expect(rawBytesText(new Uint8Array(120).fill(0x41), 0, 120)).toHaveLength(
+      TAL_PREVIEW_MAX_BYTES,
+    );
+  });
+
+  it('is what a real TAL issue carries, so the field is bytes rather than a rendering', () => {
+    // A TAL whose duration separator is followed by a mark rather than digits. The issue's `raw`
+    // is the escaped preview for the message; its `rawText` is what `EdfDiagnostic.raw` gets.
+    const broken = concat(
+      ascii('+1'),
+      Uint8Array.of(SEP, MARK),
+      ascii('x'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(40, broken), 0, 40);
+    const issue = at(parse.issues, 0);
+
+    expect(issue.raw).toContain('\\x');
+    expect(issue.rawText).not.toContain('\\x');
+    // Same bytes, one escaped and one not, so the unescaped one is never longer.
+    expect(issue.rawText.length).toBeLessThanOrEqual(issue.raw.length);
   });
 });

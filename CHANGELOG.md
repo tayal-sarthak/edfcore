@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.68
+
+- **Fixed** `EdfDiagnostic.raw` on a TAL diagnostic being a pre-escaped preview rather than the
+  bytes, so `formatDiagnostics` escaped it a second time.
+  - `raw` is documented — in `api-types.md`, in `diagnostics.md` and on the type — as "those bytes
+    as text, exactly as written including padding", and every header diagnostic sets it to exactly
+    that. A TAL diagnostic set it to `previewBytes(...)`, the escaped, `...`-truncated string built
+    for the MESSAGE. For a two-byte run `01 1b` the public field held the eight-character string
+    `\x01\x1b`, and `quote()` then escaped the backslashes again, so the rendered detail line read
+    `raw: "\\x01\\x1b"`.
+  - A consumer doing anything with `raw` other than printing it — comparing it against a byte run,
+    measuring it, feeding it to a hexdump — was working with a rendering of the evidence rather than
+    the evidence.
+  - `TalIssue` now carries both: `raw`, escaped, for interpolation into its own message, and
+    `rawText`, the plain bounded Latin-1 decode, for the diagnostic field. `quote()` stays the one
+    escaper, as it already was for every header diagnostic.
+- Still bounded and still Latin-1: a diagnostic must not carry an unbounded copy of a record, and
+  every byte must map to exactly one character even when the run is the invalid UTF-8 being
+  complained about.
+
 ## 0.3.67
 
 - **Fixed** `readTriggers` hanging `precededByGap` on the first event the window admits rather than

@@ -12,12 +12,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { formatDiagnostics } from '../../../src/diagnostics/format.js';
 import { EdfFormatError, EdfRangeError } from '../../../src/errors.js';
 import { parseHeader } from '../../../src/header/parse.js';
 import { decodeAnnotations } from '../../../src/tal/annotations.js';
 import type {
   DecodeAnnotationsOptions,
   EdfAnnotation,
+  EdfDiagnostic,
   EdfHeader,
   RecordRange,
 } from '../../../src/types.js';
@@ -758,5 +760,46 @@ describe('the caller contract', () => {
       expect(error.code).toBe('TIMEKEEPING_TAL_MISSING');
       expect(error.diagnostic?.recordIndex).toBe(1);
     }
+  });
+});
+
+describe('EdfDiagnostic.raw is bytes, not a rendering of them', () => {
+  /**
+   * `raw` is documented as "those bytes as text, exactly as written including padding", and
+   * `formatDiagnostics` escapes it itself with `quote()`. A TAL diagnostic carried the ESCAPED
+   * preview built for the message instead, so two bytes arrived as an eight-character string and
+   * the rendered detail line escaped the backslashes a second time (fixed in 0.3.68).
+   */
+  const MARK = 0x14;
+  const SEP = 0x15;
+  const NUL = 0x00;
+
+  it('carries the bytes themselves, and the formatter escapes them once', () => {
+    const fixture = build({
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      plus: 'C',
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 30 }],
+    });
+    // "+0" SEP 0x01 0x1b MARK "A" MARK NUL — the duration field holds two control bytes, so the
+    // grammar refuses it and quotes them as evidence.
+    const broken = patched(
+      fixture,
+      regionOffset(fixture.header, 0),
+      Uint8Array.of(0x2b, 0x30, SEP, 0x01, 0x1b, MARK, 0x41, MARK, NUL),
+    );
+    const result = decode(broken, allRecords(broken));
+    const malformed = result.diagnostics.find((d) => d.code === 'TAL_MALFORMED');
+
+    expect(malformed).toBeDefined();
+    // Two bytes, two characters. The escaped preview of the same run is eight.
+    expect(malformed?.raw).toHaveLength(2);
+    expect(malformed?.raw).toBe('\u0001\u001b');
+
+    // And the rendered line escapes once: `\x01`, never `\\x01`.
+    const rendered = formatDiagnostics([malformed as EdfDiagnostic]);
+    expect(rendered).toContain('\\x01');
+    expect(rendered).not.toContain('\\\\x01');
   });
 });
