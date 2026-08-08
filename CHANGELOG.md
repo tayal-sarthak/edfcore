@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.49
+
+- **Fixed** `splitSubfields` splitting the EDF+ identification fields on JavaScript's `\s` instead
+  of on the ASCII space the spec names, so a NO-BREAK SPACE inside a subfield silently cut it in
+  two.
+  - EDF+ tells a writer to replace a space inside a subfield with another character and mandates
+    neither the character nor a way back. NBSP is one of the choices that leaves, and it is header
+    byte 0xA0 — which `decodeHeaderLatin1` turns into U+00A0, which `\s` matches. `Mac<NBSP>Donald`
+    parsed as `name: 'Mac'` with `'Donald'` demoted to `extraSubfields`.
+  - Nothing warned. The split **adds** a subfield rather than removing one, trailing extras are
+    legal under EDF+, so the count check passed and `conformant` stayed `true`.
+  - In `parseRecordingId` it was worse than a truncation: every code after the NBSP shifted one
+    position left, so `investigationCode`, `technicianCode` and `equipmentCode` each held the
+    previous field's value and all three looked plausible.
+- The module docblock says `raw` and the subfields "both keep what the file wrote". That was true
+  of `raw` only. A tab or a CR in the field now also stays inside its subfield, where
+  `NON_ASCII_HEADER_FIELD` reports it, rather than acting as a separator the spec never named.
+
 ## 0.3.48
 
 - **Fixed** the identification lines in `formatHeader` and in `edfcore json --patient` using

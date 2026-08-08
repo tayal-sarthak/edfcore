@@ -336,3 +336,37 @@ describe('identification through a whole file', () => {
     expect(codesOf(bytes)).not.toContain('DATE_FIELDS_DISAGREE');
   });
 });
+
+describe('the separator is the ASCII space the spec names', () => {
+  /**
+   * EDF+ tells a writer to replace a space inside a subfield with another character and mandates
+   * neither the character nor a way back. NO-BREAK SPACE is one of the choices that leaves — and
+   * JavaScript's `\s` matches it, so `/\s+/` cut the subfield in half. Because the split ADDS a
+   * subfield rather than removing one, the count check still passed and nothing warned.
+   */
+  const NBSP = '\u00a0';
+
+  it('keeps a NO-BREAK SPACE inside the patient name', () => {
+    const { value: parsed, codes } = patient(`MCH-0234567 F 02-MAY-1951 Mac${NBSP}Donald`);
+    expect(codes).not.toContain('PATIENT_ID_NONCONFORMANT');
+    expect(parsed.name).toBe(`Mac${NBSP}Donald`);
+    expect(parsed.extraSubfields).toEqual([]);
+    expect(parsed.conformant).toBe(true);
+  });
+
+  it('does not shift the recording codes along by one', () => {
+    const { value: parsed } = recording(
+      `Startdate 02-MAY-1951 PSG${NBSP}Study Tech01 Emb${NBSP}N7000`,
+    );
+    expect(parsed.investigationCode).toBe(`PSG${NBSP}Study`);
+    expect(parsed.technicianCode).toBe('Tech01');
+    expect(parsed.equipmentCode).toBe(`Emb${NBSP}N7000`);
+  });
+
+  it('still tolerates a run of ordinary spaces', () => {
+    const { value: parsed } = patient('MCH-0234567  F   02-MAY-1951  Haagse_Harry');
+    expect(parsed.code).toBe('MCH-0234567');
+    expect(parsed.sex).toBe('F');
+    expect(parsed.name).toBe('Haagse_Harry');
+  });
+});

@@ -47,11 +47,22 @@ export interface IdentificationOptions {
   readonly edfPlus: boolean;
 }
 
-/** Subfields are separated by spaces and may not contain one. Runs are tolerated. */
+/**
+ * Subfields are separated by spaces and may not contain one. Runs are tolerated.
+ *
+ * The ASCII space the spec names, not `/\s+/`. JavaScript's `\s` also matches U+00A0, which is
+ * what header byte 0xA0 decodes to — and NO-BREAK SPACE is one of the characters a writer may
+ * legitimately pick when EDF+ tells it to replace a space inside a subfield. Splitting on it cut
+ * `Mac Donald` into two subfields, so `name` held only `Mac`; and because the split ADDS a
+ * subfield rather than removing one, the count check still passed and `conformant` stayed true
+ * with no diagnostic. In `parseRecordingId` it shifted every code after it by one position. The
+ * docblock's "`raw` and the subfields both keep what the file wrote" was not true of the
+ * subfields (fixed in 0.3.49).
+ */
 function splitSubfields(raw: string): readonly string[] {
   const text = trimEdfField(raw);
   if (text.length === 0) return [];
-  return text.split(/\s+/).filter((part) => part.length > 0);
+  return text.split(' ').filter((part) => part.length > 0);
 }
 
 /** `'X'` is the spec's "unknown", and an absent subfield is unknown too. */
