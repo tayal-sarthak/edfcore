@@ -78,10 +78,32 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
     evict();
   }
 
+  /**
+   * The shared block read, deliberately WITHOUT the caller's signal.
+   *
+   * One block read serves every concurrent reader of that block, so letting one of them cancel it
+   * cancels the others. A viewer using the ordinary stale-request pattern — abort the controller
+   * for the window the user scrolled away from — killed the FRESH window whenever both landed in
+   * the same block, with `AbortError: The read was aborted through options.signal` describing
+   * something that never happened to it. A reader that passed no signal at all was rejected the
+   * same way, and because the message reads as self-cancellation the app's own `catch` swallows
+   * it: a blank panel and no error anywhere. Which reader died depended on which touched the
+   * block first (fixed in 0.3.43).
+   *
+   * `read` already polls each caller's own signal before and after `Promise.all`, so an aborting
+   * caller still rejects promptly — it simply no longer decides for anyone else. The cost is that
+   * an abort does not tear down the underlying request, which is the right trade for a read whose
+   * result other readers are waiting on: the bytes are valid and already paid for, so they are
+   * admitted to the cache.
+   */
   async function fetchBlock(index: number, options?: ReadOptions): Promise<Uint8Array> {
     const start = index * blockBytes;
     const length = Math.min(blockBytes, byteLength - start);
-    return assertExactRead(await source.read(start, length, options), start, length);
+    const shared: ReadOptions | undefined =
+      options?.maxMaterializeBytes === undefined
+        ? undefined
+        : { maxMaterializeBytes: options.maxMaterializeBytes };
+    return assertExactRead(await source.read(start, length, shared), start, length);
   }
 
   function blockFor(index: number, options?: ReadOptions): Promise<Uint8Array> {
@@ -92,8 +114,8 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
       return Promise.resolve(cached);
     }
     const pending = inflight.get(index);
-    // Deduped readers share the first caller's options, which is inherent to issuing one read
-    // for all of them.
+    // Deduped readers share one underlying read, which is the whole point. They no longer share a
+    // signal — see `fetchBlock`.
     if (pending !== undefined) return pending;
 
     const started = fetchBlock(index, options)

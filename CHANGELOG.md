@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.43
+
+- **Fixed** `cachedSource` letting one reader's abort cancel unrelated concurrent readers. A block
+  read serves every reader of that block — the dedup is the point — but it carried the FIRST
+  caller's options, `signal` included. Aborting one reader rejected the others, **including a
+  reader that passed no signal at all**, with `AbortError: The read was aborted through
+  options.signal` describing something that never happened to it.
+- That is the ordinary stale-request pattern in a viewer: the user scrolls, the app aborts the
+  window they left and issues the new one. Both land in the same 1 MiB block, and the **fresh**
+  window is the one that dies. Because the message reads as self-cancellation, the app's own
+  `catch` swallows it — a blank panel and no error anywhere. Which reader died depended on which
+  touched the block first.
+- The shared read no longer carries a signal. `read` already polls each caller's own signal before
+  and after the block joins, so an aborting caller still rejects promptly; it simply no longer
+  decides for anyone else. The cost is that an abort does not tear down the underlying request,
+  which is the right trade for a read other readers are waiting on — the bytes are valid and
+  already paid for, so they are admitted to the cache and a later read is served from it.
+- One underlying read per block, exactly as before. `maxMaterializeBytes` still travels with the
+  shared read, because that one genuinely is a property of the fetch rather than of a caller.
+
 ## 0.3.42
 
 - **Fixed** `toPhysical` and `clampToDigitalRange` reporting a *"NaN-byte maxMaterializeBytes

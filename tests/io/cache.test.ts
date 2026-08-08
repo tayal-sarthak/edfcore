@@ -22,6 +22,7 @@
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
+import { throwIfAborted } from '../../src/io/source.js';
 import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
 import type { ByteSource, EdfChunk, ReadOptions } from '../../src/types.js';
 import { type SpySource, spySource } from '../support/spy-source.js';
@@ -462,5 +463,93 @@ describe('close', () => {
     const cache = cachedSource(source, { blockBytes: 32, maxBytes: 64 });
     await cache.close?.();
     expect(isClosed()).toBe(true);
+  });
+});
+
+describe("one reader's abort does not cancel another's", () => {
+  /**
+   * A block read serves every concurrent reader of that block. It carried the FIRST caller's
+   * options, signal included, so aborting one reader rejected the others — including a reader
+   * that passed no signal at all, with `AbortError: The read was aborted through options.signal`
+   * describing something that never happened to it.
+   *
+   * That is the ordinary stale-request pattern in a viewer: the user scrolls, the app aborts the
+   * window they left and issues the new one. Both land in the same 1 MiB block, and the FRESH
+   * window dies. Because the message reads as self-cancellation, the app's own `catch` swallows
+   * it — a blank panel and no error anywhere (fixed in 0.3.43).
+   */
+  function slowSource(byteLength: number) {
+    let reads = 0;
+    const backing = new Uint8Array(byteLength);
+    const source: ByteSource = {
+      byteLength,
+      async read(offset: number, length: number, options?: ReadOptions) {
+        reads += 1;
+        // Exactly what byteSource, httpSource and fileHandleSource all do.
+        throwIfAborted(options);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        throwIfAborted(options);
+        return backing.subarray(offset, offset + length);
+      },
+    };
+    return { source, reads: () => reads };
+  }
+
+  it('rejects only the reader whose signal was aborted', async () => {
+    const { source, reads } = slowSource(4096);
+    const cached = cachedSource(source, { blockBytes: 4096, maxBytes: 1 << 20 });
+    const controller = new AbortController();
+
+    const aborted = cached.read(0, 16, { signal: controller.signal }).then(
+      () => 'resolved',
+      (e: Error) => e.name,
+    );
+    const untouched = cached.read(32, 16).then(
+      () => 'resolved',
+      (e: Error) => e.name,
+    );
+    controller.abort();
+
+    expect(await aborted).toBe('AbortError');
+    expect(await untouched).toBe('resolved');
+    // Still ONE underlying read: the dedup is the whole point and is unaffected.
+    expect(reads()).toBe(1);
+  });
+
+  it('rejects only the reader whose signal was aborted, whichever started first', async () => {
+    // Which reader owned the shared read used to decide which one died.
+    const { source } = slowSource(4096);
+    const cached = cachedSource(source, { blockBytes: 4096, maxBytes: 1 << 20 });
+    const controller = new AbortController();
+
+    const untouched = cached.read(32, 16).then(
+      () => 'resolved',
+      (e: Error) => e.name,
+    );
+    const aborted = cached.read(0, 16, { signal: controller.signal }).then(
+      () => 'resolved',
+      (e: Error) => e.name,
+    );
+    controller.abort();
+
+    expect(await untouched).toBe('resolved');
+    expect(await aborted).toBe('AbortError');
+  });
+
+  it('keeps the block it paid for, so a later read is served from cache', async () => {
+    const { source, reads } = slowSource(4096);
+    const cached = cachedSource(source, { blockBytes: 4096, maxBytes: 1 << 20 });
+    const controller = new AbortController();
+
+    const aborted = cached.read(0, 16, { signal: controller.signal }).then(
+      () => 'resolved',
+      (e: Error) => e.name,
+    );
+    controller.abort();
+    expect(await aborted).toBe('AbortError');
+
+    // The bytes were valid and already fetched; a later read must not pay for them again.
+    expect((await cached.read(0, 16)).length).toBe(16);
+    expect(reads()).toBe(1);
   });
 });
