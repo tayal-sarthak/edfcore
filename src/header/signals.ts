@@ -374,7 +374,12 @@ function checkDuplicateLabels(
       field: 'label',
       byteOffset: signalFieldOffset('label', input.signalCount, collision),
       byteLength: SIGNAL_FIELD_WIDTHS.label,
-      raw: label,
+      // The UNTRIMMED field, like every other signal diagnostic. `raw` is contractually "those
+      // bytes as text, exactly as written including padding", and this reports a 16-byte field —
+      // so quoting the trimmed key printed `"Fp1"` under a claim of sixteen bytes, and a reader
+      // matching it against a hexdump at the offset beside it found padding the quote denied
+      // (fixed in 0.3.74).
+      raw: drafts.find((draft) => draft.index === collision)?.raw.label ?? label,
       expected: 'a label unique within the file',
       actual: `${indices.length} signals labelled ${JSON.stringify(label)}`,
       signalIndex: collision,

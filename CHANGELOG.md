@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.74
+
+- **Fixed** `DUPLICATE_SIGNAL_LABEL` quoting the trimmed label as its `raw` while reporting the
+  full 16-byte label field.
+  - `raw` is contractually "those bytes as text, exactly as written **including padding**", and the
+    diagnostic sets `byteLength` to the field's 16. It quoted the map key — the trimmed label — so
+    the rendered block read `at byte offset 272 (16 bytes), label` immediately above
+    `raw: "Fp1"`: three characters under a claim of sixteen bytes. A reader following the offset
+    into a hexdump found padding the quote denied.
+  - Every other signal diagnostic quotes `raw.label`, including
+    `ANNOTATION_SIGNAL_HEADER_NONCONFORMANT` forty lines above it in the same file.
+- Found by auditing the remaining `sink.report` sites for the mismatch 0.3.73 fixed. It was the only
+  other one: every other diagnostic in the package names the same field in `field`, `byteOffset` and
+  `raw`. The test now also asserts `raw.length === byteLength`, which is the invariant rather than
+  the instance.
+
 ## 0.3.73
 
 - **Fixed** `PARTIAL_FINAL_RECORD` and `TRAILING_BYTES` quoting the record-count field's bytes while

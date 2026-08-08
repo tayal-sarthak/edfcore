@@ -415,7 +415,13 @@ describe('DUPLICATE_SIGNAL_LABEL', () => {
     expect(diagnostic.field).toBe('label');
     expect(diagnostic.signalIndex).toBe(2);
     expect(diagnostic.byteOffset).toBe(signalFieldOffset('label', 3, 2));
-    expect(diagnostic.raw).toBe('T8-P8');
+    // The UNTRIMMED field. `raw` is "those bytes as text, exactly as written including padding",
+    // and this diagnostic reports a 16-byte length — so quoting the trimmed key printed five
+    // characters under a claim of sixteen bytes, and a reader checking the offset in a hexdump
+    // found padding the quote denied. Every other signal diagnostic quotes `raw.label`
+    // (fixed in 0.3.74).
+    expect(diagnostic.raw).toBe('T8-P8'.padEnd(16));
+    expect(diagnostic.raw).toHaveLength(diagnostic.byteLength ?? -1);
   });
 
   it('collides labels that differ only in padding, because matching is on the trimmed label', () => {
