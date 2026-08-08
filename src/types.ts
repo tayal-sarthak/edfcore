@@ -380,7 +380,16 @@ export interface EdfRecordIndex {
    *  on this object may ever read as "continuous" when we have not checked. */
   readonly segments: readonly EdfSegment[] | undefined;
   readonly gaps: readonly EdfGap[] | undefined;
-  /** One targeted read of that record's annotation region. Memoised. */
+  /**
+   * One read of that WHOLE data record — `header.recordByteLength` bytes. Memoised.
+   *
+   * Not the annotation region alone, which this said until 0.3.71. The unit of I/O in edfcore is
+   * the record, never the channel (decision 7), and `decodeAnnotations` owns the timekeeping rule
+   * and needs the record's full bytes to apply it. On a 64-channel file the region is 32 bytes of
+   * a 16,416-byte record, so "targeted" understated the read by 513x — and `locate()` issues
+   * O(log recordCount) of them, which is exactly the number a caller planning HTTP range requests
+   * is reading this line to compute.
+   */
   onsetTicks(recordIndex: number, options?: ReadOptions): Promise<bigint>;
   /** O(log recordCount) probes. Onsets are monotonic; any observed violation is fatal. */
   locate(seconds: number, options?: ReadOptions): Promise<EdfLocation | undefined>;

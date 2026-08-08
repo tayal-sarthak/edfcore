@@ -376,7 +376,7 @@ await index.locate(13);     // { recordIndex: 3, recordStartSeconds: 13, offsetI
 | `recordCount` | `number` | records the index covers |
 | `segments` | `readonly EdfSegment[] \| undefined` | present only when `coverage === 'complete'` |
 | `gaps` | `readonly EdfGap[] \| undefined` | likewise |
-| `onsetTicks` | `(recordIndex: number, options?: ReadOptions) => Promise<bigint>` | one targeted read of that record's annotation region, memoised |
+| `onsetTicks` | `(recordIndex: number, options?: ReadOptions) => Promise<bigint>` | one read of that whole data record (`header.recordByteLength` bytes), memoised — the unit of I/O is the record, never the channel |
 | `locate` | `(seconds: number, options?: ReadOptions) => Promise<EdfLocation \| undefined>` | binary search, O(log recordCount) probes |
 
 `segments` and `gaps` are `undefined` on a probed index (the one `openEdf` hands you), which isn't

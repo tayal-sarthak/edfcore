@@ -212,7 +212,7 @@ const chunks = await readWindow(
 
 `readWindow` always returns an array, including for a continuous file, where the array always has exactly one element. One shape covers both cases, so the same consumer code handles a continuous file and a gapped one. There is no gap filling and no option to enable it. A window that falls entirely inside a gap returns `[]`.
 
-For a single instant rather than a window, `index.locate(seconds)` answers with the record containing it, or `undefined` when that time is in a gap. On a probed index it costs `O(log recordCount)` targeted reads and memoises what it learns.
+For a single instant rather than a window, `index.locate(seconds)` answers with the record containing it, or `undefined` when that time is in a gap. On a probed index it costs `O(log recordCount)` reads of one whole data record each, and memoises what it learns.
 
 > **Warning**
 > An `EDF+C` marker is a claim the writer made, not a fact the format enforces. Files marked continuous that contain real gaps exist. edfcore reports one as `DISCONTINUITY_IN_CONTINUOUS_FILE` when it sees it. Two probes see any *net* drift, but not a gap that an overlap elsewhere cancels exactly. Only `buildRecordIndex` or `validateRecording`, which read every onset, can rule that out.

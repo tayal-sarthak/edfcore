@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.71
+
+- **Corrected** `EdfRecordIndex.onsetTicks`, documented in three places as "one targeted read of
+  that record's annotation region". It reads the whole data record.
+  - `record-index.ts`'s own module docblock has always said so and calls it decision 7 of the
+    design: the unit of I/O is the record range, never the channel range, and `decodeAnnotations`
+    owns the timekeeping rule and needs the record's full bytes to apply it. So the implementation
+    and its published type disagreed about the same call.
+  - The gap is not small. On a 64-channel file the annotation region is **32 bytes of a 16,416-byte
+    record** — a 513x understatement — and `locate()` issues `O(log recordCount)` of these. Cost is
+    exactly what a reader consults that line for when planning HTTP range requests over a remote
+    file, which is the case this package exists to serve.
+  - Fixed on the type (which ships in `dist/types.d.ts`), in `api-types.md`'s table, and in
+    `concepts.md`, which described `locate` as costing "targeted reads".
+- `tests/io/read-pattern.test.ts` now pins it: one read, of `header.recordByteLength` bytes, at the
+  record's own offset, and none at all on the second call. It asserts the 32-versus-16,416 premise
+  first, so it cannot pass on a file where the distinction would not show.
+
 ## 0.3.70
 
 - **Corrected** `EdfEnvelopeChunk.bucketCount`, documented as "Buckets actually filled. Never more

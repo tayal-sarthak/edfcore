@@ -733,3 +733,50 @@ describe('a record 0 with no timekeeping TAL costs one extra probe and nothing e
     expect(damaged.reads.length).toBe(intactReads + 1);
   });
 });
+
+describe('an onset probe reads one whole record, which is what the type now says', () => {
+  /**
+   * `EdfRecordIndex.onsetTicks` was documented as "one targeted read of that record's annotation
+   * region". It reads the record: the unit of I/O in edfcore is the record, never the channel
+   * (decision 7), and `decodeAnnotations` owns the timekeeping rule and needs the full bytes.
+   *
+   * On a 64-channel file the region is 32 bytes of a 16,416-byte record, so "targeted" understated
+   * the read by 513x — and `locate()` issues O(log recordCount) of them, which is exactly the
+   * number someone planning HTTP range requests reads that line to compute (fixed in 0.3.71).
+   */
+  it('reads recordByteLength bytes at the record offset, once, and memoises', async () => {
+    const signals: SignalSpec[] = Array.from({ length: 64 }, (_, index) => ({
+      label: `EEG ${index}`,
+      samplesPerRecord: 128,
+    }));
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      signals,
+      annotationSignals: [{ samplesPerRecord: 16 }],
+    });
+    const source = spySource(byteSource(bytes));
+    const edf = await openEdf(source);
+    const { header } = edf;
+    const annotation = header.signals[header.annotationSignalIndices[0] as number];
+    if (annotation === undefined) throw new Error('expected an annotation signal');
+
+    // The premise: the region really is a rounding error next to the record.
+    expect(annotation.recordByteLength).toBe(32);
+    expect(header.recordByteLength).toBe(16_416);
+
+    const before = source.reads.length;
+    await edf.index.onsetTicks(4);
+    const issued = source.reads.slice(before);
+
+    expect(issued).toHaveLength(1);
+    expect(issued[0]?.length).toBe(header.recordByteLength);
+    expect(issued[0]?.offset).toBe(header.headerByteLength + 4 * header.recordByteLength);
+
+    // Memoised: the second call reads nothing.
+    const after = source.reads.length;
+    await edf.index.onsetTicks(4);
+    expect(source.reads.length).toBe(after);
+  });
+});
