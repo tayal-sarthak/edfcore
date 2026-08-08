@@ -401,8 +401,14 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
   }
 
   if (timeParse.clock === undefined) {
+    // Its OWN code, not DATE_UNPARSEABLE. That code is emitted three other times, all of them
+    // about the calendar date, and its documented meaning — repeated in `validation.md` and
+    // `api-validate.md` — was "the file has no calendar date at all". Here the date may be
+    // perfectly good and it is the clock that was refused, so a caller branching on the code
+    // acted on the wrong half of the start time. 0.3.17 corrected the prose that described this
+    // as one condition; this splits the condition (fixed in 0.3.27).
     sink.report({
-      code: 'DATE_UNPARSEABLE',
+      code: 'STARTTIME_UNPARSEABLE',
       message:
         `starttime field (8 bytes at offset ${HEADER_FIELDS.startTime.offset}) is ` +
         `${JSON.stringify(timeParse.raw)}, which is not a clock time in hh.mm.ss form with ` +

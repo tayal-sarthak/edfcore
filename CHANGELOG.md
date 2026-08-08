@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.27
+
+**`STARTTIME_UNPARSEABLE` is a new diagnostic code.** A refused clock no longer reports as
+`DATE_UNPARSEABLE`.
+
+- That code was emitted from four places. Three are about the calendar date — an impossible
+  `dd.mm.yy`, the `yy` escape with no `Startdate` subfield to resolve it, and no readable date at
+  all. The fourth was the STARTTIME field, which is a different field describing a different thing,
+  and a file can fail either half on its own with the other perfectly good.
+- A caller branching on the code therefore acted on the wrong half of the start time, and the
+  message under it said *"header.startTime.clock is still exact"* — which is exactly false in the
+  case that was borrowing the name.
+- 0.3.17 corrected the prose in three doc pages to describe the overload. **Describing it was the
+  wrong fix**; this splits the condition, and those three pages now say the simple true thing they
+  originally tried to. `EdfDiagnosticCode` is an open union precisely so a case like this does not
+  have to borrow a wrong name, as `inspect.ts` says in so many words.
+- Pair it with `startTime.clockSource` (added 0.3.17) to branch without reading a message:
+  `dateSource === 'none'` goes with `DATE_UNPARSEABLE`, `clockSource === 'none'` with
+  `STARTTIME_UNPARSEABLE`. Severity is `warning`, same as before, and nothing else about the parse
+  changes — `clock` is still a substituted midnight and every elapsed time is still unaffected.
+
 ## 0.3.26
 
 - **Fixed** `NON_ASCII_HEADER_FIELD` quoting bytes that contradict its own claim. The evidence

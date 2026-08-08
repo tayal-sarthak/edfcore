@@ -55,6 +55,7 @@ export type EdfKnownDiagnosticCode =
   | 'NUMERIC_FIELD_NOT_LEFT_JUSTIFIED'
   | 'DATE_FIELDS_DISAGREE'
   | 'DATE_UNPARSEABLE'
+  | 'STARTTIME_UNPARSEABLE'
   | 'PATIENT_ID_NONCONFORMANT'
   | 'RECORDING_ID_NONCONFORMANT'
   | 'DUPLICATE_SIGNAL_LABEL'
@@ -133,8 +134,13 @@ const DISPOSITIONS: Readonly<Record<EdfKnownDiagnosticCode, EdfDiagnosticDisposi
   NUMERIC_FIELD_NOT_LEFT_JUSTIFIED: 'warning',
   /** Header startdate and the recording-id Startdate disagree. Both are exposed; we pick no winner. */
   DATE_FIELDS_DISAGREE: 'warning',
-  /** The date could not be parsed at all. */
+  /** The startdate could not be parsed at all. The CLOCK has its own code below. */
   DATE_UNPARSEABLE: 'warning',
+  /**
+   * The starttime field is not a clock. `startTime.clock` is a substituted midnight and
+   * `startTime.clockSource` is `'none'`; the calendar date is unaffected.
+   */
+  STARTTIME_UNPARSEABLE: 'warning',
   /** Patient identification does not follow the EDF+ subfield grammar. */
   PATIENT_ID_NONCONFORMANT: 'warning',
   /** Recording identification does not follow the EDF+ subfield grammar. */

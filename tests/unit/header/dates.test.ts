@@ -347,9 +347,17 @@ describe('the hh.mm.ss clock', () => {
       const resolved = resolve('02.08.90', raw);
       expect(resolved.startTime.secondsSinceMidnight).toBe(seconds);
       if (clock === undefined) {
-        expect(resolved.codes).toContain('DATE_UNPARSEABLE');
-      } else {
+        // STARTTIME_UNPARSEABLE, not DATE_UNPARSEABLE. The date here is perfectly good; only the
+        // clock was refused, and one code for both meant a caller branching on it acted on the
+        // wrong half of the start time (split in 0.3.27).
+        expect(resolved.codes).toContain('STARTTIME_UNPARSEABLE');
         expect(resolved.codes).not.toContain('DATE_UNPARSEABLE');
+        expect(resolved.startTime.clockSource).toBe('none');
+        expect(resolved.startTime.resolvedDate).toBeDefined();
+      } else {
+        expect(resolved.codes).not.toContain('STARTTIME_UNPARSEABLE');
+        expect(resolved.codes).not.toContain('DATE_UNPARSEABLE');
+        expect(resolved.startTime.clockSource).toBe('headerField');
       }
     });
   }
@@ -363,10 +371,13 @@ describe('the hh.mm.ss clock', () => {
     const fallback = resolve('2.8.1990', '24.00.00');
     expect(real.startTime.clock).toEqual(fallback.startTime.clock);
     expect(real.codes).toEqual([]);
-    expect(fallback.codes).toEqual(['DATE_UNPARSEABLE']);
-    expect(
-      fallback.diagnostics.find((diagnostic) => diagnostic.code === 'DATE_UNPARSEABLE')?.field,
-    ).toBe('startTime');
+    expect(fallback.codes).toEqual(['STARTTIME_UNPARSEABLE']);
+    expect(fallback.diagnostics.find((d) => d.code === 'STARTTIME_UNPARSEABLE')?.field).toBe(
+      'startTime',
+    );
+    // And the structured field says the same thing without reading a message.
+    expect(real.startTime.clockSource).toBe('headerField');
+    expect(fallback.startTime.clockSource).toBe('none');
   });
 
   it('tolerates stray spaces in the clock too', () => {

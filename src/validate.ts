@@ -277,8 +277,9 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
           `the startdate field is ${JSON.stringify(trimEdfField(header.raw.startDate))} and the ` +
           'recording identification carries no readable Startdate, so the recording has no ' +
           'calendar date at all. EDF specification, header record bytes 168-175. Next: ' +
-          'header.startTime.clock is still exact and every elapsed time in the file is ' +
-          'unaffected; only formatStartTimeNaive() has nothing to return.',
+          'every elapsed time in the file is unaffected, and only formatStartTimeNaive() has ' +
+          'nothing to return. The clock is a separate field with a separate code: check ' +
+          'startTime.clockSource, and look for STARTTIME_UNPARSEABLE.',
         field: 'startDate',
         byteOffset: 168,
         byteLength: 8,
