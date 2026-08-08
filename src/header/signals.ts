@@ -19,6 +19,7 @@ import { parseEdfInteger, parseEdfNumber } from '../bytes/numbers.js';
 import { readAsciiField } from '../bytes/view.js';
 import {
   EDF_HEADER_BLOCK_BYTES,
+  HEADER_FIELDS,
   SIGNAL_FIELD_BLOCK_OFFSETS,
   SIGNAL_FIELD_WIDTHS,
 } from '../constants.js';
@@ -509,22 +510,39 @@ export function parseSignalHeaders(
   if (firstAnnotation !== undefined && !input.variant.isPlus) {
     const first = firstAnnotation;
     const label = drafts[first]?.label ?? input.variant.annotationsLabel;
+    // THIS FAMILY'S markers, not EDF's. `detectVariant` treats the version block as the only
+    // reliable discriminator and reports `NONSTANDARD_RESERVED_FIELD` for a BDF file whose
+    // reserved field says "EDF+C" — so advising a BDF writer to put that there produced a NEW
+    // warning caused by following this one. The `plus` names below come out as EDF+C/EDF+D for an
+    // EDF file and BDF+C/BDF+D for a BDF one (fixed in 0.3.24).
+    const plus = `${input.variant.family}+`;
+    const reserved = readAsciiField(
+      input.headerBytes,
+      HEADER_FIELDS.reserved.offset,
+      HEADER_FIELDS.reserved.length,
+    );
     sink.report({
       code: 'MISSING_EDFPLUS_MARKER',
       message:
         `signal ${first} is labelled ${JSON.stringify(label)} but the reserved field of the ` +
         'fixed header carries no EDF+/BDF+ marker, so the file claims to be plain ' +
-        `${input.variant.family} while carrying an EDF+ annotations channel. EDF+ ` +
-        'specification 2.1.1: an EDF+ file states "EDF+C" or "EDF+D" in the reserved field. ' +
-        'Next: the annotations are parsed anyway, and the channel is never exposed as an ' +
+        `${input.variant.family} while carrying an annotations channel, which only ${plus} ` +
+        'defines. ' +
+        `EDF+ specification 2.1.1: such a file states "${plus}C" or "${plus}D" in the ` +
+        'reserved field. Next: the annotations are parsed anyway, and the channel is never ' +
+        'exposed as an ' +
         'ordinary signal — it is in header.annotationSignalIndices, not in ' +
         'header.dataSignalIndices — because decoding TAL text as samples produces numbers that ' +
         'look like a signal.',
+      // The location describes the RESERVED field, which is what the message names and what a
+      // reader would hexdump. It used to carry the annotation signal's label offset, the label's
+      // 16-byte width and the label text — so one diagnostic said "at offset 192" in its prose
+      // and pointed `byteOffset` at a different part of the header entirely.
       field: 'reserved',
-      byteOffset: signalFieldOffset('label', input.signalCount, first),
-      byteLength: SIGNAL_FIELD_WIDTHS.label,
-      raw: label,
-      expected: '"EDF+C" or "EDF+D" in the reserved field at offset 192',
+      byteOffset: HEADER_FIELDS.reserved.offset,
+      byteLength: HEADER_FIELDS.reserved.length,
+      raw: reserved,
+      expected: `"${plus}C" or "${plus}D" in the reserved field at offset ${HEADER_FIELDS.reserved.offset}`,
       actual: 'no EDF+/BDF+ marker',
       signalIndex: first,
       specReference: 'EDF+ specification 2.1.1 (the EDF+ header)',

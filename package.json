@@ -66,6 +66,7 @@
     "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:scratch": "vitest run --config vitest.scratch.config.ts",
     "lint": "biome check .",
     "format": "biome format --write .",
     "check": "npm run lint && npm run typecheck && npm run build && npm run test",

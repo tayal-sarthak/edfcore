@@ -302,6 +302,62 @@ describe('annotation signals', () => {
     expect(header.dataSignalIndices).toEqual([0]);
   });
 
+  it('advises a BDF writer to write BDF+C, not EDF+C', () => {
+    /*
+     * The advice has to be followable. `detectVariant` treats the version block as the only
+     * reliable discriminator and reports `NONSTANDARD_RESERVED_FIELD` for a BDF file whose
+     * reserved field says "EDF+C" — so telling a BDF writer to put that there produced a NEW
+     * warning caused by following this one. The diagnostic said `"EDF+C" or "EDF+D"` for both
+     * families (fixed in 0.3.24).
+     */
+    const bytes = buildEdf({
+      format: 'BDF',
+      plus: false,
+      recordCount: 2,
+      signals: [
+        {
+          label: 'Fp1',
+          samplesPerRecord: 10,
+          physicalMinimum: -262144,
+          physicalMaximum: 262144,
+          digitalMinimum: -8388608,
+          digitalMaximum: 8388607,
+        },
+      ],
+      annotationSignals: [{ samplesPerRecord: 30, label: 'BDF Annotations' }],
+      raw: CLEAN_DATES,
+    });
+    const diagnostic = diagnosticWith(parse(bytes), 'MISSING_EDFPLUS_MARKER');
+
+    expect(diagnostic.expected).toContain('"BDF+C" or "BDF+D"');
+    expect(diagnostic.expected).not.toContain('EDF+C');
+    expect(diagnostic.message).toContain('"BDF+C" or "BDF+D"');
+    expect(diagnostic.message).toContain('only BDF+ defines');
+  });
+
+  it('points its byte range at the reserved field it names, not at the label', () => {
+    // `field` said `reserved` while `byteOffset` was the annotation signal's LABEL offset,
+    // `byteLength` was the label's 16-byte width and `raw` was the label text — so one diagnostic
+    // said "at offset 192" in its prose and sent a hexdump somewhere else entirely.
+    const bytes = buildEdf({
+      plus: false,
+      signals: [{ label: 'Fp1', samplesPerRecord: 10 }],
+      annotationSignals: [{ samplesPerRecord: 30 }],
+      recordCount: 2,
+      raw: CLEAN_DATES,
+    });
+    const diagnostic = diagnosticWith(parse(bytes), 'MISSING_EDFPLUS_MARKER');
+
+    expect(diagnostic.field).toBe('reserved');
+    expect(diagnostic.byteOffset).toBe(192);
+    expect(diagnostic.byteLength).toBe(44);
+    // The prose already stated 192; the structured location now agrees with it.
+    expect(diagnostic.expected).toContain('at offset 192');
+    // And `raw` is the reserved field's own 44 bytes, not the signal label.
+    expect(diagnostic.raw).toHaveLength(44);
+    expect(diagnostic.raw).not.toContain('Annotations');
+  });
+
   it('recognises a "BDF Annotations" channel in a BDF+ file', () => {
     const bytes = buildEdf({
       format: 'BDF',

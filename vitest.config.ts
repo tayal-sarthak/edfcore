@@ -13,7 +13,8 @@ export default defineConfig({
      * the typecheck, and `npm run check` — which the release script runs before tagging — failed
      * or passed on the strength of a file nobody meant to keep.
      *
-     * Excluded here and in tsconfig.json, so a probe is only ever run by naming it directly.
+     * Excluded here and in tsconfig.json. vitest applies `exclude` even to an explicit filename
+     * filter, so a probe is run through `npm run test:scratch`, which uses a config of its own.
      */
     exclude: [...configDefaults.exclude, 'tests/scratch/**'],
     environment: 'node',

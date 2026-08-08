@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.24
+
+- **Fixed** `MISSING_EDFPLUS_MARKER` telling a BDF writer to put `"EDF+C"` or `"EDF+D"` in the
+  reserved field. Both the message and `expected` named EDF's markers for both families. Following
+  that advice produces a NEW warning: `detectVariant` treats the version block as the only reliable
+  discriminator, so a BDF file whose reserved field says `EDF+C` is reported as
+  `NONSTANDARD_RESERVED_FIELD` — *"declares EDF+C but the version block says this file is BDF"*.
+  edfcore was advising something it then complained about. It now names the file's own family:
+  `BDF+C`/`BDF+D` for BDF, `EDF+C`/`EDF+D` for EDF.
+- **Fixed** the same diagnostic's byte range pointing somewhere other than the field it names.
+  `field` was `reserved`, but `byteOffset` was the annotation signal's LABEL offset, `byteLength`
+  was the label's 16-byte width, and `raw` was the label text — while the prose in the very same
+  diagnostic said "in the reserved field at offset 192". One diagnostic, two different locations,
+  and a hexdump following the structured one lands on the wrong bytes. All three now describe the
+  reserved field, and `raw` carries its own 44 bytes as evidence.
+- The message also called the channel "an EDF+ annotations channel" on a BDF file.
+
+**Correction to 0.3.23.** The comment shipped there said a probe under `tests/scratch/` could still
+be "run by naming it directly". That is false — vitest applies `exclude` even to an explicit
+filename filter, so the exclusion made probes unrunnable rather than merely un-collected. Added
+`vitest.scratch.config.ts` and `npm run test:scratch`, and corrected the comment. Repository only.
+
 ## 0.3.23
 
 - **Repository only; the published package is byte-identical to 0.3.22.** `tests/scratch/` is
