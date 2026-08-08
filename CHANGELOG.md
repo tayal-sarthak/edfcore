@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.23
+
+- **Repository only; the published package is byte-identical to 0.3.22.** `tests/scratch/` is
+  excluded from the vitest `include` and the tsconfig `include`.
+- That directory holds throwaway reproductions written while chasing a defect, and `.gitignore`
+  already excluded it with the reason: they "assert whatever behaviour was current when they were
+  written, so committing them pins defects". Not committing them was not enough. An uncommitted
+  probe still sat inside the `tests/**` glob and the tsconfig `include`, so it joined the suite and
+  the typecheck — and `npm run check` is what `scripts/release.mjs` runs before it tags. A leftover
+  probe could fail a release, or pass one, on the strength of a file nobody meant to keep.
+- Found while running two adversarial sweeps whose agents write probes there: a stale probe from
+  one broke the typecheck of an unrelated release. A probe is now only ever run by naming it.
+
 ## 0.3.22
 
 - **Fixed** `toPhysical` inventing a header defect when called on an annotations channel.
