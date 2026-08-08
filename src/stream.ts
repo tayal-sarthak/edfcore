@@ -14,6 +14,7 @@
  */
 
 import { readRecords, resolveSignals } from './recording.js';
+import { assertMonotonicOnsets } from './time/timeline.js';
 import { resolveTimeWindow } from './time/window.js';
 import type { EdfChunk, EdfRecording, ReadOptions, RecordRange, StreamSelection } from './types.js';
 
@@ -56,8 +57,14 @@ export async function* streamRecords(
     selection.durationSeconds,
   );
 
+  const recordDurationTicks = recording.header.recordDurationTicks;
+
   for (const run of ranges) {
     let scanned = 0;
+    // The last record of the previous chunk of THIS run. Reset per run, because `readWindow` does
+    // not compare across a gap either and a streamed chunk must be the same object it would get.
+    let previousRecord: { recordIndex: number; onsetTicks: bigint } | undefined;
+
     while (scanned < run.count) {
       const records: RecordRange = {
         start: run.start + scanned,
@@ -65,11 +72,44 @@ export async function* streamRecords(
       };
       // readRecords, not a private path: the chunk a consumer gets from streaming and the chunk
       // it gets from reading must be the same object in every respect, including its diagnostics.
-      yield await readRecords(
+      const chunk = await readRecords(
         recording,
         { signalIndices: selection.signalIndices, records },
         options,
       );
+
+      /*
+       * The one pair `readRecords` structurally cannot see: the SEAM between two chunks.
+       *
+       * It runs `assertMonotonicOnsetArray` over the onsets of the chunk it just read, so every
+       * adjacent pair inside a chunk is compared and no pair that straddles two is. `readWindow`
+       * hands a whole contiguous run to one call and therefore checks all of them; splitting the
+       * same run into `chunkRecords`-sized reads checked none of the seams.
+       *
+       * TIMELINE_NOT_MONOTONIC is ALWAYS fatal — `readWindow` on the identical window throws —
+       * and the streaming path returned the data instead, in reverse time order: a consumer that
+       * places each chunk at its own `startSeconds`, which is what the docs prescribe, overwrote
+       * earlier trace with later samples. Worse, whether it fired at all depended on
+       * `chunkRecords`: on one eight-record file it threw at 3 and 5 and stayed silent at 1, 2, 4
+       * and 256, and `chunkRecords` is documented as a memory knob. A performance parameter must
+       * never decide whether a file is refused (fixed in 0.3.55).
+       *
+       * No extra read: a chunk's span is `lastOnset + recordDuration - firstOnset`, so its last
+       * record's onset is `startTicks + durationTicks - recordDurationTicks`, on the same rebased
+       * axis as the next chunk's `startTicks`.
+       */
+      if (previousRecord !== undefined) {
+        assertMonotonicOnsets(previousRecord, {
+          recordIndex: records.start,
+          onsetTicks: chunk.startTicks,
+        });
+      }
+      previousRecord = {
+        recordIndex: records.start + records.count - 1,
+        onsetTicks: chunk.startTicks + chunk.durationTicks - recordDurationTicks,
+      };
+
+      yield chunk;
       scanned += records.count;
     }
   }

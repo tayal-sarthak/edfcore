@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.55
+
+- **Fixed** `streamRecords` never comparing record onsets across a chunk boundary, so an
+  always-fatal `TIMELINE_NOT_MONOTONIC` was suppressed and chunks were yielded in reverse time
+  order — and whether it fired at all depended on `chunkRecords`.
+  - `readRecords` runs `assertMonotonicOnsetArray` over the onsets of the chunk it just read, so
+    every adjacent pair **inside** a chunk is checked and no pair that straddles two is.
+    `readWindow` hands a whole contiguous run to one call, so it checks all of them; splitting the
+    same run into `chunkRecords`-sized reads checked none of the seams.
+  - On an eight-record file whose only backwards pair is 3 → 4, `readWindow` threw and
+    `streamRecords` threw at `chunkRecords` 3 and 5 while returning the data at 1, 2, 4 and 256.
+    At `chunkRecords: 1` **every** pair is a seam, so nothing was checked at all and the chunks came
+    back at 0, 1, 2, 4, 3, 5, 6, 7 seconds.
+  - `chunkRecords` is documented as "the unit of I/O and of memory". A performance knob must never
+    decide whether a file is refused — the fourth time that shape has been swept out of this
+    package.
+  - A consumer that places each chunk at its own `startSeconds`, which is what the docs prescribe,
+    silently overwrote earlier trace with later samples.
+- The seam check costs no extra read. A chunk's span is `lastOnset + recordDuration - firstOnset`,
+  so its last record's onset is `startTicks + durationTicks - recordDurationTicks`, already on the
+  same rebased axis as the next chunk's `startTicks`. It is reset per run, because `readWindow` does
+  not compare across a gap either and a streamed chunk must stay the object a read would give.
+
 ## 0.3.54
 
 - **Fixed** `decodeStatusWord` reading the BioSemi quality flags from the wrong bits. Both

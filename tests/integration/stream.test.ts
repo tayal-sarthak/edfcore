@@ -12,7 +12,7 @@ import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import { streamRecords } from '../../src/stream.js';
 import type { EdfChunk, EdfRecording, StreamSelection } from '../../src/types.js';
-import { minimalEdfPlus } from '../support/writer.js';
+import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
 const RECORDS = 50;
 const SAMPLES_PER_RECORD = 8;
@@ -178,5 +178,66 @@ describe('streamRecords validates its selection wherever the window lands', () =
     expect(
       await drain(recording, { signalIndices: [0], startSeconds: 1000, durationSeconds: 10 }),
     ).toEqual([]);
+  });
+});
+
+describe('a backwards onset is refused at every chunk size', () => {
+  /**
+   * `readRecords` checks the onsets of the chunk it just read, so a pair that straddles two chunks
+   * was compared by nothing. `TIMELINE_NOT_MONOTONIC` is always fatal and `readWindow` throws it,
+   * but the streaming path returned the data — in reverse time order, so a consumer placing each
+   * chunk at its own `startSeconds` overwrote earlier trace with later samples.
+   *
+   * Whether it fired depended on `chunkRecords`, which is a memory knob. On this eight-record file
+   * it threw at 3 and 5 and stayed silent at 1, 2, 4 and 256 (fixed in 0.3.55).
+   */
+  // The only backwards pair is 3 -> 4, which is where chunkRecords=4 splits.
+  const SWAPPED = buildEdf({
+    plus: 'D',
+    recordCount: 8,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'A', samplesPerRecord: 2 }],
+    annotationSignals: [{ samplesPerRecord: 30 }],
+    recordOnsetSeconds: (r: number) => (r === 3 ? 4 : r === 4 ? 3 : r),
+  });
+
+  const selection = { startSeconds: 0, durationSeconds: 100, signalIndices: [0] };
+
+  async function thrownCode(run: () => Promise<unknown>): Promise<string | undefined> {
+    try {
+      await run();
+      return undefined;
+    } catch (error) {
+      return (error as { code?: string }).code;
+    }
+  }
+
+  it('readWindow refuses it', async () => {
+    const edf = await openEdf(byteSource(SWAPPED));
+    expect(await thrownCode(() => readWindow(edf, selection))).toBe('TIMELINE_NOT_MONOTONIC');
+  });
+
+  it.each([1, 2, 3, 4, 5, 8, 256])('streamRecords refuses it at chunkRecords=%i', async (n) => {
+    const edf = await openEdf(byteSource(SWAPPED));
+    const code = await thrownCode(async () => {
+      for await (const chunk of streamRecords(edf, { ...selection, chunkRecords: n })) {
+        void chunk;
+      }
+    });
+    expect(code).toBe('TIMELINE_NOT_MONOTONIC');
+  });
+
+  it('never yields a chunk that starts before the one before it', async () => {
+    const edf = await openEdf(byteSource(SWAPPED));
+    const starts: bigint[] = [];
+    await thrownCode(async () => {
+      for await (const chunk of streamRecords(edf, { ...selection, chunkRecords: 1 })) {
+        starts.push(chunk.startTicks);
+      }
+    });
+    // Whatever it yielded before refusing must still have been in time order.
+    for (let i = 1; i < starts.length; i += 1) {
+      expect(starts[i]).toBeGreaterThanOrEqual(starts[i - 1] as bigint);
+    }
   });
 });
