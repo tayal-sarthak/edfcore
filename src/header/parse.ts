@@ -98,7 +98,12 @@ function resolveRecordCount(input: RecordCountInput, sink: DiagnosticSink): Reco
       field: 'dataRecords',
       byteOffset: headerByteLength + wholeRecords * recordByteLength,
       byteLength: partialBytes,
-      raw,
+      // No `raw`. This diagnostic points into the DATA section, and `raw` is contractually "those
+      // bytes as text" — the bytes AT the offset it reports. Inheriting the record-count field's
+      // eight bytes made the rendered block assert that the bytes at the printed data offset read
+      // `"-1      "`; they are the tail of a truncated record. The declared count is already in
+      // the message, so nothing is lost. Same class as 0.3.26's `NON_ASCII_HEADER_FIELD`, which
+      // quoted bytes that contradicted its own claim (fixed in 0.3.73).
       expected: `${recordByteLength} bytes`,
       actual: `${partialBytes} bytes`,
       specReference,
@@ -171,7 +176,8 @@ function resolveRecordCount(input: RecordCountInput, sink: DiagnosticSink): Reco
         field: 'dataRecords',
         byteOffset: headerByteLength + declared * recordByteLength,
         byteLength: extraBytes,
-        raw,
+        // No `raw`, for the reason `reportPartialFinalRecord` states: the offset is in the data
+        // section and those bytes are samples, not the record-count field.
         expected: `${declared * recordByteLength} data bytes`,
         actual: `${availableDataBytes} data bytes`,
         specReference,

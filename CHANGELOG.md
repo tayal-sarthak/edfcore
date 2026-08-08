@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.73
+
+- **Fixed** `PARTIAL_FINAL_RECORD` and `TRAILING_BYTES` quoting the record-count field's bytes while
+  pointing at the data section.
+  - Both are built inside `resolveRecordCount` and inherited its `raw` — the eight bytes of the
+    record-count field at offset 236 — while their `field` is `dataRecords` and their `byteOffset`
+    lands in the DATA section. `formatDiagnostics` renders the location and `raw` as one block, so
+    the output asserted that the bytes at the printed data offset read `"2       "` or `"-1      "`.
+    They cannot be: for a partial record they are the tail of a truncated record, and for trailing
+    bytes they are sample data.
+  - `raw` is contractually "those bytes as text" — the bytes AT the offset reported — and every
+    other diagnostic honours that. It is now absent on both. The declared count is already in each
+    message, so no evidence is lost.
+- This is the class 0.3.26 fixed for `NON_ASCII_HEADER_FIELD`: a diagnostic quoting bytes that
+  contradict its own claim. A reader following the offset into a hexdump found something other than
+  what the diagnostic said was there, which is worse than no quote at all.
+
 ## 0.3.72
 
 - **Fixed** `DIGITAL_RANGE_EXCEEDS_FORMAT` promising scaling behaviour on a channel that has none.

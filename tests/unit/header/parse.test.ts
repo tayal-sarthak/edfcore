@@ -256,6 +256,10 @@ describe('record count resolution', () => {
     expect(partial?.byteOffset).toBe(HEADER_BYTES_ONE_SIGNAL + RECORD_BYTES_ONE_SIGNAL);
     expect(partial?.byteLength).toBe(10);
     expect(partial?.actual).toBe('10 bytes');
+    // No `raw`. It points into the DATA section, and `raw` is contractually the bytes AT the
+    // offset it reports — it inherited the record-count field's eight, so the rendered block
+    // asserted that the bytes at this data offset read `"2       "` (fixed in 0.3.73).
+    expect(partial?.raw).toBeUndefined();
   });
 
   it('reports bytes beyond the declared records and decodes none of them', () => {
@@ -270,6 +274,8 @@ describe('record count resolution', () => {
     const trailing = header.diagnostics.find((d) => d.code === 'TRAILING_BYTES');
     expect(trailing?.byteOffset).toBe(HEADER_BYTES_ONE_SIGNAL + 2 * RECORD_BYTES_ONE_SIGNAL);
     expect(trailing?.byteLength).toBe(RECORD_BYTES_ONE_SIGNAL);
+    // The same reason: these bytes are samples, not the record-count field.
+    expect(trailing?.raw).toBeUndefined();
   });
 
   it('calls a final fragment a partial record rather than trailing bytes', () => {
