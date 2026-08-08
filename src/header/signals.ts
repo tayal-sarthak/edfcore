@@ -237,6 +237,7 @@ function parseSamplesPerRecord(
 function checkDigitalRangeFitsFormat(
   input: SignalHeaderInput,
   signalIndex: number,
+  kind: EdfSignal['kind'],
   digitalMinimum: number,
   digitalMaximum: number,
   raw: EdfRawSignalFields,
@@ -257,8 +258,17 @@ function checkDigitalRangeFitsFormat(
       `${signalFieldOffset('digitalMaximum', input.signalCount, signalIndex)}), but a ` +
       `${input.variant.family} sample is ${input.variant.bytesPerSample * 8}-bit two's ` +
       `complement and can only hold ${low}..${high}. ${DIGITAL_RANGE_SPEC_REFERENCE}. Next: ` +
-      'the declared range is used for scaling exactly as written — edfcore never clamps — so ' +
-      'expect physical values that extrapolate beyond the declared physical range.',
+      // The warning is worth making on any channel — a range outside the sample width is the
+      // BDF/EDF confusion this check exists for — but the consequence is not the same one. An
+      // annotations channel gets NO scale (the branch below skips `buildScale`), its bytes are
+      // TAL text, and `toPhysical` throws for it, so telling the reader to expect extrapolated
+      // physical values described a conversion that cannot happen (fixed in 0.3.72).
+      (kind === 'annotations'
+        ? 'nothing is scaled from these fields. An annotations signal carries TAL text rather ' +
+          'than a measurement, so no scale is built for it and toPhysical() refuses it. The ' +
+          'range is worth correcting because it says the writer confused the two sample widths.'
+        : 'the declared range is used for scaling exactly as written — edfcore never clamps — ' +
+          'so expect physical values that extrapolate beyond the declared physical range.'),
     field: 'digitalMinimum',
     byteOffset,
     byteLength: SIGNAL_FIELD_WIDTHS.digitalMinimum,
@@ -449,7 +459,7 @@ export function parseSignalHeaders(
       sink,
     );
 
-    checkDigitalRangeFitsFormat(input, index, digitalMinimum, digitalMaximum, raw, sink);
+    checkDigitalRangeFitsFormat(input, index, kind, digitalMinimum, digitalMaximum, raw, sink);
 
     let scale: EdfScale | undefined;
     if (kind === 'annotations') {

@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.72
+
+- **Fixed** `DIGITAL_RANGE_EXCEEDS_FORMAT` promising scaling behaviour on a channel that has none.
+  - The check runs for every signal, which is right: a BDF range in an EDF+ file, or an unsigned
+    24-bit range in a BDF+ one, is exactly the sample-width confusion it exists to catch, wherever
+    it appears. Its consequence clause was not right for every signal. On an **annotations**
+    channel it still said "the declared range is used for scaling exactly as written — edfcore
+    never clamps — so expect physical values that extrapolate beyond the declared physical range".
+  - Nothing is scaled from those fields. The branch fifteen lines below deliberately skips
+    `buildScale` for an annotations channel, `signal.scale` is `undefined`, the bytes are TAL text,
+    and `toPhysical` throws `EdfScalingError` for it. The reader was told to expect a conversion
+    that cannot happen, and given no reason to fix the field that is actually wrong.
+  - It now says nothing is scaled from them, names why (`toPhysical` refuses the channel), and says
+    the range is still worth correcting because it records that the writer confused the two sample
+    widths. Data signals keep the wording they had, byte for byte.
+- The warning itself is unchanged in code, severity and location — only the "Next:" clause branches.
+
 ## 0.3.71
 
 - **Corrected** `EdfRecordIndex.onsetTicks`, documented in three places as "one targeted read of

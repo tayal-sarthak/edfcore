@@ -19,7 +19,7 @@ import { parseHeader } from '../../../src/header/parse.js';
 import { type SignalFieldName, signalFieldOffset } from '../../../src/header/signals.js';
 import type { EdfDiagnostic, EdfHeader, EdfSignal } from '../../../src/types.js';
 import { setSignalField } from '../../support/corrupt.js';
-import { buildEdf, type EdfSpec, type SignalSpec } from '../../support/writer.js';
+import { buildEdf, type EdfSpec, minimalEdfPlus, type SignalSpec } from '../../support/writer.js';
 
 function parse(bytes: Uint8Array): EdfHeader {
   return parseHeader(bytes, bytes.length);
@@ -568,6 +568,39 @@ describe('DIGITAL_RANGE_EXCEEDS_FORMAT', () => {
     expect(diagnostic.signalIndex).toBe(0);
     expect(diagnostic.byteOffset).toBe(signalFieldOffset('digitalMinimum', 1, 0));
     expect(diagnostic.expected).toBe('-32768..32767');
+
+    // A data signal IS scaled from these fields, so the extrapolation warning is the right one.
+    expect(diagnostic.message).toContain('used for scaling exactly as written');
+  });
+
+  it('does not promise scaling behaviour on an annotations channel, which has none', () => {
+    /*
+     * The check runs for every signal, which is right — a BDF range in an EDF+ file is exactly the
+     * sample-width confusion it exists to catch, wherever it appears. The consequence clause was
+     * not right for every signal: an annotations channel gets no scale, its bytes are TAL text,
+     * and `toPhysical` refuses it, so "expect physical values that extrapolate" described a
+     * conversion that cannot happen for it (fixed in 0.3.72).
+     */
+    const bytes = minimalEdfPlus({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [
+        { samplesPerRecord: 30, raw: { digitalMinimum: '-8388608', digitalMaximum: '8388607 ' } },
+      ],
+    });
+    const header = parse(bytes);
+    const diagnostic = diagnosticWith(header, 'DIGITAL_RANGE_EXCEEDS_FORMAT');
+    const signal = signalAt(header, diagnostic.signalIndex ?? -1);
+
+    // The premise: this channel really has no scale to talk about.
+    expect(signal.kind).toBe('annotations');
+    expect(signal.scale).toBeUndefined();
+
+    expect(diagnostic.message).toContain('nothing is scaled from these fields');
+    expect(diagnostic.message).not.toContain('expect physical values');
+    // Still reported, and still says why it matters.
+    expect(diagnostic.message).toContain('confused the two sample widths');
   });
 });
 
