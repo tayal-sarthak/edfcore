@@ -416,6 +416,68 @@ describe('a malformed TAL is skipped and the rest of the region is still parsed'
     expect(at(parse.issues, 1).detail).toContain('the text was kept verbatim');
   });
 
+  it('tells an out-of-range duration apart from a malformed one', () => {
+    /*
+     * `9223372036855` seconds is ~292,000 years — past the +/-2^63 tick range, and the same
+     * absurd-geometry shape `saturateToInt64` exists for. Its digits are perfectly conformant.
+     *
+     * Overflow and grammar failure were folded into one branch, so this got the GRAMMAR message:
+     * "is not 1*DIGIT" plus the volunteered "a duration is never signed". A writer hexdumps the
+     * region, finds thirteen unsigned digits and no sign, and concludes the parser is broken. The
+     * onset path has always kept the two apart, so the same defect on the two fields of one TAL
+     * produced two messages that contradicted each other (fixed in 0.3.25).
+     */
+    const tal = concat(
+      ascii('+1'),
+      Uint8Array.of(SEP),
+      ascii('9223372036855'),
+      Uint8Array.of(MARK),
+      ascii('Apnea'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(48, tal), 0, 48);
+
+    // The TAL is still dropped; only the explanation changes.
+    expect(parse.tals).toHaveLength(0);
+    expect(parse.issues).toHaveLength(1);
+    const issue = at(parse.issues, 0);
+    expect(issue.detail).toContain('outside the +/-2^63 tick range');
+    expect(issue.detail).not.toContain('is not 1*DIGIT');
+    expect(issue.detail).not.toContain('never signed');
+    expect(issue.raw).toBe('9223372036855');
+  });
+
+  it('still uses the grammar message for a duration that really is malformed', () => {
+    // A signed duration is a grammar failure, and the "never signed" hint is the right one there.
+    const tal = concat(
+      ascii('+1'),
+      Uint8Array.of(SEP),
+      ascii('-30'),
+      Uint8Array.of(MARK),
+      ascii('Apnea'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(32, tal), 0, 32);
+
+    expect(parse.tals).toHaveLength(0);
+    expect(at(parse.issues, 0).detail).toContain('is not 1*DIGIT');
+    expect(at(parse.issues, 0).detail).toContain('never signed');
+  });
+
+  it('gives the two fields of one TAL messages that agree', () => {
+    // The onset and the duration, both out of range. Two issues, same explanation shape.
+    const tal = concat(
+      ascii('+9223372036855'),
+      Uint8Array.of(SEP),
+      ascii('9223372036855'),
+      Uint8Array.of(MARK, MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(48, tal), 0, 48);
+    // The onset is checked first and drops the TAL, so only its issue is logged — but the two
+    // now describe the same condition the same way, which is the point.
+    expect(at(parse.issues, 0).detail).toContain('outside the +/-2^63 tick range');
+  });
+
   it('still collapses many occurrences of the SAME defect', () => {
     // The property the collapsing exists for. Three TALs whose onsets are all differently
     // malformed are one issue with occurrences 3 — the key is the defect kind, not the detail

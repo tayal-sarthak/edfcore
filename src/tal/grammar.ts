@@ -238,6 +238,7 @@ type TalIssueKind =
   | 'onset-out-of-range'
   | 'duration-field-too-long'
   | 'duration-grammar'
+  | 'duration-out-of-range'
   | 'last-text-unterminated'
   | 'text-contains-separator'
   | 'region-tail-not-nul';
@@ -449,7 +450,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
     }
     durationRaw = decodeHeaderLatin1(sliceBytes(region, durationStart, durationLength));
     const duration = parseUnsignedTicks(durationRaw);
-    if (!duration.ok || outsideInt64(duration.ticks)) {
+    if (!duration.ok) {
       logIssue(
         log,
         'TAL_MALFORMED',
@@ -459,6 +460,25 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
         Math.max(durationLength, 1),
         `0x15 is present but the duration "${durationRaw}" is not 1*DIGIT [ "." 1*DIGIT ] — a ` +
           'duration is never signed — so the TAL was skipped',
+      );
+      return { tal: undefined, next };
+    }
+    // A SEPARATE branch, mirroring the onset path above. Folding overflow into the grammar
+    // failure told a writer whose duration is thirteen conformant digits that the field "is not
+    // 1*DIGIT" and volunteered "a duration is never signed" — so they hexdump the region, find
+    // unsigned digits and no sign, and conclude the parser is broken. The onset path has always
+    // kept the two apart, so the same defect on the two fields of one TAL produced two messages
+    // that contradicted each other (fixed in 0.3.25).
+    if (outsideInt64(duration.ticks)) {
+      logIssue(
+        log,
+        'TAL_MALFORMED',
+        'duration-out-of-range',
+        region,
+        durationStart,
+        Math.max(durationLength, 1),
+        `the duration "${durationRaw}" is outside the +/-2^63 tick range edfcore can represent, ` +
+          'so the TAL was skipped',
       );
       return { tal: undefined, next };
     }

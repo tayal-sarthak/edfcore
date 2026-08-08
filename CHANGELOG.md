@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.25
+
+- **Fixed** a TAL duration that is out of range being reported as a grammar violation. `9223372036855`
+  seconds is about 292,000 years — past the ±2^63 tick range — and its thirteen digits are perfectly
+  conformant. edfcore told the writer the field *"is not 1\*DIGIT [ \".\" 1\*DIGIT ]"* and
+  volunteered *"a duration is never signed"*. Hexdump the region and you find thirteen unsigned
+  digits and no sign, and conclude the parser is broken.
+- The two conditions were folded into one branch. **The onset path has always kept them apart** —
+  grammar failure and int64 overflow have separate messages there — so the identical defect on the
+  two fields of one TAL produced two explanations that contradicted each other. The duration branch
+  now mirrors the onset one.
+- The TAL is still dropped and the annotation is still lost; only the explanation becomes true. A
+  duration that really is malformed — a signed one, say — still gets the grammar message, and the
+  "never signed" hint is the right one there.
+
 ## 0.3.24
 
 - **Fixed** `MISSING_EDFPLUS_MARKER` telling a BDF writer to put `"EDF+C"` or `"EDF+D"` in the
