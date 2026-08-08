@@ -88,6 +88,11 @@ function nominalOnsetTicks(header: EdfHeader, recordIndex: number): bigint {
   return saturateToInt64(BigInt(recordIndex) * header.recordDurationTicks);
 }
 
+/** Whether a probe found no timekeeping TAL at all, so its onset was derived rather than read. */
+function observedNoTimekeeping(diagnostics: readonly EdfDiagnostic[]): boolean {
+  return diagnostics.some((diagnostic) => diagnostic.code === 'TIMEKEEPING_TAL_MISSING');
+}
+
 /** True when the file stores per-record onsets, i.e. when probing can learn anything. */
 function hasTimekeeping(header: EdfHeader): boolean {
   return header.annotationSignalIndices.length > 0;
@@ -294,6 +299,33 @@ export async function buildTimeline(
     memo.set(recordIndex, probe.ticks);
     appendDiagnostics(probeDiagnostics, probe.diagnostics);
     probes.push({ recordIndex, onsetTicks: probe.ticks });
+
+    /*
+     * RECORD 0 IS THE ONE THE COMMENT ABOVE CANNOT HELP.
+     *
+     * Every other probe is handed record 0's onset as its origin. Record 0 has no origin to be
+     * handed, so when ITS timekeeping TAL is missing the derivation falls back to zero — and
+     * `startOffsetTicks` becomes 0 rather than the recording's true sub-second start.
+     *
+     * The consequences are the ones 0.1.4 fixed for the LAST record, on a file that is perfectly
+     * contiguous: `spanTicks` exceeds `coveredTicks` by the start offset, `openEdf` reports
+     * DISCONTINUITY_IN_CONTINUOUS_FILE, `readWindow` refuses EVERY window in the file, and
+     * `buildRecordIndex` reports two segments with a gap that does not exist. `t = 0` also stops
+     * being the start of record 0, so the whole axis shifts against the identical file with its
+     * TAL intact (fixed in 0.3.29).
+     *
+     * Recovered from record 1, not from the last record: adjacent records are the weakest
+     * assumption available — only that ONE pair is contiguous — whereas deriving from the last
+     * record would absorb every gap in the file into the offset and hide a real discontinuity
+     * instead of inventing one. One extra read, and only on a file that is already defective.
+     */
+    if (recordIndex === 0 && recordCount > 1 && observedNoTimekeeping(probe.diagnostics)) {
+      const neighbour = await probeOnset(source, header, 1, probeOptions(options));
+      const recovered = saturateToInt64(neighbour.ticks - header.recordDurationTicks);
+      memo.set(0, recovered);
+      memo.set(1, neighbour.ticks);
+      probes[probes.length - 1] = { recordIndex: 0, onsetTicks: recovered };
+    }
   }
 
   const timeline = buildTimelineFromProbes({ header, probes, probeDiagnostics }, options);

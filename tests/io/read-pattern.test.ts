@@ -25,6 +25,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { readHeader, readRecordBytes } from '../../src/io/read.js';
 import { buildRecordIndex } from '../../src/record-index.js';
@@ -653,5 +654,82 @@ describe('reading ONE channel over a window still reads the whole record range',
     expect(chunk.byteLength).toBe(4 * LARGE_RECORD_BYTES);
     expect(only(spy.reads).length).toBe(4 * LARGE_RECORD_BYTES);
     expect(chunk.byteLength).toBe(spy.bytesRead);
+  });
+});
+
+describe('a record 0 with no timekeeping TAL costs one extra probe and nothing else', () => {
+  /**
+   * Every probe but one is handed record 0's onset as its origin. Record 0 has none to be handed,
+   * so when ITS timekeeping TAL is missing the derivation fell back to zero and
+   * `startOffsetTicks` became 0 rather than the recording's true sub-second start.
+   *
+   * On a perfectly contiguous file that produced the symptoms 0.1.4 fixed for the LAST record:
+   * `spanTicks` exceeded `coveredTicks` by the offset, `openEdf` reported
+   * DISCONTINUITY_IN_CONTINUOUS_FILE, `readWindow` refused every window, and `buildRecordIndex`
+   * found two segments with a gap that does not exist (fixed in 0.3.29).
+   */
+  const OFFSET_TICKS = 5_000_000n; // 0.5 s
+
+  function contiguousWithOffset(zeroRecord0: boolean): Uint8Array {
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      startOffsetSeconds: 0.5,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    });
+    if (!zeroRecord0) return bytes;
+    const header = parseHeader(bytes, bytes.byteLength);
+    const signal = header.signals[header.annotationSignalIndices[0] as number];
+    if (signal === undefined) throw new Error('fixture has no annotations channel');
+    const at = header.headerByteLength + signal.recordByteOffset;
+    bytes.fill(0, at, at + signal.samplesPerRecord * header.bytesPerSample);
+    return bytes;
+  }
+
+  it('recovers the start offset instead of inventing a discontinuity', async () => {
+    const recording = await openEdf(byteSource(contiguousWithOffset(true)));
+
+    expect(recording.timeline.startOffsetTicks).toBe(OFFSET_TICKS);
+    expect(recording.timeline.spanTicks).toBe(recording.timeline.coveredTicks);
+    // The missing TAL is still reported — it is a real defect. The invented one is not.
+    expect(recording.timeline.diagnostics.map((d) => d.code)).toEqual(['TIMEKEEPING_TAL_MISSING']);
+
+    // And the file reads, rather than every window in it being refused.
+    const chunks = await readWindow(recording, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 6,
+    });
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]?.startTicks).toBe(0n);
+  });
+
+  it('agrees with the same file with its TAL intact, except for the diagnostic', async () => {
+    const damaged = await openEdf(byteSource(contiguousWithOffset(true)));
+    const intact = await openEdf(byteSource(contiguousWithOffset(false)));
+
+    expect(damaged.timeline.startOffsetTicks).toBe(intact.timeline.startOffsetTicks);
+    expect(damaged.timeline.spanTicks).toBe(intact.timeline.spanTicks);
+
+    const damagedIndex = await buildRecordIndex(damaged);
+    const intactIndex = await buildRecordIndex(intact);
+    expect(damagedIndex.segments).toHaveLength(1);
+    expect(damagedIndex.gaps).toHaveLength(0);
+    expect(damagedIndex.segments?.[0]?.startTicks).toBe(intactIndex.segments?.[0]?.startTicks);
+  });
+
+  it('costs the extra probe only on the file that needs it', async () => {
+    // `openEdf` is documented as two probes. The recovery is a third read, and it must not appear
+    // on a file whose record 0 is fine.
+    const intact = spySource(byteSource(contiguousWithOffset(false)));
+    await openEdf(intact);
+    const intactReads = intact.reads.length;
+
+    const damaged = spySource(byteSource(contiguousWithOffset(true)));
+    await openEdf(damaged);
+
+    expect(damaged.reads.length).toBe(intactReads + 1);
   });
 });

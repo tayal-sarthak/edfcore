@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.29
+
+- **Fixed** a missing timekeeping TAL in **record 0** setting `startOffsetTicks` to zero, which
+  invented a discontinuity in a perfectly contiguous file. `spanTicks` then exceeded `coveredTicks`
+  by the start offset, `openEdf` reported `DISCONTINUITY_IN_CONTINUOUS_FILE`, `readWindow` refused
+  **every window in the file**, and `buildRecordIndex` reported two segments with a gap that does
+  not exist. `t = 0` also stopped being the start of record 0, so the whole axis shifted against
+  the identical file with its TAL intact.
+- **0.1.4 fixed exactly this for the LAST record** — "a missing TAL in the last record faked a
+  discontinuity and made readWindow refuse an entire conforming file" — by handing every later
+  probe record 0's onset as its origin. Record 0 is the one case that fix could not reach: it has
+  no origin to be handed, so its own derivation still fell back to zero.
+- The offset is now recovered from **record 1**: `onset(1) - recordDuration`. Adjacent records are
+  the weakest assumption available — only that one pair is contiguous. Deriving from the last
+  record instead would absorb every gap in the file into the offset and **hide** a real
+  discontinuity, which is worse than inventing one.
+- It costs one extra read, and only on a file that is already defective; a file whose record 0 is
+  fine still opens in exactly two probes, which is asserted. `TIMEKEEPING_TAL_MISSING` is still
+  reported — that defect is real. The invented one is gone.
+
 ## 0.3.28
 
 **`buildRecordIndex` returned a different index — or a different fatal — for the same recording,
