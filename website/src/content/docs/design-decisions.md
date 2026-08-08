@@ -85,9 +85,9 @@ last bit, because MNE anchors on the physical minimum and converts to volts. Bit
 is a stated non-goal rather than an oversight.
 
 > **Note**
-> The expression is pinned and tested against fixed golden values. The harness that would run
-> pyEDFlib and MNE over the same fixtures and *prove* parity has not been built yet.
-> [Physical values](/docs/physical-values) states exactly what is and is not established today.
+> The harness that runs pyEDFlib and MNE over the same fixtures and *proves* parity was built in
+> 0.2.34-0.2.48. [Physical values](/docs/physical-values) states exactly what it establishes and
+> how strong each claim is.
 
 ## Dates and clock times
 

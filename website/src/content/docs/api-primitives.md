@@ -484,7 +484,7 @@ console.log(formatDiagnostics(header.diagnostics, { color: true, maxItems: 10 })
 ```
 
 ```
-warning [DATE_CLIPPED_TO_1985_2084] startdate field (8 bytes at offset 168) is "01.01.20": its
+info [DATE_CLIPPED_TO_1985_2084] startdate field (8 bytes at offset 168) is "01.01.20": its
   two-digit year was resolved to 2020 by the EDF+ rule that 85..99 mean 1985..1999 and 00..84
   mean 2000..2084, so the field cannot express a year outside that span. ...
   at byte offset 168 (8 bytes), startDate

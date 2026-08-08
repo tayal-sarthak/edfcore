@@ -204,7 +204,7 @@ strict mode.
 
 ## Always fatal
 
-Eight codes. Each names something the file does not supply, so these throw whether or not `strict`
+Nine codes. Each names something the file does not supply, so these throw whether or not `strict`
 is set.
 
 | code | what it means | what to do |
@@ -227,7 +227,7 @@ when you read across it.
 
 ## Deferred-fatal
 
-Four codes. The header parses, the file is readable, and one signal has no defined conversion to
+Five codes. The header parses, the file is readable, and one signal has no defined conversion to
 physical units. Their severity is `error`, and they do not throw at parse time.
 
 | code | what it means | what to do |
@@ -236,6 +236,7 @@ physical units. Their severity is `error`, and they do not throw at parse time.
 | `DEGENERATE_PHYSICAL_RANGE` | `physicalMinimum === physicalMaximum`, so every sample maps to one value | as above |
 | `INVERTED_DIGITAL_RANGE` | `digitalMinimum > digitalMaximum`, which has no sanctioned meaning | as above; edfcore will not guess which one the writer meant |
 | `LOG_TRANSFORMED_CHANNEL` | the physical dimension is exactly `Filtered`, so values are log-compressed | the linear formula would be wrong by orders of magnitude; apply the log transform yourself over `decodeDigital` output |
+| `SCALE_UNAVAILABLE` | none of the four above applies and there is still no scale — including the annotations channel, whose fields describe TAL text rather than measurements | `toPhysical` names which case it is; for the annotations channel call `readAnnotations` |
 
 The failure lands on the exact call that cannot be answered. `signal.scale` is
 `EdfScale | undefined`, so the compiler makes you check before reading the gain, though
@@ -244,7 +245,9 @@ The failure lands on the exact call that cannot be answered. `signal.scale` is
 
 ## Warnings
 
-Thirty-one codes. The file stays readable and what edfcore returns about it is true.
+Twenty-nine codes. The file stays readable and what edfcore returns about it is true. Two further
+names appear in the tables below and carry no disposition, because nothing emits them — see the
+note under **I/O**.
 
 ### Header structure
 
@@ -264,7 +267,6 @@ Thirty-one codes. The file stays readable and what edfcore returns about it is t
 
 | code | what it means | what to do |
 |---|---|---|
-| `DATE_CLIPPED_TO_1985_2084` | a two-digit year was resolved through the 85–99 / 00–84 rule | for an unambiguous year read `startTime.recordingIdDate`, which EDF+ spells out in four digits |
 | `DATE_FIELDS_DISAGREE` | the header `dd.mm.yy` field and the EDF+ `Startdate` subfield name different days | both stay on `header.startTime`; `dateSource` says which one was used |
 | `DATE_UNPARSEABLE` | neither date field yielded a calendar date | `startTime.dateSource` is `'none'`; every elapsed time is unaffected, and `formatStartTimeNaive` has nothing to return |
 | `STARTTIME_UNPARSEABLE` | the starttime field is not a clock | `startTime.clockSource` is `'none'` and `clock` is a substituted midnight; the calendar date is unaffected |
@@ -318,10 +320,11 @@ Thirty-one codes. The file stays readable and what edfcore returns about it is t
 
 ## Info
 
-Two codes. The file is correct; the note exists because the situation surprises people.
+Three codes. The file is correct; the note exists because the situation surprises people.
 
 | code | what it means | what to do |
 |---|---|---|
+| `DATE_CLIPPED_TO_1985_2084` | a two-digit year was resolved through the 85–99 / 00–84 rule | nothing; the mandated `dd.mm.yy` startdate cannot express a year outside 1985–2084, so nearly every file carries this. For an unambiguous year read `startTime.recordingIdDate`, which EDF+ spells out in four digits |
 | `INVERTED_PHYSICAL_RANGE` | `physicalMinimum > physicalMaximum`, which encodes a negative amplifier gain | nothing; it is sanctioned by the EDF FAQ, and swapping the two inverts the signal's polarity |
 | `NEGATIVE_ANNOTATION_ONSET` | an annotation onset is negative, i.e. before the file start | nothing; this is how EDF+ writes a pre-stimulus event, and `onsetTicks` is exact and signed |
 

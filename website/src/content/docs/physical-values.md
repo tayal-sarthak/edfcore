@@ -107,11 +107,10 @@ comparison, so a drift in the expression fails the comparison rather than roundi
 agreement.
 
 > **Note**
-> edfcore is 0.1, and the cross-implementation harness that proves bit-parity against pyEDFlib
-> and MNE hasn't been built yet. Today the expression is EDFlib's verbatim and is pinned by tests
-> against fixed golden values. Treat "bit-identical to pyEDFlib" as the design intent, not as a
-> measured claim. The same caution applies to every description of EDFlib's behaviour on this
-> page: they come from edfcore's design notes rather than a comparison run in this repository.
+> The cross-implementation harness exists as of 0.2.34-0.2.48, which is what makes "bit-identical
+> to pyEDFlib" a measured claim rather than a design intent — see the paragraph forty lines above.
+> Descriptions of EDFlib's behaviour elsewhere on this page that are NOT covered by that harness
+> still come from edfcore's design notes rather than from a comparison run in this repository.
 
 ### Float64, always
 

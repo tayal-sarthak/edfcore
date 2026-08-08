@@ -193,7 +193,7 @@ Four dispositions decide what a code does when it fires:
 | warning | `warning` | recorded; the file deviates from the spec and what you got back is accurate |
 | info | `info` | recorded; the file is correct and the situation surprises people |
 
-Eight codes are always fatal. In each case the missing information has no substitute:
+Nine codes are always fatal. In each case the missing information has no substitute:
 
 | code | why nothing can be substituted |
 |---|---|
@@ -286,8 +286,10 @@ they are about:
 | timeline | `RECORD_ONSET_SPACING_VIOLATION`, `DISCONTINUITY_IN_CONTINUOUS_FILE` |
 | I/O | `SOURCE_SHORT_READ_RECOVERED`, `HTTP_RANGE_IGNORED` |
 
-Two codes are `info`, meaning the file is correct and the note exists only because the situation
-surprises people. `INVERTED_PHYSICAL_RANGE` is a physical minimum above the physical maximum. It
+Three codes are `info`, meaning the file is correct and the note exists only because the situation
+surprises people. `DATE_CLIPPED_TO_1985_2084` is the one nearly every file carries: the mandated
+`dd.mm.yy` startdate cannot express a year outside 1985–2084, so resolving one is normal rather
+than a defect. `INVERTED_PHYSICAL_RANGE` is a physical minimum above the physical maximum. It
 encodes a negative amplifier gain and is sanctioned by the EDF FAQ, and edfcore leaves the two as
 written, because swapping them flips polarity. `NEGATIVE_ANNOTATION_ONSET` is a pre-stimulus event,
 which is how EDF+ writes one.

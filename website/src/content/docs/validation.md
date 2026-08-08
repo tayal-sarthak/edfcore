@@ -231,7 +231,7 @@ scanning 600/600 records
 sample.edf: EDF+C, 600 records of 1 s, 3 signals
 no errors, 4 diagnostics, 600 records and 650400 bytes read
 
-warning [DATE_CLIPPED_TO_1985_2084] startdate field (8 bytes at offset 168) is "02.03.02": its two-digit year was resolved to 2002 by the EDF+ rule that 85..99 mean 1985..1999 and 00..84 mean 2000..2084, so the field cannot express a year outside that span. EDF+ additional specification 2 (1985 is the clipping date). Next: for an unambiguous year read startTime.recordingIdDate, which the EDF+ recording identification spells out in four digits.
+info [DATE_CLIPPED_TO_1985_2084] startdate field (8 bytes at offset 168) is "02.03.02": its two-digit year was resolved to 2002 by the EDF+ rule that 85..99 mean 1985..1999 and 00..84 mean 2000..2084, so the field cannot express a year outside that span. EDF+ additional specification 2 (1985 is the clipping date). Next: for an unambiguous year read startTime.recordingIdDate, which the EDF+ recording identification spells out in four digits.
   at byte offset 168 (8 bytes), startDate
   raw: "02.03.02"
   expected: 1985..2084

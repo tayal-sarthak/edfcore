@@ -80,9 +80,10 @@ for (const event of annotations) {
 > and the rectal temperature channel of a real recording reads 37 °C. Run them with
 > `npm run corpus:fetch && npm test`.
 >
-> One thing is missing: a golden-value harness comparing edfcore's float64 output against
-> pyEDFlib and MNE element by element. Until it exists, edfcore claims no numeric parity with
-> those readers. The API can still move. See [Roadmap](#roadmap).
+> That harness exists as of 0.2.34-0.2.48: edfcore reproduces pyEDFlib's float64 output bit for
+> bit on synthetic files and on the real corpus, agrees with MNE to 1e-12 relative, and matches
+> pyEDFlib's annotation onsets to the tick. Regenerate the reference values with `scripts/golden/*.py`.
+> The API can still move. See [Roadmap](#roadmap).
 
 ---
 

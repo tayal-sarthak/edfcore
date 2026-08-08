@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.39
+
+**The published diagnostic tables disagreed with the code in five places, and with themselves in
+two more.** Documentation only, plus a test that stops it recurring.
+
+- `DATE_CLIPPED_TO_1985_2084` is **`info`**, and has been since the first commit. Nearly every EDF
+  file carries it, because the mandated `dd.mm.yy` startdate cannot express a year outside
+  1985–2084. Two pages listed it under **Warnings**, a third called it "a warning" in prose, and
+  two more printed a sample `formatDiagnostics` block reading `warning [DATE_CLIPPED_TO_1985_2084]`
+  — output the function cannot produce, since it prints `${severity} [${code}]`.
+- `SCALE_UNAVAILABLE` was missing from the deferred-fatal table entirely.
+- Three prose counts were wrong: eight always-fatal codes where there are **nine**, two `info`
+  codes where there are **three**, and thirty-one warnings where there are **twenty-nine** (the
+  table also carries two reserved names that nothing emits, which the page explains in a note).
+- README, `physical-values.md` and `design-decisions.md` still said the pyEDFlib/MNE golden-value
+  harness "has not been built yet" and that "edfcore claims no numeric parity with those readers".
+  It was built in **0.2.34–0.2.48**, and `physical-values.md` said so itself forty lines above the
+  note denying it.
+- `tests/integration/diagnostic-docs.test.ts` derives every count and every grouping from
+  `codes.ts`, so a new code fails the suite until the page is updated — and checks that no sample
+  output in any page prints a severity the formatter would not.
+
 ## 0.3.38
 
 - **Fixed** a zero-record chunk contradicting the gap it carries. `readRecordBytes` explicitly
