@@ -12,6 +12,7 @@
  * lands in a chat log or an issue tracker should not carry them by default.
  */
 
+import { trimEdfField } from './bytes/latin1.js';
 import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
 import { printable } from './text/printable.js';
@@ -107,8 +108,16 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
     // the signal-table shape exactly — `  0  99 signals · 0 records` — and one in the recording
     // field forged a `record       9 s` line at the left margin, contradicting the real geometry
     // three lines above it (fixed in 0.3.16).
-    lines.push(`patient      ${printable(header.patient.raw.trim()) || 'unknown'}`);
-    lines.push(`recording    ${printable(header.recording.raw.trim()) || 'unknown'}`);
+    // `trimEdfField`, not `String.prototype.trim`. These are the untrimmed 80 bytes, and `.trim()`
+    // strips whitespace but NOT U+0000 — so on the NUL-padded identification fields a large share
+    // of real writers emit, the padding survived and `printable` turned every NUL into a `.`. An
+    // empty patient field printed as eighty dots, which made the `|| 'unknown'` below unreachable
+    // and read as redaction; a populated one trailed dots that read as truncation. It is the same
+    // gap `redactDiagnostic` names in diagnostics/format.ts, and every other consumer of these
+    // bytes — `parsePatientId`, `validateRecording`, `redactDiagnostic` — already used
+    // `trimEdfField` (fixed in 0.3.48).
+    lines.push(`patient      ${printable(trimEdfField(header.patient.raw)) || 'unknown'}`);
+    lines.push(`recording    ${printable(trimEdfField(header.recording.raw)) || 'unknown'}`);
   }
 
   lines.push('');

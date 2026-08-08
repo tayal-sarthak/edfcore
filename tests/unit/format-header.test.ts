@@ -235,6 +235,51 @@ describe('a hostile label cannot forge a row or shift a column', () => {
   });
 });
 
+describe('NUL padding is not part of the identification field', () => {
+  /**
+   * A large share of real writers pad the 80-byte identification fields with NUL rather than with
+   * space. `String.prototype.trim` does not strip U+0000, so the padding survived into `printable`
+   * and printed as a run of dots — which reads as redaction, not as an empty field.
+   */
+  function nulPadded(): Uint8Array {
+    const bytes = buildEdf({
+      recordCount: 2,
+      patientId: '',
+      recordingId: 'Startdate 02-MAY-1951 X X X',
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+    });
+    // Only the TRAILING run, which is what padding is. Interior separators stay 0x20.
+    const pad = (start: number): void => {
+      for (let i = start + 79; i >= start; i -= 1) {
+        if (bytes[i] !== 0x20) break;
+        bytes[i] = 0x00;
+      }
+    };
+    pad(8);
+    pad(88);
+    return bytes;
+  }
+
+  it('prints `unknown` for an empty field rather than eighty dots', () => {
+    const header = parseHeader(nulPadded(), nulPadded().byteLength);
+    const line =
+      formatHeader(header, { includePatientId: true })
+        .split('\n')
+        .find((l) => l.startsWith('patient')) ?? '';
+    expect(line).toBe('patient      unknown');
+    expect(line).not.toContain('..');
+  });
+
+  it('does not trail a populated field with padding', () => {
+    const header = parseHeader(nulPadded(), nulPadded().byteLength);
+    const line =
+      formatHeader(header, { includePatientId: true })
+        .split('\n')
+        .find((l) => l.startsWith('recording')) ?? '';
+    expect(line).toBe('recording    Startdate 02-MAY-1951 X X X');
+  });
+});
+
 describe('the diagnostic summary is ordered like the validation report', () => {
   it('puts errors before warnings before info, whatever order they arrived in', () => {
     // Ordering by arrival meant two files with the same diagnostics could summarise them

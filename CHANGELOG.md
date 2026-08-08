@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.48
+
+- **Fixed** the identification lines in `formatHeader` and in `edfcore json --patient` using
+  `String.prototype.trim` on the raw 80-byte fields, which does not strip U+0000.
+  - A large share of real writers pad those fields with NUL rather than with space. The padding
+    therefore survived, and `printable` rendered every NUL as a `.`: an **empty** patient field
+    printed as eighty dots — which reads as redaction, not as an absent value — and a populated one
+    trailed dozens of dots that read as truncation. The `|| 'unknown'` fallback beside it could
+    never fire, because the string was never empty.
+  - Both now use `trimEdfField`, which strips 0x20 **and** 0x00, and which every other consumer of
+    these same bytes already used: `parsePatientId`, `validateRecording` and `redactDiagnostic`.
+    `edfcore json --patient` was leaking the same padding into JSON as a run of `\u0000`.
+- This is the gap `redactDiagnostic` already names in `diagnostics/format.ts`, where the same
+  `.trim()`-is-not-`trimEdfField` mismatch made a redacted diagnostic print the name it had just
+  withheld (fixed there in 0.3.31). The module docblock's "It never invents a value: a field
+  edfcore could not resolve prints as `unknown`" is true again.
+
 ## 0.3.47
 
 - **Fixed** `formatHeader` printing a signal's `physicalDimension` unsanitised, so eight header

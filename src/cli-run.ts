@@ -8,6 +8,7 @@
  */
 
 import { countAnnotationsByText } from './annotations-query.js';
+import { trimEdfField } from './bytes/latin1.js';
 import { VERSION } from './constants.js';
 import { formatDiagnostics } from './diagnostics/format.js';
 import { formatHeader } from './format-header.js';
@@ -358,7 +359,9 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
             spanSeconds: recording.timeline.spanSeconds,
             // Patient identification is opt-in here for the same reason it is in formatHeader:
             // the obvious thing to do with this output is pipe it somewhere.
-            ...(args.patient ? { patient: header.patient.raw.trim() } : {}),
+            // `trimEdfField`, for the reason formatHeader uses it: `.trim()` leaves NUL padding
+            // in place, and JSON.stringify escapes it into a run of `\u0000` in the value.
+            ...(args.patient ? { patient: trimEdfField(header.patient.raw) } : {}),
             signals: header.signals.map((signal) => ({
               index: signal.index,
               label: signal.label,
