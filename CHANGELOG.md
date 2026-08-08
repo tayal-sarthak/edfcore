@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.63
+
+- **Fixed** `diagnostics.md`'s always-fatal table, which said "Nine codes are always fatal", listed
+  **eight**, and then said "All eight throw `EdfFormatError`".
+  - The missing row was `RECORDING_SPAN_UNREPRESENTABLE` — `recordCount × recordDuration` beyond the
+    signed 64-bit tick range, so the later records have no representable start. It is in
+    `api-errors.md`'s own always-fatal table, so the package's two diagnostic pages disagreed about
+    how many always-fatal codes there are.
+- The 0.3.39 guard checked the prose count on this page and the tables on `api-errors.md`, but not
+  this page's table — which is why the count and the rows under it could drift apart. It now
+  requires every `fatal` code in `codes.ts` to have a row here, requires every row to actually be
+  fatal, and requires the "All N throw" sentence to spell the number the source has.
+
 ## 0.3.62
 
 - **Fixed** the Start-here page teaching `strict` with the one code family `strict` cannot fire on,

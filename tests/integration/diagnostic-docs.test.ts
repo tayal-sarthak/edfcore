@@ -161,6 +161,31 @@ describe('diagnostics.md agrees with the same source', () => {
     expect(DIAGNOSTICS_PAGE).toContain('Three codes are `info`');
   });
 
+  it('lists every always-fatal code in the table under that count', () => {
+    /*
+     * The prose count was checked and the table under it was not, so the page said "Nine codes are
+     * always fatal", listed eight, and then said "All eight throw". `RECORDING_SPAN_UNREPRESENTABLE`
+     * was the missing row, and it is in api-errors.md's own always-fatal table — so the two pages
+     * disagreed about how many there are (fixed in 0.3.63).
+     */
+    const fatalCodes = [...byCode.entries()].filter(([, d]) => d === 'fatal').map(([c]) => c);
+    const section = DIAGNOSTICS_PAGE.slice(DIAGNOSTICS_PAGE.indexOf('codes are always fatal'));
+    const table = section.slice(0, section.indexOf('\n\n', section.indexOf('| code |')));
+    const rows = [...table.matchAll(/^\| `([A-Z_0-9]+)` \|/gm)].map((m) => m[1] as string);
+
+    expect(rows.length).toBeGreaterThan(5);
+    expect(fatalCodes.filter((code) => !rows.includes(code))).toEqual([]);
+    expect(rows.filter((code) => byCode.get(code) !== 'fatal')).toEqual([]);
+  });
+
+  it('says "All N throw" with the N the table actually has', () => {
+    const fatal = [...byCode.values()].filter((d) => d === 'fatal').length;
+    const spelled: Readonly<Record<number, string>> = { 8: 'eight', 9: 'nine', 10: 'ten' };
+    const word = spelled[fatal];
+    if (word === undefined) throw new Error(`no spelling for ${fatal}; add one`);
+    expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
+  });
+
   it('names every info code where it explains them', () => {
     const infoCodes = [...byCode.entries()].filter(([, d]) => d === 'info').map(([c]) => c);
     const explanation = DIAGNOSTICS_PAGE.slice(DIAGNOSTICS_PAGE.indexOf('codes are `info`'));
