@@ -22,7 +22,7 @@
  */
 
 import { decodeDigitalCounted } from './decode/digital.js';
-import { EdfBudgetError, EdfScalingError } from './errors.js';
+import { EdfBudgetError, EdfChannelNotFoundError, EdfScalingError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
@@ -98,10 +98,16 @@ function bucketStartsFor(
   return starts;
 }
 
+/**
+ * No function name in the message, the way `resolveSignals` on the read path deliberately has
+ * none: these helpers are shared by `readEnvelope`, `readEnvelopeAtResolution` and
+ * `envelopeOfSamples`, and hard-coding one of the three named the wrong function for the other
+ * two (fixed in 0.3.35).
+ */
 function assertPositiveInteger(value: number, name: string): void {
   if (Number.isSafeInteger(value) && value > 0) return;
   throw new RangeError(
-    `readEnvelope(): ${name} must be a positive whole number, received ${value}. ` +
+    `${name} must be a positive whole number, received ${value}. ` +
       'Next: pass the pixel width of the plot you are drawing into.',
   );
 }
@@ -147,14 +153,21 @@ function resolveEnvelopeSignals(
     seen.add(signalIndex);
     const signal = header.signals[signalIndex];
     if (signal === undefined) {
-      throw new RangeError(
-        `readEnvelope(): signalIndex ${signalIndex} is outside the ${header.signals.length} ` +
+      // `EdfChannelNotFoundError`, matching `resolveSignals` on the read path. The identical
+      // mistake — an index outside the file's signals — threw a typed error carrying `selector`
+      // and `availableLabels` from `readWindow` and a bare `RangeError` from here, so
+      // `isEdfError` answered differently depending on which read the caller had reached for.
+      throw new EdfChannelNotFoundError(
+        `signalIndex ${signalIndex} is outside the ${header.signals.length} ` +
           'signals this file declares. Next: pass an index from header.dataSignalIndices.',
+        { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
       );
     }
     if (signal.kind === 'annotations') {
+      // A plain `RangeError`, exactly as `resolveSignals` does for this case: handing the
+      // annotations channel to a sample read can only ever be a caller's mistake.
       throw new RangeError(
-        `readEnvelope(): signal ${signalIndex} (${JSON.stringify(signal.label)}) is this file's ` +
+        `signal ${signalIndex} (${JSON.stringify(signal.label)}) is this file's ` +
           'annotations channel; its bytes are TAL text, not samples, so an envelope over them ' +
           'would be an envelope over ASCII. Next: call readAnnotations() instead.',
       );

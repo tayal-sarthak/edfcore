@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.35
+
+- **Changed** the envelope path to refuse a bad `signalIndex` with `EdfChannelNotFoundError`, which
+  is what `readWindow`, `readRecords` and `streamRecords` already throw for the identical mistake.
+  It threw a bare `RangeError`, so `isEdfError` — the package's documented discriminator — answered
+  **differently depending on which read the caller had reached for**, and the error carried neither
+  `selector` nor `availableLabels`.
+  *This is a type change on an existing throw path.* A caller catching `RangeError` from
+  `readEnvelope` for an out-of-range index now needs `EdfChannelNotFoundError` or `isEdfError`.
+  The annotations-channel refusal stays a plain `RangeError`, exactly as `resolveSignals` keeps it:
+  handing a text channel to a sample read can only ever be a caller's mistake.
+- **Fixed** three shared helpers hard-coding `readEnvelope():` into their messages while being
+  shared by `readEnvelopeAtResolution` and `envelopeOfSamples` — so two of the three callers named
+  the wrong function. `resolveSignals` on the read path deliberately carries no prefix for exactly
+  this reason, and these now do the same.
+
 ## 0.3.34
 
 - **Fixed** `validateHeader` reporting nothing about a starttime field the parse had refused. A

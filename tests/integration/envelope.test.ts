@@ -14,6 +14,7 @@ import {
   readEnvelopeAtResolution,
   toPhysicalEnvelope,
 } from '../../src/envelope.js';
+import { EdfChannelNotFoundError, isEdfError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
@@ -143,8 +144,11 @@ describe('readEnvelope reduces a window without losing its extremes', () => {
     const base = { signalIndices: [0], startSeconds: 0, durationSeconds: SECONDS };
     await expect(readEnvelope(edf, { ...base, buckets: 0 })).rejects.toThrow(RangeError);
     await expect(readEnvelope(edf, { ...base, buckets: 1.5 })).rejects.toThrow(RangeError);
+    // `EdfChannelNotFoundError` since 0.3.35, matching what `readWindow` throws for the same
+    // mistake. It was a bare `RangeError` here, so `isEdfError` answered differently depending on
+    // which read the caller reached for.
     await expect(readEnvelope(edf, { ...base, signalIndices: [99], buckets: 10 })).rejects.toThrow(
-      RangeError,
+      EdfChannelNotFoundError,
     );
     await expect(
       readEnvelope(edf, {
@@ -153,6 +157,92 @@ describe('readEnvelope reduces a window without losing its extremes', () => {
         buckets: 10,
       }),
     ).rejects.toThrow(RangeError);
+  });
+});
+
+describe('the envelope refusals match the read path', () => {
+  /**
+   * `assertPositiveInteger` and `resolveEnvelopeSignals` are shared by `readEnvelope`,
+   * `readEnvelopeAtResolution` and `envelopeOfSamples`, and all three hard-coded `readEnvelope():`
+   * into their messages — so two of the three named the wrong function. `resolveSignals` on the
+   * read path deliberately carries no prefix for exactly this reason.
+   *
+   * The sharper half: an index outside the file's signals threw `EdfChannelNotFoundError` from
+   * `readWindow` and a bare `RangeError` from here, so `isEdfError` answered differently for the
+   * identical mistake depending on which read the caller reached for (fixed in 0.3.35).
+   */
+  async function recording() {
+    return openEdf(byteSource(minimalEdfPlus({ recordCount: 4, recordDurationSeconds: 1 })));
+  }
+
+  it('throws the same typed error the read path throws for a bad signalIndex', async () => {
+    const edf = await recording();
+    const selection = { signalIndices: [99], startSeconds: 0, durationSeconds: 2 };
+
+    const fromRead = await readWindow(edf, selection).catch((e: unknown) => e);
+    const fromEnvelope = await readEnvelope(edf, { ...selection, buckets: 4 }).catch(
+      (e: unknown) => e,
+    );
+    const fromResolution = await readEnvelopeAtResolution(edf, {
+      ...selection,
+      secondsPerBucket: 1,
+    }).catch((e: unknown) => e);
+
+    for (const error of [fromRead, fromEnvelope, fromResolution]) {
+      expect(isEdfError(error)).toBe(true);
+      expect((error as EdfChannelNotFoundError).edfErrorKind).toBe('channel');
+      expect((error as EdfChannelNotFoundError).selector).toBe(99);
+      expect((error as EdfChannelNotFoundError).availableLabels).toHaveLength(2);
+    }
+  });
+
+  it('does not name readEnvelope when the caller called something else', async () => {
+    const edf = await recording();
+    const error = await readEnvelopeAtResolution(edf, {
+      signalIndices: [99],
+      startSeconds: 0,
+      durationSeconds: 2,
+      secondsPerBucket: 1,
+    }).catch((e: unknown) => e);
+    expect((error as Error).message).not.toContain('readEnvelope()');
+
+    // `envelopeOfSamples` shares the bucket check.
+    const bucketError = (() => {
+      try {
+        envelopeOfSamples(
+          {
+            signalIndex: 0,
+            sampleCount: 1,
+            digital: Int32Array.of(1),
+            firstSampleIndex: 0,
+            startSeconds: 0,
+            startTicks: 0n,
+            outOfDigitalRangeCount: 0,
+          },
+          0,
+        );
+        return undefined;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(bucketError?.message).toContain('buckets must be a positive whole number');
+    expect(bucketError?.message).not.toContain('readEnvelope()');
+  });
+
+  it('still refuses the annotations channel as a plain RangeError, as the read path does', async () => {
+    // Handing the annotations channel to a sample read can only ever be a caller's mistake, and
+    // `resolveSignals` uses a plain RangeError for it too. That split is deliberate.
+    const edf = await recording();
+    const error = await readEnvelope(edf, {
+      signalIndices: [1],
+      startSeconds: 0,
+      durationSeconds: 2,
+      buckets: 4,
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RangeError);
+    expect(isEdfError(error)).toBe(false);
+    expect((error as Error).message).toContain('annotations channel');
   });
 });
 
