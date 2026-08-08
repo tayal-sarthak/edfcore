@@ -202,6 +202,21 @@ export async function readTriggers(
     // What precedes this run, so a resume is distinguishable from a latch. `undefined` on a
     // probed index, exactly as it is on `EdfChunk`.
     const precededByGap = gapBefore(recording.index, records.start);
+    /*
+     * The instant this run's data actually resumes, so the gap goes on the event that sits there
+     * and on no other.
+     *
+     * `resolveTimeWindow` is RECORD-aligned and the window is not, so a window starting part-way
+     * through the first record after a gap still yields that record — and the gap was hung on
+     * whichever sample was the first to fall INSIDE the window. On a 7 s gap ending at 10 s, a
+     * window of [10.9, 11.4) reported its first event, at 11 s, as "preceded by a gap ending at
+     * 10 s": four samples of real data sit between the two, so the flag asserted a hole where the
+     * recording had already resumed (fixed in 0.3.67).
+     *
+     * Whether the flag appeared at all depended on where the window started relative to a record
+     * boundary rather than on where the data resumed.
+     */
+    const resumeTicks = segment?.startTicks;
     const chunkRecords = scanChunkRecords(header, options?.maxMaterializeBytes);
     let scanned = 0;
     let scratch: Int32Array | undefined;
@@ -261,8 +276,12 @@ export async function readTriggers(
             ticks,
             trigger: word.trigger,
             status: word,
-            // The gap precedes the RUN, so it belongs to the run's first event and to no other.
-            precededByGap: firstOfRun ? precededByGap : undefined,
+            // The gap precedes the RUN, so it belongs to the event AT the run's first sample and
+            // to no other — not merely to the first event the window happens to admit.
+            precededByGap:
+              firstOfRun && (resumeTicks === undefined || ticks === resumeTicks)
+                ? precededByGap
+                : undefined,
           });
         }
       }

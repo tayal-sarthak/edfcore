@@ -11,6 +11,7 @@ import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import { sampleAt, sampleStartSecondsOf, sampleStartTicksOf } from '../../src/sample-locate.js';
+import type { EdfRecording } from '../../src/types.js';
 import { buildEdf } from '../support/writer.js';
 
 const RECORDS = 8;
@@ -452,4 +453,61 @@ describe('a trigger held across a gap is not reported as one continuous epoch', 
     expect(events.map((e) => [e.seconds, e.trigger])).toEqual([[0, 5]]);
     expect(events[0]?.precededByGap).toBeUndefined();
   });
+});
+
+describe('the gap goes on the event at the resume, not on the first event in the window', () => {
+  /**
+   * `resolveTimeWindow` is RECORD-aligned and a window is not. A window starting part-way through
+   * the first record after a gap still yields that record, and the gap was hung on whichever
+   * sample was the first to fall inside the window — which can be a whole record after the data
+   * came back. On a 7 s gap ending at 10 s, the window [10.9, 11.4) reported its first event, at
+   * 11 s, as preceded by that gap, with four samples of real data sitting between the two
+   * (fixed in 0.3.67).
+   */
+  const GAPPED = buildEdf({
+    format: 'BDF',
+    plus: 'D',
+    recordCount: 6,
+    recordDurationSeconds: 1,
+    recordOnsetSeconds: (r: number) => (r < 3 ? r : r + 7),
+    signals: [
+      {
+        label: 'Status',
+        samplesPerRecord: 4,
+        physicalMinimum: -262144,
+        physicalMaximum: 262144,
+        digitalMinimum: -8388608,
+        digitalMaximum: 8388607,
+        // Every sample a different code, so every sample is an event.
+        sample: (r: number, i: number) => (r * 4 + i) * 10,
+      },
+    ],
+    annotationSignals: [{ samplesPerRecord: 30 }],
+  });
+
+  async function scanned(): Promise<EdfRecording> {
+    const opened = await openEdf(byteSource(GAPPED));
+    return { ...opened, index: await buildRecordIndex(opened) };
+  }
+
+  it('marks the event at the resume instant', async () => {
+    const events = await readTriggers(await scanned(), { startSeconds: 10, durationSeconds: 1 });
+    expect(events[0]?.seconds).toBe(10);
+    expect(events[0]?.precededByGap?.durationSeconds).toBe(7);
+    // And no other event in the run carries it.
+    expect(events.slice(1).every((e) => e.precededByGap === undefined)).toBe(true);
+  });
+
+  it.each([
+    { startSeconds: 10.4, firstEvent: 10.5 },
+    { startSeconds: 10.9, firstEvent: 11 },
+  ])(
+    'does not mark the first event of a window starting at $startSeconds',
+    async ({ startSeconds, firstEvent }) => {
+      const events = await readTriggers(await scanned(), { startSeconds, durationSeconds: 1 });
+      expect(events[0]?.seconds).toBe(firstEvent);
+      // Real samples sit between the resume and this event, so nothing here is preceded by a gap.
+      expect(events[0]?.precededByGap).toBeUndefined();
+    },
+  );
 });

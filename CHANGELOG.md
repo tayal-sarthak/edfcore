@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.67
+
+- **Fixed** `readTriggers` hanging `precededByGap` on the first event the window admits rather than
+  on the event where the recording actually resumed.
+  - `resolveTimeWindow` is record-aligned and a window is not, so a window that begins part-way
+    through the first record after a gap still yields that record — and the flag went on whichever
+    sample was the first to fall inside the window, which can be a whole record later.
+  - On a 7 s gap ending at 10 s, the window `[10.9, 11.4)` reported its first event, at **11 s**, as
+    preceded by a gap ending at 10 s. Four samples of real data sit between the two, so the flag
+    asserted a hole where the recording had already resumed — the opposite of what it exists to say.
+  - Whether the flag appeared at all depended on where the window started relative to a record
+    boundary, not on where the data came back: `[10, 11)` marked it, `[10.4, 11.4)` marked it,
+    `[11, 11.5)` did not.
+  - It now goes on the event whose tick IS the segment's start, and on no other. A probed index has
+    no segments and no gaps, so nothing changes there.
+
 ## 0.3.66
 
 - **Fixed** the TAL diagnostic preview hiding the very byte it was complaining about.
