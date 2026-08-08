@@ -330,6 +330,14 @@ These do the arithmetic in integers on `(record, sampleWithinRecord)` — the sa
 `trimToWindow` follows — and throw a `RangeError` for a zero record duration rather than returning
 `NaN`.
 
+> **Renamed in 0.3.0.** These three were `sampleIndexAt`, `sampleStartTicks` and
+> `sampleStartSeconds`. The behaviour did not change — only the name, which never said which of two
+> different quantities it returns. See [Migrating to 0.3](/docs/migrating-to-0-3) for the
+> find-and-replace, and note that the new names begin with `grid`: the recording-aware functions
+> below are a **different** family, not the rename. On a discontinuous file
+> `gridSampleStartSeconds(signal, 12, d)` and `sampleStartSecondsOf(recording, i, 12)` answer `3`
+> and `10` for the same sample.
+
 > **These measure the signal's own sample grid, not the recording clock.**
 > Sample `n` is the `n`th sample the file stores for that signal, at
 > `n * recordDuration / samplesPerRecord`. On a contiguous recording that is also elapsed recording
@@ -363,10 +371,6 @@ signal and a record duration always returns an index — including one past the 
 They refuse a probed index on a file with gaps rather than guessing, for the reason `segmentAt`
 does. `index.locate(seconds)` remains the read-based form; `contiguityOf(index)` tells you which
 regime you are in.
-
-> **Renamed in 0.3.0.** These were `sampleIndexAt`, `sampleStartTicks` and `sampleStartSeconds`.
-> The behaviour did not change — only the name, which never said which of two different quantities
-> it returns. See [Migrating to 0.3](/docs/migrating-to-0-3) for the find-and-replace.
 
 `gridSampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
 over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit edfcore has. Truncating

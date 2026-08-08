@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.50
+
+- **Fixed** the "Renamed in 0.3.0" note in `api-helpers.md`, which was attached to the wrong family
+  of functions and so told a reader migrating from 0.2 to call a function that answers a different
+  question.
+  - The note sat at the end of **The recording-aware form**, saying that `sampleAt`,
+    `sampleStartTicksOf` and `sampleStartSecondsOf` "were `sampleIndexAt`, `sampleStartTicks` and
+    `sampleStartSeconds`" and that "the behaviour did not change". The rename table in
+    `migrating-to-0-3.md` and the 0.3.0 CHANGELOG entry both say those became **`gridSampleIndexAt`,
+    `gridSampleStartTicks` and `gridSampleStartSeconds`** — the family documented in the section
+    above.
+  - The two families are exactly the distinction the rename existed to make. On a six-record file
+    with a seven-second hole, `gridSampleStartSeconds(signal, 12, d)` is `3` and
+    `sampleStartSecondsOf(recording, i, 12)` is `10`. A reader who followed the note moved every
+    answer by the gaps, under a sentence promising nothing had changed. On a file with gaps and a
+    probed index, `sampleStartTicksOf` throws instead.
+  - The note now sits under the grid functions, and says out loud that the recording-aware family
+    below is a different one.
+- `tests/integration/rename-note.test.ts` derives the rename from the migration table, checks the
+  CHANGELOG spells it the same way, and requires the code block the note is attached to to import
+  the names the table produces. A note that drifts onto the wrong family is a test failure.
+
 ## 0.3.49
 
 - **Fixed** `splitSubfields` splitting the EDF+ identification fields on JavaScript's `\s` instead
