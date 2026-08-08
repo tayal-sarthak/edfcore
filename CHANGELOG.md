@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.77
+
+- **Fixed** `validateRecording`'s scan-budget refusal offering advice that does not work on the
+  files most likely to hit it.
+  - It ended "Next: raise options.maxMaterializeBytes, or drop scanSamples and validate the header
+    alone." On EDF+/BDF+ dropping `scanSamples` does not stop the sweep reading: the record onsets
+    live in each record's annotation region, so the traversal runs either way and refuses again at
+    the same budget — this time from the record-read guard, whose own advice is "read fewer records
+    per call", which is not a lever this caller holds. The reader was sent round a loop.
+  - On a two-record file of 50,000 samples at a 4 KiB budget: `scanSamples: true` refuses,
+    `scanSamples: false` refuses again on EDF+, and resolves on plain EDF. So the offer was right
+    for exactly the files that have no annotations channel.
+  - The offer is now made only when dropping the scan really does stop the reading. On a file with
+    an annotations signal it says so and names `validateHeader(header)`, which is the form that
+    reads nothing at all.
+- The test asserts the premise too — that following the old advice on an EDF+ file throws a second
+  budget error — so it is checking the behaviour rather than the sentence.
+
 ## 0.3.76
 
 - **Fixed** two false claims about `strict`, in the reference page, the design record and the

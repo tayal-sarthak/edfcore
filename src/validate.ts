@@ -600,12 +600,23 @@ async function traverse(
     const scratchBytes = scratchRecords * maxSamplesPerRecord * BYTES_PER_SCRATCH_SAMPLE;
     const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
     if (scratchBytes > budgetBytes) {
+      // "Drop scanSamples" only helps when dropping it stops the sweep reading. On EDF+/BDF+ it
+      // does not: the onsets live in each record's annotation region, so the traversal runs
+      // either way and refuses again at the same budget with a different message. Offering it
+      // there sent the reader round a loop — the second refusal is the record-read guard, whose
+      // own advice is to read fewer records per call, which is not a lever this caller holds
+      // (fixed in 0.3.77).
+      const canSkipReading = header.annotationSignalIndices.length === 0;
       throw new EdfBudgetError(
         `Scanning samples needs a ${scratchBytes}-byte scratch buffer for ${scratchRecords} ` +
           `record(s) of up to ${maxSamplesPerRecord} samples, above the ${budgetBytes}-byte ` +
           'maxMaterializeBytes budget, so the scan was refused before anything was allocated. ' +
-          'Next: raise options.maxMaterializeBytes, or drop scanSamples and validate the ' +
-          'header alone.',
+          'Next: raise options.maxMaterializeBytes' +
+          (canSkipReading
+            ? ', or drop scanSamples and validate the header alone.'
+            : ' — this file declares an annotations signal, so its record onsets are read even ' +
+              'with scanSamples off and the sweep would refuse again at this budget. ' +
+              'validateHeader(header) is the form that reads nothing.'),
         { requiredBytes: scratchBytes, budgetBytes },
       );
     }

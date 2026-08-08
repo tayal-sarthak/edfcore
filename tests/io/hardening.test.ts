@@ -230,6 +230,49 @@ describe('validateRecording honours maxMaterializeBytes for its scan scratch buf
     ).rejects.toMatchObject({ edfErrorKind: 'budget', budgetBytes: 4096 });
   });
 
+  it('offers to drop scanSamples only when dropping it would help', async () => {
+    /*
+     * The refusal ended "or drop scanSamples and validate the header alone". On EDF+/BDF+ that
+     * does not help: the record onsets live in each record's annotation region, so the traversal
+     * runs with `scanSamples: false` too and refuses again at the same budget — with the
+     * record-read guard's message, whose advice ("read fewer records per call") is not a lever
+     * this caller holds. The reader was sent round a loop (fixed in 0.3.77).
+     */
+    const wide = {
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 50_000 }],
+    };
+    const budget = { scanSamples: true, maxMaterializeBytes: 4096 } as const;
+
+    const withAnnotations = await openEdf(byteSource(minimalEdfPlus(wide)));
+    const plain = await openEdf(byteSource(minimalEdf(wide)));
+
+    const refusalFor = async (recording: Awaited<ReturnType<typeof openEdf>>): Promise<string> =>
+      validateRecording(recording, budget).then(
+        () => '',
+        (e: unknown) => (e as Error).message,
+      );
+
+    // EDF+: the offer is withdrawn, and the form that really reads nothing is named instead.
+    const plusMessage = await refusalFor(withAnnotations);
+    expect(plusMessage).toContain('validateHeader(header)');
+    expect(plusMessage).not.toContain('drop scanSamples');
+    // And the premise: following the old advice on this file throws again.
+    await expect(
+      validateRecording(withAnnotations, { scanSamples: false, maxMaterializeBytes: 4096 }),
+    ).rejects.toMatchObject({ edfErrorKind: 'budget' });
+
+    // Plain EDF: dropping it genuinely works, so the offer stands.
+    const plainMessage = await refusalFor(plain);
+    expect(plainMessage).toContain('drop scanSamples');
+    const report = await validateRecording(plain, {
+      scanSamples: false,
+      maxMaterializeBytes: 4096,
+    });
+    expect(report.recordsScanned).toBe(0);
+  });
+
   it('leaves a well-formed file scanning normally', async () => {
     const recording = await openEdf(byteSource(oneCorruptedField()));
     // Header-only validation never allocates the scratch buffer, so it must still work.
