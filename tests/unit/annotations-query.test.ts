@@ -95,6 +95,23 @@ describe('filterAnnotationsByText', () => {
     expect(filterAnnotationsByText(events, /^Sleep/)).toHaveLength(3);
     expect(filterAnnotationsByText(events, (text) => text.endsWith('REM'))).toHaveLength(1);
   });
+
+  it('does not trim either side, and the docblock says so', () => {
+    // `annotation.text` is the TAL's bytes as written; api-types.md calls it "verbatim; never
+    // trimmed, never case-folded". The docblock here said "the exact trimmed text", which is
+    // neither what this does nor what the field holds — and the difference is silent, because a
+    // padded vocabulary returns an empty list rather than an error.
+    const padded = [annotation(0, 'Sleep stage W '), annotation(30, ' Sleep stage N1')];
+    expect(filterAnnotationsByText(padded, 'Sleep stage W')).toHaveLength(0);
+    expect(filterAnnotationsByText(padded, 'Sleep stage N1')).toHaveLength(0);
+    expect(filterAnnotationsByText(padded, 'Sleep stage W ')).toHaveLength(1);
+    // A query with its own stray space finds nothing in a clean file, for the same reason.
+    expect(filterAnnotationsByText(events, 'Sleep stage W ')).toHaveLength(0);
+    // The documented way to ask the looser question.
+    expect(filterAnnotationsByText(padded, (text) => text.trim() === 'Sleep stage W')).toHaveLength(
+      1,
+    );
+  });
 });
 
 describe('countAnnotationsByText', () => {

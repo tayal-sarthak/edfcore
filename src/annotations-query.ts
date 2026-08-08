@@ -61,10 +61,18 @@ export function filterAnnotationsByTime(
 /**
  * The annotations whose text matches.
  *
- * A string matches on the exact trimmed text, because annotation vocabularies are controlled —
+ * A string matches the text VERBATIM, because annotation vocabularies are controlled —
  * `Sleep stage W` is a fixed token, and a substring match on `W` would also catch `Sleep stage
  * REM` in files that spell it `W/REM`. Pass a predicate or a RegExp when you want something
  * looser; edfcore does not guess which you meant.
+ *
+ * Verbatim means verbatim, in both directions: `annotation.text` is the TAL's bytes as written and
+ * is never trimmed (`api-types.md` says so of the field itself), so an event a scorer spelled
+ * `'Sleep stage W '` is not matched by `'Sleep stage W'`, and a query with its own stray space
+ * matches nothing. This docblock used to say "the exact trimmed text", which is neither what this
+ * function does nor what the field holds, and the failure it describes is silent: a padded
+ * vocabulary returns an empty list rather than an error (corrected in 0.3.51). For such a file,
+ * pass the predicate that says what you mean — `(text) => text.trim() === label`.
  */
 export function filterAnnotationsByText(
   annotations: readonly EdfAnnotation[],

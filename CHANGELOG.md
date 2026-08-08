@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.51
+
+- **Corrected** the `filterAnnotationsByText` docblock, which said a string "matches on the exact
+  trimmed text". Nothing is trimmed: `annotation.text` is the TAL's bytes as written — `api-types.md`
+  calls the field "verbatim; never trimmed, never case-folded" — and the comparison is a bare `===`.
+  - The word mattered because the failure it hides is silent. An event a scorer spelled
+    `'Sleep stage W '` is not matched by `'Sleep stage W'`, and the call returns an empty list
+    rather than an error, so a hypnogram over a file with a padded vocabulary comes back with no
+    stages and no explanation.
+  - Both the docblock and `api-helpers.md` now say verbatim on both sides, and both name the
+    one-liner for the other question: `filterAnnotationsByText(events, (t) => t.trim() === label)`.
+- No behaviour change — `edfcore` matched verbatim before and matches verbatim now. The exact rule
+  is pinned by a test in both directions, so the comment cannot drift away from it again.
+
 ## 0.3.50
 
 - **Fixed** the "Renamed in 0.3.0" note in `api-helpers.md`, which was attached to the wrong family

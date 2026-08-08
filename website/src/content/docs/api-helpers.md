@@ -303,6 +303,11 @@ exactly the files careful enough to state an offset.
 and a substring match on `W` would also catch spellings like `W/REM`. Pass a `RegExp` or a
 predicate when you want something looser.
 
+Exactly means verbatim on both sides. `annotation.text` is the TAL's bytes as written and is never
+trimmed, so an event a scorer spelled `'Sleep stage W '` is not matched by `'Sleep stage W'` — and
+the miss is silent, because the result is an empty list rather than an error. For a file whose
+vocabulary carries padding, say so: `filterAnnotationsByText(events, (t) => t.trim() === label)`.
+
 ## The sample grid
 
 The obvious spelling of "which sample is at 3600 s" is `Math.round(seconds * signal.sampleRateHz)`
