@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.42
+
+- **Fixed** `toPhysical` and `clampToDigitalRange` reporting a *"NaN-byte maxMaterializeBytes
+  budget"* — the exact message 0.3.21 says it eliminated — and advising the caller to "produce
+  fewer samples per call", which no sample count can satisfy against `NaN`.
+- 0.3.21 routed four budget reads through one resolver and **missed a fifth**: `decode/physical.ts`
+  carries its own copy of the guard, and grepping for the option's name found the four in the I/O
+  and scan paths. They are the only two allocating primitives on the public surface that never
+  validated it.
+- Both now go through `resolveMaterializeBudget`, so a non-finite or negative value is a plain
+  `RangeError` naming `options.maxMaterializeBytes` and pointing at the expression that produced
+  it. A real budget still refuses a too-large allocation exactly as before, which is asserted.
+
 ## 0.3.41
 
 - **Fixed** `mergeChunks` refusing an overlap with *"chunk 1 is preceded by a gap of -0.2 s"* — a

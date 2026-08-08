@@ -9,8 +9,8 @@
  * behaviour has to be something a caller asks for explicitly.
  */
 
-import { DEFAULT_MAX_MATERIALIZE_BYTES } from '../constants.js';
 import { EdfBudgetError, EdfScalingError } from '../errors.js';
+import { resolveMaterializeBudget } from '../options.js';
 import type { EdfDiagnosticCode, EdfSignal } from '../types.js';
 import type { MaterializeOptions } from './digital.js';
 
@@ -40,7 +40,7 @@ function assertWithinBudget(
   what: string,
   options: MaterializeOptions | undefined,
 ): void {
-  const budgetBytes = options?.maxMaterializeBytes ?? DEFAULT_MAX_MATERIALIZE_BYTES;
+  const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (requiredBytes <= budgetBytes) return;
   throw new EdfBudgetError(
     `Producing ${what} needs a ${requiredBytes}-byte array, above the ${budgetBytes}-byte ` +

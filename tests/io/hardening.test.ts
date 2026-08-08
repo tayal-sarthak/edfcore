@@ -9,16 +9,18 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { clampToDigitalRange, toPhysical } from '../../src/decode/physical.js';
 import { EdfSourceError } from '../../src/errors.js';
+import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
 import { httpSource } from '../../src/io/http.js';
 import { assertExactRead } from '../../src/io/source.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
-import type { FetchLike, HttpResponseLike } from '../../src/types.js';
+import type { EdfSignal, FetchLike, HttpResponseLike } from '../../src/types.js';
 import { validateRecording } from '../../src/validate.js';
-import { minimalEdfPlus } from '../support/writer.js';
+import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
 
 // ---------------------------------------------------------------------------
 // Non-finite numeric options
@@ -481,6 +483,35 @@ describe('a maxMaterializeBytes that is not a number names itself', () => {
     await expect(
       readAnnotations(edf, { start: 0, count: 8 }, { maxMaterializeBytes: budget }),
     ).rejects.toThrow(/options\.maxMaterializeBytes must be a finite number/);
+  });
+
+  it('is refused by toPhysical and clampToDigitalRange too', () => {
+    // 0.3.21 routed four call sites through one resolver and missed `decode/physical.ts`, which
+    // carries its own copy of the guard. Both primitives therefore still produced the exact
+    // message that release says it eliminated — "above the NaN-byte maxMaterializeBytes budget",
+    // with advice ("produce fewer samples per call") no sample count can satisfy
+    // (fixed in 0.3.42).
+    const bytes = minimalEdf({ recordCount: 2, recordDurationSeconds: 1 });
+    const signal = parseHeader(bytes, bytes.byteLength).signals[0] as EdfSignal;
+    const digital = Int32Array.from([1, 2, 3, 4]);
+
+    for (const call of [
+      () => toPhysical(signal, digital, undefined, { maxMaterializeBytes: Number.NaN }),
+      () => clampToDigitalRange(signal, digital, undefined, { maxMaterializeBytes: Number.NaN }),
+    ]) {
+      expect(call).toThrow(/options\.maxMaterializeBytes must be a finite number/);
+      expect(call).not.toThrow(/NaN-byte/);
+    }
+  });
+
+  it('still honours a real budget in both primitives', () => {
+    const bytes = minimalEdf({ recordCount: 2, recordDurationSeconds: 1 });
+    const signal = parseHeader(bytes, bytes.byteLength).signals[0] as EdfSignal;
+    const digital = Int32Array.from([1, 2, 3, 4]);
+    expect(() => toPhysical(signal, digital, undefined, { maxMaterializeBytes: 8 })).toThrow(
+      /maxMaterializeBytes budget/,
+    );
+    expect(toPhysical(signal, digital, undefined, { maxMaterializeBytes: 1_000 })).toHaveLength(4);
   });
 
   it('refuses a negative budget by name rather than refusing every read', async () => {
