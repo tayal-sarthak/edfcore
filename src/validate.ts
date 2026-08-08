@@ -291,6 +291,42 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
     );
   }
 
+  /*
+   * The counterpart, and the check this sweep did not have.
+   *
+   * `validateHeader` is documented as independent of `header.diagnostics` — "running both costs
+   * nothing and neither can mask the other" — so a caller running only the two-read, no-I/O path
+   * both doc pages recommend saw NOTHING about a starttime field the parse had refused, and
+   * concluded the header's timing fields were conformant while `startTime.clock` held a
+   * substituted midnight the file never stated.
+   *
+   * 0.3.17 corrected the prose on two pages to describe this, and 0.3.27 rewrote it again for the
+   * split code — both times documenting a check that was never added. Every other consumer of
+   * `clockSource` already knows: `formatHeader` prints `unknown` and `formatStartTimeNaive`
+   * returns `undefined`. Only the conformance sweep was blind (fixed in 0.3.34).
+   */
+  if (startTime.clockSource === 'none') {
+    into.push(
+      createDiagnostic({
+        code: 'STARTTIME_UNPARSEABLE',
+        message:
+          `the starttime field is ${JSON.stringify(trimEdfField(header.raw.startTime))}, which ` +
+          'is not a clock time in hh.mm.ss form with hour 00..23, minute 00..59 and second ' +
+          '00..59. EDF specification, header record bytes 176-183. Next: startTime.clock reports ' +
+          '00:00:00 because the type admits no absent clock — startTime.clockSource is "none" ' +
+          'and formatStartTimeNaive() has nothing to return. The calendar date and every elapsed ' +
+          'time in the file are unaffected.',
+        field: 'startTime',
+        byteOffset: 176,
+        byteLength: 8,
+        raw: header.raw.startTime,
+        expected: 'hh.mm.ss',
+        actual: trimEdfField(header.raw.startTime),
+        specReference: 'EDF specification, header record bytes 176-183',
+      }),
+    );
+  }
+
   const headerDate = startTime.headerDate;
   const recordingIdDate = startTime.recordingIdDate;
   if (

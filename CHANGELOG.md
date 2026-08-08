@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.34
+
+- **Fixed** `validateHeader` reporting nothing about a starttime field the parse had refused. A
+  file with a good `dd.mm.yy` and a blank 8-byte starttime produced no timing diagnostic at all
+  from the sweep, so a caller concluded the header's timing fields were conformant while
+  `startTime.clock` held a substituted `00:00:00` the file never stated.
+- `validateHeader` is documented as independent of `header.diagnostics` — *"running both costs
+  nothing and neither can mask the other"* — so a caller who runs only the two-read, no-I/O path
+  both doc pages recommend is exactly the caller the docs sanction, and exactly the one who saw
+  nothing.
+- **This is a claim I made twice without making it true.** 0.3.17 rewrote `api-validate.md` and
+  `validation.md` to describe a `validateHeader` check for a refused clock, and 0.3.27 rewrote them
+  again for the split code — both times documenting a branch that was never added. Every other
+  consumer of `clockSource` already knew: `formatHeader` prints `unknown`, `formatStartTimeNaive`
+  returns `undefined`. Only the conformance sweep was blind.
+- It now emits `STARTTIME_UNPARSEABLE` with `field: 'startTime'` at byte 176, beside the
+  `DATE_UNPARSEABLE` branch it mirrors, saying what is true: the clock is a substituted midnight,
+  `clockSource` is `'none'`, and the calendar date and every elapsed time are unaffected.
+
 ## 0.3.33
 
 **An overlap is not a gap, in the two places that still said it was.** 0.3.3 stated the rule while
