@@ -50,7 +50,13 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint): void {
     throw new RangeError(
       `signal ${signal.index} (${JSON.stringify(signal.label)}) is an annotations channel, ` +
         'whose region holds TAL text rather than samples, so it has no sample grid. Next: use ' +
-        'onsetTicks on the annotations themselves.',
+        // `onsetTicksFromFirstRecord`, not `onsetTicks`. This grid puts sample 0 at t = 0, which
+        // is the start of record 0 — the rebased axis — and `onsetTicks` is on the HEADER's
+        // timebase. They differ by the sub-second offset record 0's timekeeping TAL may declare:
+        // on a file with a 0.25 s offset, `gridSampleStartTicks(signal, 4, d)` is 10000000 and the
+        // event at that instant reports `onsetTicks` 12500000. `sample-locate.ts` names the right
+        // one for the identical refusal (fixed in 0.3.78).
+        'onsetTicksFromFirstRecord on the annotations themselves.',
     );
   }
   if (signal.samplesPerRecord <= 0) {

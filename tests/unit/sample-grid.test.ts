@@ -5,16 +5,17 @@
  * answer: a record duration with no exact float representation, and a record duration of zero.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf } from '../../src/recording.js';
+import { openEdf, readAnnotations } from '../../src/recording.js';
 import {
   gridSampleIndexAt,
   gridSampleStartSeconds,
   gridSampleStartTicks,
 } from '../../src/sample-grid.js';
 import type { EdfHeader, EdfSignal } from '../../src/types.js';
-import { minimalEdf } from '../support/writer.js';
+import { buildEdf, minimalEdf } from '../support/writer.js';
 
 async function fixture(
   recordDurationSeconds: number,
@@ -119,5 +120,71 @@ describe('gridSampleStartTicks', () => {
   it('rejects a fractional sample index', async () => {
     const { header, signal } = await fixture(1, 10);
     expect(() => gridSampleStartTicks(signal, 1.5, header.recordDurationTicks)).toThrow(RangeError);
+  });
+});
+
+describe("the annotations-channel refusal names the field on this grid's own axis", () => {
+  /**
+   * `sample-grid.ts` said "use onsetTicks"; `sample-locate.ts` says `onsetTicksFromFirstRecord`
+   * for the identical refusal. This grid puts sample 0 at `t = 0`, which is the start of record 0
+   * — the rebased axis — and `onsetTicks` is on the HEADER's timebase. They differ by the
+   * sub-second offset record 0's timekeeping TAL may declare, so the reader was sent to the field
+   * that does NOT line up with the numbers this module returns (fixed in 0.3.78).
+   *
+   * Read out of the source, so the two modules cannot drift apart again.
+   */
+  const GRID = readFileSync(new URL('../../src/sample-grid.ts', import.meta.url), 'utf8');
+  const LOCATE = readFileSync(new URL('../../src/sample-locate.ts', import.meta.url), 'utf8');
+
+  /**
+   * The `Next:` clause of the annotations refusal, as one line.
+   *
+   * COMMENT LINES ARE STRIPPED FIRST. The comment above this very message explains the fix and
+   * names both fields, so a slice that kept it matched the right answer no matter what the string
+   * said — the first version of this guard passed with the bug reinstated.
+   */
+  function refusal(source: string): string {
+    const code = source
+      .split('\n')
+      .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+      .join('\n');
+    const at = code.indexOf('it has no sample grid');
+    expect(at, 'the refusal should still be there').toBeGreaterThan(-1);
+    return code
+      .slice(at, at + 200)
+      .replace(/\s+/g, ' ')
+      .replace(/' \+ '/g, '');
+  }
+
+  it('names onsetTicksFromFirstRecord, the same field sample-locate.ts names', () => {
+    expect(refusal(GRID)).toContain('onsetTicksFromFirstRecord');
+    expect(refusal(LOCATE)).toContain('onsetTicksFromFirstRecord');
+  });
+
+  it('and the grid really is on that axis', async () => {
+    // A file whose record 0 starts a quarter-second in, so the two annotation axes differ.
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      startOffsetSeconds: 0.25,
+      signals: [{ label: 'A', samplesPerRecord: 4 }],
+      annotationSignals: [
+        {
+          samplesPerRecord: 40,
+          tals: (r: number) => (r === 1 ? [{ onset: '+1.25', texts: ['marker'] }] : []),
+        },
+      ],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const signal = recording.header.signals[0];
+    if (signal === undefined) throw new Error('expected a data signal');
+    const [event] = (await readAnnotations(recording, { start: 0, count: 4 })).annotations;
+    if (event === undefined) throw new Error('expected an annotation');
+
+    // Sample 4 is the first sample of record 1, and the event is written at that instant.
+    const gridTicks = gridSampleStartTicks(signal, 4, recording.header.recordDurationTicks);
+    expect(event.onsetTicksFromFirstRecord).toBe(gridTicks);
+    expect(event.onsetTicks).not.toBe(gridTicks);
   });
 });

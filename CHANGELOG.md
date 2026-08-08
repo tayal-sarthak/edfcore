@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.78
+
+- **Fixed** `sample-grid.ts` sending a reader to `onsetTicks` where `sample-locate.ts` sends them to
+  `onsetTicksFromFirstRecord`, for the identical refusal.
+  - Both modules refuse an annotations channel with the same sentence — it holds TAL text, so it has
+    no sample grid — and then name different fields to use instead. The grid puts sample 0 at
+    `t = 0`, which is the start of record 0: the **rebased** axis. `onsetTicks` is on the header's
+    timebase, and the two differ by the sub-second offset record 0's timekeeping TAL may declare.
+  - On a file with a 0.25 s offset, `gridSampleStartTicks(signal, 4, d)` is 10000000 and the event
+    written at that instant reports `onsetTicks` 12500000. The reader was sent to the field that
+    does not line up with the numbers the module they had just called returns. `sample-locate.ts`
+    had it right.
+- The guard reads both refusals out of the source and requires them to name the same field. Its
+  first version passed with the bug reinstated, because the explanatory comment above the message
+  names both fields and the slice picked it up — it now strips comment lines before matching, and
+  says so, since that is the only reason it works.
+
 ## 0.3.77
 
 - **Fixed** `validateRecording`'s scan-budget refusal offering advice that does not work on the
