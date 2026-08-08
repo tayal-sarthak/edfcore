@@ -609,6 +609,79 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
     expect(counts.reduce((a, b) => a + b, 0)).toBe(RECORDS * 4000);
   });
 
+  it('covers the whole run when the resolution is finer than the sample interval', async () => {
+    /*
+     * The densest-samples clamp belongs to the even-division rule. Under the fixed-width rule the
+     * count is not a free parameter — it is `ceil(runTicks / bucketTicks)` — so reducing it
+     * SHORTENS THE GRID. `bucketStartsFor` got the clamped count, so the boundaries covered only
+     * `bucketCount * bucketTicks` of elapsed time and the cursor pinned every later sample into
+     * the final bucket, while `secondsPerBucket` still reported the width asked for.
+     *
+     * A 4 s run of a 2 Hz signal at 0.25 s per bucket came back as 8 buckets covering 2 s, with
+     * the entire second half of the run in the last one (fixed in 0.3.30).
+     */
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 4,
+      secondsPerBucket: 0.25,
+    });
+    if (chunk === undefined) throw new Error('setup failed');
+
+    expect(chunk.bucketCount).toBe(16);
+    expect(chunk.secondsPerBucket).toBe(0.25);
+    // The axis the caller is told to draw actually spans the run.
+    expect(chunk.bucketCount * chunk.secondsPerBucket).toBe(chunk.durationSeconds);
+    // 2 Hz into 0.25 s buckets: one sample every other bucket, and none crushed into the tail.
+    const counts = Array.from(chunk.signals[0]?.counts ?? []);
+    expect(counts).toEqual([1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(8);
+  });
+
+  it('leaves readEnvelope, whose contract is a pixel count, clamped as before', async () => {
+    // The clamp is right there: more buckets than samples would leave holes that mean nothing,
+    // and a smaller count is simply a coarser even division of the same run.
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    const [chunk] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 4,
+      buckets: 100,
+    });
+    expect(chunk?.bucketCount).toBe(8);
+    expect(Array.from(chunk?.signals[0]?.counts ?? [])).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+  });
+
+  it('refuses an absurdly fine resolution by naming the budget, rather than truncating', async () => {
+    // The clamp was also the only thing bounding the allocation. Removing it for the fixed-width
+    // rule means the ceiling has to be stated: one microsecond over four seconds is four million
+    // buckets, and a budget refusal names the option to change.
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    await expect(
+      readEnvelopeAtResolution(
+        edf,
+        { signalIndices: [0], startSeconds: 0, durationSeconds: 4, secondsPerBucket: 0.000001 },
+        { maxMaterializeBytes: 1_000_000 },
+      ),
+    ).rejects.toThrow(/maxMaterializeBytes budget/);
+  });
+
   it('does not add a bucket to a run whose length is not a binary fraction', async () => {
     // The second route to the same failure, and the one no chunking or window offset is involved
     // in. 3 x 0.1 s is 0.30000000000000004 in float64, so `Math.ceil(runSeconds / 0.1)` was FOUR

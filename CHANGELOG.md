@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.30
+
+- **Fixed** `readEnvelopeAtResolution` crushing the tail of a run into one bucket whenever the
+  requested resolution is finer than the sample interval. A 4 s run of a 2 Hz signal asked at 0.25 s
+  per bucket came back as **8 buckets covering 2 s**, with the entire second half of the run in the
+  last one — while `secondsPerBucket` still reported 0.25. A viewer placing bucket `b` at
+  `startSeconds + b * secondsPerBucket`, which is the documented way to use this function, drew half
+  the run stacked on one pixel and nothing at all past the halfway point.
+- The cause is a clamp that belongs to the other rule. `readEnvelope` takes a pixel width, so
+  clamping the count to the sample count is right there — a smaller count is simply a coarser even
+  division of the same run. Under the fixed-width rule the count is **not a free parameter**: it is
+  `ceil(runTicks / bucketTicks)`, and reducing it shortens the grid. `bucketStartsFor` was handed
+  the clamped count, so the boundary array covered less time than the run and the fold's cursor
+  pinned every later sample into the final bucket.
+- Empty buckets are the honest answer for a resolution finer than the data supports — `counts[i]`
+  is `0`, and `toPhysicalEnvelope` has converted those to `NaN` since 0.3.10.
+- **The clamp was also the only thing bounding the allocation.** One microsecond over an hour is
+  billions of buckets, so the ceiling is now stated rather than implied: an envelope needing more
+  than `maxMaterializeBytes` is refused with `EdfBudgetError` before anything is allocated, naming
+  both numbers, the way every other allocation in the package is.
+- The three CHANGELOG entries before this one (0.2.31, 0.3.5, 0.3.9) all fixed how the bucket COUNT
+  is derived or how the fold assigns a sample. None covered the count being reduced after it was
+  derived, and every existing test used a `secondsPerBucket` coarser than its fixture's sample
+  interval, so the clamp never fired in the suite.
+
 ## 0.3.29
 
 - **Fixed** a missing timekeeping TAL in **record 0** setting `startOffsetTicks` to zero, which

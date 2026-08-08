@@ -175,6 +175,15 @@ boundary gives a run wider than it asked for. Two things had to be right for tha
 Widths that disagree cannot be drawn on one axis, which is the entire reason this function exists
 separately from `readEnvelope`.
 
+A resolution **finer than the sample interval** is allowed and produces empty buckets, which is the
+honest picture: `counts[i]` is `0` and `toPhysicalEnvelope` converts them to `NaN`, which plotting
+libraries break the line at. Until 0.3.30 the bucket count was clamped to the sample count, which
+is right for `readEnvelope` — a pixel width — and wrong here, because the count is
+`ceil(run / secondsPerBucket)` and reducing it shortens the grid: a 4 s run of a 2 Hz signal asked
+at 0.25 s per bucket came back as 8 buckets covering 2 s, with the whole second half of the run in
+the last one. A resolution fine enough to need more buckets than `maxMaterializeBytes` allows is
+refused by name.
+
 ## Streaming iteration
 
 `readWindow` returns every chunk at once, which is right for a window you are about to draw and

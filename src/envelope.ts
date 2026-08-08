@@ -22,8 +22,9 @@
  */
 
 import { decodeDigitalCounted } from './decode/digital.js';
-import { EdfScalingError } from './errors.js';
+import { EdfBudgetError, EdfScalingError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
+import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
 import { gapBefore } from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
@@ -42,6 +43,9 @@ import type {
   ReadOptions,
   RecordRange,
 } from './types.js';
+
+/** `min`, `max` and `counts` are one Int32Array each, so a bucket costs twelve bytes per signal. */
+const BYTES_PER_BUCKET = 12;
 
 /** Per-signal accumulator, reused across every chunk of one contiguous run. */
 interface Accumulator {
@@ -176,13 +180,51 @@ async function reduceRange(
   const signals = resolveEnvelopeSignals(header, selection.signalIndices);
   const diagnostics: EdfDiagnostic[] = [];
 
-  // More buckets than the densest signal has samples in this run would leave holes that mean
-  // nothing, so the request is clamped rather than honoured literally.
+  /*
+   * The densest-samples clamp belongs to the EVEN-DIVISION rule and to it alone.
+   *
+   * For `readEnvelope` it is right: the caller asked for a pixel width, more buckets than samples
+   * would leave holes that mean nothing, and a smaller count is simply a coarser even division of
+   * the same run. For `readEnvelopeAtResolution` it is wrong, because the count is not a free
+   * parameter there — it is `ceil(runTicks / bucketTicks)`, and reducing it SHORTENS THE GRID.
+   * `bucketStartsFor` was handed the clamped count, so the boundary array covered only
+   * `bucketCount * bucketTicks` of elapsed time and `foldChunk`'s cursor pinned every later sample
+   * into the final bucket — while `secondsPerBucket` still reported the width that was asked for.
+   *
+   * A 4 s run of a 2 Hz signal asked at 0.25 s per bucket came back as 8 buckets covering 2 s,
+   * with the whole second half of the run in the last one, and nothing in the result said so. A
+   * viewer placing bucket b at `startSeconds + b * secondsPerBucket` — the documented way to use
+   * this function — drew half the run stacked on one pixel (fixed in 0.3.30).
+   *
+   * Buckets with no sample are the honest answer for a resolution finer than the data supports:
+   * `counts[i]` is 0 and `toPhysicalEnvelope` converts them to NaN (0.3.10), which every plotting
+   * library breaks the line at.
+   */
+  const fixedWidth = bucketTicks !== undefined && bucketTicks > 0n;
   const densestSamples = signals.reduce(
     (most, signal) => Math.max(most, signal.samplesPerRecord * records.count),
     0,
   );
-  const bucketCount = Math.max(1, Math.min(selection.buckets, densestSamples));
+  const bucketCount = fixedWidth
+    ? Math.max(1, selection.buckets)
+    : Math.max(1, Math.min(selection.buckets, densestSamples));
+
+  // The clamp was also the only thing bounding the allocation. A fixed width fine enough — one
+  // microsecond over an hour — asks for billions of buckets, so the ceiling is now stated as a
+  // budget and refused before anything is allocated, the way every other allocation in the
+  // package is.
+  const bucketBytes = bucketCount * BYTES_PER_BUCKET * signals.length;
+  const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
+  if (bucketBytes > budgetBytes) {
+    throw new EdfBudgetError(
+      `An envelope of ${bucketCount} buckets over ${signals.length} signal(s) needs a ` +
+        `${bucketBytes}-byte accumulator, above the ${budgetBytes}-byte maxMaterializeBytes ` +
+        'budget, so it was refused before anything was allocated. Next: ask for a coarser ' +
+        'secondsPerBucket — one finer than the sample interval cannot show more than the samples ' +
+        'do — or raise options.maxMaterializeBytes.',
+      { requiredBytes: bucketBytes, budgetBytes },
+    );
+  }
 
   const accumulators: Accumulator[] = signals.map((signal) => ({
     signal,
@@ -194,15 +236,14 @@ async function reduceRange(
     consumed: 0,
     outOfRange: 0,
     scratch: undefined,
-    bucketStarts:
-      bucketTicks === undefined || bucketTicks <= 0n
-        ? undefined
-        : bucketStartsFor(
-            bucketCount,
-            bucketTicks,
-            signal.samplesPerRecord,
-            header.recordDurationTicks,
-          ),
+    bucketStarts: !fixedWidth
+      ? undefined
+      : bucketStartsFor(
+          bucketCount,
+          bucketTicks as bigint,
+          signal.samplesPerRecord,
+          header.recordDurationTicks,
+        ),
     bucket: 0,
   }));
 
