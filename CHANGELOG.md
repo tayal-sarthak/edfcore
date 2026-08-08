@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.56
+
+- **Fixed** `trimToWindow` dropping the sample whose own start time the window was aligned to.
+  - `gridSampleStartTicks` and `sampleStartTicksOf` round a sample's start **up** to a whole tick,
+    deliberately, so that flooring it back names the same sample. `trimToWindow` selected on the
+    sample's exact rational start instead. When a boundary is not a whole tick the published start
+    is strictly later than the exact one, so the sample no longer qualified for a window beginning
+    at its own published start and the trim began at `n + 1`.
+  - 256 samples in a one-second record — the commonest EEG geometry there is — puts sample 1 at
+    39,062.5 ticks, published as 39,063. **Half of all sample indices** were affected at that rate.
+    At 128 samples per 0.29 s a one-sample-wide window aligned to a sample start came back
+    **empty**.
+  - 0.3.32 fixed this exact mismatch in `readTriggers` and wrote down the rule it settled on:
+    "`sampleAt`, `sampleStartTicksOf`, a window bound and `readTriggers` all name the same sample."
+    The window bound was the one of the four still using the other rounding.
+- Both edges stay a bigint product of on-disk quantities — no division, no sample rate, no float
+  bound. Sample `j` is in the window when `ceil(j * D / S)` is in `[R, Rend)`, and since
+  `ceil(x) >= R` iff `x > R - 1`, that is `floorDiv((R - 1) * S, D) + 1` and
+  `floorDiv((Rend - 1) * S, D)`.
+- Identical to the old form whenever a boundary falls on a whole tick, so **no window on a
+  power-of-ten geometry moves**, and the whole existing suite passed unchanged. A sample admitted
+  by the new rule starts at most one tick — 100 ns, below the resolution edfcore reports in —
+  before the bound, and it is exactly the sample the caller aligned to.
+
 ## 0.3.55
 
 - **Fixed** `streamRecords` never comparing record onsets across a chunk boundary, so an

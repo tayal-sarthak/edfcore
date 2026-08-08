@@ -25,6 +25,7 @@ import { parseHeader } from '../../../src/header/parse.js';
 import { byteSource } from '../../../src/io/bytes.js';
 import { buildRecordIndex } from '../../../src/record-index.js';
 import { openEdf, readRecords, readWindow } from '../../../src/recording.js';
+import { sampleAt, sampleStartSecondsOf } from '../../../src/sample-locate.js';
 import { resolveTimeWindow, trimToWindow } from '../../../src/time/window.js';
 import type {
   EdfChunkSignal,
@@ -575,4 +576,73 @@ describe('the window functions against real chunks', () => {
     expect(chunks[1]?.startSeconds).toBe(100);
     expect(chunks[1]?.precededByGap?.durationSeconds).toBe(98);
   });
+});
+
+describe('a window aligned to a sample start contains that sample', () => {
+  /**
+   * `gridSampleStartTicks` and `sampleStartTicksOf` round a sample's start UP to a whole tick, so
+   * a boundary that is not a whole tick publishes a start LATER than its exact one. Selecting on
+   * the exact start then dropped the sample the caller had aligned to: 256 samples in a
+   * one-second record puts sample 1 at 39,062.5 ticks, published as 39,063, and a window starting
+   * at 39,063 began at sample 2. Half of all indices at that rate; at 128 samples per 0.29 s a
+   * one-sample window came back EMPTY.
+   *
+   * 0.3.32 settled the rule for the other three: "`sampleAt`, `sampleStartTicksOf`, a window bound
+   * and `readTriggers` all name the same sample." The window bound was the one still disagreeing.
+   */
+  async function firstSampleOfOwnWindow(
+    samplesPerRecord: number,
+    recordDurationSeconds: number,
+    index: number,
+  ): Promise<{ first: number; count: number; located: number | undefined }> {
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds,
+      signals: [{ label: 'A', samplesPerRecord }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const chunk = await readRecords(recording, {
+      records: { start: 0, count: 4 },
+      signalIndices: [0],
+    });
+    const chunkSignal = chunk.signals[0];
+    if (chunkSignal === undefined) throw new Error('expected one chunk signal');
+
+    const startSeconds = sampleStartSecondsOf(recording, 0, index);
+    const trimmed = trimToWindow(
+      recording.header,
+      chunkSignal,
+      startSeconds,
+      recordDurationSeconds / samplesPerRecord,
+    );
+    return {
+      first: trimmed.firstSampleIndex,
+      count: trimmed.sampleCount,
+      located: sampleAt(recording, 0, startSeconds)?.sampleIndex,
+    };
+  }
+
+  it.each([
+    // 256 samples / 1 s: every odd index has a half-tick boundary. The commonest EEG geometry.
+    { samplesPerRecord: 256, recordDurationSeconds: 1 },
+    // 128 samples / 0.29 s: almost every boundary is fractional.
+    { samplesPerRecord: 128, recordDurationSeconds: 0.29 },
+    // 10 samples / 1 s: every boundary is a whole tick, so nothing here may move.
+    { samplesPerRecord: 10, recordDurationSeconds: 1 },
+  ])(
+    '$samplesPerRecord samples per $recordDurationSeconds s',
+    async ({ samplesPerRecord, recordDurationSeconds }) => {
+      for (let index = 0; index < 12; index += 1) {
+        const { first, count, located } = await firstSampleOfOwnWindow(
+          samplesPerRecord,
+          recordDurationSeconds,
+          index,
+        );
+        expect(first, `sample ${index} begins its own window`).toBe(index);
+        expect(count, `sample ${index} is in its own window`).toBeGreaterThan(0);
+        // The same instant, through the locating function: all four must name one sample.
+        expect(located, `sampleAt agrees for ${index}`).toBe(index);
+      }
+    },
+  );
 });

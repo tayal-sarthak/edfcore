@@ -293,13 +293,37 @@ export function trimToWindow(
   const relativeStartTicks = windowStartTicks - chunkStartTicks;
   const relativeEndTicks = relativeStartTicks + windowDurationTicks;
 
+  /*
+   * Compared against the start tick each sample PUBLISHES, not against its exact rational start.
+   *
+   * `gridSampleStartTicks` and `sampleStartTicksOf` round a sample's start UP to a whole tick, on
+   * purpose, so that flooring it back names the same sample. A boundary need not fall on a whole
+   * tick: 256 samples in a one-second record — the commonest EEG geometry there is — puts sample 1
+   * at 39,062.5 ticks, published as 39,063. Selecting on the EXACT start then excluded that sample
+   * from a window beginning at its own published start, because 39,063 is later than 39,062.5. Half
+   * of all indices were affected at that rate; at 128 samples per 0.29 s a one-sample-wide window
+   * aligned to a sample start came back EMPTY.
+   *
+   * 0.3.32 fixed the same mismatch in `readTriggers` and recorded the rule it settled on:
+   * "`sampleAt`, `sampleStartTicksOf`, a window bound and `readTriggers` all name the same sample."
+   * The window bound was the one of the four still using the other rounding (fixed in 0.3.56).
+   *
+   * Sample j is in the window when `ceil(j * D / S)` is in `[R, Rend)`, and since
+   * `ceil(x) >= R  <=>  x > R - 1`, both edges stay a bigint product of on-disk quantities:
+   *   first: smallest j with j*D > (R-1)*S      -> floorDiv((R-1)*S, D) + 1
+   *   last:  largest  j with j*D <= (Rend-1)*S  -> floorDiv((Rend-1)*S, D)
+   * Identical to the old form whenever a boundary is a whole tick, so no window on a
+   * power-of-ten geometry moves; a sample admitted by the new rule starts at most one tick — 100
+   * ns, below the resolution edfcore reports in — before the bound, and it is precisely the sample
+   * the caller aligned to.
+   */
   const firstIndex = clampToInt(
-    ceilDiv(relativeStartTicks * samplesPerRecordTicks, durationTicks),
+    floorDiv((relativeStartTicks - 1n) * samplesPerRecordTicks, durationTicks) + 1n,
     0,
     available,
   );
   const lastIndex = clampToInt(
-    ceilDiv(relativeEndTicks * samplesPerRecordTicks, durationTicks) - 1n,
+    floorDiv((relativeEndTicks - 1n) * samplesPerRecordTicks, durationTicks),
     -1,
     available - 1,
   );
