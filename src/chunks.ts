@@ -47,11 +47,27 @@ function at(chunks: readonly EdfChunk[], index: number): EdfChunk {
  */
 function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void {
   if (next.precededByGap !== undefined) {
+    // Branch on the sign. An overlap travels in `index.gaps` with a NEGATIVE duration (0.2.69), so
+    // `chunk.precededByGap` carries it too, and a hardcoded gap reading produced "preceded by a
+    // gap of -0.2 s" — a gap of negative duration — with an explanation that inverts what an
+    // overlap does: across a gap two samples are seconds APART, across an overlap they cover the
+    // SAME time, so concatenating duplicates it rather than skipping it.
+    //
+    // 0.3.3 stated the partition and 0.3.33 applied it to "the two places that still said it was".
+    // This is the third; `src/chunks.ts` contained no mention of an overlap at all (fixed in
+    // 0.3.41). The refusal itself is unchanged and right either way.
+    const gap = next.precededByGap;
+    const overlapping = gap.durationTicks < 0n;
     throw new RangeError(
-      `mergeChunks: chunk ${index} is preceded by a gap of ${next.precededByGap.durationSeconds} s. ` +
-        'Concatenating across it would put two samples that are seconds apart next to each other ' +
-        'in one array, and every time computed from an index after the join would be wrong by the ' +
-        'gap. Merge each contiguous run separately.',
+      overlapping
+        ? `mergeChunks: chunk ${index} is preceded by an overlap of ${-gap.durationSeconds} s — ` +
+            'the records on either side of the join both claim that time. Concatenating them would ' +
+            'store it twice and date every sample after the join late by it. Merge each contiguous ' +
+            'run separately.'
+        : `mergeChunks: chunk ${index} is preceded by a gap of ${gap.durationSeconds} s. ` +
+            'Concatenating across it would put two samples that are seconds apart next to each ' +
+            'other in one array, and every time computed from an index after the join would be ' +
+            'wrong by the gap. Merge each contiguous run separately.',
     );
   }
 

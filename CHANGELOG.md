@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.41
+
+- **Fixed** `mergeChunks` refusing an overlap with *"chunk 1 is preceded by a gap of -0.2 s"* — a
+  gap of negative duration — and explaining it as the inverse of what happened. Across a GAP two
+  samples either side of the join are seconds apart; across an OVERLAP they cover the same time,
+  so concatenating stores it twice rather than skipping it. The message asserted the first.
+- **0.3.33's own headline was "in the two places that still said it was", and it named exactly
+  two.** This is a third. `src/chunks.ts` contained no mention of an overlap anywhere, so the
+  partition 0.3.3 stated — *a gap is time no record covers; an overlap is one instant two records
+  both claim* — had never reached it. Counting the sites from memory was the mistake, twice now.
+- The refusal is unchanged and correct either way; only the wording branches on the sign, and the
+  magnitude is printed positive.
+- `api-reading.md`'s `precededByGap` example printed `gap of ${durationSeconds} s` unconditionally,
+  which produces `gap of -0.2 s` on the same file. It branches on the sign now, since that is what
+  a reader will copy.
+
 ## 0.3.40
 
 - **Fixed a regression introduced two releases ago.** 0.3.37 split the 206 `Content-Range` guard on

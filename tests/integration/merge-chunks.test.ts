@@ -331,3 +331,82 @@ describe('the joinability check reads the ticks off the chunks', () => {
     expect(() => mergeChunks([first, shifted])).toThrow(/discontinuity/);
   });
 });
+
+describe('mergeChunks does not call an overlap a gap', () => {
+  /**
+   * An overlap travels in `index.gaps` with a NEGATIVE duration (0.2.69), so it reaches
+   * `chunk.precededByGap` too. A hardcoded gap reading produced "preceded by a gap of -0.2 s" —
+   * a gap of negative duration — and the consequence clause inverted what an overlap does: across
+   * a gap two samples are seconds APART; across an overlap they cover the SAME time, so
+   * concatenating stores it twice rather than skipping it.
+   *
+   * 0.3.3 stated the partition; 0.3.33's own headline was "the two places that still said it was"
+   * and enumerated exactly two. This file was a third, and contained no mention of an overlap at
+   * all (fixed in 0.3.41).
+   */
+  async function overlapping() {
+    const bytes = minimalEdfPlus({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => (r < 3 ? r : r - 0.2),
+    });
+    const opened = await openEdf(byteSource(bytes));
+    return { ...opened, index: await buildRecordIndex(opened) };
+  }
+
+  it('names it an overlap, with a positive magnitude', async () => {
+    const recording = await overlapping();
+    expect(recording.index.gaps?.[0]?.durationTicks).toBe(-2_000_000n);
+
+    const chunks = await readWindow(recording, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 10,
+    });
+    expect(chunks).toHaveLength(2);
+
+    const error = (() => {
+      try {
+        mergeChunks(chunks);
+        return undefined;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+
+    expect(error?.message).toContain('preceded by an overlap of 0.2 s');
+    expect(error?.message).toContain('both claim that time');
+    // A gap of negative duration is not a thing, and the gap consequence is the wrong one.
+    expect(error?.message).not.toContain('gap of -0.2');
+    expect(error?.message).not.toContain('seconds apart');
+    // Still refused: the check is right either way.
+    expect(error).toBeInstanceOf(RangeError);
+  });
+
+  it('still calls a real hole a gap', async () => {
+    const bytes = minimalEdfPlus({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r: number) => (r < 3 ? r : r + 10),
+    });
+    const opened = await openEdf(byteSource(bytes));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    const chunks = await readWindow(recording, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 30,
+    });
+    const error = (() => {
+      try {
+        mergeChunks(chunks);
+        return undefined;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(error?.message).toContain('preceded by a gap of 10 s');
+    expect(error?.message).toContain('seconds apart');
+  });
+});

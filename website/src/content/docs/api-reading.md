@@ -187,8 +187,15 @@ const chunks = await readWindow(recording, {
 });
 
 for (const chunk of chunks) {
-  if (chunk.precededByGap !== undefined) {
-    console.log(`gap of ${chunk.precededByGap.durationSeconds} s before this run`);
+  const before = chunk.precededByGap;
+  if (before !== undefined) {
+    // The duration is NEGATIVE for an overlap — two records claiming the same instant — so branch
+    // on the sign rather than printing it as a gap.
+    console.log(
+      before.durationTicks < 0n
+        ? `overlap of ${-before.durationSeconds} s before this run`
+        : `gap of ${before.durationSeconds} s before this run`,
+    );
   }
   console.log(chunk.records, chunk.startSeconds);
 }
