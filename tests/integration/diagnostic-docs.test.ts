@@ -176,6 +176,37 @@ describe('no page prints a severity the formatter would not print', () => {
    */
   const PAGES = ALL_PAGES;
 
+  it('matches every printed "// severity CODE offset" against the source', () => {
+    /*
+     * The other shape a page prints a severity in. `concepts.md` teaches diagnostics with
+     * `console.log(diagnostic.severity, diagnostic.code, diagnostic.byteOffset)` and showed the
+     * output as `warning DATE_CLIPPED_TO_1985_2084 168`; that code is `info`. The assertion below
+     * only ever looked for `severity [CODE]` with brackets, which is what `formatDiagnostics`
+     * emits, so it could not see this one (fixed in 0.3.62).
+     */
+    const byCode = dispositions();
+    const severityOf: Readonly<Record<Disposition, string>> = {
+      fatal: 'error',
+      deferred: 'error',
+      warning: 'warning',
+      info: 'info',
+    };
+    const wrong: string[] = [];
+    for (const [path, text] of Object.entries(ALL_PAGES)) {
+      for (const match of text.matchAll(/^\/\/ (error|warning|info) ([A-Z_0-9]+)\b/gm)) {
+        const disposition = byCode.get(match[2] as string);
+        if (disposition === undefined) continue;
+        const expected = severityOf[disposition];
+        if (match[1] !== expected) {
+          wrong.push(
+            `${path.split('/').pop()}: ${match[2]} printed as ${match[1]}, is ${expected}`,
+          );
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
   it('matches every printed "severity [CODE]" against the source', () => {
     const byCode = dispositions();
     const severityOf: Readonly<Record<Disposition, string>> = {

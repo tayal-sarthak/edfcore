@@ -240,7 +240,7 @@ for (const diagnostic of recording.header.diagnostics) {
   console.log(diagnostic.severity, diagnostic.code, diagnostic.byteOffset);
   console.log(diagnostic.message);
 }
-// warning DATE_CLIPPED_TO_1985_2084 168
+// info DATE_CLIPPED_TO_1985_2084 168
 // startdate field (8 bytes at offset 168) is "01.01.20": its two-digit year was resolved to
 // 2020 by the EDF+ rule that 85..99 mean 1985..1999 and 00..84 mean 2000..2084, so the field
 // cannot express a year outside that span. EDF+ additional specification 2 (1985 is the
@@ -255,9 +255,16 @@ The diagnostic code is an open union. Known codes autocomplete; a `default` bran
 To stop at the first problem, pass `strict`:
 
 ```ts
+// A file whose local patient identification is free text rather than the four EDF+ subfields.
 await openEdf(source, { strict: true });
-// EdfFormatError: [DATE_CLIPPED_TO_1985_2084] ...
+// EdfFormatError: [PATIENT_ID_NONCONFORMANT] local patient identification (80 bytes at offset 8)
+// is "Haagse Harry", which is not the EDF+ ...
 ```
+
+`info` codes are exempt from `strict`, so the diagnostic above is deliberately not the one printed
+earlier: `DATE_CLIPPED_TO_1985_2084` is `info`, nearly every EDF file carries it, and making
+`strict` throw on it would mean rejecting conforming files. Every `info` note is still collected
+and readable.
 
 The error carries `code`, `field`, `byteOffset`, and the whole `diagnostic` object it would otherwise have collected. Discriminate on `error.edfErrorKind` (`'format'`, `'scaling'`, `'range'`, `'source'`, `'budget'` or `'channel'`) rather than `instanceof`, which returns false across a realm boundary such as a worker or an iframe. `isEdfError(value)` is the one-call version of that check.
 

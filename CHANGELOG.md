@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.62
+
+- **Fixed** the Start-here page teaching `strict` with the one code family `strict` cannot fire on,
+  and printing that code's severity wrong.
+  - `concepts.md` showed `await openEdf(source, { strict: true })` producing
+    `EdfFormatError: [DATE_CLIPPED_TO_1985_2084]`. That never happens. `info` codes are exempt from
+    `strict` — `collector.ts` gates on `this.strict && diagnostic.severity !== 'info'` and says why
+    in the same docblock — and `DATE_CLIPPED_TO_1985_2084` is `info`. Run against a file whose only
+    defect is that code, `strict: true` resolves.
+  - Ten lines above, the same page printed `// warning DATE_CLIPPED_TO_1985_2084 168` as the output
+    of `console.log(diagnostic.severity, ...)`. The real first field is `info`.
+  - The `strict` example now uses `PATIENT_ID_NONCONFORMANT`, which is a warning and does throw, and
+    the page says out loud that `info` is exempt and why: nearly every EDF file carries this code,
+    so making `strict` throw on it would mean rejecting conforming files.
+- The 0.3.39 guard could not see this. It matched `severity [CODE]` — the shape `formatDiagnostics`
+  emits — and this page prints the `console.log(severity, code, byteOffset)` shape instead. It now
+  checks both, so a page cannot state a severity the package would not print in either form.
+
 ## 0.3.61
 
 - **Fixed** `inspectEdf` reporting a complete, perfectly readable file as `SOURCE_TOO_SMALL`, at
