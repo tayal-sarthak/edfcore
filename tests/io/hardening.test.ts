@@ -289,6 +289,34 @@ describe('a partial response is checked for WHICH bytes it carries', () => {
     expect(Array.from(await source.read(8, 4))).toEqual([8, 9, 10, 11]);
   });
 
+  it('tells a short resource apart from a cache serving the wrong region', async () => {
+    /*
+     * A server that STARTED where it was asked to and stopped because the resource ends there has
+     * behaved perfectly — the bytes are the requested bytes, and what is wrong is the length this
+     * source is working from: a stale HEAD `Content-Length`, a caller-supplied `byteLength`, or a
+     * file replaced by a shorter one. The guard reported it as "a different part of the resource"
+     * and told the user to bypass a CDN that is behaving correctly (fixed in 0.3.37).
+     */
+    const { fetch } = misbehaving('bytes 12-15/16', CONTENT.subarray(12, 16));
+    // This source believes the resource is 32 bytes; it is really 16.
+    const source = await httpSource('https://example.invalid/f.edf', { fetch, byteLength: 32 });
+
+    const thrown: unknown = await source
+      .read(12, 8)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(EdfSourceError);
+    const error = thrown as EdfSourceError;
+    expect(error.message).toContain('started where it was asked to');
+    expect(error.message).toContain('a 16-byte resource');
+    expect(error.message).toContain('built for 32 bytes');
+    // The old, wrong diagnosis is gone.
+    expect(error.message).not.toContain('a different part of the resource');
+    expect(error.message).not.toContain('cache or CDN');
+    // Still refused, and still carrying the real numbers.
+    expect(error.receivedLength).toBe(4);
+  });
+
   it('still accepts a 206 from a double that reports no headers at all', async () => {
     // A caller-written FetchLike is a documented extension point and may answer `null` for every
     // header. Treating that as corruption would break doubles rather than catch servers; a real

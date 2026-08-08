@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.37
+
+- **Fixed** `httpSource` telling a user to bypass their CDN when the server had behaved perfectly.
+  The 206 `Content-Range` guard (0.2.23) fires whenever the claimed range is not the requested one,
+  and that covers two different failures. A server that STARTED where it was asked to and stopped
+  because the resource ends there honoured the Range exactly — the bytes returned are the bytes
+  requested — and what is wrong is the LENGTH this source is working from: a stale or proxied HEAD
+  `Content-Length`, a caller-supplied `options.byteLength`, or a file replaced by a shorter one
+  mid-session.
+- Both cases got the same message: *"its Content-Range says it sent bytes 990..999 — a different
+  part of the resource ... this is usually a cache or CDN keyed on the URL without the Range
+  header; bypass it"*. So the reader was sent to reconfigure a correctly-behaving CDN, **while the
+  resource's real size sat unread in the header of the response just rejected**.
+- The two are now separate. A short tail says the server stopped at byte N because that is the end
+  of an M-byte resource, that this source was built for a different length, and points at
+  `options.byteLength` and the origin's `Content-Length`. The genuine wrong-region message is
+  unchanged, and both still refuse — reading past the end is still an error, and `receivedLength`
+  still carries the real count.
+
 ## 0.3.36
 
 - **Fixed** `edfcore recording.edf` — forgetting the subcommand — reporting

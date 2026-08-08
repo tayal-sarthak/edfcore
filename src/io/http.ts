@@ -353,13 +353,34 @@ export async function httpSource(
       const claimed = rangeFromContentRange(headerOf(response, 'Content-Range'));
       const expectedLast = offset + length - 1;
       if (claimed !== undefined && (claimed.first !== offset || claimed.last !== expectedLast)) {
+        const received = claimed.last - claimed.first + 1;
+        // TWO different failures, and they were reported as one. A server that started where it
+        // was asked to and simply stopped because the resource ends there has behaved perfectly:
+        // the bytes ARE the requested bytes, and what is wrong is the LENGTH this source is
+        // working from — a stale HEAD `Content-Length`, a caller-supplied `options.byteLength`, or
+        // a file replaced by a shorter one mid-session. Telling that user to bypass a cache sends
+        // them to reconfigure a CDN that is behaving correctly, while the response just rejected
+        // carries the resource's real size in the header being read (fixed in 0.3.37).
+        if (claimed.first === offset) {
+          const total = totalFromContentRange(headerOf(response, 'Content-Range'));
+          const realSize = total === undefined ? 'the resource' : `a ${total}-byte resource`;
+          throw new EdfSourceError(
+            `Reading bytes ${offset}..${expectedLast} of ${href}: the server started where it was ` +
+              `asked to and stopped at byte ${claimed.last}, because that is the end of ` +
+              `${realSize}. This source was built for ${byteLength} bytes, so the range it was ` +
+              'asked for does not exist. The Range header was honoured exactly; the length is ' +
+              'what is wrong. Next: drop options.byteLength and let edfcore probe for the size, ' +
+              "or check the origin's Content-Length — a stale or proxied HEAD is the usual cause.",
+            { offset, requestedLength: length, receivedLength: received },
+          );
+        }
         throw new EdfSourceError(
           `Reading bytes ${offset}..${expectedLast} of ${href}: the server answered 206 but its ` +
             `Content-Range says it sent bytes ${claimed.first}..${claimed.last} — a different ` +
             'part of the resource. Serving these as the bytes that were asked for would put the ' +
             'wrong samples at the right timestamps. Next: this is usually a cache or CDN keyed on ' +
             'the URL without the Range header; bypass it, or vary on Range.',
-          { offset, requestedLength: length, receivedLength: claimed.last - claimed.first + 1 },
+          { offset, requestedLength: length, receivedLength: received },
         );
       }
       const bytes = new Uint8Array(await response.arrayBuffer());
