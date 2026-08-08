@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.45
+
+- **Fixed** `formatAnnotations` printing a NEGATIVE onset as an instant slightly **after** the
+  event, which is the one thing the function's own docblock promises it never does.
+  - The clock took the magnitude of the tick count and then truncated it, so the truncation ran
+    toward zero rather than toward -Infinity. `-1.5009 s` printed `-00:00:01.500` — 0.9 ms after
+    the event. The positive twin `+1.5009` printed `00:00:01.500`, correctly *before* its event, so
+    the guarantee held for exactly the half of the range that never needed it.
+  - It now floors with `floorDiv` before splitting into fields: `-1.5009` prints `-00:00:01.501`.
+    Positive onsets, zero, and exact milliseconds are unchanged — flooring only moves a value with
+    a remainder, and only downward.
+- Negative onsets are not an edge case here: EDF+ measures onsets from the header start time and a
+  recording may begin after its first annotation, which is why 0.2.63 made them print as negatives
+  rather than clamp to zero. Sub-millisecond digits are equally ordinary — the parser keeps seven
+  fractional decimal places on purpose. As this module's own comment says, an event list is exactly
+  where someone reads a number off the screen and types it into something else.
+- The docblock said "truncates"; it now says "floors", which is what makes the promise true.
+
 ## 0.3.44
 
 - **Added** the types each subpath's own signatures need, so a consumer taking one part of the

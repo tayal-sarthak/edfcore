@@ -16,6 +16,7 @@
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
+import { floorDiv } from './tal/ticks.js';
 import { printable } from './text/printable.js';
 import type { EdfAnnotation } from './types.js';
 
@@ -31,15 +32,20 @@ const TICKS_PER_MILLISECOND = TICKS_PER_SECOND / 1000n;
 /**
  * `hh:mm:ss.mmm`, from exact ticks.
  *
- * Truncates to the millisecond rather than rounding, so the printed time never names an instant
- * later than the event. Hours are not wrapped at 24 — a 30-hour recording is a real thing and
- * `30:12:00.000` is more useful than `06:12:00.000` on day two.
+ * FLOORS to the millisecond rather than rounding, so the printed time never names an instant later
+ * than the event — in either direction. Hours are not wrapped at 24 — a 30-hour recording is a
+ * real thing and `30:12:00.000` is more useful than `06:12:00.000` on day two.
  */
 function clock(ticks: bigint): string {
-  const negative = ticks < 0n;
-  const absolute = negative ? -ticks : ticks;
+  // Floored toward -Infinity, not truncated toward zero. Taking the magnitude first and then
+  // truncating moves a NEGATIVE onset LATER: `-1.5009 s` printed as `-00:00:01.500`, 0.9 ms after
+  // the event. The positive twin `+1.5009` printed `00:00:01.500`, correctly before its event, so
+  // the guarantee held for exactly the half of the range that the paragraph below says is the
+  // unusual one. `-1.5009` now prints `-00:00:01.501` (fixed in 0.3.45).
+  const flooredMilliseconds = floorDiv(ticks, TICKS_PER_MILLISECOND);
+  const negative = flooredMilliseconds < 0n;
+  const totalMilliseconds = negative ? -flooredMilliseconds : flooredMilliseconds;
 
-  const totalMilliseconds = absolute / TICKS_PER_MILLISECOND;
   const milliseconds = totalMilliseconds % 1000n;
   const totalSeconds = totalMilliseconds / 1000n;
   const seconds = totalSeconds % 60n;

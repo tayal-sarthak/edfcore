@@ -63,6 +63,23 @@ describe('the clock', () => {
     expect(formatAnnotations([shifted])).toContain('00:00:01.000');
   });
 
+  it('truncates a NEGATIVE onset away from zero, not toward it', () => {
+    // The same promise, in the direction that got it wrong. -1.5009 s truncated by magnitude
+    // printed -00:00:01.500, which is 0.9 ms AFTER the event — so the guarantee held only for
+    // positive onsets, which is the half that does not need it. Flooring gives -00:00:01.501.
+    const event = annotation(0, 'Before the start');
+    const before: EdfAnnotation = { ...event, onsetTicksFromFirstRecord: -15_009_000n };
+    expect(formatAnnotations([before])).toContain('-00:00:01.501');
+
+    // A sub-millisecond negative onset floors to the millisecond below it for the same reason.
+    const barely: EdfAnnotation = { ...event, onsetTicksFromFirstRecord: -1n };
+    expect(formatAnnotations([barely])).toContain('-00:00:00.001');
+
+    // An exact millisecond is unchanged: flooring only moves a value that has a remainder.
+    const exact: EdfAnnotation = { ...event, onsetTicksFromFirstRecord: -15_000_000n };
+    expect(formatAnnotations([exact])).toContain('-00:00:01.500');
+  });
+
   it('builds the clock from ticks, not from the float seconds', () => {
     // The two fields are deliberately made to disagree here: only a formatter reading the exact
     // one produces 02:00:00.000. This is the assertion the whole design decision rests on.
