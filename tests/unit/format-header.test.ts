@@ -214,6 +214,25 @@ describe('a hostile label cannot forge a row or shift a column', () => {
     // The raw bytes are still available; only the rendering is sanitised.
     expect(header.signals[0]?.raw.label).toContain('\n');
   });
+
+  it('replaces them in the physical dimension too, which ends the same row', () => {
+    // The label is the second column and the dimension is the LAST, so a newline there is worse:
+    // everything after it starts at column 0. Eight bytes are enough to spell a whole signal row.
+    const bytes = buildEdf({
+      recordCount: 2,
+      signals: [
+        { label: 'Fp1', samplesPerRecord: 2, raw: { physicalDimension: '\n  1  Fp' } },
+        { label: 'Fp2', samplesPerRecord: 2 },
+      ],
+    });
+    const header = parseHeader(bytes, bytes.byteLength);
+    const out = formatHeader(header);
+
+    const rows = out.split('\n').filter((l) => /^\s+\d+\s{2}/.test(l));
+    expect(rows).toHaveLength(header.signals.length);
+    expect(out).not.toContain('\n  1  Fp\n');
+    expect(header.signals[0]?.physicalDimension).toContain('\n');
+  });
 });
 
 describe('the diagnostic summary is ordered like the validation report', () => {

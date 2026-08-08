@@ -127,7 +127,12 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
         ? '—'
         : signal.scale === undefined
           ? 'no usable scale'
-          : `${signal.physicalMinimum}..${signal.physicalMaximum} ${signal.physicalDimension}`;
+          : // Through `printable` for the same reason the label is, and it is the same row: the
+            // dimension is 8 arbitrary header bytes, `trimEdfField` strips only 0x20 and 0x00, and
+            // this is the LAST thing on the line — so a newline in it puts everything after it at
+            // column 0, where it reads as another signal. `edfcore signals` already sanitised this
+            // field; `edfcore header` did not (fixed in 0.3.47).
+            `${signal.physicalMinimum}..${signal.physicalMaximum} ${printable(signal.physicalDimension)}`;
     lines.push(`${index}  ${label}${kind}${rate} ${range}`);
   }
 

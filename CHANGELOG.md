@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.47
+
+- **Fixed** `formatHeader` printing a signal's `physicalDimension` unsanitised, so eight header
+  bytes can forge a signal row for a channel the file does not contain.
+  - The label three columns to its left has gone through `printable` since the beginning, under a
+    comment saying exactly why: "A label holding a newline would otherwise render as two rows and
+    forge a signal the file does not contain." The dimension is the same eight-arbitrary-bytes
+    problem and is worse placed — it ends the row, so everything after a newline in it starts at
+    column 0. A dimension of `"\n  1  Fp"` printed a second `  1  Fp` line under signal 0.
+  - `trimEdfField` strips 0x20 and 0x00 and nothing else, so 0x0a reaches `signal.physicalDimension`
+    intact. The raw bytes stay available on `signal.raw`; only the rendering is sanitised.
+- `edfcore signals` already ran this same field through `printable`, so the two CLI commands
+  disagreed about whether the same eight bytes were safe to print. They now agree.
+- This class has been fixed three times — 0.3.2 in five outputs, 0.3.16 in the two identification
+  lines, and now the last column of the signal table. The new test sits beside the label one, in
+  the block named for what it is defending.
+
 ## 0.3.46
 
 - **Fixed** the two documented code examples that did not compile under the compiler settings
