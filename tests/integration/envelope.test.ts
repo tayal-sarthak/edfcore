@@ -772,6 +772,43 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
     ).rejects.toThrow(/maxMaterializeBytes budget/);
   });
 
+  it('reports the whole grid in bucketCount, empty buckets included', async () => {
+    /*
+     * The field's docblock said "buckets actually filled". That was true of `readEnvelope`, whose
+     * count is clamped to the densest signal's sample count, and stopped being true of
+     * `readEnvelopeAtResolution` in 0.3.30 — which removed the clamp precisely so that a
+     * resolution finer than the data leaves buckets empty rather than shortening the grid
+     * (fixed in 0.3.70).
+     */
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    const [chunk] = await readEnvelopeAtResolution(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 4,
+      secondsPerBucket: 0.25,
+    });
+    const counts = [...(chunk?.signals[0]?.counts ?? [])].slice(0, chunk?.bucketCount);
+
+    // 4 s at 0.25 s per bucket is the grid; 2 Hz fills every other one.
+    expect(chunk?.bucketCount).toBe(16);
+    expect(counts.filter((n) => n > 0)).toHaveLength(8);
+    expect(counts).toEqual([1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
+
+    // The clamped rule still reports what it always did.
+    const [clamped] = await readEnvelope(edf, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 4,
+      buckets: 100,
+    });
+    expect(clamped?.bucketCount).toBe(8);
+  });
+
   it('names the knob the caller actually passed, not the other function’s', async () => {
     // `reduceRange` is shared. Its refusal hard-coded "ask for a coarser secondsPerBucket", so a
     // `readEnvelope` caller — whose only resolution knob is `buckets`, a pixel width — was told to

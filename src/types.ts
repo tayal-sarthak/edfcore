@@ -471,7 +471,21 @@ export interface EdfEnvelopeChunk {
   readonly durationSeconds: number;
   /** The chunk's SPAN in exact ticks, on the same terms as `EdfChunk.durationTicks`. */
   readonly durationTicks: bigint;
-  /** Buckets actually filled. Never more than requested, and fewer for a short run. */
+  /**
+   * Buckets in the grid, filled or not.
+   *
+   * `signals[i].counts[b]` is how many samples landed in bucket `b`, and `0` is an ordinary
+   * answer — `toPhysicalEnvelope` turns an empty bucket into `NaN`, which every plotting library
+   * breaks the line at.
+   *
+   * `readEnvelope` clamps this to the densest signal's sample count, so it is never more than the
+   * `buckets` asked for and is fewer for a short run. `readEnvelopeAtResolution` does NOT: its
+   * count is `ceil(runTicks / bucketTicks)`, because reducing it would shorten the grid rather
+   * than coarsen it, and a resolution finer than the sample interval leaves buckets empty on
+   * purpose (0.3.30). A 4 s run of a 2 Hz signal at 0.25 s per bucket reports 16 here with 8
+   * filled. This docblock said "buckets actually filled" until 0.3.70, which was true only of the
+   * clamped rule and only before that change.
+   */
   readonly bucketCount: number;
   readonly secondsPerBucket: number;
   readonly byteLength: number;

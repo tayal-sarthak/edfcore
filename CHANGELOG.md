@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.70
+
+- **Corrected** `EdfEnvelopeChunk.bucketCount`, documented as "Buckets actually filled. Never more
+  than requested, and fewer for a short run." All three clauses describe the clamped rule only, and
+  the second and third have no meaning for `readEnvelopeAtResolution`, which takes no bucket count.
+  - 0.3.30 removed the densest-samples clamp for that function on purpose — reducing the count
+    there SHORTENS THE GRID rather than coarsening it — and its own entry says "empty buckets are
+    the honest answer for a resolution finer than the data supports". So the field has counted
+    unfilled buckets since then, and its docblock kept saying otherwise.
+  - A 4 s run of a 2 Hz signal at 0.25 s per bucket reports **16** with **8** filled. A caller
+    reading the docblock and sizing an array or a loop by `bucketCount` expecting occupancy gets
+    twice what they planned for.
+  - The docblock now describes the grid, points at `counts[b]` for occupancy, and states which of
+    the two rules clamps.
+- This one ships in `dist/types.d.ts` and appears in no docs page, so the editor tooltip was the
+  only place it was stated — and the only place it could be wrong.
+
 ## 0.3.69
 
 - **Fixed** the envelope's budget refusal telling a `readEnvelope` caller to pass a coarser
