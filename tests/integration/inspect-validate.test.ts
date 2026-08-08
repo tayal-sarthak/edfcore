@@ -21,6 +21,7 @@ import {
   type EdfInspection,
   inspectEdf,
   openEdf,
+  readHeader,
   readWindow,
 } from '../../src/index.js';
 import { validateHeader, validateRecording } from '../../src/validate.js';
@@ -266,6 +267,31 @@ describe('the bytes inspectEdf is allowed to read', () => {
     // header however large it is.
     expect(inspection.diagnostics.map((d) => d.message).join(' ')).toMatch(/readHeader|openEdf/);
     expect(inspection.variant).toBe('EDF');
+
+    // And nothing else. The buffer was truncated to the ceiling on purpose, so parsing it could
+    // only fail the "are all the header bytes here" check — which reported SOURCE_TOO_SMALL, an
+    // ERROR saying "only 131072 bytes are available", naming this function's own budget as if it
+    // were the file's size. `api-reading.md` and `diagnostics.md` both say such a header is
+    // "reported as HEADER_EXCEEDS_INSPECTION_BUDGET rather than half-parsed" (fixed in 0.3.61).
+    expect(codesOf(inspection)).toEqual(['HEADER_EXCEEDS_INSPECTION_BUDGET']);
+    expect(inspection.header).toBeUndefined();
+  });
+
+  it('does not call a complete file too small', async () => {
+    // The same 512-signal file, whole on disk: 133,376 bytes, of which the header needs 131,328.
+    // `readHeader` reads it without complaint, so nothing about this file is too small.
+    const signals: SignalSpec[] = Array.from({ length: 512 }, (_, index) => ({
+      label: `EEG S${index}`,
+      samplesPerRecord: 1,
+    }));
+    const bytes = buildEdf({ signals, recordCount: 2, recordDurationSeconds: 1 });
+
+    const header = await readHeader(byteSource(bytes));
+    expect(header.signals).toHaveLength(512);
+
+    const inspection = await inspectEdf(byteSource(bytes));
+    expect(inspection.byteLength).toBeGreaterThan(256 * 513);
+    expect(codesOf(inspection)).not.toContain('SOURCE_TOO_SMALL');
   });
 });
 

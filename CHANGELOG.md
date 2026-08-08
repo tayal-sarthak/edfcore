@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.61
+
+- **Fixed** `inspectEdf` reporting a complete, perfectly readable file as `SOURCE_TOO_SMALL`, at
+  error severity, immediately after it had already recorded the real reason.
+  - When the declared header exceeds the 128 KiB triage ceiling, `inspectEdf` records
+    `HEADER_EXCEEDS_INSPECTION_BUDGET` — and then handed the deliberately truncated buffer to
+    `parseHeader` anyway. The parse can only fail its "are all the header bytes here" check, and
+    that check reports `SOURCE_TOO_SMALL` saying "only 131072 bytes are available" — which is
+    `inspectEdf`'s own budget, not the file's size.
+  - A 512-signal file 133,376 bytes long, whose header needs 131,328 and which `readHeader` parses
+    without complaint, was therefore reported as too small.
+  - Both `api-reading.md` and `diagnostics.md` already say such a header "is reported as
+    `HEADER_EXCEEDS_INSPECTION_BUDGET` **rather than half-parsed**". It was half-parsed and then
+    misdiagnosed. `inspectEdf` now returns before the parse it knows cannot succeed, with that one
+    diagnostic and the variant hint.
+- `ok` is still false, and the docblock now names this as the one case where that happens without an
+  error-severity diagnostic: nothing was parsed, so there is nothing to be right or wrong about, and
+  the diagnostic names the call that will read the file.
+
 ## 0.3.60
 
 - **Fixed** `validateRecording` and `readEnvelope` reporting a different number of diagnostics for

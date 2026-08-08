@@ -114,6 +114,10 @@ function budgetDiagnostic(signalCount: number, headerByteLength: number): EdfDia
  * whose scale edfcore refuses is an error even though the header itself is readable, because
  * physical units are unavailable for it. Warnings leave `ok` true: the file is impolite, and what
  * it reports is still true.
+ *
+ * The one case where `ok` is false without an error-severity diagnostic is a header above the
+ * ceiling: nothing was parsed, so there is nothing to be right or wrong about, and
+ * `HEADER_EXCEEDS_INSPECTION_BUDGET` says so and names the call that will read it.
  */
 export async function inspectEdf(
   source: ByteSource,
@@ -150,12 +154,37 @@ export async function inspectEdf(
     }
   }
 
+  if (overBudget !== undefined) {
+    /*
+     * Return rather than parse. `headerBytes` was truncated to the ceiling on purpose, so the
+     * parse can only fail its "are all the header bytes here" check — and that check reports
+     * `SOURCE_TOO_SMALL`, an ERROR saying "only 131072 bytes are available", which is this
+     * function's own budget and not the file's size.
+     *
+     * A complete, perfectly readable 512-signal file — 133,376 bytes on disk, needing 131,328 for
+     * its header, which `readHeader` parses without complaint — was therefore reported as too
+     * small, immediately after the real reason had already been recorded one line above. Both
+     * `api-reading.md` and `diagnostics.md` say such a header "is reported as
+     * HEADER_EXCEEDS_INSPECTION_BUDGET rather than half-parsed"; it was half-parsed and then
+     * misdiagnosed (fixed in 0.3.61).
+     */
+    return {
+      ok: false,
+      variant: variantHint(headerBytes),
+      header: undefined,
+      byteLength,
+      bytesRead,
+      headerBytes,
+      diagnostics: Object.freeze([overBudget]),
+    };
+  }
+
   try {
     // Never strict: a triage call that threw on the first impolite field would be useless for
     // exactly the files it exists to describe.
     const header = parseHeader(headerBytes, byteLength);
-    const diagnostics =
-      overBudget === undefined ? header.diagnostics : [overBudget, ...header.diagnostics];
+    // `overBudget` returned above, so everything reaching here parsed the whole declared header.
+    const diagnostics = header.diagnostics;
     return {
       ok: diagnostics.every((diagnostic) => diagnostic.severity !== 'error'),
       variant: header.variant,
@@ -184,11 +213,7 @@ export async function inspectEdf(
       headerBytes,
       // The fatal comes LAST, after what led up to it: it is the reason parsing stopped, and a
       // reader following the list downwards reaches it in the order the parse did.
-      diagnostics: Object.freeze([
-        ...(overBudget === undefined ? [] : [overBudget]),
-        ...collected,
-        failure,
-      ]),
+      diagnostics: Object.freeze([...collected, failure]),
     };
   }
 }
