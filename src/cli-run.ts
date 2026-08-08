@@ -66,6 +66,19 @@ Options
 Exit codes: 0 success, 1 the file is unreadable or failed validation, 2 bad usage.
 `;
 
+/**
+ * Every command the switch below handles, so an unrecognised one is refused before the file is
+ * looked for. The two must stay in step; the switch's `default` is the backstop if they drift.
+ */
+const COMMANDS: ReadonlySet<string> = new Set([
+  'header',
+  'validate',
+  'events',
+  'gaps',
+  'signals',
+  'json',
+]);
+
 export interface Args {
   readonly command: string | undefined;
   readonly file: string | undefined;
@@ -168,6 +181,25 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
   }
   if (command === undefined) {
     io.out(USAGE);
+    return 2;
+  }
+  /*
+   * The command is checked BEFORE the file, because otherwise the commonest slip of all is
+   * misdiagnosed. `parseArgs` puts the first non-flag argument in `command`, so
+   * `edfcore recording.edf` — forgetting the subcommand — reported "edfcore recording.edf: no
+   * file given", printing the filename that WAS given as though it were the command and blaming
+   * the argument that is not missing. The mistake is an unrecognised command, and the branch
+   * below already names that correctly (fixed in 0.3.36).
+   */
+  if (!COMMANDS.has(command)) {
+    // A bare filename is the likely intent, so say which word is missing rather than only which
+    // one is wrong.
+    const looksLikeAFile = /[./\\]/.test(command);
+    io.err(
+      `edfcore: unknown command ${JSON.stringify(command)}` +
+        (looksLikeAFile ? ' — that looks like a file, so the command before it is missing' : '') +
+        `\n\n${USAGE}`,
+    );
     return 2;
   }
   if (file === undefined) {
@@ -345,6 +377,8 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
     }
 
     default:
+      // Unreachable: `COMMANDS` above is the same set, and a command outside it was already
+      // refused. Kept so the switch stays total if a case is ever removed without the set.
       io.err(`edfcore: unknown command ${JSON.stringify(command)}\n\n${USAGE}`);
       return 2;
   }

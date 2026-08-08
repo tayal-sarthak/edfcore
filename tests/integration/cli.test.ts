@@ -78,6 +78,32 @@ describe('exit codes', () => {
     expect((await invoke(['header'], {})).code).toBe(2);
   });
 
+  it('names the missing COMMAND when only a filename is given', async () => {
+    // `parseArgs` puts the first non-flag argument in `command`, and the file check ran first —
+    // so forgetting the subcommand reported "edfcore recording.edf: no file given", printing the
+    // filename that WAS given as though it were the command, and blaming the argument that is not
+    // missing. This is the commonest CLI slip after `--help`, which this project already had to
+    // fix once (0.2.x) (fixed in 0.3.36).
+    const { code, err } = await invoke(['recording.edf'], { 'recording.edf': PLAIN });
+    expect(code).toBe(2);
+    expect(err).toContain('unknown command "recording.edf"');
+    expect(err).toContain('that looks like a file');
+    expect(err).not.toContain('no file given');
+  });
+
+  it('still says "no file given" when a real command is missing its file', async () => {
+    const { code, err } = await invoke(['header'], {});
+    expect(code).toBe(2);
+    expect(err).toContain('edfcore header: no file given');
+  });
+
+  it('names an unknown command that does not look like a file, without the hint', async () => {
+    const { code, err } = await invoke(['nonsense', 'a.edf'], { 'a.edf': PLAIN });
+    expect(code).toBe(2);
+    expect(err).toContain('unknown command "nonsense"');
+    expect(err).not.toContain('that looks like a file');
+  });
+
   it('exits 0 when a file reads cleanly', async () => {
     expect((await invoke(['header', 'a.edf'], { 'a.edf': PLAIN })).code).toBe(0);
   });

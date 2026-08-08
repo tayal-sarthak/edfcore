@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.36
+
+- **Fixed** `edfcore recording.edf` — forgetting the subcommand — reporting
+  `edfcore recording.edf: no file given`. `parseArgs` puts the first non-flag argument in
+  `command`, and the file check ran before the command check, so the message printed the filename
+  that WAS given as though it were the command and blamed the one argument that is not missing.
+- The command is now checked first, and a bare filename gets a hint: *unknown command
+  "recording.edf" — that looks like a file, so the command before it is missing*. An unknown
+  command that does not look like a path is named without the hint, and a real command missing its
+  file still says "no file given". Exit code stays 2 for all three.
+- Forgetting the subcommand is the commonest CLI slip after `--help`, which this project already
+  had to fix once — `edfcore --help` used to fall through to "no command" and exit 2.
+
 ## 0.3.35
 
 - **Changed** the envelope path to refuse a bad `signalIndex` with `EdfChannelNotFoundError`, which
