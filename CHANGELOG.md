@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.53
+
+- **Fixed** the README status line, which said **"Status: 0.1.x, early"** — through fifty-one
+  releases and two minor versions. It is the first thing a reader sees on npm, and it named a
+  series nobody could install.
+- `tests/integration/readme-status.test.ts` reads the series back out of the line and compares it
+  with `package.json`, which changes on its own every release. The line cannot go stale again
+  without failing the suite.
+- The "1,200+ tests" in the same sentence is left as written. It is a floor and it is still true —
+  the suite runs 1,772 — and raising it to a number no test can verify would reintroduce exactly
+  the kind of unchecked claim this release is about.
+
 ## 0.3.52
 
 - **Documented** `-v`. `parseArgs` has accepted it as an alias for `--version` for as long as it has
