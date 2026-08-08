@@ -70,9 +70,16 @@ export interface ReadOptions {
 
 export interface ParseOptions {
   /**
-   * When true the first would-be diagnostic throws `EdfFormatError` carrying it, so every
-   * `diagnostics` array is consequently empty. Check order is pinned and tested, which is what
-   * makes error identity stable across refactors.
+   * When true the first would-be diagnostic throws `EdfFormatError` carrying it, so a file that
+   * has one comes back as a rejection rather than as a header with a list.
+   *
+   * `info` codes are EXEMPT and are still collected: they explain something the file got right,
+   * and `DATE_CLIPPED_TO_1985_2084` is carried by nearly every conforming EDF file, so throwing
+   * on it would make `strict` reject the files it exists to accept. A strict parse of a file
+   * whose only note is `info` therefore resolves, with that note present — which is why this said
+   * "every `diagnostics` array is consequently empty" until 0.3.76 and was wrong twice over.
+   *
+   * Check order is pinned and tested, which is what makes error identity stable across refactors.
    */
   readonly strict?: boolean;
 }

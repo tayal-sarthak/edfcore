@@ -501,9 +501,11 @@ Accepted by every function on this page, and by `ByteSource.read` itself.
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `strict` | `boolean` | `false` | The first would-be diagnostic throws `EdfFormatError` carrying it, so every `diagnostics` array is consequently empty. |
+| `strict` | `boolean` | `false` | The first would-be diagnostic throws `EdfFormatError` carrying it. `info` codes are exempt and are still collected. |
 
-Strict mode is more unforgiving than it first looks. Every EDF file that writes its startdate in the mandated `dd.mm.yy` form carries a two-digit year. That is a `DATE_CLIPPED_TO_1985_2084` note — severity `info` — and under `strict` it is a thrown `EdfFormatError` all the same, because `strict` exempts nothing that names a real deviation. Strict mode is a conformance gate, not a stricter reading mode. Use it when you want to reject anything less than perfect, and read `header.diagnostics` otherwise. Check order is pinned and tested, which is what makes error identity stable across refactors.
+Strict mode is a conformance gate, not a stricter reading mode: use it when you want to reject anything less than perfect, and read `header.diagnostics` otherwise.
+
+It exempts `info`, and that exemption is what makes it usable. Every EDF file that writes its startdate in the mandated `dd.mm.yy` form carries a two-digit year, so nearly every conforming file carries a `DATE_CLIPPED_TO_1985_2084` note — and throwing on it would make `strict` reject the files it exists to accept. A strict parse of a file whose only note is `info` resolves, with that note still on `header.diagnostics`. Check order is pinned and tested, which is what makes error identity stable across refactors.
 
 ### OpenOptions
 

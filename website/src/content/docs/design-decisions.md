@@ -229,8 +229,10 @@ rather than leaving you to write `Math.round(t * rate)`.
 ## `strict` is the only mode
 
 One boolean. With `strict: true`, the first would-be diagnostic throws `EdfFormatError` carrying
-it, so every `diagnostics` array is consequently empty. Without it, diagnostics accumulate on the
-result that produced them. Check order is pinned in the parser and asserted by a test, so which
+it, so a file that has one comes back as a rejection rather than as a header with a list. `info`
+codes are exempt and are still collected — they explain something the file got right, and
+`DATE_CLIPPED_TO_1985_2084` is carried by nearly every conforming EDF file. Without `strict`,
+diagnostics accumulate on the result that produced them. Check order is pinned in the parser and asserted by a test, so which
 error a broken file reports stays stable across refactors.
 
 Two states are exhaustively testable. A third mode, or a per-code severity map, is a configuration

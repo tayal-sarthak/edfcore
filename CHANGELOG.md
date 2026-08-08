@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.76
+
+- **Fixed** two false claims about `strict`, in the reference page, the design record and the
+  published `ParseOptions` type.
+  - `api-reading.md` said a `DATE_CLIPPED_TO_1985_2084` note is "a thrown `EdfFormatError` all the
+    same, because `strict` exempts nothing that names a real deviation", and built a paragraph on
+    it ("more unforgiving than it first looks"). `collector.ts` gates on
+    `this.strict && diagnostic.severity !== 'info'`, and that code is `info`, so a strict parse of
+    such a file **resolves**. 0.3.62 fixed the same claim on `concepts.md`; this is the stronger
+    version of it, on the reference page.
+  - All three said that under `strict` "every `diagnostics` array is consequently empty". It is not:
+    the `info` notes are still collected. A strict parse of a file whose only note is `info` comes
+    back with that note on `header.diagnostics`.
+  - The exemption is the point, and each place now says so: nearly every conforming EDF file carries
+    that code, because the mandated `dd.mm.yy` startdate has a two-digit year, so throwing on it
+    would make `strict` reject the files it exists to accept.
+- The guard sweeps every docs page for both retired sentences **and** asserts the behaviour they
+  described — a strict `openEdf` resolving with exactly that one `info` diagnostic — so it is
+  anchored to the code rather than to two strings that could be reworded into the same falsehood.
+
 ## 0.3.75
 
 - **Fixed** `httpSource` blaming its own `ByteSource` contract when the caller's source length is

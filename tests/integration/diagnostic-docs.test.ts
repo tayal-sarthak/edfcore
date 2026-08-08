@@ -20,6 +20,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { byteSource } from '../../src/io/bytes.js';
+import { openEdf } from '../../src/recording.js';
+import { minimalEdf } from '../support/writer.js';
 
 interface RawModuleGlob {
   glob(
@@ -184,6 +187,32 @@ describe('diagnostics.md agrees with the same source', () => {
     const word = spelled[fatal];
     if (word === undefined) throw new Error(`no spelling for ${fatal}; add one`);
     expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
+  });
+
+  it('does not claim strict throws on an info code, or empties the list', async () => {
+    /*
+     * `collector.ts` gates on `this.strict && diagnostic.severity !== 'info'`, so a strict parse of
+     * a file whose only note is `info` RESOLVES, with that note still present. Three places said
+     * otherwise: `api-reading.md` said such a note "is a thrown EdfFormatError all the same,
+     * because strict exempts nothing that names a real deviation", and it, `design-decisions.md`
+     * and the published `ParseOptions` docblock all said every `diagnostics` array is
+     * "consequently empty" under strict (fixed in 0.3.76; `concepts.md` was 0.3.62).
+     */
+    for (const [path, text] of Object.entries(ALL_PAGES)) {
+      const where = path.split('/').pop();
+      expect(text, `${where} should not say strict empties the list`).not.toContain(
+        'consequently empty',
+      );
+      expect(text, `${where} should not say strict exempts nothing`).not.toContain(
+        'exempts nothing',
+      );
+    }
+    // The behaviour those sentences described, so this test is anchored to the code and not only
+    // to two strings that could be reworded back into the same falsehood.
+    const bytes = minimalEdf({ startDate: '01.01.20' });
+    const strict = await openEdf(byteSource(bytes), { strict: true });
+    expect(strict.header.diagnostics.map((d) => d.code)).toEqual(['DATE_CLIPPED_TO_1985_2084']);
+    expect(strict.header.diagnostics[0]?.severity).toBe('info');
   });
 
   it('names every info code where it explains them', () => {
