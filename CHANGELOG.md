@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.75
+
+- **Fixed** `httpSource` blaming its own `ByteSource` contract when the caller's source length is
+  wrong and the whole body was buffered.
+  - One fault — this source was built for N bytes and the resource is really M — got two different
+    diagnoses, decided only by whether the server honoured `Range`. Over a 206 it got the message
+    0.3.37 wrote for it: the resource's real size, the length the source was built for, and
+    `options.byteLength` to look at. Over the buffered path it fell through to `assertExactRead`
+    and came back as "A ByteSource must resolve with exactly the requested number of bytes...
+    Next: make read() loop until `length` bytes have arrived, and reject if they never do."
+  - That guard exists for a source the CALLER wrote. Here the source is edfcore's own `httpSource`:
+    there is no `read()` to fix, and no number of retries produces bytes the resource does not
+    contain. Meanwhile the real size was sitting in `body.byteLength` as the message was built —
+    the same "the real size sat unread in the response just rejected" shape 0.3.37 removed.
+  - `options.byteLength` together with `allowFullDownload` is exactly the pair `data-sources.md`
+    recommends when an origin is broken, so it is the combination a reader reaches for and the one
+    that produced the unactionable advice.
+- `sliceFullBody` now diagnoses the overrun itself, with the same three facts the 206 branch
+  reports, and `assertExactRead` still backstops the slice.
+
 ## 0.3.74
 
 - **Fixed** `DUPLICATE_SIGNAL_LABEL` quoting the trimmed label as its `raw` while reporting the

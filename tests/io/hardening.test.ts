@@ -319,6 +319,47 @@ describe('a partial response is checked for WHICH bytes it carries', () => {
     expect(error.receivedLength).toBe(4);
   });
 
+  it('gives the same diagnosis when the whole body was buffered instead', async () => {
+    /*
+     * The identical fault — this source was built for 32 bytes and the resource is really 16 —
+     * reached `assertExactRead` on the buffered path and came back as a ByteSource CONTRACT
+     * violation: "make read() loop until `length` bytes have arrived". That guard is for a source
+     * the CALLER wrote. Here the source is edfcore's own `httpSource`, there is no loop to write,
+     * and no retry produces bytes the resource does not contain — while the real size sat in
+     * `body.byteLength` as the message was built (fixed in 0.3.75).
+     *
+     * `options.byteLength` with `allowFullDownload` is the pair `data-sources.md` recommends when
+     * the origin is broken, so it is the combination a reader actually reaches for.
+     */
+    const ignoresRange = (async () =>
+      ({
+        status: 200,
+        headers: { get: () => null },
+        arrayBuffer: async () => CONTENT.slice().buffer,
+      }) satisfies HttpResponseLike) as unknown as FetchLike;
+
+    const source = await httpSource('https://example.invalid/f.edf', {
+      fetch: ignoresRange,
+      byteLength: 32,
+      allowFullDownload: true,
+    });
+
+    const thrown: unknown = await source
+      .read(12, 8)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(EdfSourceError);
+    const error = thrown as EdfSourceError;
+
+    // The same three facts the 206 branch reports.
+    expect(error.message).toContain('it is 16 bytes');
+    expect(error.message).toContain('built for 32 bytes');
+    expect(error.message).toContain('options.byteLength');
+    // And not the advice that cannot be acted on.
+    expect(error.message).not.toContain('make read() loop');
+    expect(error.receivedLength).toBe(4);
+  });
+
   it('routes an OVER-delivering 206 to the cache message, not the short-tail one', async () => {
     /*
      * A CDN edge or nginx `slice` module answers with a whole fixed-size block whatever range was

@@ -304,9 +304,9 @@ export async function httpSource(
       // Waiting for a gate slot can take arbitrarily long, and in that time another read may
       // have discovered that the server ignores Range. Re-checking here is what stops every
       // queued read from repeating the download the first one already made.
-      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length, href, byteLength);
       if (fullBodyInflight !== undefined) {
-        return sliceFullBody(await fullBodyInflight, offset, length);
+        return sliceFullBody(await fullBodyInflight, offset, length, href, byteLength);
       }
 
       let announceProbeDone: (() => void) | undefined;
@@ -318,9 +318,10 @@ export async function httpSource(
         } else {
           // Someone else is finding out. Their answer is ours too.
           await rangeSupportProbe;
-          if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+          if (fullBody !== undefined)
+            return sliceFullBody(fullBody, offset, length, href, byteLength);
           if (fullBodyInflight !== undefined) {
-            return sliceFullBody(await fullBodyInflight, offset, length);
+            return sliceFullBody(await fullBodyInflight, offset, length, href, byteLength);
           }
         }
       }
@@ -397,7 +398,7 @@ export async function httpSource(
 
     if (response.status === HTTP_OK) {
       if (options?.allowFullDownload !== true) throw rangeIgnoredError(href, offset, length);
-      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length, href, byteLength);
       // A read that raced us to the same discovery already owns the transfer. Abandon this
       // response body unread and take theirs — either copy is the same resource.
       if (fullBodyInflight === undefined) {
@@ -414,7 +415,7 @@ export async function httpSource(
             throw error;
           });
       }
-      return sliceFullBody(await fullBodyInflight, offset, length);
+      return sliceFullBody(await fullBodyInflight, offset, length, href, byteLength);
     }
 
     throw new EdfSourceError(
@@ -436,7 +437,7 @@ export async function httpSource(
       throwIfSignalAborted(signal);
       assertReadRange(offset, length, byteLength);
       if (length === 0) return new Uint8Array(0);
-      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length);
+      if (fullBody !== undefined) return sliceFullBody(fullBody, offset, length, href, byteLength);
       const bytes = await fetchRange(offset, length, readOptions);
       throwIfSignalAborted(signal);
       return bytes;
@@ -445,6 +446,44 @@ export async function httpSource(
 }
 
 /** `slice`, not `subarray`: the buffered body is retained state and the caller owns its result. */
-function sliceFullBody(body: Uint8Array, offset: number, length: number): Uint8Array {
+/**
+ * A read served from the buffered whole body.
+ *
+ * The overrun is diagnosed HERE rather than left to `assertExactRead`. That guard exists for a
+ * source the CALLER wrote — its message ends "make read() loop until `length` bytes have arrived"
+ * — and on this path the source is edfcore's own `httpSource`: there is no loop to write, and no
+ * number of retries produces bytes the resource does not contain. One fault, "this source was
+ * built for N bytes and the resource is really M", got the 0.3.37 message over a 206 and that
+ * unactionable one over a 200, decided only by whether the server honoured Range.
+ *
+ * `options.byteLength` with `allowFullDownload` is exactly the pair `data-sources.md` recommends
+ * when the origin is broken, so it is the combination a reader reaches for and the one that
+ * produced the misdirected advice. The real size is in `body.byteLength` at the moment the message
+ * is built — the same "the real size sat unread in the response just rejected" shape 0.3.37
+ * removed (fixed in 0.3.75).
+ *
+ * `assertExactRead` still backstops the slice.
+ */
+function sliceFullBody(
+  body: Uint8Array,
+  offset: number,
+  length: number,
+  href: string,
+  byteLength: number,
+): Uint8Array {
+  if (offset + length > body.byteLength) {
+    throw new EdfSourceError(
+      `Reading bytes ${offset}..${offset + length - 1} of ${href}: the whole resource was ` +
+        `buffered and it is ${body.byteLength} bytes, so the range asked for does not exist. ` +
+        `This source was built for ${byteLength} bytes; the length is what is wrong. Next: drop ` +
+        "options.byteLength and let edfcore probe for the size, or check the origin's " +
+        'Content-Length — a stale or proxied HEAD is the usual cause.',
+      {
+        offset,
+        requestedLength: length,
+        receivedLength: Math.max(0, body.byteLength - offset),
+      },
+    );
+  }
   return assertExactRead(body.slice(offset, offset + length), offset, length);
 }
