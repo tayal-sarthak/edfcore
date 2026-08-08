@@ -526,7 +526,8 @@ result.recordOnsetTicks;  // BigInt64Array [0n, 10000000n, 20000000n, 130000000n
 |---|---|---|
 | `onsetSecondsFromHeaderStart` | `number` | the verbatim on-disk value, relative to the header startdate/starttime (EDF+ 2.2.4) |
 | `onsetSecondsFromFirstRecord` | `number` | rebased to the first record's true start — the EDFlib/pyEDFlib/MNE convention |
-| `onsetTicks` | `bigint` | exact, in 100 ns units, on the same axis as the rebased value |
+| `onsetTicks` | `bigint` | exact, in 100 ns units, on the **header's** timebase — the number the file wrote, unrebased |
+| `onsetTicksFromFirstRecord` | `bigint` | the same instant, exact, rebased to record 0's true start — the axis `readWindow`, `readEnvelope` and `segment.startTicks` use |
 | `onsetRaw` | `string` | the original digits, including the mandatory sign |
 | `durationSeconds` | `number \| undefined` | `undefined` when the TAL carried no duration |
 | `durationTicks` | `bigint \| undefined` | the same, exact |
@@ -539,8 +540,16 @@ result.recordOnsetTicks;  // BigInt64Array [0n, 10000000n, 20000000n, 130000000n
 | `textEncoding` | `'utf-8' \| 'latin-1-fallback'` | `'latin-1-fallback'` when the bytes were not valid UTF-8 |
 
 Both onset conventions ship as separately named fields rather than as an option, so a downstream
-comparison never depends on how the call was configured. Compare event times with `onsetTicks` and
-nothing else. Float equality on event times is how ERP alignment breaks without anyone noticing.
+comparison never depends on how the call was configured. Compare event times with the **tick**
+fields and never with the seconds — float equality on event times is how ERP alignment breaks
+without anyone noticing.
+
+Which tick field depends on what you are comparing against. `onsetTicks` compares one annotation
+with another, on the axis the file wrote. `onsetTicksFromFirstRecord` is the one to compare against
+a window or a chunk: `resolveTimeWindow`, `readWindow` and `readEnvelope` all put `t = 0` at the
+start of record 0. The two differ by the sub-second offset a file may declare in record 0's
+timekeeping TAL, so they are equal on most files and up to a second apart on the ones careful
+enough to state it.
 
 | `EdfAnnotationsResult` | type | meaning |
 |---|---|---|

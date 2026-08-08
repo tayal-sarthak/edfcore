@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.58
+
+- **Fixed** the `EdfAnnotation` table in `api-types.md`, which put `onsetTicks` on the wrong axis
+  and then told readers to compare event times with it and nothing else.
+  - The table said `onsetTicks` is "exact, in 100 ns units, on the same axis as the rebased value".
+    It is not: it is the number the file wrote, on the **header's** timebase. `src/types.ts` says so
+    in the docblock that generates the published `.d.ts`, and calls it "the wrong one for comparing
+    an annotation against a window".
+  - The rebased field, `onsetTicksFromFirstRecord`, was missing from the table altogether —
+    thirteen rows for a fourteen-field interface. So the page named the wrong field as the exact
+    one and omitted the right one, in the same three lines.
+  - A reader who followed it compared `onsetTicks` against `chunk.startTicks`, `segment.startTicks`
+    or a `readWindow` bound — all of which the same page puts on the `t = 0 = start of record 0`
+    axis — and every event landed up to a second late, with nothing to indicate it. On a file whose
+    record 0 starts 0.25 s in, an event written `+1.25` has `onsetTicks` 12500000 and
+    `onsetTicksFromFirstRecord` 10000000, which is exactly `chunk.startTicks` for record 1.
+  - `annotations.md` had it right in two places, so the package's two reference pages disagreed.
+- `tests/integration/annotation-fields-doc.test.ts` reads the field list off a decoded annotation
+  rather than from a list written down beside it, so a field added to the interface fails the suite
+  until the table lists it. It builds a file whose two onset axes genuinely differ, which is what
+  makes the wording load-bearing rather than decorative.
+
 ## 0.3.57
 
 - **Fixed** the zero-record chunk's start time, which was read off a segment on the wrong axis and
