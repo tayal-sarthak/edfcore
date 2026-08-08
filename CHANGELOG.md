@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.38
+
+- **Fixed** a zero-record chunk contradicting the gap it carries. `readRecordBytes` explicitly
+  supports a zero-record range — *"A zero-record range issues no read at all"* — and with no
+  records there is no onset to observe, so `readChunk` fell back to the nominal grid. On an EDF+D
+  file `readRecords({ start: 3, count: 0 })` then reported `startSeconds` **3** while carrying a
+  `precededByGap` running **3..13 s**: one object claiming to begin at 3 s and to be preceded by a
+  gap that ends at 13 s, which is where record 3 truly begins.
+- The nominal grid is now the last resort rather than the first. A scanned index knows where that
+  record is, and `gapBefore` already reads it from the same place, so consulting it costs nothing
+  and makes the two fields agree. A probed index still has nothing better to offer and the nominal
+  grid is still used — correctly, since on a file with no gap it is the right answer.
+
 ## 0.3.37
 
 - **Fixed** `httpSource` telling a user to bypass their CDN when the server had behaved perfectly.

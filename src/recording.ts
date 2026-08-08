@@ -102,6 +102,17 @@ export function resolveSignals(
 }
 
 /**
+ * The header-axis onset of the segment that BEGINS at `recordStart`, when a scanned index knows.
+ *
+ * `undefined` for a probed index, and for a record that is not a segment boundary — in both cases
+ * nothing better than the nominal grid is available, which is what the caller falls back to.
+ */
+function segmentStartTicks(index: EdfRecordIndex, recordStart: number): bigint | undefined {
+  const segment = index.segments?.find((candidate) => candidate.records.start === recordStart);
+  return segment?.startTicks;
+}
+
+/**
  * The gap immediately before `recordStart`, when the index knows where the gaps are.
  *
  * `undefined` for a probed index, and that is not a claim that there is no gap — it is the honest
@@ -155,7 +166,17 @@ async function readChunk(
   assertMonotonicOnsetArray(onsets, records.start);
 
   const durationTicks = header.recordDurationTicks;
-  const nominalFirstTicks = timeline.startOffsetTicks + BigInt(records.start) * durationTicks;
+  // The nominal grid is the last resort, and a ZERO-RECORD range reaches it every time: there is
+  // no onset to observe, because there are no records. On an EDF+D file that made the empty chunk
+  // contradict itself — `readRecords({ start: 3, count: 0 })` reported `startSeconds` 3 (the
+  // nominal grid) while carrying a `precededByGap` running 3..13 s, so one object claimed to
+  // start at 3 s and to be preceded by a gap ending at 13 s, where record 3 truly starts.
+  //
+  // A scanned index knows where that record is, and `gapBefore` below already reads it from the
+  // same place. Consulting it costs nothing and makes the two fields agree (fixed in 0.3.38).
+  const nominalFirstTicks =
+    segmentStartTicks(index, records.start) ??
+    timeline.startOffsetTicks + BigInt(records.start) * durationTicks;
   const firstOnsetTicks = onsets[0] ?? nominalFirstTicks;
   const lastOnsetTicks =
     records.count > 0 ? (onsets[records.count - 1] ?? firstOnsetTicks) : firstOnsetTicks;

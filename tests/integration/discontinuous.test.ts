@@ -333,3 +333,60 @@ describe('a complete index over the MSLT file', () => {
     expect(chunk.precededByGap).toBeUndefined();
   });
 });
+
+describe('a zero-record chunk does not contradict the gap it carries', () => {
+  /**
+   * `readRecordBytes` explicitly supports a zero-record range — "A zero-record range issues no read
+   * at all" — and `readChunk` then has no observed onset, so it fell back to the nominal grid. On
+   * an EDF+D file the resulting chunk claimed to start at `start * recordDuration` while carrying
+   * a `precededByGap` that ends where the record TRULY starts: one object saying it begins at 3 s
+   * and that the gap before it runs 3..13 s (fixed in 0.3.38).
+   */
+  it('takes its start from the index the same place the gap comes from', async () => {
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+      recordOnsetSeconds: (r: number) => (r < 3 ? r : r + 10),
+    });
+    const opened = await openEdf(byteSource(bytes));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+
+    const empty = await readRecords(recording, {
+      records: { start: 3, count: 0 },
+      signalIndices: [0],
+    });
+    const real = await readRecords(recording, {
+      records: { start: 3, count: 1 },
+      signalIndices: [0],
+    });
+
+    // The empty chunk sits where record 3 sits, which is where the gap before it ends.
+    expect(empty.startTicks).toBe(real.startTicks);
+    expect(empty.durationTicks).toBe(0n);
+    expect(empty.precededByGap?.endTicks).toBe(
+      empty.startTicks + recording.timeline.startOffsetTicks,
+    );
+  });
+
+  it('still uses the nominal grid when no scanned index can say otherwise', async () => {
+    // A probed index knows nothing about record 3, so the nominal grid is the only answer
+    // available — and on a file with no gap it is the right one.
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const empty = await readRecords(recording, {
+      records: { start: 3, count: 0 },
+      signalIndices: [0],
+    });
+    expect(empty.startTicks).toBe(3n * TICKS_PER_SECOND);
+    expect(empty.precededByGap).toBeUndefined();
+  });
+});
