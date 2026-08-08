@@ -384,6 +384,48 @@ describe('mergeChunks does not call an overlap a gap', () => {
     expect(error).toBeInstanceOf(RangeError);
   });
 
+  it('says so on the tick path too, which is the one a probed index reaches', async () => {
+    // The branch above needs `precededByGap`, and a PROBED index reports no gaps at all — so after
+    // a bare `openEdf` it is `undefined` and the exact-tick comparison is what fires instead. That
+    // path said "a discontinuity of -0.2 s ... this is a gap in TIME", naming the wrong thing
+    // twice, forty lines below the branch 0.3.41 taught the difference to (fixed in 0.3.59).
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 30 }],
+      recordOnsetSeconds: (r: number) => (r < 3 ? r : 2.8),
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const before = await readRecords(recording, {
+      records: { start: 0, count: 3 },
+      signalIndices: [0],
+    });
+    const after = await readRecords(recording, {
+      records: { start: 3, count: 1 },
+      signalIndices: [0],
+    });
+    // The precondition: this is the tick path, not the gap path.
+    expect(before.precededByGap).toBeUndefined();
+    expect(after.precededByGap).toBeUndefined();
+
+    const error = (() => {
+      try {
+        mergeChunks([before, after]);
+        return undefined;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+
+    expect(error).toBeInstanceOf(RangeError);
+    expect(error?.message).toContain('an overlap of 0.2 s');
+    expect(error?.message).toContain('both claim that time');
+    expect(error?.message).not.toContain('-0.2');
+    expect(error?.message).not.toContain('gap in TIME');
+  });
+
   it('still calls a real hole a gap', async () => {
     const bytes = minimalEdfPlus({
       plus: 'D',

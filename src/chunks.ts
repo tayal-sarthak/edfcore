@@ -89,13 +89,27 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
   const previousEndTicks = previous.startTicks + previous.durationTicks;
   const nextStartTicks = next.startTicks;
   if (previousEndTicks !== nextStartTicks) {
-    const gapSeconds = ticksToSeconds(nextStartTicks - previousEndTicks);
+    // Branched on the SIGN, like the `precededByGap` path above. A negative difference is an
+    // overlap, not a gap, and this path is the one that actually fires for an overlap after
+    // `openEdf`: a probed index reports no gaps at all, so `precededByGap` is `undefined` and the
+    // branch that was taught the distinction in 0.3.41 never runs. It printed "a discontinuity of
+    // -0.2 s ... this is a gap in TIME", which names the wrong thing twice — a fourth site of the
+    // defect 0.3.33 and 0.3.41 swept, forty lines below the third (fixed in 0.3.59).
+    const deltaTicks = nextStartTicks - previousEndTicks;
+    const overlapping = deltaTicks < 0n;
+    const magnitude = ticksToSeconds(overlapping ? -deltaTicks : deltaTicks);
     throw new RangeError(
       `mergeChunks: chunk ${index} starts at ${next.startSeconds} s, but the chunk before it ends ` +
-        `at ${ticksToSeconds(previousEndTicks)} s — a discontinuity of ${gapSeconds} s. The two ` +
-        'are record-adjacent, so this is a gap in TIME that the record numbers cannot show: ' +
-        'either the index was never scanned, or these chunks came from separate reads. ' +
-        'Concatenating them would date every sample after the join wrong by that much. Next: ' +
+        `at ${ticksToSeconds(previousEndTicks)} s — ` +
+        (overlapping
+          ? `an overlap of ${magnitude} s. The two are record-adjacent, so the records on either ` +
+            'side of the join both claim that time and the record numbers cannot show it. ' +
+            'Concatenating them would store it twice and date every sample after the join late ' +
+            'by it.'
+          : `a discontinuity of ${magnitude} s. The two are record-adjacent, so this is a gap in ` +
+            'TIME that the record numbers cannot show. Concatenating them would date every ' +
+            'sample after the join wrong by that much.') +
+        ' Either the index was never scanned, or these chunks came from separate reads. Next: ' +
         'await buildRecordIndex(recording) and merge each contiguous run separately.',
     );
   }

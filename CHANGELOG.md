@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.59
+
+- **Fixed** `mergeChunks`' exact-tick refusal calling an overlap "a discontinuity of **-0.2** s"
+  that "is a gap in TIME" — the fourth site of the defect 0.3.33 and 0.3.41 swept, forty lines below
+  the third, in the same function.
+  - `assertJoinable` has two refusal paths. The one on `next.precededByGap` was taught to branch on
+    the sign in 0.3.41. The tick comparison beside it was not — and it is the path an overlap
+    actually reaches after a bare `openEdf`, because a **probed** index reports no gaps at all, so
+    `precededByGap` is `undefined` and the branch that knows the difference never runs.
+  - It now says "an overlap of 0.2 s ... the records on either side of the join both claim that
+    time", the wording 0.3.41 settled on, and reports a positive magnitude. A gap of negative
+    duration is not a thing.
+- The gap wording is unchanged, byte for byte, so nothing that reads the existing message moves.
+  The new test asserts on the tick path specifically, with `precededByGap` checked to be `undefined`
+  first — otherwise it would be testing the branch that was already right.
+
 ## 0.3.58
 
 - **Fixed** the `EdfAnnotation` table in `api-types.md`, which put `onsetTicks` on the wrong axis
