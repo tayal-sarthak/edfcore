@@ -233,12 +233,21 @@ async function reduceRange(
   const bucketBytes = bucketCount * BYTES_PER_BUCKET * signals.length;
   const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (bucketBytes > budgetBytes) {
+    // The hint names the argument the CALLER passed. `reduceRange` is shared, and `fixedWidth` is
+    // true only under `readEnvelopeAtResolution`; hard-coding `secondsPerBucket` told a
+    // `readEnvelope` caller — whose only knob is `buckets`, a pixel width — to change a parameter
+    // its signature does not have, and explained it in terms of a request they never made. That is
+    // the mistake the docblock above `resolveEnvelopeSignals` records for the same reason
+    // (fixed in 0.3.69).
+    const knob = fixedWidth
+      ? 'a coarser secondsPerBucket — one finer than the sample interval cannot show more than ' +
+        'the samples do'
+      : 'fewer buckets — a plot cannot show more of them than it has pixels';
     throw new EdfBudgetError(
       `An envelope of ${bucketCount} buckets over ${signals.length} signal(s) needs a ` +
         `${bucketBytes}-byte accumulator, above the ${budgetBytes}-byte maxMaterializeBytes ` +
-        'budget, so it was refused before anything was allocated. Next: ask for a coarser ' +
-        'secondsPerBucket — one finer than the sample interval cannot show more than the samples ' +
-        'do — or raise options.maxMaterializeBytes.',
+        `budget, so it was refused before anything was allocated. Next: ask for ${knob} — or ` +
+        'raise options.maxMaterializeBytes.',
       { requiredBytes: bucketBytes, budgetBytes },
     );
   }

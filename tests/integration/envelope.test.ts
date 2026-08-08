@@ -772,6 +772,46 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
     ).rejects.toThrow(/maxMaterializeBytes budget/);
   });
 
+  it('names the knob the caller actually passed, not the other function’s', async () => {
+    // `reduceRange` is shared. Its refusal hard-coded "ask for a coarser secondsPerBucket", so a
+    // `readEnvelope` caller — whose only resolution knob is `buckets`, a pixel width — was told to
+    // change a parameter its signature does not have (fixed in 0.3.69).
+    //
+    // Dense enough that the densest-samples clamp does not save it: 8 x 4096 samples against
+    // 30,000 buckets, which is what makes this path reachable from `readEnvelope` at all.
+    const bytes = buildEdf({
+      recordCount: 8,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 4096 }],
+    });
+    const edf = await openEdf(byteSource(bytes));
+    const selection = { signalIndices: [0], startSeconds: 0, durationSeconds: 8 };
+
+    const fromBuckets = await readEnvelope(
+      edf,
+      { ...selection, buckets: 30_000 },
+      {
+        maxMaterializeBytes: 8192,
+      },
+    ).then(
+      () => undefined,
+      (error: unknown) => error as Error,
+    );
+    expect(fromBuckets?.message).toContain('ask for fewer buckets');
+    expect(fromBuckets?.message).not.toContain('secondsPerBucket');
+
+    const fromResolution = await readEnvelopeAtResolution(
+      edf,
+      { ...selection, secondsPerBucket: 0.000001 },
+      { maxMaterializeBytes: 8192 },
+    ).then(
+      () => undefined,
+      (error: unknown) => error as Error,
+    );
+    expect(fromResolution?.message).toContain('a coarser secondsPerBucket');
+    expect(fromResolution?.message).not.toContain('fewer buckets');
+  });
+
   it('does not add a bucket to a run whose length is not a binary fraction', async () => {
     // The second route to the same failure, and the one no chunking or window offset is involved
     // in. 3 x 0.1 s is 0.30000000000000004 in float64, so `Math.ceil(runSeconds / 0.1)` was FOUR

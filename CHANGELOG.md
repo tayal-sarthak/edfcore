@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.69
+
+- **Fixed** the envelope's budget refusal telling a `readEnvelope` caller to pass a coarser
+  `secondsPerBucket` — a parameter `readEnvelope` does not have.
+  - `reduceRange` is shared by `readEnvelope`, whose only resolution knob is `buckets` (a plot's
+    pixel width), and `readEnvelopeAtResolution`, whose knob is `secondsPerBucket`. The refusal
+    hard-coded the second, and explained it in terms of a request the first caller never made:
+    "one finer than the sample interval cannot show more than the samples do".
+  - It is reachable from `readEnvelope`: the densest-samples clamp does not save a request for
+    30,000 buckets over 32,768 samples, which is an ordinary plot width over eight seconds of a
+    4 kHz channel. That caller now reads "ask for fewer buckets — a plot cannot show more of them
+    than it has pixels".
+- `fixedWidth` already distinguishes the two rules three lines above, so the hint follows it. This
+  is the same defect 0.3.35 fixed in `assertPositiveInteger` and `resolveEnvelopeSignals`, whose
+  docblocks record it: a helper shared by three entry points must not name one of them.
+
 ## 0.3.68
 
 - **Fixed** `EdfDiagnostic.raw` on a TAL diagnostic being a pre-escaped preview rather than the
