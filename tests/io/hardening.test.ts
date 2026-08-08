@@ -317,6 +317,32 @@ describe('a partial response is checked for WHICH bytes it carries', () => {
     expect(error.receivedLength).toBe(4);
   });
 
+  it('routes an OVER-delivering 206 to the cache message, not the short-tail one', async () => {
+    /*
+     * A CDN edge or nginx `slice` module answers with a whole fixed-size block whatever range was
+     * asked for. `claimed.first === offset` is true for that too, so 0.3.37's split sent it to the
+     * short-tail branch — a message wrong in every clause: "stopped at byte 511, because that is
+     * the end of a 4096-byte resource" (511 is not the end of 4096), a range plainly inside the
+     * length said not to exist, and advice to drop a `byteLength` that is correct. The one fix
+     * that helps — vary the cache on `Range` — is printed only by the other branch
+     * (introduced in 0.3.37, narrowed in 0.3.40).
+     */
+    const { fetch } = misbehaving('bytes 0-15/16', CONTENT);
+    const source = await httpSource('https://example.invalid/f.edf', { fetch });
+
+    const thrown: unknown = await source
+      .read(0, 4)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+    const error = thrown as EdfSourceError;
+
+    expect(error.message).toContain('a different part of the resource');
+    expect(error.message).toContain('vary on Range');
+    // And none of the short-tail wording, which would be false here.
+    expect(error.message).not.toContain('started where it was asked to');
+    expect(error.message).not.toContain('does not exist');
+  });
+
   it('still accepts a 206 from a double that reports no headers at all', async () => {
     // A caller-written FetchLike is a documented extension point and may answer `null` for every
     // header. Treating that as corruption would break doubles rather than catch servers; a real

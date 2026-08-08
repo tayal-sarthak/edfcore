@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.40
+
+- **Fixed a regression introduced two releases ago.** 0.3.37 split the 206 `Content-Range` guard on
+  `claimed.first === offset`, and that condition matches two different responses: one that stopped
+  EARLY, which is what the split was written for, and one that sent MORE than was asked for.
+- The over-delivering case is not hypothetical — a CDN edge or nginx's `slice` module answers with
+  a whole fixed-size block whatever range was requested — and it got a message wrong in every
+  clause: *"stopped at byte 511, because that is the end of a 4096-byte resource"* (511 is not the
+  end of 4096), a range plainly inside the declared length said not to exist, and advice to drop an
+  `options.byteLength` that is correct. The one fix that would help, varying the cache on `Range`,
+  is printed only by the branch it had been routed away from.
+- The branch now also requires `claimed.last < expectedLast`, so anything else falls through to the
+  cache/CDN message that was always right for it. Both paths still refuse and still carry
+  `receivedLength`; only the routing changed.
+
 ## 0.3.39
 
 **The published diagnostic tables disagreed with the code in five places, and with themselves in

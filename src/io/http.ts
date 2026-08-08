@@ -361,7 +361,15 @@ export async function httpSource(
         // a file replaced by a shorter one mid-session. Telling that user to bypass a cache sends
         // them to reconfigure a CDN that is behaving correctly, while the response just rejected
         // carries the resource's real size in the header being read (fixed in 0.3.37).
-        if (claimed.first === offset) {
+        // BOTH conditions. `claimed.first === offset` alone also matches a 206 that sent MORE than
+        // was asked for — a CDN or nginx `slice` edge answering with a whole fixed-size block —
+        // and that response then got the short-tail message, which is wrong in every clause: it
+        // said the server "stopped at byte 511, because that is the end of a 4096-byte resource",
+        // claimed a range plainly inside the length "does not exist", and advised dropping a
+        // `byteLength` that is correct. The one fix that would have helped, varying the cache on
+        // `Range`, is printed only by the branch it was routed away from. Introduced by the split
+        // in 0.3.37 and narrowed here (fixed in 0.3.40).
+        if (claimed.first === offset && claimed.last < expectedLast) {
           const total = totalFromContentRange(headerOf(response, 'Content-Range'));
           const realSize = total === undefined ? 'the resource' : `a ${total}-byte resource`;
           throw new EdfSourceError(
