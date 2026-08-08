@@ -109,11 +109,41 @@ function contentBounds(raw: string): { readonly start: number; readonly end: num
   return { start, end };
 }
 
-function hexBytes(bytes: Uint8Array): string {
-  const shown = bytes.subarray(0, RAW_EVIDENCE_MAX_BYTES);
+function hexBytes(bytes: Uint8Array, from = 0): string {
+  const shown = bytes.subarray(from, from + RAW_EVIDENCE_MAX_BYTES);
   const parts: string[] = [];
   for (const byte of shown) parts.push(`0x${byte.toString(16).padStart(2, '0')}`);
-  return parts.join(' ') + (bytes.length > shown.length ? ' ...' : '');
+  const head = from > 0 ? '... ' : '';
+  const tail = from + shown.length < bytes.length ? ' ...' : '';
+  return head + parts.join(' ') + tail;
+}
+
+/** Index of the first byte outside printable ASCII, or 0 when the caller says there is one. */
+function firstNonPrintable(bytes: Uint8Array): number {
+  for (let i = 0; i < bytes.length; i += 1) {
+    const byte = bytes[i] as number;
+    if (byte < 0x20 || byte > 0x7e) return i;
+  }
+  return 0;
+}
+
+/**
+ * A window of at most `RAW_EVIDENCE_MAX_BYTES` centred on the OFFENDING byte, not on the start
+ * of the field.
+ *
+ * The old window was `subarray(0, 16)`. `patientId` and `recordingId` are 80 bytes each and
+ * `reserved` is 44, and in the EDF+ layouts the subfields that realistically carry a non-ASCII
+ * byte — the patient NAME, the recording EQUIPMENT — begin well past byte 16. So for the exact
+ * case this warning exists for, an accented name or a bare 0xB5 for micro, the sixteen bytes
+ * quoted were all printable ASCII while the sentence around them said those bytes were the
+ * non-conformant ones. The reader could see they were not, and had no way to find the real one
+ * (fixed in 0.3.26).
+ */
+function evidenceWindow(content: Uint8Array): { readonly hex: string; readonly at: number } {
+  const at = firstNonPrintable(content);
+  // A few bytes of lead-in, so the offending byte has context rather than sitting at the edge.
+  const from = Math.max(0, Math.min(at - 4, content.length - RAW_EVIDENCE_MAX_BYTES));
+  return { hex: hexBytes(content, Math.max(0, from)), at };
 }
 
 /**
@@ -130,11 +160,13 @@ export function reportNonAsciiHeaderFields(headerBytes: Uint8Array, sink: Diagno
     const { start, end } = contentBounds(raw);
     const content = sliceBytes(headerBytes, offset + start, end - start);
     if (!hasNonPrintableAscii(content)) continue;
+    const evidence = evidenceWindow(content);
     sink.report({
       code: 'NON_ASCII_HEADER_FIELD',
       message:
         `${describeFixedField(field)} is ${JSON.stringify(raw)} and carries bytes outside ` +
-        `printable ASCII 32..126: ${hexBytes(content)}. The EDF specification restricts header ` +
+        `printable ASCII 32..126, the first at byte ${offset + start + evidence.at}: ` +
+        `${evidence.hex}. The EDF specification restricts header ` +
         'text to ASCII 32..126. Next: nothing is lost — edfcore decodes header text as ' +
         'ISO-8859-1 (never TextDecoder, whose "latin1" label decodes 0x80 differently in Node ' +
         'and in a browser), so read the field as Latin-1 rather than as UTF-8.',
@@ -144,7 +176,7 @@ export function reportNonAsciiHeaderFields(headerBytes: Uint8Array, sink: Diagno
       rawBytes: content,
       raw,
       expected: 'ASCII 32..126',
-      actual: hexBytes(content),
+      actual: evidence.hex,
       specReference: fixedFieldSpecReference(field),
     });
   }

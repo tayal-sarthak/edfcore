@@ -733,3 +733,61 @@ describe('a defect in one signal does not move the others', () => {
     expect(error.field).toBe('digitalMaximum');
   });
 });
+
+describe('NON_ASCII_HEADER_FIELD quotes the byte it is complaining about', () => {
+  /**
+   * The evidence window was `content.subarray(0, 16)` — anchored to the start of the field, never
+   * moved to the offending byte. `patientId` and `recordingId` are 80 bytes each, and in the EDF+
+   * layout the subfields that realistically carry a non-ASCII byte (the patient NAME, the
+   * recording EQUIPMENT) begin well past byte 16.
+   *
+   * So for the exact case this warning exists for, the sixteen bytes quoted after
+   * "carries bytes outside printable ASCII 32..126:" were every one of them printable ASCII, while
+   * the sentence around them said those bytes were the non-conformant ones (fixed in 0.3.26).
+   */
+  function patientDiagnostic(patientId: string) {
+    const bytes = buildEdf({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      raw: { patientId },
+    });
+    const found = parse(bytes).diagnostics.find((d) => d.code === 'NON_ASCII_HEADER_FIELD');
+    if (found === undefined) throw new Error('expected NON_ASCII_HEADER_FIELD');
+    return found;
+  }
+
+  /** The hex tokens the message quotes, as numbers. */
+  function quotedBytes(hex: string): readonly number[] {
+    return hex
+      .split(' ')
+      .filter((token) => token.startsWith('0x'))
+      .map((token) => Number(token));
+  }
+
+  it('shows the offending byte when it sits past the sixteenth', () => {
+    // The EDF+ patient shape with an accented name: 0xe9 is at byte 29 of the field content.
+    const diagnostic = patientDiagnostic('MCH-0234567 F 02-MAY-1951 José_Álvarez');
+    const shown = quotedBytes(diagnostic.actual as string);
+
+    expect(shown).toContain(0xe9);
+    expect(shown.some((byte) => byte < 0x20 || byte > 0x7e)).toBe(true);
+    // Elided at the front, so a reader knows the window is not the start of the field.
+    expect(diagnostic.actual).toMatch(/^\.\.\. /);
+    // And the message names where to look, in absolute file bytes.
+    expect(diagnostic.message).toContain('the first at byte 37');
+  });
+
+  it('still starts at the field for a byte that is already near the front', () => {
+    const diagnostic = patientDiagnostic('José X X X');
+    expect(quotedBytes(diagnostic.actual as string)).toContain(0xe9);
+    expect(diagnostic.actual).not.toMatch(/^\.\.\./);
+  });
+
+  it('leaves rawBytes as the whole field content, so nothing programmatic changed', () => {
+    const diagnostic = patientDiagnostic('MCH-0234567 F 02-MAY-1951 José_Álvarez');
+    expect(diagnostic.rawBytes?.length).toBe(38);
+    expect(diagnostic.byteOffset).toBe(8);
+    expect(diagnostic.byteLength).toBe(80);
+  });
+});

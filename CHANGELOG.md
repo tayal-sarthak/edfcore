@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.26
+
+- **Fixed** `NON_ASCII_HEADER_FIELD` quoting bytes that contradict its own claim. The evidence
+  window was the first 16 bytes of the field, anchored to the start and never moved to the byte
+  that triggered the report.
+- `patientId` and `recordingId` are 80 bytes each and `reserved` is 44, and in the EDF+ layouts the
+  subfields that realistically carry a non-ASCII byte — the patient NAME, the recording EQUIPMENT —
+  begin well past byte 16. So for the exact case this warning exists for, an accented patient name
+  or a bare `0xB5` for micro, **every one of the sixteen bytes quoted was printable ASCII** while
+  the sentence around them said those bytes were the non-conformant ones. A reader could see they
+  were not, and had no way from the message to find the real one.
+- The window is now centred on the first offending byte with a few bytes of lead-in, elided with
+  `...` at whichever end it does not reach, and the message names that byte's absolute offset in
+  the file. `MCH-0234567 F 02-MAY-1951 José_Álvarez` now shows the `0xe9` and the `0xc1`.
+- `rawBytes` still carries the whole field content, so nothing programmatic changed — this is the
+  message and `actual` only.
+
 ## 0.3.25
 
 - **Fixed** a TAL duration that is out of range being reported as a grammar violation. `9223372036855`
