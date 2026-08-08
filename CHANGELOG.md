@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.66
+
+- **Fixed** the TAL diagnostic preview hiding the very byte it was complaining about.
+  - `escapeControls` escaped C0 and DEL, so the Latin-1 preview passed bytes **0x80-0x9F** through
+    as literal U+0080-U+009F — the Unicode C1 controls, which render as nothing. The
+    `Bytes at that offset: "..."` clause that every TAL diagnostic carries as its evidence therefore
+    showed `Wach<0x96>Beginn` as `WachBeginn`.
+  - That block is not an edge case. In cp1252, the encoding that produces those bytes, 0x80-0x9F is
+    the smart quotes, the en and em dashes and the ellipsis — the single commonest source of an
+    invalid-UTF-8 annotation, which is to say the main case `ANNOTATION_TEXT_NOT_UTF8` exists for.
+    A reader shown `WachBeginn` sees a perfectly ordinary word and no reason for the diagnostic.
+  - It now prints `Wach\x96Beginn`. The rule below 0xA0 matches `quote()` in
+    `diagnostics/format.ts`, which escapes anything non-printable.
+- 0xA0-0xFF stay literal. Those are printable in Latin-1 and `é` and `µV` must remain readable —
+  that is the whole reason the preview decodes as Latin-1 rather than UTF-8.
+
 ## 0.3.65
 
 - **Fixed** `api-errors.md` publishing the wrong signature for `isEdfError` and calling a cast

@@ -187,12 +187,30 @@ function indexOfByte(region: Uint8Array, start: number, end: number, byte: numbe
   return -1;
 }
 
+/** C1: bytes 0x80-0x9F, which decode to U+0080-U+009F and render as nothing. */
+const C1_FIRST = 0x80;
+const C1_LAST = 0x9f;
+
+/**
+ * Escapes every byte that would otherwise be invisible or would break the line.
+ *
+ * C1 is in scope, not just C0 and DEL. Under Latin-1 the bytes 0x80-0x9F decode to the Unicode C1
+ * controls, which render as nothing — and in cp1252, the encoding that produces them, that block is
+ * the smart quotes, the en and em dash and the ellipsis. It is the single commonest source of an
+ * invalid-UTF-8 annotation, which is to say the main case `ANNOTATION_TEXT_NOT_UTF8` exists for.
+ * Passing it through meant the message's "Bytes at that offset: ..." hid the very byte it was
+ * complaining about: `Wach<0x96>Beginn` printed as `WachBeginn` (fixed in 0.3.66).
+ *
+ * 0xA0-0xFF stay literal. Those are printable in Latin-1 and é must remain readable — that is the
+ * reason the preview decodes as Latin-1 in the first place. The rule below 0xA0 now matches
+ * `quote()` in `diagnostics/format.ts`, which escapes anything non-printable.
+ */
 function escapeControls(text: string): string {
   let out = '';
   for (let i = 0; i < text.length; i += 1) {
     const code = text.charCodeAt(i);
     out +=
-      code < ASCII_FIRST_PRINTABLE || code === ASCII_DEL
+      code < ASCII_FIRST_PRINTABLE || code === ASCII_DEL || (code >= C1_FIRST && code <= C1_LAST)
         ? `\\x${code.toString(16).padStart(2, '0')}`
         : text.charAt(i);
   }

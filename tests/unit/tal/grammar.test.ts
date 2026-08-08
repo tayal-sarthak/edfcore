@@ -874,6 +874,19 @@ describe('previewBytes turns evidence into a readable, bounded string', () => {
     expect(previewBytes(Uint8Array.of(0xe9), 0, 1)).toBe('é');
   });
 
+  it('escapes the C1 block, which is the byte that broke UTF-8 in the first place', () => {
+    // Under Latin-1 the bytes 0x80-0x9F decode to the Unicode C1 controls, which render as
+    // nothing. In cp1252 — the encoding that produces them — that block is the smart quotes, the
+    // dashes and the ellipsis, so it is the commonest source of an invalid-UTF-8 annotation. The
+    // preview passed them through, so "Bytes at that offset:" hid the byte being complained about:
+    // `Wach<0x96>Beginn` printed as `WachBeginn` (fixed in 0.3.66).
+    const wach = Uint8Array.of(0x57, 0x61, 0x63, 0x68, 0x96, 0x42, 0x65, 0x67, 0x69, 0x6e, 0x6e);
+    expect(previewBytes(wach, 0, wach.length)).toBe('Wach\\x96Beginn');
+
+    // Both ends of the block, and both neighbours.
+    expect(previewBytes(Uint8Array.of(0x7f, 0x80, 0x9f, 0xa0), 0, 4)).toBe('\\x7f\\x80\\x9f\u00a0');
+  });
+
   it('caps the copy and says it was truncated', () => {
     const bytes = new Uint8Array(120).fill(0x41);
     const preview = previewBytes(bytes, 0, bytes.length);
