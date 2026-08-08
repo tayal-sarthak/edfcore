@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.46
+
+- **Fixed** the two documented code examples that did not compile under the compiler settings
+  edfcore itself builds with. Both are on the pages that tell a reader to go and write their own
+  code, which is the worst place for a snippet that has to be debugged before it can be used.
+  - `api-sources.md`, the custom `FetchLike` adapter: `return fetch(url, { ...init, signal })` is
+    rejected under `exactOptionalPropertyTypes`, because `RequestInit.signal` is
+    `AbortSignal | null` and the local is `AbortSignal | undefined`. It now writes
+    `signal: signal ?? null`, and says why.
+  - `api-primitives.md`, the duplicate-label resolver: `getSignal(header, error.matchingIndices[0])`
+    is rejected under `noUncheckedIndexedAccess`, which types the element `number | undefined`. It
+    now destructures and narrows first.
+  - Neither was wrong at runtime; both compiled cleanly with the flag off. This is specifically the
+    strict-mode shape, and `tsconfig.json` and `tsconfig.build.json` both set both flags.
+- `tests/types/documented-examples.test-d.ts` holds a copy of each snippet as REAL code, so
+  `npm run typecheck` compiles them, and then reads the fenced blocks back out of the pages and
+  asserts every line is present in that copy. Editing a snippet in the docs without editing the
+  compiled copy now fails, in both directions.
+
 ## 0.3.45
 
 - **Fixed** `formatAnnotations` printing a NEGATIVE onset as an instant slightly **after** the

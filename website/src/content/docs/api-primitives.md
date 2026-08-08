@@ -401,7 +401,11 @@ function resolve(header: EdfHeader, label: string): EdfSignal {
     if (error instanceof EdfAmbiguousChannelError) {
       // Duplicates are real. Decide deliberately which one you meant.
       console.warn(`${label} matches indices ${error.matchingIndices.join(', ')}`);
-      return getSignal(header, error.matchingIndices[0]);
+      const [first] = error.matchingIndices;
+      // An ambiguous match always holds at least two indices, but `noUncheckedIndexedAccess`
+      // types the element as `number | undefined` and cannot know that.
+      if (first === undefined) throw error;
+      return getSignal(header, first);
     }
     throw error;
   }

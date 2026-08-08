@@ -335,7 +335,9 @@ import type { FetchLike } from 'edfcore';
 const instrumented: FetchLike = async (url, init) => {
   const signal = (init as { signal?: AbortSignal }).signal;
   console.log(url, init.headers.Range);
-  return fetch(url, { ...init, signal });
+  // `?? null` rather than `signal`: `RequestInit.signal` is `AbortSignal | null`, and under
+  // `exactOptionalPropertyTypes` an `undefined` is not assignable to it.
+  return fetch(url, { ...init, signal: signal ?? null });
 };
 ```
 
