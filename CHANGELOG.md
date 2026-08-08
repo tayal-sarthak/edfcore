@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.32
+
+- **Fixed** `readTriggers` timestamping a Status sample by TRUNCATING to a whole tick, so an
+  event's own reported time mapped back to the previous sample. `sampleAt(event.seconds)` returned
+  sample **100** for an event `readTriggers` called sample 101.
+- A sample boundary need not fall on a whole tick — 10^7 / 512 is 19531.25 — and edfcore's two
+  sample-start functions round UP for the reason `gridSampleStartTicks` gives in its own comment:
+  *"Truncating would return 23,437 — a tick that lies inside sample 0 — so `gridSampleIndexAt`
+  would send it straight back to the previous sample."* `readTriggers` was the one function that
+  truncated, and three boundaries in four are affected at any power-of-two rate BioSemi actually
+  uses.
+- The ERP consequence is the sharp one. Align a window to the stimulus with
+  `sampleStartSecondsOf(rec, status, 101)` and the event sat one tick before the window's left
+  edge, so the onset came back as sample **102** — 2 ms at 512 Hz, on the one number an evoked-
+  potential pipeline reads. A one-sample-wide trigger at that edge disappeared entirely, which
+  contradicts this function's own rule that the first in-window sample always produces an event.
+- Now `ceilDiv`, the same rule as `gridSampleStartTicks` and `sampleStartTicksOf`. An event's tick
+  is the first whole tick at or after the sample's true start, so `sampleAt`, `sampleStartTicksOf`,
+  a window bound and `readTriggers` all name the same sample.
+
 ## 0.3.31
 
 **Two ways patient identification reached the output with `--patient` absent.** Both produced text

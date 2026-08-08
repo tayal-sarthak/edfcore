@@ -19,7 +19,7 @@ import { decodeDigitalCounted } from './decode/digital.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
 import { gapBefore } from './recording.js';
-import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
   EdfHeader,
@@ -207,10 +207,24 @@ export async function readTriggers(
           const changed = previous === undefined || word.trigger !== previous;
           previous = word.trigger;
 
+          // CEILING, the same rule `gridSampleStartTicks` and `sampleStartTicksOf` use, and for
+          // the reason the first of those states in its own comment: a sample boundary need not
+          // fall on a whole tick, and truncating returns a tick that lies inside the PREVIOUS
+          // sample. 10^7 / 512 is 19531.25, so three boundaries in four are affected on an
+          // ordinary 512 Hz BioSemi file.
+          //
+          // Truncating made an event's own reported time round-trip to the wrong sample —
+          // `sampleAt(event.seconds)` returned 100 for an event readTriggers called sample 101 —
+          // and a window aligned to the stimulus with `sampleStartSecondsOf` reported the onset a
+          // sample late, which at 512 Hz is 2 ms on the one number an ERP pipeline reads. A
+          // one-sample-wide trigger at the window's left edge disappeared entirely, contradicting
+          // this function's own rule that the first in-window sample always produces an event
+          // (fixed in 0.3.32).
+          //
           // A zero record duration puts every sample of the record at its start instant.
           const ticks =
             durationTicks > 0n && samplesPerRecord > 0
-              ? recordStartTicks + (BigInt(s) * durationTicks) / BigInt(samplesPerRecord)
+              ? recordStartTicks + ceilDiv(BigInt(s) * durationTicks, BigInt(samplesPerRecord))
               : recordStartTicks;
 
           if (ticks < windowStartTicks || ticks >= windowEndTicks) continue;

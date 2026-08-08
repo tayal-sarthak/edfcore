@@ -10,6 +10,7 @@ import { decodeStatusWord, getStatusSignal, readTriggers } from '../../src/biose
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
+import { sampleAt, sampleStartSecondsOf, sampleStartTicksOf } from '../../src/sample-locate.js';
 import { buildEdf } from '../support/writer.js';
 
 const RECORDS = 8;
@@ -282,6 +283,76 @@ describe('readTriggers times events on the recording axis, not the nominal grid'
     ]);
     // The same gap object the index reports, not a reconstruction of it.
     expect(events[2]?.precededByGap).toBe(recording.index.gaps?.[0]);
+  });
+});
+
+describe('an event time maps back to the sample it names', () => {
+  /**
+   * A sample boundary need not fall on a whole tick — 10^7 / 512 is 19531.25 — and edfcore's two
+   * sample-start functions round UP for the reason `gridSampleStartTicks` states in its own
+   * comment: truncating returns a tick that lies inside the PREVIOUS sample, so the inverse
+   * function sends it straight back there.
+   *
+   * `readTriggers` truncated. Three boundaries in four are affected on an ordinary 512 Hz BioSemi
+   * file (fixed in 0.3.32).
+   */
+  const SPR = 512;
+
+  async function stimulusAt101() {
+    const bytes = buildEdf({
+      format: 'BDF',
+      plus: false,
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [
+        {
+          label: 'Status',
+          samplesPerRecord: SPR,
+          physicalMinimum: -262144,
+          physicalMaximum: 262144,
+          digitalMinimum: -8388608,
+          digitalMaximum: 8388607,
+          sample: (_r: number, i: number) => (i >= 101 && i < 133 ? 3 : 0),
+        },
+      ],
+    });
+    return openEdf(byteSource(bytes));
+  }
+
+  it('agrees with sampleStartTicksOf about when that sample starts', async () => {
+    const recording = await stimulusAt101();
+    const events = await readTriggers(recording, { startSeconds: 0, durationSeconds: 2 });
+    const onset = events.find((event) => event.trigger === 3);
+    if (onset === undefined) throw new Error('setup failed');
+
+    expect(onset.sampleIndex).toBe(101);
+    // Ground truth from the package's own sample-start function, not from readTriggers.
+    expect(onset.ticks).toBe(sampleStartTicksOf(recording, 0, 101));
+    // Before 0.3.32 this was 1972656n against 1972657n — one tick early, inside sample 100.
+    expect(onset.ticks).toBe(1_972_657n);
+  });
+
+  it('round-trips: sampleAt(event.seconds) is the sample the event named', async () => {
+    const recording = await stimulusAt101();
+    const events = await readTriggers(recording, { startSeconds: 0, durationSeconds: 2 });
+
+    for (const event of events) {
+      expect(sampleAt(recording, 0, event.seconds)?.sampleIndex).toBe(event.sampleIndex);
+    }
+  });
+
+  it('keeps the stimulus when a window is aligned to its own sample start', async () => {
+    // The ERP case: align the window to the trigger, and the trigger must be in it. Truncating
+    // put the event a tick before the window's left edge, so it was reported one sample late.
+    const recording = await stimulusAt101();
+    const alignedStart = sampleStartSecondsOf(recording, 0, 101);
+    const events = await readTriggers(recording, {
+      startSeconds: alignedStart,
+      durationSeconds: 0.5,
+    });
+
+    expect(events[0]?.sampleIndex).toBe(101);
+    expect(events[0]?.trigger).toBe(3);
   });
 });
 
