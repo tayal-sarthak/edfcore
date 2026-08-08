@@ -6,6 +6,7 @@
  * carry, not for its exact layout.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { type CliIo, CliUsageError, parseArgs, runCli } from '../../src/cli-run.js';
 import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
@@ -443,5 +444,43 @@ describe('signals columns', () => {
     const columns = out.trim().split('\n')[0]?.split('\t');
     expect(columns?.[3]).toBe('');
     expect(columns?.[5]).toBe('3');
+  });
+});
+
+describe('the usage text lists every flag the parser accepts', () => {
+  /**
+   * `--help` has always been printed beside its `-h`, and `--version` was printed alone even
+   * though `parseArgs` has accepted `-v` for as long as it has accepted `--version`. A flag that
+   * works and is not in `--help` is one nobody can find and nobody can rely on (fixed in 0.3.52).
+   *
+   * Derived from the source, so a new flag fails this until it is documented.
+   */
+  const SOURCE = readFileSync(new URL('../../src/cli-run.ts', import.meta.url), 'utf8');
+
+  /** Every dash-prefixed literal `parseArgs` compares against. */
+  function acceptedFlags(): readonly string[] {
+    const body = SOURCE.slice(SOURCE.indexOf('export function parseArgs'));
+    const end = body.indexOf('\nexport ', 1);
+    const scope = end === -1 ? body : body.slice(0, end);
+    return [...new Set([...scope.matchAll(/=== '(-{1,2}[a-z-]+)'/g)].map((m) => m[1] as string))];
+  }
+
+  /** The `Options` block of the usage banner. */
+  const usageStart = SOURCE.indexOf('const USAGE');
+  const usage = SOURCE.slice(usageStart, SOURCE.indexOf('`;', usageStart));
+
+  it('finds the flags and the usage text', () => {
+    // Without this, a regex that matched nothing would make the assertion below vacuous.
+    expect(acceptedFlags()).toContain('--limit');
+    expect(usage).toContain('Options');
+    // And the token test really is stricter than a substring test.
+    expect('--version').toContain('-v');
+    expect('--version').not.toMatch(/(^|[\s,])-v([\s,]|$)/m);
+  });
+
+  it.each(acceptedFlags().map((flag) => ({ flag })))('documents $flag', ({ flag }) => {
+    // As a whole token. `toContain('-v')` is satisfied by the `-v` inside `--version`, which is
+    // exactly the flag that was undocumented, so a substring test would pass on the bug.
+    expect(usage).toMatch(new RegExp(`(^|[\\s,])${flag}([\\s,]|$)`, 'm'));
   });
 });

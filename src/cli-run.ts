@@ -62,7 +62,7 @@ Options
   --list                          list events one per line instead of counting (events)
   --limit <n>                     individual diagnostics or events to print (default 20)
 
-  --version                       print the version and exit
+  --version, -v                   print the version and exit
 
 Exit codes: 0 success, 1 the file is unreadable or failed validation, 2 bad usage.
 `;

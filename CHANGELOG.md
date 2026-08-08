@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.52
+
+- **Documented** `-v`. `parseArgs` has accepted it as an alias for `--version` for as long as it has
+  accepted `--version`, and the usage banner printed `--version` alone — while printing `--help, -h`
+  with its alias two lines above. A flag that works and is not in `--help` is one nobody can find
+  and nobody can rely on.
+- `tests/integration/cli.test.ts` now derives the flag list from `parseArgs` itself and requires
+  every accepted flag to appear in the usage banner, so a new one fails the suite until it is
+  documented.
+  - The check matches whole tokens, not substrings. `expect(usage).toContain('-v')` is satisfied by
+    the `-v` inside `--version` — that is, by the exact text that had the bug — so the obvious
+    spelling of this guard would have passed on it. There is an assertion pinning that distinction
+    beside the others, because it is the only reason this test works.
+
 ## 0.3.51
 
 - **Corrected** the `filterAnnotationsByText` docblock, which said a string "matches on the exact
