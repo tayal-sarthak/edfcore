@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.44
+
+- **Added** the types each subpath's own signatures need, so a consumer taking one part of the
+  package does not have to reach into the root entry to write a single annotation.
+  - `edfcore/validate` now exports **`EdfRecording`** — the parameter type of `validateRecording`,
+    the subpath's headline function. It exported `EdfRecordIndex` and eleven other types, but not
+    the one a caller has to name to pass anything in.
+  - `edfcore/node` now exports **`ByteSource`** and `ReadOptions`. `ByteSource` is the return type
+    of both `fileSource` and `fileHandleSource` — the subpath's entire output — and it was declared
+    locally without being re-exported.
+- Type-only additions; nothing at runtime changes, and neither subpath gains a value export.
+- `tests/types/subpath-self-sufficiency.test-d.ts` writes each annotation the way a consumer of the
+  subpath ALONE would have to, and imports from nothing else — a root import there would defeat the
+  check. It compiles under `npm run typecheck`, so a subpath that stops exporting a type in its own
+  signature is a build failure rather than something a user discovers.
+
 ## 0.3.43
 
 - **Fixed** `cachedSource` letting one reader's abort cancel unrelated concurrent readers. A block

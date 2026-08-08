@@ -63,6 +63,9 @@ export type {
   EdfDiagnosticCode,
   EdfHeader,
   EdfRecordIndex,
+  // The PARAMETER type of `validateRecording`, this subpath's headline function. A consumer
+  // importing only `edfcore/validate` could not name what they were passing in (added in 0.3.44).
+  EdfRecording,
   EdfSeverity,
   EdfSignal,
   FormatReportOptions,

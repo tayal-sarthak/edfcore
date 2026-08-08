@@ -39,6 +39,15 @@ import { assertExactRead, assertReadRange, throwIfAborted } from './io/source.js
 import type { ByteSource, ReadOptions } from './types.js';
 
 /**
+ * The RETURN type of both functions below, and the option bag their `read` takes.
+ *
+ * Re-exported because a consumer importing only `edfcore/node` could otherwise not name what
+ * `fileSource` hands back — the subpath's whole output — and had to reach into the root entry to
+ * write a single annotation (added in 0.3.44).
+ */
+export type { ByteSource, ReadOptions } from './types.js';
+
+/**
  * A positional reader with a lifetime. A real `fs.promises.FileHandle` satisfies this.
  *
  * Structural on purpose, so `@types/node` never enters the published `.d.ts` and so a test double
