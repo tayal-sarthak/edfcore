@@ -1,8 +1,9 @@
 /**
- * The two extension-point examples in the docs compile.
+ * The documented examples in the docs compile.
  *
- * `api-sources.md` and `api-primitives.md` are the pages that tell a reader to go and write their
- * own code: a custom `FetchLike` adapter, and a handler for a duplicate channel label. Both
+ * `api-sources.md`, `api-primitives.md` and `api-errors.md` are the pages that tell a reader to go
+ * and write their own code: a custom `FetchLike` adapter, a handler for a duplicate channel label,
+ * and an `edfErrorKind` switch. The first two
  * snippets were rejected by the compiler settings edfcore itself builds under —
  * `exactOptionalPropertyTypes` turned `{ ...init, signal }` into an error because `RequestInit`
  * declares `signal: AbortSignal | null`, and `noUncheckedIndexedAccess` turned
@@ -21,9 +22,14 @@ import { describe, expect, it } from 'vitest';
 import {
   EdfAmbiguousChannelError,
   type EdfHeader,
+  type EdfRecording,
   type EdfSignal,
   type FetchLike,
   getSignal,
+  isEdfError,
+  type RecordRange,
+  readWindow,
+  type WindowSelection,
 } from '../../src/index.js';
 
 // --- api-sources.md, "If you write your own FetchLike" ---------------------
@@ -55,12 +61,49 @@ export function resolve(header: EdfHeader, label: string): EdfSignal {
   }
 }
 
+// --- api-errors.md, the edfErrorKind switch --------------------------------
+//
+// Written WITHOUT the casts the page used to call load-bearing. `isEdfError` narrows to
+// `AnyEdfError`, a discriminated union over the seven concrete classes, so the switch reaches each
+// one's own fields directly. Compiling this IS the proof: if a cast were required, the page's claim
+// that "reaching for error.budgetBytes without the cast is a compile error" would be true, and
+// `npm run typecheck` would fail here instead (fixed in 0.3.65).
+
+declare function askForLess(bytes: number): unknown;
+// `EdfRangeError.available` is a `RecordRange`, not a count. Declaring it `number` here was a
+// compile error, which is the guard doing its job on the guard.
+declare function clampToFile(available: RecordRange): unknown;
+declare function retry(): unknown;
+
+export async function handleReadFailure(
+  recording: EdfRecording,
+  selection: WindowSelection,
+): Promise<unknown> {
+  try {
+    return await readWindow(recording, selection);
+  } catch (error) {
+    if (!isEdfError(error)) throw error;
+
+    switch (error.edfErrorKind) {
+      case 'budget':
+        return askForLess(error.budgetBytes);
+      case 'range':
+        return clampToFile(error.available);
+      case 'source':
+        return retry();
+      default:
+        throw error;
+    }
+  }
+}
+
 // `import.meta.glob` cannot read the importing file itself, and this test has to: the compiled
 // copies above ARE the fixture it compares the pages against.
 const read = (relative: string): string => readFileSync(new URL(relative, import.meta.url), 'utf8');
 
 const API_SOURCES = read('../../website/src/content/docs/api-sources.md');
 const API_PRIMITIVES = read('../../website/src/content/docs/api-primitives.md');
+const API_ERRORS = read('../../website/src/content/docs/api-errors.md');
 const SELF = read('./documented-examples.test-d.ts');
 
 /** The fenced `ts` block containing `marker`, minus its import lines and blank lines. */
@@ -79,15 +122,25 @@ describe('the documented extension-point examples', () => {
     expect(SELF).toContain('const instrumented: FetchLike');
     expect(snippet(API_SOURCES, 'const instrumented').length).toBeGreaterThan(3);
     expect(snippet(API_PRIMITIVES, 'function resolve(').length).toBeGreaterThan(3);
+    expect(snippet(API_ERRORS, 'error.edfErrorKind').length).toBeGreaterThan(3);
   });
 
   it.each([
     { page: 'api-sources.md', text: API_SOURCES, marker: 'const instrumented' },
     { page: 'api-primitives.md', text: API_PRIMITIVES, marker: 'function resolve(' },
+    { page: 'api-errors.md', text: API_ERRORS, marker: 'error.edfErrorKind' },
   ])('matches the compiled copy of the $page snippet line for line', ({ text, marker }) => {
     // The copies above are compiled by `npm run typecheck`. Anything the page says that they do
     // not say is a line nothing has checked.
-    const unchecked = snippet(text, marker).filter((line) => !SELF.includes(line));
+    //
+    // Compared trimmed: a page-level fragment sits at column 0, and the copy here has to live
+    // inside a function to be compiled at all, so the indentation legitimately differs. The
+    // CONTENT of every line must still be present.
+    // Substring rather than exact-line, so a copy may carry an `export ` the page has no use for.
+    const mine = SELF.split('\n')
+      .map((line) => line.trim())
+      .join('\n');
+    const unchecked = snippet(text, marker).filter((line) => !mine.includes(line.trim()));
     expect(unchecked).toEqual([]);
   });
 });

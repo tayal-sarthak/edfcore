@@ -13,7 +13,6 @@ the check:
 
 ```ts
 import { isEdfError, readWindow } from 'edfcore';
-import type { EdfBudgetError, EdfRangeError } from 'edfcore';
 
 try {
   return await readWindow(recording, selection);
@@ -21,10 +20,14 @@ try {
   if (!isEdfError(error)) throw error;
 
   switch (error.edfErrorKind) {
-    case 'budget':  return askForLess((error as EdfBudgetError).budgetBytes);
-    case 'range':   return clampToFile((error as EdfRangeError).available);
-    case 'source':  return retry();
-    default:        throw error;
+    case 'budget':
+      return askForLess(error.budgetBytes);
+    case 'range':
+      return clampToFile(error.available);
+    case 'source':
+      return retry();
+    default:
+      throw error;
   }
 }
 ```
@@ -35,18 +38,17 @@ context even though it is one. So does an error from a second copy of edfcore th
 pulled into the tree. A string property survives all three.
 
 > **Note**
-> The cast in each branch is load-bearing. `edfErrorKind` discriminates correctly at *runtime*. The
-> seven classes are seven class types rather than a union type, so TypeScript narrows the property
-> and not the object. `isEdfError` gives you an `EdfError`, and `EdfError` declares `edfErrorKind`
-> and nothing else. Reaching for `error.budgetBytes` without the cast is a compile error. The cast
-> is safe because the kind you just matched on is what fixes the class.
+> No cast is needed in any branch. `isEdfError` narrows to `AnyEdfError`, a discriminated union over
+> the seven concrete classes, so `switch (error.edfErrorKind)` reaches `budgetBytes` and `available`
+> directly. Narrowing against the abstract `EdfError` would not: it declares `edfErrorKind` and
+> nothing else, which is exactly why the union exists.
 
 ```ts
-function isEdfError(value: unknown): value is EdfError;
+function isEdfError(value: unknown): value is AnyEdfError;
 ```
 
-It tests for an object with a string `edfErrorKind` and nothing else. `EdfError` itself is
-exported. It's the abstract base every class below extends, and `error.name` is the concrete
+It tests for an object with a string `edfErrorKind` and nothing else. `AnyEdfError` and `EdfError`
+are both exported: the first is the union you switch over, the second is the abstract base. It's the abstract base every class below extends, and `error.name` is the concrete
 class's name — `'EdfFormatError'` rather than `'Error'` — so a stack trace says which one you got.
 
 That name is a **string literal**, not `new.target.name`. A minifier rewrites `class

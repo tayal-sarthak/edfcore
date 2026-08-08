@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.65
+
+- **Fixed** `api-errors.md` publishing the wrong signature for `isEdfError` and calling a cast
+  mandatory that the compiler does not require.
+  - The page said `function isEdfError(value: unknown): value is EdfError`. It returns
+    `value is AnyEdfError` — the discriminated union over the seven concrete classes.
+  - Around that it built a **Note** explaining that "the cast in each branch is load-bearing" and
+    that "reaching for `error.budgetBytes` without the cast is a compile error", with three `as`
+    casts in the snippet to match. None of it is true: the snippet compiles without them under
+    edfcore's own `tsconfig.json`. `src/errors.ts` says why in the docblock on `AnyEdfError` — the
+    union exists precisely so that switching on `edfErrorKind` reaches the extra fields "without
+    one". The page documented the problem the union was added to solve as though it were still
+    there.
+- The snippet is now in `tests/types/documented-examples.test-d.ts` alongside the other two, so
+  `npm run typecheck` compiles it: if a cast ever became necessary, the build would say so rather
+  than a paragraph.
+  - Adding it immediately caught a second error in the same snippet. `EdfRangeError.available` is a
+    `RecordRange`, not a count, so the helper the page calls `clampToFile(error.available)` cannot
+    take a `number`.
+- The comparison against the page is now indentation-insensitive, because a page-level fragment sits
+  at column 0 and a compiled copy has to live inside a function. The snippet's `switch` arms were
+  reflowed to the form this project's formatter produces, so the page shows code that would survive
+  `biome check`.
+
 ## 0.3.64
 
 - **Fixed** the pre-0.2 status text still on the website, which contradicted the package and, in one
