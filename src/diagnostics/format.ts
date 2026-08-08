@@ -9,6 +9,7 @@
  * no iteration over an unordered collection, and no ANSI escapes unless `color` is requested.
  */
 
+import { trimEdfField } from '../bytes/latin1.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
 
@@ -94,10 +95,36 @@ const REDACTED = '[redacted]';
 function redactDiagnostic(diagnostic: EdfDiagnostic): EdfDiagnostic {
   const raw = diagnostic.raw;
   let message = diagnostic.message;
+  const spellings: string[] = [];
   if (raw !== undefined) {
-    for (const spelling of [JSON.stringify(raw), JSON.stringify(raw.trim()), raw, raw.trim()]) {
-      if (spelling.length > 0) message = message.split(spelling).join(REDACTED);
-    }
+    /*
+     * `raw.trim()` is not the same as the field's trimmed value, and that gap was the leak.
+     * `trimEdfField` strips 0x20 AND 0x00; `String.prototype.trim` strips whitespace but not
+     * U+0000. Every identification diagnostic builds its message from `trimEdfField(raw)`, so on
+     * a field padded with NULs — which a large share of real writers emit, and which
+     * `header/fields.ts` treats as normal — none of the four spellings matched and the name went
+     * through verbatim while `raw:` and `actual:` said `[redacted]`. Output that LOOKS redacted is
+     * worse than an obvious leak (fixed in 0.3.31).
+     */
+    spellings.push(JSON.stringify(raw), JSON.stringify(raw.trim()), raw, raw.trim());
+    const trimmed = trimEdfField(raw);
+    spellings.push(trimmed, JSON.stringify(trimmed));
+  }
+  /*
+   * And the diagnostic's own `actual`, computed BEFORE it is replaced below.
+   *
+   * A message does not have to spell the value the way the field does. `DATE_IMPLAUSIBLE` writes
+   * the patient's date of birth as `2050-05-02` while the file says `02-MAY-2050`, so no spelling
+   * derived from `raw` could ever match it — and that diagnostic fires on a perfectly conformant
+   * identification field, with no NUL padding and no grammar violation needed. `actual` already
+   * carries whatever the message chose to print, which is exactly what has to be substituted.
+   */
+  if (diagnostic.actual !== undefined) {
+    const actual = String(diagnostic.actual);
+    spellings.push(actual, JSON.stringify(actual));
+  }
+  for (const spelling of spellings) {
+    if (spelling.length > 0) message = message.split(spelling).join(REDACTED);
   }
   return {
     ...diagnostic,

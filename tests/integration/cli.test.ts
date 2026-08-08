@@ -280,6 +280,50 @@ describe('patient identification and the diagnostics that quote it', () => {
     });
   }
 
+  for (const command of ['header', 'validate'] as const) {
+    it(`${command} withholds it when the field is padded with NULs, not spaces`, async () => {
+      /*
+       * `redactDiagnostic` substituted only spellings derived from `raw`, including `raw.trim()`.
+       * But every identification diagnostic builds its message from `trimEdfField(raw)`, and
+       * `trimEdfField` strips 0x20 AND 0x00 while `String.prototype.trim` strips whitespace but
+       * NOT U+0000. On a NUL-padded field — which a large share of real writers emit — none of the
+       * spellings matched, so the name went through verbatim while `raw:` and `actual:` said
+       * `[redacted]`. Output that LOOKS redacted is worse than an obvious leak (fixed in 0.3.31).
+       */
+      const nulPadded = minimalEdfPlus({
+        recordCount: 4,
+        recordDurationSeconds: 1,
+        raw: { patientId: NAME + String.fromCharCode(0).repeat(80 - NAME.length) },
+      });
+      const { out } = await invoke([command, 'a.edf'], { 'a.edf': nulPadded });
+
+      expect(out).not.toContain('Haagse_Harry');
+      expect(out).not.toContain('0234567');
+      expect(out).toContain('PATIENT_ID_NONCONFORMANT');
+      expect(out).toContain('[redacted]');
+    });
+  }
+
+  it('withholds the patient birth date DATE_IMPLAUSIBLE prints', async () => {
+    // A CONFORMANT identification field — no NUL padding, no grammar violation. The message
+    // spells the date `2050-05-02` while the file writes `02-MAY-2050`, so no spelling derived
+    // from `raw` could ever match it. `--patient` exists to withhold "a name and a birth date",
+    // and this printed the birth date with the flag absent (fixed in 0.3.31).
+    const bytes = minimalEdfPlus({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      startDate: '01.01.00',
+      patientId: 'MCH-0234567 F 02-MAY-2050 Haagse_Harry',
+    });
+    const { out } = await invoke(['validate', 'a.edf'], { 'a.edf': bytes });
+
+    expect(out).toContain('DATE_IMPLAUSIBLE');
+    expect(out).not.toContain('2050-05-02');
+    expect(out).not.toContain('Haagse_Harry');
+    // The rule and the recording's own start date are not patient data and stay readable.
+    expect(out).toContain('2000-01-01');
+  });
+
   it('withholds a non-conformant recording identification on the same flag', async () => {
     // The recording ID carries technician and investigation codes, which identify people too.
     const recordingId = 'NotAStartdate_TECH_J_SMITH_ROOM_4';

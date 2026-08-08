@@ -6,6 +6,32 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.31
+
+**Two ways patient identification reached the output with `--patient` absent.** Both produced text
+that LOOKED redacted — `raw:` and `actual:` said `[redacted]` — which is worse than an obvious leak,
+because a reader has no reason to check.
+
+- **A NUL-padded identification field was printed verbatim.** `redactDiagnostic` substituted
+  spellings derived from `raw`, including `raw.trim()`. Every identification diagnostic builds its
+  message from `trimEdfField(raw)`, and `trimEdfField` strips 0x20 **and 0x00** while
+  `String.prototype.trim` strips whitespace but not U+0000. On a field padded with NULs — which a
+  large share of real writers emit, and which `header/fields.ts` treats as normal — none of the
+  spellings matched. `edfcore header` printed the whole name and MRN; `edfcore validate` printed it
+  twice.
+- **`DATE_IMPLAUSIBLE` printed the patient's date of birth.** It spells the date `2050-05-02` while
+  the file writes `02-MAY-2050`, so no spelling derived from `raw` could ever match it — and it
+  fires on a perfectly conformant identification field, with no NUL padding and no grammar
+  violation needed. `formatHeader`'s own comment names "a name and a birth date" as what the flag
+  exists to withhold.
+- Both close at the substitution: the field's `trimEdfField` spelling and the diagnostic's own
+  `actual`, captured before `actual` is replaced, are now removed from the message too. `actual`
+  already carries whatever the message chose to print, whatever spelling that is.
+- 0.2.26 established that withholding `header.patient` while the diagnostic below it spells the
+  same string out is not withholding it at all. These are the two spellings that fix could not
+  reach. The rule, the code, the byte offset and the recording's own start date are not patient
+  data and stay readable.
+
 ## 0.3.30
 
 - **Fixed** `readEnvelopeAtResolution` crushing the tail of a run into one bucket whenever the
