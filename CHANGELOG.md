@@ -6,6 +6,33 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.28
+
+**`buildRecordIndex` returned a different index — or a different fatal — for the same recording,
+depending on `maxMaterializeBytes`.** On a six-record EDF+D file whose record 4 has an unreadable
+timekeeping TAL, it built a two-segment index at some budgets and threw
+`TIMELINE_NOT_MONOTONIC` at others. Same file, same recording object; only the memory ceiling
+differed. `validateRecording` mirrored it, and `readRecords` reported two different `startTicks` for
+one record depending on how many neighbours shared the call.
+
+- `scanOnsets` states the invariant it broke, in so many words: *"The origin comes from the
+  recording, not from whatever this chunk happens to contain. Chunking is a memory-bounding detail
+  and must not change the answer."*
+- The grid origin for a record with no timekeeping TAL was derived as
+  `firstObserved.ticks - firstObserved.recordIndex * recordDuration` — **chunk-local whenever the
+  chunk contained any readable TAL.** On a discontinuous file `firstObserved` may be a post-gap
+  record, so that expression is record 0's start PLUS the gap. A supplied origin now outranks it,
+  the same precedence `resolveStartOffsetTicks` has always applied to the rebasing origin.
+- 0.3.14 and 0.3.15 fixed the two neighbouring instances: a range that observes nothing at all, and
+  the rebasing origin. Both stopped at the branch in front of them. **This is the third and last
+  place the origin was derived**, and it was the only one the chunked callers actually reach on the
+  files that have a gap.
+- The derivation is now the one `TIMEKEEPING_TAL_MISSING` promises in its own message —
+  `start + recordIndex * recordDuration` — at every chunk size. Where that lands before a
+  neighbour, the timeline genuinely is not monotonic and edfcore says so **every time** rather than
+  when the budget happens to make it visible. A contiguous file is unaffected: the derivation and
+  the supplied origin agree there, which is why this hid for so long.
+
 ## 0.3.27
 
 **`STARTTIME_UNPARSEABLE` is a new diagnostic code.** A refused clock no longer reports as

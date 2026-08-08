@@ -495,10 +495,29 @@ export function decodeAnnotations(
   // public function documented to handle the origin for you was the one that did not, and a
   // record with no timekeeping TAL of its own moved by the start offset depending on how many
   // neighbours shared the call.
+  // A SUPPLIED origin outranks the local derivation, the same precedence `resolveStartOffsetTicks`
+  // has always applied to the rebasing origin below. 0.3.14 only reached the branch where a range
+  // observes NOTHING; the derivation below is chunk-LOCAL whenever the chunk happens to contain
+  // any readable TAL, and on a discontinuous file `firstObserved` may be a post-gap record, so
+  // `observed - index * duration` is not record 0's start but record 0's start plus the gap.
+  //
+  // That made the answer a function of the memory budget. On a six-record EDF+D file whose record
+  // 4 has an unreadable timekeeping TAL, `buildRecordIndex` returned a two-segment index at some
+  // values of `maxMaterializeBytes` and threw a FATAL `TIMELINE_NOT_MONOTONIC` at others — same
+  // recording, same object. `scanOnsets` states the broken invariant verbatim: "The origin comes
+  // from the recording, not from whatever this chunk happens to contain. Chunking is a
+  // memory-bounding detail and must not change the answer." (fixed in 0.3.28)
+  //
+  // With an origin in hand the derivation is the one `TIMEKEEPING_TAL_MISSING` promises in its own
+  // message — `start + recordIndex * recordDuration` — whatever the chunk. On a file where that
+  // lands before a neighbour the timeline really is not monotonic, and it now says so every time
+  // rather than depending on how much memory the caller allowed.
+  const suppliedOrigin = options?.originTicks ?? options?.startOffsetTicks;
   const baseTicks =
-    firstObserved === undefined
-      ? (options?.originTicks ?? options?.startOffsetTicks ?? 0n)
-      : firstObserved.ticks - BigInt(firstObserved.recordIndex) * durationTicks;
+    suppliedOrigin ??
+    (firstObserved === undefined
+      ? 0n
+      : firstObserved.ticks - BigInt(firstObserved.recordIndex) * durationTicks);
 
   const recordOnsetTicks = new BigInt64Array(records.count);
   for (let position = 0; position < records.count; position += 1) {

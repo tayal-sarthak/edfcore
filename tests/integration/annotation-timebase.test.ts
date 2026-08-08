@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { annotationsAt, filterAnnotationsByTime } from '../../src/annotations-query.js';
 import { TICKS_PER_SECOND } from '../../src/constants.js';
 import { byteSource } from '../../src/io/bytes.js';
+import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
 import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
@@ -250,5 +251,74 @@ describe('a record with no timekeeping TAL starts at the same instant however it
     // chunk.startTicks is on the recording axis (t = 0 at record 0); the onset is on the header
     // axis. They differ by exactly the start offset, and did not before the fix.
     expect(alone.recordOnsetTicks[0]! - OFFSET_TICKS).toBe(chunk.startTicks);
+  });
+});
+
+describe('a scan chunk size cannot change what the index says', () => {
+  /**
+   * `scanOnsets` states the invariant verbatim: "The origin comes from the recording, not from
+   * whatever this chunk happens to contain. Chunking is a memory-bounding detail and must not
+   * change the answer."
+   *
+   * It did change the answer. The grid origin for a record with no timekeeping TAL was derived as
+   * `firstObserved.ticks - firstObserved.recordIndex * recordDuration` — chunk-LOCAL whenever the
+   * chunk contained any readable TAL — and on a discontinuous file `firstObserved` may be a
+   * post-gap record, so that expression is record 0's start plus the gap rather than record 0's
+   * start. 0.3.14 gave a supplied origin to the branch where a range observes NOTHING; this branch
+   * ignored it entirely (fixed in 0.3.28).
+   */
+  function jumpWithOneUnreadableTal(): Uint8Array {
+    return buildEdf({
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+      // 0, 1, 2, then a jump to 10; record 4's timekeeping onset fails the grammar outright.
+      recordOnsetSeconds: (r: number) => (r === 4 ? 'zz' : ([0, 1, 2, 10, 11, 12][r] as number)),
+    });
+  }
+
+  it('gives the same verdict at every budget, rather than one that depends on memory', async () => {
+    const recording = await openEdf(byteSource(jumpWithOneUnreadableTal()));
+    // 44-byte records, so these are 1, 3, 4, 6, 7 and 9 records per chunk.
+    const budgets = [44, 136, 204, 272, 340, 408];
+
+    const outcomes: string[] = [];
+    for (const maxMaterializeBytes of budgets) {
+      outcomes.push(
+        await buildRecordIndex(recording, { maxMaterializeBytes })
+          .then(() => 'built an index')
+          .catch((error: unknown) => `threw ${(error as { code?: string }).code}`),
+      );
+    }
+
+    // Before 0.3.28 this array held both 'built an index' and 'threw TIMELINE_NOT_MONOTONIC' for
+    // the same recording object. Which one you got depended on maxMaterializeBytes alone.
+    expect(new Set(outcomes).size).toBe(1);
+    // And the verdict is the honest one: record 4 has no recoverable onset, so the timeline
+    // derived by the rule TIMEKEEPING_TAL_MISSING promises really is not monotonic.
+    expect(outcomes[0]).toBe('threw TIMELINE_NOT_MONOTONIC');
+  });
+
+  it('derives a missing onset by the rule its own diagnostic states', async () => {
+    // A CONTIGUOUS file, where the derivation is recoverable: record 4's onset is
+    // `startOffset + 4 * recordDuration`, and it is that at every chunk size.
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      startOffsetSeconds: 0.25,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+      recordOnsetSeconds: (r: number) => (r === 4 ? 'zz' : 0.25 + r),
+    });
+    const recording = await openEdf(byteSource(bytes));
+
+    for (const maxMaterializeBytes of [44, 136, 272, 408]) {
+      const index = await buildRecordIndex(recording, { maxMaterializeBytes });
+      expect(await index.onsetTicks(4)).toBe(2_500_000n + 4n * TICKS_PER_SECOND);
+      expect(index.segments).toHaveLength(1);
+    }
   });
 });
