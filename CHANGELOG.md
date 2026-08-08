@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.33
+
+**An overlap is not a gap, in the two places that still said it was.** 0.3.3 stated the rule while
+fixing `edfcore gaps` — *a gap is time no record covers; an overlap is one instant two records both
+claim* — and gave the CLI a fourth column. These two sites never got the same partition.
+
+- **`resolveTimeWindow`'s refusal.** It fires on `spanTicks !== coveredTicks`, which is a two-sided
+  test, and the message hardcoded the gap reading. On a file whose records overlap it produced
+  *"its 4 records span 3.5 s but cover only 4 s, so it contains at least one gap"* — arithmetic
+  nonsense, since 4 is not "only" anything beside 3.5, and a structural claim that is the opposite
+  of what the bytes say. The same file's open-time diagnostic already called it an overlap, so one
+  file produced two edfcore messages contradicting each other.
+- **`validateRecording`'s structural diagnostic.** It counted every entry of `index.gaps` as a gap,
+  and an overlap travels there with a NEGATIVE duration (0.2.69). A file with an overlap and no
+  hole anywhere was reported as having "1 gap(s) between them" — while the
+  `RECORD_ONSET_SPACING_VIOLATION` a few lines below in the same array correctly called the same
+  boundary an overlap.
+- Both now branch on the sign and say which they found; a report with one of each says so. Neither
+  refusal changes: a probed index still cannot map a window across either kind of discontinuity,
+  and the next step is still `buildRecordIndex`. A real hole is still called a gap.
+
 ## 0.3.32
 
 - **Fixed** `readTriggers` timestamping a Status sample by TRUNCATING to a whole tick, so an

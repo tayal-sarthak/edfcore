@@ -432,14 +432,27 @@ function reportStructure(
   into: EdfDiagnostic[],
 ): void {
   if (header.continuity === 'continuous' && segmentCount > 1) {
+    // Partitioned by sign, the way `edfcore gaps` was in 0.3.3. An overlap travels in this array
+    // with a NEGATIVE duration (0.2.69), so counting every entry as a gap told a reader that a
+    // file missing no data at all had one — while the RECORD_ONSET_SPACING_VIOLATION appended a
+    // few lines below correctly called the same boundary an overlap.
+    const holes = gaps.filter((gap) => gap.durationTicks > 0n).length;
+    const overlaps = gaps.length - holes;
+    const between =
+      overlaps === 0
+        ? `${holes} gap(s) between them`
+        : holes === 0
+          ? `${overlaps} overlap(s) between them`
+          : `${holes} gap(s) and ${overlaps} overlap(s) between them`;
     into.push(
       createDiagnostic({
         code: 'DISCONTINUITY_IN_CONTINUOUS_FILE',
         message:
           `the reserved field marks this file continuous, but its record onsets fall into ` +
-          `${segmentCount} separate segments with ${gaps.length} gap(s) between them. Rule: in a ` +
+          `${segmentCount} separate segments with ${between}. Rule: in a ` +
           'continuous file every record onset is startOffset + recordIndex * recordDuration; a ' +
-          'recording with gaps is what EDF+D exists for. Next: treat the file as discontinuous — ' +
+          'recording with gaps is what EDF+D exists for, and an overlap is sanctioned by ' +
+          'neither. Next: treat the file as discontinuous — ' +
           'readWindow() returns one chunk per contiguous run once you pass it a complete index, ' +
           'instead of crossing a gap silently.',
         field: 'timekeeping TAL',

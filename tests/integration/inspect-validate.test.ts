@@ -21,6 +21,7 @@ import {
   type EdfInspection,
   inspectEdf,
   openEdf,
+  readWindow,
 } from '../../src/index.js';
 import { validateHeader, validateRecording } from '../../src/validate.js';
 import { patchBytes, setSignalField, truncate } from '../support/corrupt.js';
@@ -465,6 +466,87 @@ describe('validateRecording', () => {
 
     expect(report.diagnostics.map((d) => d.code)).toContain('DISCONTINUITY_IN_CONTINUOUS_FILE');
     expect(report.recordsScanned).toBe(4);
+  });
+});
+
+describe('an overlap is not called a gap', () => {
+  /**
+   * 0.3.3 stated the rule while fixing `edfcore gaps`: a gap is time no record covers; an overlap
+   * is one instant two records both claim. Two other sites never got the same partition.
+   *
+   * The file below has records at 0, 1, 2 and 2.5 s. Record 3 starts half a second before record
+   * 2 ends, and NO instant of the recording is uncovered.
+   */
+  function overlapping(): Uint8Array {
+    return buildEdf({
+      plus: 'C',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+      recordOnsetSeconds: (r: number) => [0, 1, 2, 2.5][r] as number,
+    });
+  }
+
+  it('does not tell a validation report that a file missing no data has a gap', async () => {
+    const recording = await openEdf(byteSource(overlapping()));
+    const report = await validateRecording(recording, {});
+    const structural = report.diagnostics.find(
+      (d) =>
+        d.code === 'DISCONTINUITY_IN_CONTINUOUS_FILE' && d.message.includes('separate segments'),
+    );
+
+    expect(structural?.message).toContain('1 overlap(s) between them');
+    expect(structural?.message).not.toContain('gap(s) between them');
+    // The neighbouring diagnostic has always got this right; now they agree.
+    expect(report.diagnostics.some((d) => d.code === 'RECORD_ONSET_SPACING_VIOLATION')).toBe(true);
+  });
+
+  it('does not tell readWindow the file "covers only" more seconds than it spans', async () => {
+    // The refusal fires on `spanTicks !== coveredTicks`, which is two-sided, and the message
+    // hardcoded the gap reading — producing "span 3.5 s but cover only 4 s", where 4 is not
+    // "only" anything next to 3.5, and asserting a hole that does not exist.
+    const recording = await openEdf(byteSource(overlapping()));
+    expect(recording.timeline.coveredTicks).toBeGreaterThan(recording.timeline.spanTicks);
+
+    const error = await readWindow(recording, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 4,
+    })
+      .then(() => undefined)
+      .catch((thrown: unknown) => thrown as Error);
+
+    expect(error?.message).toContain('starts before the previous one ends');
+    expect(error?.message).not.toContain('at least one gap');
+    expect(error?.message).not.toContain('cover only');
+    // Still a refusal, and still with the same next step: a probed index cannot map this window.
+    expect(error?.message).toContain('buildRecordIndex');
+  });
+
+  it('still calls a real hole a gap', async () => {
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+      recordOnsetSeconds: (r: number) => (r < 2 ? r : r + 10),
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const error = await readWindow(recording, {
+      signalIndices: [0],
+      startSeconds: 0,
+      durationSeconds: 4,
+    })
+      .then(() => undefined)
+      .catch((thrown: unknown) => thrown as Error);
+
+    expect(error?.message).toContain('at least one gap');
+    const report = await validateRecording(recording, {});
+    expect(
+      report.diagnostics.find((d) => d.message.includes('separate segments'))?.message,
+    ).toContain('1 gap(s) between them');
   });
 });
 

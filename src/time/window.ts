@@ -128,10 +128,22 @@ export function resolveTimeWindow(
   // counts can round to the same one. On a long enough recording a real gap then vanished from
   // this comparison and the window was mapped on the nominal grid (fixed in 0.3.4).
   if (timeline.spanTicks !== timeline.coveredTicks) {
+    // The test is TWO-SIDED and the message used to name only one side. A span that exceeds the
+    // coverage is a gap; a coverage that exceeds the span means records OVERLAP, and saying
+    // "span 3.5 s but cover only 4 s, so it contains at least one gap" is both arithmetic
+    // nonsense — "only" for the larger number — and the opposite of what the bytes say. The same
+    // file's open-time diagnostic already calls it an overlap, so one file produced two edfcore
+    // messages that contradicted each other. 0.3.3 stated the rule for `edfcore gaps`: a gap is
+    // time no record covers; an overlap is one instant two records both claim (fixed in 0.3.33).
+    const overlapping = timeline.coveredTicks > timeline.spanTicks;
+    const shape = overlapping
+      ? `records covering ${timeline.coveredSeconds} s are packed into a ${timeline.spanSeconds} s ` +
+        'span, so at least one record starts before the previous one ends'
+      : `its ${recordCount} records span ${timeline.spanSeconds} s but cover only ` +
+        `${timeline.coveredSeconds} s, so it contains at least one gap`;
     throw new RangeError(
-      `resolveTimeWindow() cannot map seconds to records on this file: its ${recordCount} ` +
-        `records span ${timeline.spanSeconds} s but cover only ${timeline.coveredSeconds} s, so ` +
-        'it contains at least one gap, and a probed index knows where neither the gap nor the ' +
+      `resolveTimeWindow() cannot map seconds to records on this file: ${shape}, ` +
+        'and a probed index knows where neither the discontinuity nor the ' +
         'records after it start. ' +
         // The two seconds above can PRINT the same on a long recording, since that is exactly the
         // rounding this check stopped relying on. The ticks always differ here, so they are
