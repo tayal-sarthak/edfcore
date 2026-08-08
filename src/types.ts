@@ -539,8 +539,11 @@ export interface EdfStatusWord {
   readonly raw: number;
   /** The parallel trigger input: the low 16 bits. */
   readonly trigger: number;
+  /** Bit 16. */
   readonly newEpoch: boolean;
+  /** Bit 20 — NOT bit 17, which is speed bit 0. */
   readonly cmsInRange: boolean;
+  /** Bit 22 — NOT bit 18, which is speed bit 1. */
   readonly batteryLow: boolean;
 }
 

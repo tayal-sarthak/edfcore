@@ -437,8 +437,20 @@ file has one run, so nothing about it changed.
 BDF samples, as it must for a measurement, so a Status word with bit 23 set arrives negative.
 
 Only the bits BioSemi documents are named — trigger, `newEpoch`, `cmsInRange`, `batteryLow`.
-`raw` carries all 24, because sources disagree about the bits above 18 and a wrong trigger code is
-worse than none.
+`raw` carries all 24, because a wrong trigger code is worse than none.
+
+| Bit | Meaning | Exposed as |
+|---|---|---|
+| 0–15 | the sixteen parallel trigger inputs | `trigger` |
+| 16 | a new epoch was started | `newEpoch` |
+| 17–19, 21 | speed bits 0–2 and 3 | `raw` only |
+| 20 | CMS is within range | `cmsInRange` |
+| 22 | the battery is low | `batteryLow` |
+| 23 | the amplifier is an ActiveTwo MK2 | `raw` only |
+
+The flags are not the two bits directly above the trigger field: 17 and 18 are speed bits. Until
+0.3.54 `cmsInRange` read speed bit 0 and `batteryLow` read speed bit 1, so both quality flags were
+wrong in both directions while `trigger` and `newEpoch` were right.
 
 This is file access, not analysis: the codes were written by the hardware at acquisition time,
 exactly like an EDF+ annotation. Nothing here inspects a biosignal.

@@ -59,12 +59,34 @@ function bdfWithStatus(plan: readonly number[], label = 'Status'): Uint8Array {
 
 describe('decodeStatusWord', () => {
   it('splits the trigger input from the flags', () => {
-    // Low 16 bits are the parallel input; 16/17/18 are epoch, CMS-in-range and battery-low.
-    const word = decodeStatusWord(0x002a | (1 << 16) | (1 << 18));
+    // Low 16 bits are the parallel input; 16 is epoch, 20 is CMS-in-range, 22 is battery-low.
+    const word = decodeStatusWord(0x002a | (1 << 16) | (1 << 22));
     expect(word.trigger).toBe(0x002a);
     expect(word.newEpoch).toBe(true);
     expect(word.cmsInRange).toBe(false);
     expect(word.batteryLow).toBe(true);
+  });
+
+  it('reads the flags from the bits BioSemi assigns them, not the ones above the trigger', () => {
+    // BioSemi's Status word: 17..19 and 21 are the speed field, 20 is CMS-in-range, 22 is
+    // battery-low, 23 is the MK2 flag. Until 0.3.54 the two flags read bits 17 and 18, i.e. speed
+    // bits 0 and 1, so both were wrong in both directions.
+    expect(decodeStatusWord(1 << 20).cmsInRange).toBe(true);
+    expect(decodeStatusWord(1 << 22).batteryLow).toBe(true);
+
+    // The speed bits are not flags, and are reachable only through `raw`.
+    for (const speedBit of [17, 18, 19, 21]) {
+      const word = decodeStatusWord(1 << speedBit);
+      expect(word.cmsInRange, `bit ${speedBit} is a speed bit`).toBe(false);
+      expect(word.batteryLow, `bit ${speedBit} is a speed bit`).toBe(false);
+      expect(word.raw).toBe(1 << speedBit);
+    }
+
+    // A healthy idle MK2 word: CMS in range, speed mode 4, battery fine, no trigger.
+    const idle = decodeStatusWord((1 << 23) | (1 << 20) | (1 << 19));
+    expect(idle.trigger).toBe(0);
+    expect(idle.cmsInRange).toBe(true);
+    expect(idle.batteryLow).toBe(false);
   });
 
   it('masks a sign-extended sample back to 24 unsigned bits', () => {

@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.54
+
+- **Fixed** `decodeStatusWord` reading the BioSemi quality flags from the wrong bits. Both
+  `cmsInRange` and `batteryLow` were wrong, in both directions, on every ActiveTwo file.
+  - BioSemi's Status word ("Trigger signals", biosemi.com; the same table is in BIOSIG/FieldTrip's
+    `read_biosemi_bdf`) is: bits 0–15 the parallel trigger inputs, 16 new epoch, **17–19 speed bits
+    0–2, 20 CMS in range, 21 speed bit 3, 22 battery low, 23 ActiveTwo MK2**.
+  - edfcore used bit 17 for `cmsInRange` and bit 18 for `batteryLow` — the two bits directly above
+    the trigger field, which are speed bits. So an amplifier with CMS genuinely in range reported
+    `cmsInRange: false`, and a rig running at a speed mode with bit 0 set reported
+    `cmsInRange: true` with the CMS bit clear. The two bits that carry the flags were never read.
+  - `trigger` and `newEpoch` were always right, which is why this survived: the field an ERP
+    pipeline actually uses is the low 16 bits, and it never moved.
+- The module comment had it backwards. It said "inventing meanings for the bits above 18 would be
+  guessing" — but 20, 22 and 23 are precisely the documented ones and 17 and 18 are the guess. The
+  full layout is now written out beside the constants, and `api-helpers.md` carries it as a table.
+  The speed field and the MK2 flag stay unnamed and reachable through `raw`, which is the rule the
+  module always stated.
+
 ## 0.3.53
 
 - **Fixed** the README status line, which said **"Status: 0.1.x, early"** — through fifty-one

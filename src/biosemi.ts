@@ -12,7 +12,8 @@
  *
  * Only the bits BioSemi documents are named. `raw` carries all 24 so a caller with a rig-specific
  * convention can decode the rest without waiting for this module to learn about it — inventing
- * meanings for the bits above 18 would be guessing, and a wrong trigger code is worse than none.
+ * meanings for the undocumented ones would be guessing, and a wrong trigger code is worse than
+ * none.
  */
 
 import { decodeDigitalCounted } from './decode/digital.js';
@@ -36,11 +37,33 @@ import type {
 /** BioSemi's own label for the channel. Matched case-insensitively after trimming. */
 const STATUS_LABEL = 'status';
 
-/** The parallel input occupies the low 16 bits; the flags sit immediately above it. */
+/*
+ * The Status word, as BioSemi assigns it ("Trigger signals", biosemi.com; the same table is in
+ * BIOSIG/FieldTrip's `read_biosemi_bdf`):
+ *
+ *   0..15  the sixteen parallel trigger inputs
+ *   16     high when a new epoch is started
+ *   17     speed bit 0
+ *   18     speed bit 1
+ *   19     speed bit 2
+ *   20     high when CMS is within range
+ *   21     speed bit 3
+ *   22     high when the battery is low
+ *   23     high when the amplifier is an ActiveTwo MK2
+ *
+ * The flags are NOT the two bits immediately above the trigger field. 17 and 18 are speed bits,
+ * so until 0.3.54 `cmsInRange` reported speed bit 0 and `batteryLow` reported speed bit 1, and
+ * the two bits that carry those flags were never read: an amplifier with CMS genuinely in range
+ * reported `cmsInRange: false`, and a rig running at a speed mode with bit 0 set reported
+ * `cmsInRange: true` with the CMS bit clear. `trigger` and `newEpoch` were always right.
+ *
+ * The speed field and the MK2 flag stay unnamed and reachable through `raw`, which is the rule
+ * the module docblock states.
+ */
 const TRIGGER_MASK = 0xffff;
 const EPOCH_BIT = 1 << 16;
-const CMS_IN_RANGE_BIT = 1 << 17;
-const BATTERY_LOW_BIT = 1 << 18;
+const CMS_IN_RANGE_BIT = 1 << 20;
+const BATTERY_LOW_BIT = 1 << 22;
 
 /**
  * The `Status` channel of a BDF file, or `undefined` when there is none.
