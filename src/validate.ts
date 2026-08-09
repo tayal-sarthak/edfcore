@@ -350,18 +350,19 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
    *
    * The raw field is the only place the day and month survive when `headerDate` is undefined.
    */
-  const escape = headerDate === undefined ? parseHeaderStartDate(header.raw.startDate) : undefined;
-  const escapeDisagrees =
-    escape?.status === 'yearEscape' &&
+  const yearEscape =
+    headerDate === undefined ? parseHeaderStartDate(header.raw.startDate) : undefined;
+  const yearEscapeDisagrees =
+    yearEscape?.status === 'yearEscape' &&
     recordingIdDate !== undefined &&
-    (escape.day !== recordingIdDate.day || escape.month !== recordingIdDate.month);
+    (yearEscape.day !== recordingIdDate.day || yearEscape.month !== recordingIdDate.month);
 
-  if (escapeDisagrees && recordingIdDate !== undefined && escape !== undefined) {
+  if (yearEscapeDisagrees && recordingIdDate !== undefined && yearEscape !== undefined) {
     into.push(
       createDiagnostic({
         code: 'DATE_FIELDS_DISAGREE',
         message:
-          `the startdate field states day ${String(escape.day)}, month ${String(escape.month)} ` +
+          `the startdate field states day ${String(yearEscape.day)}, month ${String(yearEscape.month)} ` +
           `with the EDF+ "yy" year escape, but the recording identification Startdate says ` +
           `${formatCalendarDate(recordingIdDate)}. EDF+ additional specification 4: the two state ` +
           'the same day, and only the second can express a year outside 1985-2084. ' +
@@ -371,7 +372,7 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
         byteLength: 8,
         raw: header.raw.startDate,
         expected: formatCalendarDate(recordingIdDate),
-        actual: `day ${String(escape.day)}, month ${String(escape.month)}`,
+        actual: `day ${String(yearEscape.day)}, month ${String(yearEscape.month)}`,
         specReference: 'EDF+ additional specification 4 (startdate)',
       }),
     );
