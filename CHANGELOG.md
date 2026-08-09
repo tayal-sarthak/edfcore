@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.95
+
+- **Fixed** the published `trimToWindow` selection rule, which was still the one 0.3.56 replaced —
+  in the function's own docblock and on two pages, one of them the reference a caller consults to
+  predict which sample a window will start at.
+  - All three said the samples inside the window are those with
+    `j * recordDuration >= relativeStart * samplesPerRecord`. That compares the sample's **exact
+    rational** start. The implementation compares the tick edfcore **publishes** for it —
+    `ceil(j * recordDuration / samplesPerRecord)`, the value `gridSampleStartTicks` and
+    `sampleStartTicksOf` report — which is what 0.3.56 changed it to, and why.
+  - The two differ whenever a boundary is not a whole tick: 256 samples in a one-second record puts
+    sample 1 at 39,062.5 ticks, published as 39,063. So the documented rule names a different
+    boundary sample from the real one on **half** of all sample-aligned windows at the commonest EEG
+    geometry there is.
+  - All three now state the published-tick rule, and say why the distinction exists.
+- The guard reads all three back and requires the retired formula to be absent and the current one
+  present, so a fourth statement cannot appear in the old form.
+
 ## 0.3.94
 
 - **Fixed** `edfcore header` discarding `recording.timeline.diagnostics` — the findings of a read it

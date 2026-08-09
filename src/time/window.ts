@@ -241,12 +241,17 @@ function trimmed(
 /**
  * The exact per-signal trim of a record-aligned chunk to `[startSeconds, startSeconds + duration)`.
  *
- * Sample `j` of the chunk starts at `chunkSignal.startSeconds + j * recordDuration /
- * samplesPerRecord`, so the samples inside the window are those with
- * `j * recordDuration >= relativeStart * samplesPerRecord` and
- * `j * recordDuration < relativeEnd * samplesPerRecord`. Both comparisons are integer bigint
- * products of on-disk quantities — no division, no sample rate, no float bound — which is what
- * makes the boundary sample the same one every time and on every platform.
+ * Sample `j` of the chunk is inside the window when the tick edfcore PUBLISHES for it —
+ * `ceil(j * recordDuration / samplesPerRecord)`, the value `gridSampleStartTicks` and
+ * `sampleStartTicksOf` report — falls in `[relativeStart, relativeEnd)`. Since `ceil(x) >= R` iff
+ * `x > R - 1`, both edges stay integer bigint products of on-disk quantities: no division, no
+ * sample rate, no float bound, so the boundary sample is the same one on every platform.
+ *
+ * The comparison is against the PUBLISHED tick, not the sample's exact rational start. Those
+ * differ whenever a boundary is not a whole tick — 256 samples in a one-second record puts sample 1
+ * at 39,062.5 ticks, published as 39,063 — and selecting on the exact start excluded the sample a
+ * caller had aligned the window to. This docblock stated that older rule until 0.3.95, three
+ * releases after 0.3.56 replaced it.
  *
  * The chunk must be one contiguous run of records (what `readWindow` returns), because that is
  * what makes the sample grid uniform across it.

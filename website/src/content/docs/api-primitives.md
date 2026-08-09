@@ -334,7 +334,9 @@ function trimToWindow(
 
 Narrows one record-aligned `EdfChunkSignal` to exactly the samples inside `[startSeconds, startSeconds + durationSeconds)`.
 
-Sample `j` of the chunk starts at `chunkSignal.startSeconds + j * recordDuration / samplesPerRecord`, so the samples inside the window are those with `j * recordDuration >= relativeStart * samplesPerRecord` and `j * recordDuration < relativeEnd * samplesPerRecord`. Both comparisons are integer bigint products of on-disk quantities (no division, no sample rate, no float bound). The boundary sample is therefore the same one on every platform.
+Sample `j` of the chunk is inside the window when the tick edfcore **publishes** for it — `ceil(j * recordDuration / samplesPerRecord)`, the value `gridSampleStartTicks` and `sampleStartTicksOf` report — falls in `[relativeStart, relativeEnd)`. Since `ceil(x) >= R` iff `x > R - 1`, both edges stay integer bigint products of on-disk quantities (no division, no sample rate, no float bound), so the boundary sample is the same one on every platform.
+
+The comparison is against the published tick, not the sample's exact rational start. The two differ whenever a boundary is not a whole tick — 256 samples in a one-second record puts sample 1 at 39,062.5 ticks, published as 39,063 — and selecting on the exact start excluded the very sample a caller had aligned the window to (fixed in 0.3.56).
 
 `digital` in the result is a **subarray view** of the input's, so trimming allocates nothing and the two share memory. `sampleCount` is taken from the view, so the count and the data cannot disagree. `outOfDigitalRangeCount` is re-counted only when it can have changed and only when there is something to find.
 

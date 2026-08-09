@@ -285,11 +285,16 @@ nothing and the two share storage. Do not write into one expecting the other to 
 
 ### Integer sample indexing
 
-`trimToWindow` compares integers. Sample *j* of the chunk is inside the window when
-`j * recordDuration >= relativeStart * samplesPerRecord` and
-`j * recordDuration < relativeEnd * samplesPerRecord`. Every quantity is taken from the header as
-written and multiplied out in `bigint`. It never computes `round(t * sampleRateHz)`: no division,
-no sample rate, no floating-point bound.
+`trimToWindow` compares integers. Sample *j* of the chunk is inside the window when the tick edfcore
+publishes for it — `ceil(j * recordDuration / samplesPerRecord)`, the value `gridSampleStartTicks`
+and `sampleStartTicksOf` report — falls in `[relativeStart, relativeEnd)`. Since `ceil(x) >= R` iff
+`x > R - 1`, both edges are integer `bigint` products of quantities taken from the header as
+written. It never computes `round(t * sampleRateHz)`: no division, no sample rate, no
+floating-point bound.
+
+Comparing against the sample's exact rational start instead excluded the sample a caller had aligned
+the window to, whenever a boundary was not a whole tick — half of all indices at 256 samples per
+second (fixed in 0.3.56).
 
 `signal.samplesPerRecord` is the authoritative quantity and is what indexing uses.
 `signal.sampleRateHz` is *derived* and is provided for display. It is `undefined` when the record

@@ -19,6 +19,7 @@
  * and assert edfcore picks the integer-exact answer.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { EdfChannelNotFoundError } from '../../../src/errors.js';
 import { parseHeader } from '../../../src/header/parse.js';
@@ -621,6 +622,27 @@ describe('a window aligned to a sample start contains that sample', () => {
       located: sampleAt(recording, 0, startSeconds)?.sampleIndex,
     };
   }
+
+  it('is stated as the published-tick rule everywhere it is written down', () => {
+    // 0.3.56 replaced the exact-rational rule; three places kept describing the old one until
+    // 0.3.95 — the docblock on this function and two pages, one of which is the reference a caller
+    // consults to predict which sample a window will start at.
+    const sources = [
+      readFileSync(new URL('../../../src/time/window.ts', import.meta.url), 'utf8'),
+      readFileSync(
+        new URL('../../../website/src/content/docs/api-primitives.md', import.meta.url),
+        'utf8',
+      ),
+      readFileSync(
+        new URL('../../../website/src/content/docs/reading-signals.md', import.meta.url),
+        'utf8',
+      ),
+    ];
+    for (const text of sources) {
+      expect(text).not.toMatch(/j \* recordDuration >= relativeStart \* samplesPerRecord/);
+      expect(text).toMatch(/ceil\(j \* recordDuration \/ samplesPerRecord\)/);
+    }
+  });
 
   it.each([
     // 256 samples / 1 s: every odd index has a half-tick boundary. The commonest EEG geometry.
