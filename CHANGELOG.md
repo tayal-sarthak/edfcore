@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.101
+
+- **Fixed** an assertion in `tests/corpus/whole-api.test.ts` that compared a value with itself:
+  `expect(inspection.header.signals.length).toBe(inspection.header.signals.length)`. Both operands
+  are the same expression, so it held for every input.
+  - It was the only consistency check in the test the file's docblock calls "the strongest promise
+    in the package", under a comment reading "Whatever it reports must be internally consistent
+    rather than merely present". Across five corpus files it checked nothing.
+  - Replaced with invariants that can fail: the two index arrays partition the signals exactly once,
+    `headerByteLength` is the `256 * (ns + 1)` the signal count implies, `bytesRead` exceeds neither
+    the file nor the 128 KiB ceiling, and `ok` equals "no error-severity diagnostic" — the rule the
+    `inspectEdf` docblock states.
+- Each new assertion was canaried by breaking the behaviour it names and confirming it fails.
+  Two earlier attempts were rejected: one could not distinguish anything on a clean corpus, and one
+  broke module loading instead of changing behaviour, which is not a canary.
+- Defect shape (e), the one this project keeps re-learning: a guard that would still pass if what it
+  names regressed. It has now been the subject of 0.3.52, 0.3.78, 0.3.80, 0.3.90 and this release.
+
 ## 0.3.100
 
 - **Fixed** `diagnostics.md` recommending, as the alternative to a gate it warns against, a gate

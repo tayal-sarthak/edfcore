@@ -72,9 +72,30 @@ describe.each(present.length > 0 ? present : (['(corpus absent)'] as const))('%s
     const inspection = await inspectEdf(byteSource(bytesOf(name)));
     expect(inspection).toBeDefined();
     expect(typeof inspection.variant).toBe('string');
-    // Whatever it reports must be internally consistent rather than merely present.
+    /*
+     * Whatever it reports must be internally consistent rather than merely present.
+     *
+     * This asserted `signals.length` against ITSELF until 0.3.101 — both operands the same
+     * expression — so the one line claiming to check consistency, in the test the file's docblock
+     * calls the strongest promise in the package, checked nothing on any corpus file.
+     */
     if (inspection.header !== undefined) {
-      expect(inspection.header.signals.length).toBe(inspection.header.signals.length);
+      const { header } = inspection;
+      // The two index arrays partition the signals: every signal is data or annotations, and no
+      // signal is both.
+      expect(header.dataSignalIndices.length + header.annotationSignalIndices.length).toBe(
+        header.signals.length,
+      );
+      expect(new Set([...header.dataSignalIndices, ...header.annotationSignalIndices]).size).toBe(
+        header.signals.length,
+      );
+      // The reported header length is the one the signal count implies.
+      expect(header.headerByteLength).toBe(256 * (header.signals.length + 1));
+      // `bytesRead` never exceeds what the file holds, and never exceeds the ceiling.
+      expect(inspection.bytesRead).toBeLessThanOrEqual(inspection.byteLength);
+      expect(inspection.bytesRead).toBeLessThanOrEqual(128 * 1024);
+      // `ok` is exactly "no error-severity diagnostic", which is what the docblock promises.
+      expect(inspection.ok).toBe(inspection.diagnostics.every((d) => d.severity !== 'error'));
     }
   });
 
