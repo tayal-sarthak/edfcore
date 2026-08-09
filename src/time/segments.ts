@@ -3,8 +3,16 @@
  *
  * Layer 4. Pure and synchronous, and structural only: it reports the shape the onsets actually
  * have and judges none of it. Monotonicity and the spacing rules belong to `time/timeline.ts`,
- * which is their sole owner — run `assertMonotonicOnsetArray` on the same array first, and a gap
- * can then only have a non-negative duration.
+ * which is their sole owner — run `assertMonotonicOnsetArray` on the same array first, and every
+ * segment then starts at or after the one before it.
+ *
+ * That is all monotonicity buys. It requires `onset[r] >= onset[r - 1]`, which an OVERLAP
+ * satisfies: `onset[r]` can be at or after its predecessor and still before
+ * `onset[r - 1] + recordDurationTicks`, and `buildSegmentation` then closes the earlier segment
+ * past where the next one begins. The gap between them is negative, which is exactly what the
+ * comment on `durationTicks` below says and what `index.gaps` reports for a real overlapping file.
+ * This docblock claimed a gap "can then only have a non-negative duration" until 0.3.82, ninety
+ * lines above the line saying otherwise.
  *
  * Only `buildRecordIndex` calls this, because only a complete traversal has every onset. The
  * boundary rule is the one edfcore states everywhere else: a new segment starts wherever

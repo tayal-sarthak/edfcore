@@ -14,6 +14,7 @@ import { mergeChunks } from '../../src/chunks.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readRecords, readWindow } from '../../src/recording.js';
+import { assertMonotonicOnsetArray } from '../../src/time/timeline.js';
 import { trimToWindow } from '../../src/time/window.js';
 import type { EdfChunk, EdfRecording } from '../../src/types.js';
 import { buildEdf, minimalEdfPlus } from '../support/writer.js';
@@ -357,7 +358,15 @@ describe('mergeChunks does not call an overlap a gap', () => {
 
   it('names it an overlap, with a positive magnitude', async () => {
     const recording = await overlapping();
+    // A negative gap on an array that IS monotonic. `assertMonotonicOnsetArray` accepts it —
+    // monotonicity is `onset[r] >= onset[r - 1]`, and an overlap satisfies that — so `segments.ts`
+    // saying "a gap can then only have a non-negative duration" was never true (fixed in 0.3.82).
     expect(recording.index.gaps?.[0]?.durationTicks).toBe(-2_000_000n);
+    expect(() =>
+      assertMonotonicOnsetArray(
+        (recording.index.segments ?? []).map((segment) => segment.startTicks),
+      ),
+    ).not.toThrow();
 
     const chunks = await readWindow(recording, {
       signalIndices: [0],

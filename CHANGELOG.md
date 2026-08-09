@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.82
+
+- **Corrected** the `time/segments.ts` docblock, which promised that running
+  `assertMonotonicOnsetArray` on the onsets first means "a gap can then only have a non-negative
+  duration". Ninety lines below it, the comment on `durationTicks` says "Negative for an overlap."
+  - Monotonicity is `onset[r] >= onset[r - 1]`, and an **overlap satisfies it**: `onset[r]` can be
+    at or after its predecessor and still before `onset[r - 1] + recordDurationTicks`.
+    `buildSegmentation` then closes the earlier segment past where the next one begins, and the gap
+    between them is negative — which is what `index.gaps` reports for a real overlapping file, and
+    what an existing test has asserted since 0.3.41 (`durationTicks` of `-2_000_000n`).
+  - The docblock now says what monotonicity actually buys: every segment starts at or after the one
+    before it, and nothing more.
+- The test that pins the negative gap now also asserts that the same array passes
+  `assertMonotonicOnsetArray`, so the two halves of the retired claim are checked against each other
+  rather than separately.
+
 ## 0.3.81
 
 - **Fixed** `validateHeader` being structurally unable to report `DATE_FIELDS_DISAGREE` under the
