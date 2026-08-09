@@ -314,8 +314,20 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
             `${gap.durationSeconds}s\t${overlap ? 'overlap' : 'gap'}\n`,
         );
       }
-      // Exit 0 either way: this command reports, it does not gate. `edfcore validate` is the gate,
-      // and it already exits 1 on an overlap through RECORD_ONSET_SPACING_VIOLATION.
+      /*
+       * Exit 0 either way: this command reports, it does not gate.
+       *
+       * It used to add that `edfcore validate` "is the gate, and it already exits 1 on an overlap
+       * through RECORD_ONSET_SPACING_VIOLATION". It does not. That code's disposition is `warning`
+       * — deliberately, and `diagnostics.md` lists it in the warning table — so `report.ok` stays
+       * true and `validate` prints `PASS` and exits 0 on the same file this command has just
+       * printed an overlap for. A reader who took the comment at its word gated CI on a command
+       * that passes the defect (fixed in 0.3.91).
+       *
+       * The disposition is the considered half: an overlapping file is still readable, which is
+       * why `mergeChunks` refuses the join rather than the reader refusing the file. Backwards
+       * onsets — `TIMELINE_NOT_MONOTONIC` — are the fatal case.
+       */
       return 0;
     }
 

@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { type CliIo, CliUsageError, parseArgs, runCli } from '../../src/cli-run.js';
-import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
+import { buildEdf, minimalEdf, minimalEdfPlus } from '../support/writer.js';
 
 interface Captured {
   readonly code: number;
@@ -482,5 +482,43 @@ describe('the usage text lists every flag the parser accepts', () => {
     // As a whole token. `toContain('-v')` is satisfied by the `-v` inside `--version`, which is
     // exactly the flag that was undocumented, so a substring test would pass on the bug.
     expect(usage).toMatch(new RegExp(`(^|[\\s,])${flag}([\\s,]|$)`, 'm'));
+  });
+});
+
+describe('gaps and validate agree about an overlapping file', () => {
+  /**
+   * `gaps` carried a comment saying `edfcore validate` "is the gate, and it already exits 1 on an
+   * overlap through RECORD_ONSET_SPACING_VIOLATION". That code is a `warning` — deliberately; it is
+   * in the warning table on `diagnostics.md` — so `report.ok` stays true, `validate` prints `PASS`
+   * and exits 0 on the same file `gaps` has just printed an overlap for (fixed in 0.3.91).
+   *
+   * The behaviour is unchanged; this pins what the two commands actually do, so the claim cannot
+   * drift back without a failing test.
+   */
+  const OVERLAPPING = buildEdf({
+    plus: 'D',
+    recordCount: 6,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+    annotationSignals: [{ samplesPerRecord: 30 }],
+    // Monotonic onsets, but records 3..5 start before record 2 ends.
+    recordOnsetSeconds: (r: number) => (r < 3 ? r : r - 0.2),
+  });
+
+  it('gaps reports the overlap and exits 0', async () => {
+    const { code, out } = await invoke(['gaps', 'f.edf'], { 'f.edf': OVERLAPPING });
+    expect(code).toBe(0);
+    expect(out).toContain('overlap');
+  });
+
+  it('validate passes it, so gaps must not call validate the gate for this', async () => {
+    const { code, out } = await invoke(['validate', 'f.edf'], { 'f.edf': OVERLAPPING });
+    expect(code).toBe(0);
+    expect(out).toContain('PASS');
+
+    const source = readFileSync(new URL('../../src/cli-run.ts', import.meta.url), 'utf8');
+    const claim =
+      /`edfcore validate` is the gate,\s*\n?\s*\/\/ and it already exits 1 on an overlap/;
+    expect(source).not.toMatch(claim);
   });
 });

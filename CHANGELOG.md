@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.91
+
+- **Fixed** `edfcore gaps` claiming that `edfcore validate` "is the gate, and it already exits 1 on
+  an overlap through `RECORD_ONSET_SPACING_VIOLATION`". It does not: that code's disposition is
+  `warning`, so `report.ok` stays true and `validate` prints **PASS** and exits **0** on the same
+  file `gaps` has just printed an overlap for.
+  - A reader who took the comment at its word gated a CI job on a command that passes the defect —
+    the exact use the exit-code contract exists for.
+  - The disposition is the considered half and is unchanged: `diagnostics.md` lists the code in the
+    warning table, an overlapping file is still readable, and that is why `mergeChunks` refuses the
+    join rather than the reader refusing the file. Backwards onsets — `TIMELINE_NOT_MONOTONIC` — are
+    the fatal case. The comment was the wrong half.
+- The test pins what both commands actually do on one overlapping file, and asserts the retired
+  sentence is gone from the source, so the claim cannot drift back silently.
+
 ## 0.3.90
 
 - **Fixed** three more pages carrying claims two earlier releases retired, and **widened both
