@@ -516,6 +516,46 @@ describe("one reader's abort does not cancel another's", () => {
     expect(reads()).toBe(1);
   });
 
+  it('rejects the aborting reader AT abort time, not when the block arrives', async () => {
+    /*
+     * 0.3.43 stopped the caller's signal reaching the shared block read, which is right, and wrote
+     * that "read already polls each caller's own signal before and after `Promise.all`, so an
+     * aborting caller still rejects promptly". The only poll that can fire is the one AFTER the
+     * gather, so the caller stayed pending for the entire underlying read and settled only when
+     * the bytes it no longer wanted arrived — and with the signal no longer reaching the source,
+     * nothing else was watching it (fixed in 0.3.79).
+     */
+    let release = (): void => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const source: ByteSource = {
+      byteLength: 1024,
+      async read(offset: number, length: number) {
+        await gate;
+        return new Uint8Array(length).fill(offset % 251);
+      },
+    };
+    const cached = cachedSource(source, { blockBytes: 256, maxBytes: 1 << 20 });
+    const controller = new AbortController();
+
+    const settled: string[] = [];
+    const read = cached
+      .read(0, 512, { signal: controller.signal })
+      .then(() => settled.push('resolved'))
+      .catch((e: Error) => settled.push(e.name));
+
+    controller.abort();
+    // Several microtask turns: enough for anything that CAN settle to have settled.
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    expect(settled).toEqual(['AbortError']);
+
+    // The shared read is untouched and still completes; nothing is left dangling.
+    release();
+    await read;
+    expect(settled).toEqual(['AbortError']);
+  });
+
   it('rejects only the reader whose signal was aborted, whichever started first', async () => {
     // Which reader owned the shared read used to decide which one died.
     const { source } = slowSource(4096);

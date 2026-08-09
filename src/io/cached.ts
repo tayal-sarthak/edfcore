@@ -16,7 +16,7 @@
  */
 
 import { requireFiniteOption } from '../options.js';
-import type { ByteSource, CacheOptions, ReadOptions } from '../types.js';
+import type { AbortSignalLike, ByteSource, CacheOptions, ReadOptions } from '../types.js';
 import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
 
 const DEFAULT_BLOCK_BYTES = 1024 * 1024;
@@ -33,6 +33,52 @@ function passThrough(source: ByteSource): ByteSource {
       await source.close?.();
     },
   };
+}
+
+/** The shape a real `AbortSignal` has and `AbortSignalLike` does not promise. */
+interface WatchableSignal {
+  addEventListener(type: 'abort', listener: () => void): void;
+  removeEventListener(type: 'abort', listener: () => void): void;
+}
+
+function isWatchable(signal: unknown): signal is AbortSignalLike & WatchableSignal {
+  const candidate = signal as { addEventListener?: unknown; removeEventListener?: unknown } | null;
+  return (
+    typeof candidate?.addEventListener === 'function' &&
+    typeof candidate.removeEventListener === 'function'
+  );
+}
+
+/**
+ * A promise that rejects when `signal` aborts, plus the teardown for its listener.
+ *
+ * `undefined` when the signal cannot be watched, which is the caller's cue to fall back to polling.
+ * The rejection is the same `AbortError` `throwIfAborted` produces, so a caller branching on
+ * `error.name` cannot tell which route rejected it.
+ */
+function watchSignal(
+  signal: AbortSignalLike | undefined,
+): { aborted: Promise<never>; dispose: () => void } | undefined {
+  if (signal === undefined || !isWatchable(signal)) return undefined;
+  let dispose = (): void => {};
+  const aborted = new Promise<never>((_resolve, reject) => {
+    const onAbort = (): void => {
+      const error = new Error('The read was aborted through options.signal.');
+      error.name = 'AbortError';
+      reject(error);
+    };
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener('abort', onAbort);
+    dispose = () => {
+      signal.removeEventListener('abort', onAbort);
+    };
+  });
+  // Losing the race must not surface as an unhandled rejection.
+  aborted.catch(() => {});
+  return { aborted, dispose: () => dispose() };
 }
 
 export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSource {
@@ -90,11 +136,17 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
    * it: a blank panel and no error anywhere. Which reader died depended on which touched the
    * block first (fixed in 0.3.43).
    *
-   * `read` already polls each caller's own signal before and after `Promise.all`, so an aborting
-   * caller still rejects promptly — it simply no longer decides for anyone else. The cost is that
-   * an abort does not tear down the underlying request, which is the right trade for a read whose
-   * result other readers are waiting on: the bytes are valid and already paid for, so they are
-   * admitted to the cache.
+   * The caller no longer decides for anyone else, and the cost is that an abort does not tear down
+   * the underlying request — the right trade for a read whose result other readers are waiting on:
+   * the bytes are valid and already paid for, so they are admitted to the cache.
+   *
+   * This used to claim that the polls around `Promise.all` left an aborting caller rejecting
+   * "promptly". They did not: the only poll that can fire is the one AFTER the gather, so the
+   * caller's promise stayed pending for the whole underlying block read and settled only when the
+   * bytes it no longer wanted arrived. With the signal no longer reaching the source, nothing else
+   * was watching it. `read` now RACES the caller's own signal against the gather when the signal
+   * can be watched, so it rejects at abort time while the shared read continues untouched — which
+   * is what 0.3.43 decided, rather than what it wrote down (fixed in 0.3.79).
    */
   async function fetchBlock(index: number, options?: ReadOptions): Promise<Uint8Array> {
     const start = index * blockBytes;
@@ -152,7 +204,26 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
       for (let index = firstBlock; index <= lastBlock; index += 1) {
         pending.push(blockFor(index, options));
       }
-      const resolved = await Promise.all(pending);
+      /*
+       * Raced, not merely awaited. `AbortSignalLike` is `{ aborted: boolean }` and nothing more, so
+       * a signal that carries no `addEventListener` cannot be watched and the post-gather poll
+       * below is still the only answer for it. A real `AbortSignal` — what every caller in
+       * practice passes — is watched, and rejects the moment it fires.
+       *
+       * The gather is NOT cancelled either way: `pending` holds the shared block promises, other
+       * readers are waiting on them, and their rejections must not become unhandled. They are
+       * already attached inside `blockFor`, so losing the race leaves nothing dangling.
+       */
+      const watch = watchSignal(options?.signal);
+      let resolved: Uint8Array[];
+      try {
+        resolved =
+          watch === undefined
+            ? await Promise.all(pending)
+            : await Promise.race([Promise.all(pending), watch.aborted]);
+      } finally {
+        watch?.dispose();
+      }
       throwIfAborted(options);
 
       const out = new Uint8Array(length);

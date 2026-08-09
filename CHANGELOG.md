@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.79
+
+- **Fixed** `cachedSource` leaving an aborting caller pending for the whole underlying block read.
+  - 0.3.43 stopped one reader's signal cancelling a block other readers were waiting on — right, and
+    unchanged — and justified it by saying `read` "already polls each caller's own signal before and
+    after `Promise.all`, so an aborting caller still rejects promptly". The only poll that can fire
+    is the one **after** the gather. So the caller's promise settled when the bytes it no longer
+    wanted arrived, and with the signal no longer reaching the source, nothing was watching it at
+    all. A viewer aborting a scrolled-past window held that promise for the full fetch.
+  - `read` now races the caller's own signal against the gather. The shared block read is untouched:
+    other readers still get it, and losing the race leaves nothing dangling, because the block
+    promises are already attached inside `blockFor`.
+- `AbortSignalLike` is `{ aborted: boolean }` and nothing more, so a signal that carries no
+  `addEventListener` cannot be watched and the post-gather poll remains the answer for it. A real
+  `AbortSignal` — what callers actually pass — is watched and rejects the moment it fires, with the
+  same `AbortError` `throwIfAborted` produces, so nothing branching on `error.name` can tell which
+  route rejected it.
+
 ## 0.3.78
 
 - **Fixed** `sample-grid.ts` sending a reader to `onsetTicks` where `sample-locate.ts` sends them to
