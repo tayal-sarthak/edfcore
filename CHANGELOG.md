@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.81
+
+- **Fixed** `validateHeader` being structurally unable to report `DATE_FIELDS_DISAGREE` under the
+  EDF+ `yy` year escape, which the parser reports for the same header.
+  - `checkDates` guards on `startTime.headerDate !== undefined`. The escape leaves that field
+    `undefined` by construction — the header still states a day and a month, just no year — so the
+    guard could never hold, and a file whose startdate says `01.01.yy` while its Startdate subfield
+    says 02 May came back clean from `validateHeader` and defective from `openEdf`.
+  - `resolveStartTime` has compared the day and month in that case all along, so the two halves of
+    the package disagreed about whether the same header has a defect. `validateHeader` is
+    documented as a pure check that stands on its own; it did not.
+  - It now re-parses the raw field, which is the only place the day and month survive when
+    `headerDate` is `undefined`, and reports the same disagreement with the same code.
+- The test asserts the premise — that the escape really does leave no header date to compare — and
+  checks the agreeing case stays silent in both, so it cannot pass by reporting everything.
+
 ## 0.3.80
 
 - **Fixed** `EdfRangeError.available` meaning two different things depending on which check refused.

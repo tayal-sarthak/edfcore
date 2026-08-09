@@ -320,6 +320,35 @@ describe('validateHeader', () => {
     expect(recording.header.diagnostics).not.toBe(first);
   });
 
+  it('sees a date disagreement under the EDF+ yy escape, as the parser does', async () => {
+    /*
+     * The escape leaves `startTime.headerDate` undefined by construction — the field states a day
+     * and a month, just no year — so `checkDates`' guard on `headerDate !== undefined` could never
+     * fire for it, while `resolveStartTime` compares the day and month and reports the
+     * disagreement. The two disagreed about whether the same header has a defect, and
+     * `validateHeader` is documented as standing on its own (fixed in 0.3.81).
+     */
+    const disagreeing = minimalEdf({
+      raw: { startDate: '01.01.yy' },
+      recordingId: 'Startdate 02-MAY-2090 X X X',
+    });
+    const header = parseHeader(disagreeing, disagreeing.byteLength);
+
+    // The premise: the escape really does leave no header date to compare.
+    expect(header.startTime.headerDate).toBeUndefined();
+    expect(header.diagnostics.map((d) => d.code)).toContain('DATE_FIELDS_DISAGREE');
+    expect(validateHeader(header).map((d) => d.code)).toContain('DATE_FIELDS_DISAGREE');
+
+    // And when the day and month DO match, neither reports anything about the dates.
+    const agreeing = minimalEdf({
+      raw: { startDate: '02.05.yy' },
+      recordingId: 'Startdate 02-MAY-2090 X X X',
+    });
+    const fine = parseHeader(agreeing, agreeing.byteLength);
+    expect(fine.diagnostics.map((d) => d.code)).not.toContain('DATE_FIELDS_DISAGREE');
+    expect(validateHeader(fine).map((d) => d.code)).not.toContain('DATE_FIELDS_DISAGREE');
+  });
+
   it('reports the EDF+ recommendations the header ignores, and nothing else', async () => {
     const bytes = minimalEdf({
       signals: [

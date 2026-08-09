@@ -27,7 +27,12 @@ import {
   createDiagnostic,
 } from './diagnostics/collector.js';
 import { EdfBudgetError } from './errors.js';
-import { calendarDatesEqual, formatCalendarDate, isValidCalendarDate } from './header/dates.js';
+import {
+  calendarDatesEqual,
+  formatCalendarDate,
+  isValidCalendarDate,
+  parseHeaderStartDate,
+} from './header/dates.js';
 import { signalFieldOffset } from './header/signals.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
@@ -336,6 +341,42 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
 
   const headerDate = startTime.headerDate;
   const recordingIdDate = startTime.recordingIdDate;
+  /*
+   * The EDF+ `yy` escape leaves `headerDate` undefined by construction — the field still states a
+   * day and a month, just no year — so a guard on `headerDate !== undefined` can never fire for it
+   * and `validateHeader` could not see a disagreement the parser reports. `resolveStartTime`
+   * compares the day and month in that case, so the two disagreed about whether the same header
+   * has a defect, and this function is documented as standing on its own (fixed in 0.3.81).
+   *
+   * The raw field is the only place the day and month survive when `headerDate` is undefined.
+   */
+  const escape = headerDate === undefined ? parseHeaderStartDate(header.raw.startDate) : undefined;
+  const escapeDisagrees =
+    escape?.status === 'yearEscape' &&
+    recordingIdDate !== undefined &&
+    (escape.day !== recordingIdDate.day || escape.month !== recordingIdDate.month);
+
+  if (escapeDisagrees && recordingIdDate !== undefined && escape !== undefined) {
+    into.push(
+      createDiagnostic({
+        code: 'DATE_FIELDS_DISAGREE',
+        message:
+          `the startdate field states day ${String(escape.day)}, month ${String(escape.month)} ` +
+          `with the EDF+ "yy" year escape, but the recording identification Startdate says ` +
+          `${formatCalendarDate(recordingIdDate)}. EDF+ additional specification 4: the two state ` +
+          'the same day, and only the second can express a year outside 1985-2084. ' +
+          'Next: header.raw.startDate and header.recording.raw both keep their text verbatim.',
+        field: 'startDate',
+        byteOffset: 168,
+        byteLength: 8,
+        raw: header.raw.startDate,
+        expected: formatCalendarDate(recordingIdDate),
+        actual: `day ${String(escape.day)}, month ${String(escape.month)}`,
+        specReference: 'EDF+ additional specification 4 (startdate)',
+      }),
+    );
+  }
+
   if (
     headerDate !== undefined &&
     recordingIdDate !== undefined &&
