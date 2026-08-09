@@ -362,6 +362,52 @@ describe('a partial response is checked for WHICH bytes it carries', () => {
     expect(error.receivedLength).toBe(4);
   });
 
+  it('sees an ignored Range at construction only when it had to probe', async () => {
+    /*
+     * `data-sources.md` said the 200 check "happens during the length probe, before a second
+     * request is made". The probe runs only when `options.byteLength` is absent AND HEAD produced
+     * no usable `Content-Length` — `httpSource` returns before it in both other cases. A CDN that
+     * answers HEAD and then ignores Range is the ordinary shape of this failure, and there the
+     * source constructs cleanly and refuses the first read (fixed in 0.3.88).
+     */
+    function ignoringRange(withHead: boolean) {
+      const methods: string[] = [];
+      const fetchImpl = (async (_href: string, init?: { method?: string }) => {
+        const method = init?.method ?? 'GET';
+        methods.push(method);
+        if (method === 'HEAD') {
+          return {
+            status: withHead ? 200 : 405,
+            headers: {
+              get: (n: string) => (withHead && n.toLowerCase() === 'content-length' ? '16' : null),
+            },
+            arrayBuffer: async () => new ArrayBuffer(0),
+          } satisfies HttpResponseLike;
+        }
+        // Ignores Range entirely.
+        return {
+          status: 200,
+          headers: { get: () => null },
+          arrayBuffer: async () => CONTENT.slice().buffer,
+        } satisfies HttpResponseLike;
+      }) as unknown as FetchLike;
+      return { fetch: fetchImpl, methods };
+    }
+
+    // HEAD answers, so no probe is issued and construction cannot see the 200.
+    const answered = ignoringRange(true);
+    const source = await httpSource('https://example.invalid/f.edf', { fetch: answered.fetch });
+    expect(answered.methods).toEqual(['HEAD']);
+    await expect(source.read(0, 4)).rejects.toThrow(EdfSourceError);
+
+    // HEAD fails, so the probe runs and construction is where the 200 surfaces.
+    const probed = ignoringRange(false);
+    await expect(
+      httpSource('https://example.invalid/f.edf', { fetch: probed.fetch }),
+    ).rejects.toThrow(EdfSourceError);
+    expect(probed.methods).toEqual(['HEAD', 'GET']);
+  });
+
   it('gives the same diagnosis when the whole body was buffered instead', async () => {
     /*
      * The identical fault — this source was built for 32 bytes and the resource is really 16 —

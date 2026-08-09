@@ -228,7 +228,17 @@ If you know the file is small, or you have no way to fix the origin, opt in:
 const source = await httpSource(url, { allowFullDownload: true });
 ```
 
-The body then arrives once, is held in memory, and every later read is served from it as a copy. The check happens during the length probe, before a second request is made, so accepting means one download rather than two.
+The body then arrives once, is held in memory, and every later read is served from it as a copy.
+
+The check fires on the first response that comes back `200` — which is not always during construction. `httpSource()` learns the length three ways, and only the last of them issues a request that could reveal an ignored `Range`:
+
+| How the length is learned | When a 200 is first seen |
+| --- | --- |
+| `options.byteLength` was given | on your first `read()` |
+| `HEAD` returned a usable `Content-Length` | on your first `read()` |
+| the `bytes=0-0` probe | during `httpSource()` |
+
+So a CDN that answers `HEAD` and then ignores `Range` — the ordinary shape of this failure — gives you a source that constructs cleanly and refuses the first read. With `allowFullDownload` the body is buffered at whichever of those points the 200 arrives, so accepting still means one download rather than two.
 
 ### Options
 

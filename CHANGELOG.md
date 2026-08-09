@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.88
+
+- **Fixed** `data-sources.md` saying the ignored-`Range` check "happens during the length probe,
+  before a second request is made". The probe runs on only one of the three ways `httpSource` learns
+  a length, and on the other two the check cannot fire until the caller's first `read()`.
+  - `httpSource` returns before the probe when `options.byteLength` was supplied, and again when
+    `HEAD` gave a usable `Content-Length`. A CDN that answers `HEAD` and then ignores `Range` — the
+    ordinary shape of this failure — therefore hands back a source that constructs cleanly and
+    refuses the first read. A reader who trusted the page treated a successful `httpSource()` as
+    proof the origin honours `Range`.
+  - The page now gives the rule as a table of the three paths and says which of them can see a 200
+    at construction.
+- The test drives both branches through a fake `fetch` and asserts the request METHODS issued —
+  `['HEAD']` when HEAD answers, `['HEAD', 'GET']` when it does not — so it pins the reason the two
+  behave differently, not just that they do.
+
 ## 0.3.87
 
 - **Fixed** `api-validate.md` saying "The other five are also emitted by the parser" under a
