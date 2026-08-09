@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.89
+
+- **Fixed** the envelope budget guard measuring 12 bytes per bucket while the fixed-width path
+  allocates 20, so a call granted exactly the byte count its own refusal named allocated **1.67x**
+  it.
+  - `reduceRange` counts `min`, `max` and `counts` — one `Int32Array` each — refuses above the
+    budget, and then `bucketStartsFor` allocates a `Float64Array(bucketCount)` per signal, after the
+    guard and uncounted by it. A `readEnvelopeAtResolution` call whose refusal asked for 9,600,000
+    bytes allocated 16,000,128 when given exactly that.
+  - It happens on the one path the budget exists for: the comment above the guard cites "a fixed
+    width fine enough — one microsecond over an hour — asks for billions of buckets".
+    `large-files.md` says `maxMaterializeBytes` "caps any single allocation edfcore makes on your
+    behalf" and throws "**before** anything is allocated, not part-way through".
+  - The guard now adds 8 bytes per bucket per signal on the fixed-width path and nothing on the
+    even-division path, where the array is never built.
+- The test reads the byte count out of the refusal, grants exactly that, and counts every
+  `Int32Array` and `Float64Array` constructed during the call. It asserts the fixed-width branch was
+  the one taken first, so it cannot pass on the path where the extra array does not exist.
+
 ## 0.3.88
 
 - **Fixed** `data-sources.md` saying the ignored-`Range` check "happens during the length probe,

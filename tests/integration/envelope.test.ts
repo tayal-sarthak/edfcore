@@ -809,6 +809,73 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
     expect(clamped?.bucketCount).toBe(8);
   });
 
+  it('measures every allocation it is about to make, not only the accumulators', async () => {
+    /*
+     * The guard counted `min`, `max` and `counts` — 12 bytes per bucket per signal — and then the
+     * fixed-width path allocated a `Float64Array(bucketCount)` of bucket starts per signal on top,
+     * after the guard. So a call granted exactly the byte count its own refusal named allocated
+     * 1.67x it, on the one path the budget exists for: "a fixed width fine enough — one microsecond
+     * over an hour — asks for billions of buckets" (fixed in 0.3.89).
+     */
+    const realInt32 = globalThis.Int32Array;
+    const realFloat64 = globalThis.Float64Array;
+    let allocated = 0;
+    class SpyInt32 extends realInt32 {
+      constructor(length: number) {
+        super(length);
+        allocated += this.byteLength;
+      }
+    }
+    class SpyFloat64 extends realFloat64 {
+      constructor(length: number) {
+        super(length);
+        allocated += this.byteLength;
+      }
+    }
+
+    const bytes = buildEdf({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [
+        { label: 'Fp1', samplesPerRecord: 4 },
+        { label: 'Fp2', samplesPerRecord: 4 },
+      ],
+    });
+    const opened = await openEdf(byteSource(bytes));
+    const edf = { ...opened, index: await buildRecordIndex(opened) };
+    const selection = {
+      signalIndices: [0, 1],
+      startSeconds: 0,
+      durationSeconds: 4,
+      secondsPerBucket: 0.00001,
+    };
+
+    // Ask with an impossible budget so the refusal states the size it wants.
+    const refusal = await readEnvelopeAtResolution(edf, selection, { maxMaterializeBytes: 1 }).then(
+      () => '',
+      (error: Error) => error.message,
+    );
+    const wanted = Number(/needs a (\d+)-byte accumulator/.exec(refusal)?.[1]);
+    expect(wanted).toBeGreaterThan(0);
+
+    // Grant exactly that, and count what the call really allocates.
+    (globalThis as { Int32Array: unknown }).Int32Array = SpyInt32;
+    (globalThis as { Float64Array: unknown }).Float64Array = SpyFloat64;
+    try {
+      const chunks = await readEnvelopeAtResolution(edf, selection, {
+        maxMaterializeBytes: wanted,
+      });
+      // The premise: this really is the fixed-width path, where the extra array exists.
+      expect(chunks[0]?.bucketCount).toBeGreaterThan(1000);
+    } finally {
+      (globalThis as { Int32Array: unknown }).Int32Array = realInt32;
+      (globalThis as { Float64Array: unknown }).Float64Array = realFloat64;
+    }
+
+    // Within one bucket's worth of slack for the per-chunk scratch, which is bounded separately.
+    expect(allocated).toBeLessThanOrEqual(wanted + 1024);
+  });
+
   it('names the knob the caller actually passed, not the other function’s', async () => {
     // `reduceRange` is shared. Its refusal hard-coded "ask for a coarser secondsPerBucket", so a
     // `readEnvelope` caller — whose only resolution knob is `buckets`, a pixel width — was told to

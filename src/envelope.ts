@@ -48,6 +48,16 @@ import type {
 /** `min`, `max` and `counts` are one Int32Array each, so a bucket costs twelve bytes per signal. */
 const BYTES_PER_BUCKET = 12;
 
+/**
+ * `bucketStartsFor` adds a `Float64Array(bucketCount)` per signal, on the FIXED-WIDTH path only.
+ *
+ * It is allocated after the budget guard and was not counted by it, so the guard measured 12 bytes
+ * per bucket per signal and the call then allocated 20 — 1.67x the budget it had just refused
+ * against, on the exact path the budget was added for. A `readEnvelopeAtResolution` call granted
+ * the 9,600,000 bytes its own refusal named allocated 16,000,128 (fixed in 0.3.89).
+ */
+const BYTES_PER_BUCKET_START = 8;
+
 /** Per-signal accumulator, reused across every chunk of one contiguous run. */
 interface Accumulator {
   readonly signal: EdfSignal;
@@ -230,7 +240,9 @@ async function reduceRange(
   // microsecond over an hour — asks for billions of buckets, so the ceiling is now stated as a
   // budget and refused before anything is allocated, the way every other allocation in the
   // package is.
-  const bucketBytes = bucketCount * BYTES_PER_BUCKET * signals.length;
+  // The fixed-width path allocates the bucket-start array as well; the even-division path does not.
+  const perBucketBytes = BYTES_PER_BUCKET + (fixedWidth ? BYTES_PER_BUCKET_START : 0);
+  const bucketBytes = bucketCount * perBucketBytes * signals.length;
   const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (bucketBytes > budgetBytes) {
     // The hint names the argument the CALLER passed. `reduceRange` is shared, and `fixedWidth` is
