@@ -74,7 +74,7 @@ interface NodeFsPromises {
   open(
     path: string,
     flags: string,
-  ): Promise<FileHandleLike & { stat(): Promise<{ size: number }> }>;
+  ): Promise<FileHandleLike & { stat(): Promise<{ size: number; isFile(): boolean }> }>;
 }
 
 const fs: NodeFsPromises = nodeFsPromises as unknown as NodeFsPromises;
@@ -161,11 +161,29 @@ export async function fileSource(path: string): Promise<ByteSource> {
   try {
     const stats = await handle.stat();
     const byteLength = stats.size;
+    /*
+     * The regular-file check is a CHECK, not advice.
+     *
+     * The size guard below used to carry it as a "Next:" — "check that the path names a regular
+     * file rather than a directory, a pipe or a device" — and none of the three can reach it. A
+     * directory's `st_size` is its allocation (64 on macOS) and a FIFO's and a character device's
+     * is 0: all ordinary safe integers. So `fileSource(dir)` returned a working-looking
+     * `ByteSource` with `byteLength: 64`, and the first read failed with a raw `EISDIR` from Node
+     * rather than with anything edfcore said (fixed in 0.3.98).
+     */
+    if (!stats.isFile()) {
+      throw new EdfSourceError(
+        `fileSource(): ${JSON.stringify(path)} is not a regular file. A directory, a pipe and a ` +
+          'device all report a size the operating system will not let edfcore read from, so the ' +
+          'first read would fail with a raw errno instead. Next: name the file itself.',
+        { offset: 0, requestedLength: 0 },
+      );
+    }
     if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
       throw new EdfSourceError(
         `fileSource(): the operating system reported a size of ${byteLength} bytes for ` +
-          `${JSON.stringify(path)}, which is not a byte count edfcore can address. Next: check ` +
-          'that the path names a regular file rather than a directory, a pipe or a device.',
+          `${JSON.stringify(path)}, which is not a byte count edfcore can address. Next: this is a ` +
+          'regular file, so the size is the surprise — check the filesystem.',
         { offset: 0, requestedLength: 0 },
       );
     }

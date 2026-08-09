@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.98
+
+- **Fixed** `fileSource` carrying, as advice, a check it never performed. Its size refusal ended
+  "Next: check that the path names a regular file rather than a directory, a pipe or a device", and
+  none of the three can reach that branch.
+  - The branch fires only on `!Number.isSafeInteger(size) || size < 0`. A directory's `st_size` is
+    its allocation — 64 on macOS — and a FIFO's and a character device's is 0. All ordinary safe
+    integers, so the guard never fired for any of the causes it told you to check.
+  - `fileSource(dir)` therefore returned a working-looking `ByteSource` with `byteLength: 64`, and
+    the failure arrived on the first read as a raw `EISDIR` from Node — an error edfcore never
+    shaped, past the point where the caller could still act on it.
+  - It is now an actual check, before the size guard, using the `isFile()` the same `stat()` already
+    returns. The size guard's own "Next:" no longer points at causes it cannot be about.
+- No new syscall: `fs.open` already returns the handle whose `stat()` was being called two lines
+  later; only the declared shape of the shim widened.
+
 ## 0.3.97
 
 - **Fixed** `httpSource()` issuing its size probe after the caller cancelled, and resolving a live
