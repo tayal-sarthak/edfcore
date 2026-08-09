@@ -196,6 +196,46 @@ describe('the duration line does not overclaim on a discontinuous file', () => {
   });
 });
 
+describe('the signal table header row lines up with the rows beneath it', () => {
+  /**
+   * The header row was a hand-spaced literal while the data rows are built from `padEnd`. It had
+   * one space too many after `label` and one after `kind`, so `kind` sat at column 27 over data at
+   * 26, and `rate` and `range` were two out — on every file, in output whose whole purpose is being
+   * read in a terminal (fixed in 0.3.96).
+   */
+  it('starts each column word at the column its data starts at', async () => {
+    const header = await headerOf(
+      minimalEdf({
+        recordCount: 2,
+        recordDurationSeconds: 1,
+        signals: [
+          {
+            label: 'Fp1',
+            samplesPerRecord: 4,
+            physicalMinimum: -500,
+            physicalMaximum: 500,
+            physicalDimension: 'uV',
+          },
+        ],
+      }),
+    );
+    const lines = formatHeader(header).split('\n');
+    const headerRow = lines.find((l) => l.includes('#') && l.includes('label')) ?? '';
+    const dataRow = lines.find((l) => /^\s{2}\d+\s{2}/.test(l)) ?? '';
+    expect(headerRow).not.toBe('');
+    expect(dataRow).not.toBe('');
+
+    for (const [word, datum] of [
+      ['label', 'Fp1'],
+      ['kind', 'data'],
+      ['rate', '4 Hz'],
+      ['range', '-500..500'],
+    ] as const) {
+      expect(headerRow.indexOf(word), `${word} column`).toBe(dataRow.indexOf(datum));
+    }
+  });
+});
+
 describe('a hostile label cannot forge a row or shift a column', () => {
   it('replaces control characters rather than printing them', () => {
     // EDF pads labels with spaces and says nothing about what else may be in them. A newline would

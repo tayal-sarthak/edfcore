@@ -121,7 +121,11 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   }
 
   lines.push('');
-  lines.push('  #  label                 kind         rate      range');
+  // Built from the SAME widths as the data rows below, not spaced by hand. The hand-spaced literal
+  // had one space too many after `label` and one after `kind`, so `kind` sat at column 27 over data
+  // at 26 and `rate` and `range` were two out — on every file, in the output whose whole purpose is
+  // being read in a terminal (fixed in 0.3.96).
+  lines.push(`  #  ${'label'.padEnd(21)}${'kind'.padEnd(12)}${'rate'.padEnd(9)} range`);
   for (const signal of header.signals) {
     const index = String(signal.index).padStart(3);
     // Control characters are replaced, not printed. A label holding a newline would otherwise

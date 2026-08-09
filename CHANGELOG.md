@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.96
+
+- **Fixed** the `edfcore header` signal table's column header row, which was one to two characters
+  off the columns beneath it on every file.
+  - The header row was a hand-spaced literal while the data rows are built from `padEnd(21)`,
+    `padEnd(12)` and `padEnd(9)`. It carried one space too many after `label` and one after `kind`,
+    so `kind` sat at column 27 over data at 26, and `rate` and `range` were two out.
+  - It is now built from the same widths, so the two cannot drift apart again by construction.
+- Small, and in the one output whose entire purpose is being read in a terminal — a misaligned
+  header is exactly the kind of thing that makes a reader distrust the numbers under it.
+- The test asserts each header word starts at the column its own data starts at, rather than
+  comparing the row against a second hand-written literal.
+
 ## 0.3.95
 
 - **Fixed** the published `trimToWindow` selection rule, which was still the one 0.3.56 replaced —
