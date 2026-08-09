@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.99
+
+- **Fixed** the CLI usage banner scoping `--patient` to "(header, json)". `redaction(args)` is
+  applied by `validate` too, so the flag un-redacts patient identification there as well: without it
+  a `PATIENT_ID_NONCONFORMANT` diagnostic renders the field as `[redacted]`, with it the full name.
+  - The flag exists so that the default output of a command someone pipes somewhere carries no
+    patient name. A banner that under-states which commands it governs is the wrong direction to be
+    wrong in: a reader gating on "validate doesn't print names anyway" is gating on nothing.
+  - `api-helpers.md` carried the same pair and now names all three.
+- The test DERIVES the scope: it runs every subcommand with and without the flag over one
+  non-conformant file, collects the ones whose output changes, and requires the banner line to list
+  exactly those. It first asserts more than one command is affected, so it cannot pass on a file
+  where the flag does nothing.
+
 ## 0.3.98
 
 - **Fixed** `fileSource` carrying, as advice, a check it never performed. Its size refusal ended

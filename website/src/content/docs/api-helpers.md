@@ -572,7 +572,7 @@ gating on it. Three related things changed with it:
 
 `edfcore validate` exiting non-zero is the intended way to gate a CI job on file conformance.
 
-Patient identification is omitted from `header` and `json` unless `--patient` is passed, for the
+Patient identification is omitted from `header`, `validate` and `json` unless `--patient` is passed, for the
 same reason `formatHeader` withholds it: the obvious thing to do with CLI output is pipe it
 somewhere.
 

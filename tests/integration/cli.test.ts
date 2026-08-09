@@ -556,3 +556,40 @@ describe('header reports what the probe found, not only the header fields', () =
     expect(out).not.toContain('From the record probes');
   });
 });
+
+describe('the usage banner scopes --patient to the commands it affects', () => {
+  /**
+   * The banner said "(header, json)". `redaction(args)` is applied by `header` AND `validate`, so
+   * the flag demonstrably un-redacts patient identification in `validate` too: without it a
+   * `PATIENT_ID_NONCONFORMANT` diagnostic renders the field as `[redacted]`, with it the full name
+   * (fixed in 0.3.99).
+   *
+   * The scope is DERIVED from behaviour rather than written down twice: whichever commands change
+   * their output under the flag are the ones the banner must list.
+   */
+  const NONCONFORMANT = minimalEdfPlus({
+    recordCount: 2,
+    recordDurationSeconds: 1,
+    patientId: 'Haagse_Harry_all_one_token',
+  });
+
+  const COMMANDS = ['header', 'validate', 'events', 'gaps', 'signals', 'json'] as const;
+
+  it('lists exactly the commands whose output the flag changes', async () => {
+    const affected: string[] = [];
+    for (const command of COMMANDS) {
+      const without = await invoke([command, 'f.edf'], { 'f.edf': NONCONFORMANT });
+      const withFlag = await invoke([command, 'f.edf', '--patient'], { 'f.edf': NONCONFORMANT });
+      if (without.out !== withFlag.out) affected.push(command);
+    }
+    // The premise: the flag really does change something, on more than one command.
+    expect(affected.length).toBeGreaterThan(1);
+
+    const source = readFileSync(new URL('../../src/cli-run.ts', import.meta.url), 'utf8');
+    const line = source.split('\n').find((l) => l.includes('--patient')) ?? '';
+    const listed = [...line.matchAll(/\b(header|validate|events|gaps|signals|json)\b/g)].map(
+      (m) => m[1] as string,
+    );
+    expect([...listed].sort()).toEqual([...affected].sort());
+  });
+});

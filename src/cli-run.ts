@@ -58,7 +58,7 @@ const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
 
 Options
   --help, -h                      print this and exit 0
-  --patient                       include patient identification (header, json)
+  --patient                       include patient identification (header, validate, json)
   --list                          list events one per line instead of counting (events)
   --limit <n>                     individual diagnostics or events to print (default 20)
 
