@@ -187,7 +187,7 @@ instead of a crash:
 await readRecords(recording, selection, { maxMaterializeBytes: 16 * 1024 * 1024 });
 ```
 
-`buildRecordIndex` is the one call in edfcore that does traverse the whole file, and it treats the
+`buildRecordIndex` is one of two calls in edfcore that traverse the whole file — `validateRecording` is the other — and it treats the
 budget as a chunk size rather than a ceiling. It reads `floor(budget / recordByteLength)` records
 at a time, capped at a 4 MiB working set whatever the budget says, so memory stays flat however
 large the file is. It reports progress through `onProgress(done, total)`.

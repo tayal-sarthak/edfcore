@@ -144,7 +144,10 @@ list: `TIMEKEEPING_TAL_MISSING` is reported per record, so a 130,000-record file
 ## `strict: true`
 
 Pass `strict` and the first would-be diagnostic throws `EdfFormatError` carrying it, instead of
-being collected. Under strict, every `diagnostics` array is therefore empty by construction:
+being collected — except an `info` one, which is exempt and is still collected. That exemption is
+what makes `strict` usable: nearly every conforming EDF file carries `DATE_CLIPPED_TO_1985_2084`,
+because the mandated `dd.mm.yy` startdate has a two-digit year, so throwing on it would reject the
+files `strict` exists to accept. A file with a real defect still comes back as a rejection:
 
 ```ts
 try {

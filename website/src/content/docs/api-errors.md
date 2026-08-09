@@ -200,9 +200,9 @@ what the code *does*; the severity is what it *is*.
 | info | `'info'` | recorded; the file is correct and the situation surprises people |
 
 Severity is derived from the code rather than passed in at the reporting site, so one code cannot
-acquire two severities in two places. Under `strict: true` the first would-be diagnostic of *any*
-disposition throws instead, which is why every `diagnostics` array is empty by construction in
-strict mode.
+acquire two severities in two places. Under `strict: true` the first would-be diagnostic throws
+instead — except an `info` one, which is exempt and is still collected. So a strict parse of a file
+whose only note is `info` resolves, carrying it.
 
 ## Always fatal
 

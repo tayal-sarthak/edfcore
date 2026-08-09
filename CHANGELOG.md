@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.90
+
+- **Fixed** three more pages carrying claims two earlier releases retired, and **widened both
+  guards** so they match the claim rather than one phrasing of it.
+  - `api-errors.md` said the first would-be diagnostic "of *any* disposition throws" and that this
+    is "why every `diagnostics` array is empty by construction in strict mode". `diagnostics.md`
+    said the same in different words. Both are the claim 0.3.76 removed from three other places:
+    `info` is exempt, and a strict parse of a file whose only note is `info` resolves carrying it.
+  - `large-files.md` called `buildRecordIndex` "the one call in edfcore that does traverse the whole
+    file" — the claim 0.3.83 corrected on two other pages. `validateRecording` is the other.
+- The guards are the real defect here. 0.3.76 pinned the exact strings it happened to find
+  (`consequently empty`, `exempts nothing`) and 0.3.83 pinned `only function in edfcore that reads
+  the whole file`. Every page that said the same thing in slightly different words walked straight
+  past them — which is how a sixth sweep found them as fresh findings rather than the suite catching
+  them. Both now match the claim: any spelling of "every diagnostics array is empty", and any
+  spelling of "only one function/call reads or traverses the whole file".
+- A guard written around the instance you just fixed is a guard that catches nothing else. Widening
+  these two turned up all three of these pages immediately.
+
 ## 0.3.89
 
 - **Fixed** the envelope budget guard measuring 12 bytes per bucket while the fixed-width path

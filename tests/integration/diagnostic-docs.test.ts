@@ -285,8 +285,11 @@ describe('diagnostics.md agrees with the same source', () => {
      * (fixed in 0.3.83).
      */
     for (const [path, text] of Object.entries(ALL_PAGES)) {
+      // Any spelling of "only one function reads the whole file", not just the one 0.3.83 saw.
+      // `large-files.md` said "the one call in edfcore that does traverse the whole file" and the
+      // narrower pattern walked straight past it.
       expect(text, `${path.split('/').pop()} overstates it`).not.toMatch(
-        /only function in edfcore that reads the whole file/,
+        /\b(only|one) (function|call)[^.\n]{0,40}(reads|traverse[sd]?)[^.\n]{0,20}whole file/,
       );
     }
 
@@ -312,11 +315,14 @@ describe('diagnostics.md agrees with the same source', () => {
      */
     for (const [path, text] of Object.entries(ALL_PAGES)) {
       const where = path.split('/').pop();
-      expect(text, `${where} should not say strict empties the list`).not.toContain(
-        'consequently empty',
+      // Matched by CLAIM, not by phrasing. 0.3.76 pinned the two exact sentences it had found and
+      // missed three more pages saying the same thing in other words — "empty by construction",
+      // "of *any* disposition" — which sweep 6 then reported as fresh findings (widened in 0.3.90).
+      expect(text, `${where} should not say strict empties the list`).not.toMatch(
+        /every `?diagnostics`? array is[\s\S]{0,30}empty/,
       );
-      expect(text, `${where} should not say strict exempts nothing`).not.toContain(
-        'exempts nothing',
+      expect(text, `${where} should not say strict exempts nothing`).not.toMatch(
+        /exempts nothing|of \*?any\*? disposition throws/,
       );
     }
     // The behaviour those sentences described, so this test is anchored to the code and not only
