@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.94
+
+- **Fixed** `edfcore header` discarding `recording.timeline.diagnostics` — the findings of a read it
+  had already paid for.
+  - `openEdf` probes record 0 and the last record and records what it learned there. The command
+    printed only `header.diagnostics`, so an **EDF+C** file — one that declares itself continuous —
+    with a real 20-second hole came back as `1 diagnostic(s): 1 info`, never naming
+    `DISCONTINUITY_IN_CONTINUOUS_FILE`. `edfcore gaps` on the same bytes reported the gap.
+  - The probes' findings now print in their own labelled block. `formatHeader`'s summary line is
+    scoped honestly — it names `header.diagnostics` and points at that array — so the omission was
+    the command's, not the formatter's, and the fix belongs in the command.
+- The test checks both commands against each other on one file, and asserts a clean file gains no
+  extra block, so the fix cannot pass by printing a header nobody needs.
+
 ## 0.3.93
 
 - **Fixed** `fileHandleSource` handing a short read the advice written for a source the CALLER

@@ -522,3 +522,37 @@ describe('gaps and validate agree about an overlapping file', () => {
     expect(source).not.toMatch(claim);
   });
 });
+
+describe('header reports what the probe found, not only the header fields', () => {
+  /**
+   * `openEdf` reads record 0 and the last record and records what it learned on
+   * `recording.timeline.diagnostics` — a read `edfcore header` has already paid for. The command
+   * printed only `header.diagnostics`, so an EDF+C file with a real hole came back as
+   * "1 diagnostic(s): 1 info" with no mention of `DISCONTINUITY_IN_CONTINUOUS_FILE`, while
+   * `edfcore gaps` on the same bytes reported a 20-second gap (fixed in 0.3.94).
+   */
+  const LYING = buildEdf({
+    plus: 'C', // declares itself CONTINUOUS
+    recordCount: 6,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: 10 }],
+    annotationSignals: [{ samplesPerRecord: 30 }],
+    recordOnsetSeconds: (r: number) => (r < 3 ? r : r + 20),
+  });
+
+  it('surfaces DISCONTINUITY_IN_CONTINUOUS_FILE, which gaps also reports', async () => {
+    const header = await invoke(['header', 'f.edf'], { 'f.edf': LYING });
+    expect(header.code).toBe(0);
+    expect(header.out).toContain('DISCONTINUITY_IN_CONTINUOUS_FILE');
+
+    // The other command's answer about the same file, so the two are checked against each other.
+    const gaps = await invoke(['gaps', 'f.edf'], { 'f.edf': LYING });
+    expect(gaps.out).toContain('1 gap(s)');
+  });
+
+  it('says nothing extra when the probes found nothing', async () => {
+    const clean = minimalEdfPlus({ recordCount: 4, recordDurationSeconds: 1 });
+    const { out } = await invoke(['header', 'f.edf'], { 'f.edf': clean });
+    expect(out).not.toContain('From the record probes');
+  });
+});

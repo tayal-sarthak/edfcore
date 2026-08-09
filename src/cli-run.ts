@@ -220,6 +220,25 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
           })}\n`,
         );
       }
+      /*
+       * The probe's findings too. `openEdf` reads record 0 and the last record and puts what it
+       * learned on `recording.timeline.diagnostics` — this command has already paid for that read.
+       *
+       * They were dropped, so an EDF+C file with a real hole printed "1 diagnostic(s): 1 info" and
+       * never mentioned `DISCONTINUITY_IN_CONTINUOUS_FILE`, while `edfcore gaps` on the same file
+       * reported a 20-second hole. `formatHeader`'s own summary line is scoped honestly — it names
+       * `header.diagnostics` — so the omission was the command's, not the formatter's
+       * (fixed in 0.3.94).
+       */
+      const timelineDiagnostics = recording.timeline.diagnostics;
+      if (timelineDiagnostics.length > 0) {
+        io.out(
+          `\nFrom the record probes:\n${formatDiagnostics(timelineDiagnostics, {
+            maxItems: args.limit ?? 20,
+            ...redaction(args),
+          })}\n`,
+        );
+      }
       return 0;
     }
 
