@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.85
+
+- **Fixed** four pages denying a comparison the test suite performs on every run.
+  - `api-primitives.md` — the page a caller reads to decide whether to trust the pinned scaling
+    expression — said the float64 parity with pyEDFlib "isn't yet demonstrated by a golden-value
+    harness, so treat it as intent rather than a measured guarantee". `api-validate.md` and
+    `validation.md` said edfcore's output "has not been compared element by element" against
+    pyEDFlib or MNE. `comparison.md` said validation against the public corpora "has not happened
+    yet".
+  - `tests/corpus/golden-values.test.ts` writes its fixtures with pyEDFlib's own writer, reads them
+    back with pyEDFlib, and compares every physical sample against the IEEE-754 bits it produced
+    using `Object.is` — a one-ULP difference fails. `mne-parity.test.ts` does the same for MNE. The
+    goldens are committed, so both run on a fresh clone. The harness has existed since 0.2.34-0.2.48.
+  - The pages now say what is measured and what is not, and `comparison.md` says plainly that the
+    corpus tests SKIP without `npm run corpus:fetch` — so a fresh clone proves the golden comparison
+    and not the corpus one. Understating a guarantee is still a false statement about the package.
+- Same class as 0.3.64, which removed this wording from three other pages and missed these four. The
+  guard now sweeps every page for both retired phrasings.
+
 ## 0.3.84
 
 - **Fixed** four statements that the `node:` import lives in exactly one file. `src/cli.ts` imports

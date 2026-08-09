@@ -190,6 +190,27 @@ describe('diagnostics.md agrees with the same source', () => {
     expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
   });
 
+  it('does not deny a pyEDFlib comparison the harness performs', () => {
+    /*
+     * `tests/corpus/golden-values.test.ts` reads fixtures written and read back by pyEDFlib's own
+     * writer and compares every physical sample against the IEEE-754 bits pyEDFlib produced, with
+     * `Object.is` — a one-ULP difference fails. `mne-parity.test.ts` does the same for MNE. Four
+     * pages still described that comparison as something edfcore had not done: `api-primitives.md`
+     * called the parity "intent rather than a measured guarantee", and `api-validate.md`,
+     * `validation.md` and `comparison.md` said it had not happened (fixed in 0.3.85; 0.3.64 was the
+     * same class on other pages).
+     */
+    for (const [path, text] of Object.entries(ALL_PAGES)) {
+      const where = path.split('/').pop();
+      expect(text, `${where} denies the harness`).not.toMatch(
+        /intent rather than a measured guarantee/,
+      );
+      expect(text, `${where} denies the comparison`).not.toMatch(
+        /(has not|not yet) been compared[\s\S]{0,40}element by element/,
+      );
+    }
+  });
+
   it('does not call buildRecordIndex the ONLY function that reads the whole file', async () => {
     /*
      * `record-index.ts`'s own docblock says "one of only two functions that read the whole file,

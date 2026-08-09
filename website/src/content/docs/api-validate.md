@@ -272,10 +272,10 @@ the source: call `validateRecording` twice and you get the same report. It doesn
 either, and a file with a hundred warnings is a file you can read. To have failures throw at parse
 time instead, use `strict: true` on `openEdf`, a different mechanism on the core side of the line.
 
-It also does not certify anything. edfcore is 0.1 and has not been compared element by element
-against the established readers on the public corpora. Treat a clean report as "edfcore found
-nothing to complain about", which is a useful statement and a smaller one than "this file is
-conformant".
+It also does not certify anything. edfcore's physical values are compared sample by sample against
+pyEDFlib's, and separately against MNE's, by the golden harness under `tests/corpus/` — but that is
+a statement about decoding, not about conformance. Treat a clean report as "edfcore found nothing to
+complain about", which is a useful statement and a smaller one than "this file is conformant".
 
 ## Where to go next
 

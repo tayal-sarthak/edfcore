@@ -111,8 +111,9 @@ with pyEDFlib.
 **You need to write EDF.** Not before 1.0. [Design decisions](/docs/design-decisions) has the
 reasoning.
 
-**You need a guarantee today.** edfcore is 0.1. The library is complete against its design and has
-a thorough test suite, but that suite is built almost entirely on synthetic files. Validation
-against large public corpora (sleep-edfx, CHB-MIT, the BioSemi and edfplus.info test files) has not
-happened yet. Nothing on this site claims numerical interop that a golden test did not produce.
-Until that harness exists, treat the API as still able to move.
+**You need a guarantee today.** edfcore is pre-1.0 and the API can still move. The suite is
+largely synthetic by design, but not only: the golden harness compares every physical sample against
+pyEDFlib's and MNE's own output, and the corpus tests run against sleep-edfx, CHB-MIT and the
+BioSemi and edfplus.info test files. Those corpus tests SKIP without `npm run corpus:fetch`, so a
+fresh clone proves the golden comparison and not the corpus one. Nothing on this site claims
+numerical interop that a golden test did not produce.

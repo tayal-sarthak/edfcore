@@ -260,6 +260,6 @@ It does not modify the recording, the header or the source. `validateRecording` 
 
 It does not gate reading. A file with a hundred warnings is a file you can read, and a file with an error-severity scaling diagnostic is a file you can read in digital units. For failures at parse time instead, `strict: true` on `openEdf` turns the first would-be diagnostic into a thrown `EdfFormatError`.
 
-And it does not certify anything. edfcore reads PhysioNet's Sleep-EDF and the teuniz test files correctly, but its output has not yet been compared against pyEDFlib or MNE element by element. Treat a clean report as "edfcore found nothing to complain about", which is a useful statement and a smaller one than "this file is conformant".
+And it does not certify anything. edfcore's physical values ARE compared element by element against pyEDFlib's and MNE's, by the golden harness under `tests/corpus/` — but agreeing with another reader about the samples is a statement about decoding, not about whether a file conforms. Treat a clean report as "edfcore found nothing to complain about", which is a useful statement and a smaller one than "this file is conformant".
 
 Related: [data sources](/docs/data-sources) covers the `ByteSource` a recording is opened over, including the `signal` you can pass to cancel a long sweep.
