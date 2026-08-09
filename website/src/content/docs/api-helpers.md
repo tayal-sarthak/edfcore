@@ -423,9 +423,13 @@ const onsets = (await readTriggers(recording, window)).filter((e) => e.trigger !
 ```
 
 A **gap is a left edge too.** The running trigger state does not survive one, so the first
-in-window sample of every contiguous run produces an event, and that event carries
-`precededByGap` — the same `EdfGap` an `EdfChunk` carries, and `undefined` on a probed index for
-the same reason.
+in-window sample of every contiguous run produces an event.
+
+`precededByGap` — the same `EdfGap` an `EdfChunk` carries, and `undefined` on a probed index for the
+same reason — goes on the event whose tick **is** the run's resume instant, and on no other. A
+window that begins part-way into the first record after a gap therefore yields events and none of
+them carries it: the gap precedes the run, not whichever sample the window happened to admit first,
+which can be a whole record later.
 
 Until 0.3.13 the state carried across a gap, so a code held before and after a five-minute hole
 returned a **single** event and a consumer differencing consecutive events read one 308-second

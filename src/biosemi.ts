@@ -147,7 +147,11 @@ function segmentContaining(
  * aligned and an unaligned window behave alike. Filter on `trigger` if you only want assertions.
  *
  * A GAP IS A LEFT EDGE TOO. The running trigger state does not survive one, and the first
- * in-window sample of every contiguous run produces an event carrying `precededByGap`. Until
+ * in-window sample of every contiguous run produces an event. `precededByGap` goes on the event
+ * whose tick IS the run's resume instant, and on no other — so a window that begins part-way into
+ * the first record after a gap yields events and none of them carries it. That is 0.3.67's rule,
+ * narrower than the one this said until 0.3.92: the gap precedes the RUN, not whichever sample the
+ * window happened to admit first, which could be a whole record later. Until
  * 0.3.13 the state carried across, on the reasoning that a code held over a gap should not be
  * reported twice — but it is not the same observation twice. The records between two segments do
  * not exist, so what the trigger did in between is unknown, and staying silent asserted that it

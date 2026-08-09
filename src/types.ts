@@ -598,10 +598,17 @@ export interface EdfTriggerEvent {
    * The gap immediately before this event, when there is one — the same field `EdfChunk` carries,
    * and it means the same thing.
    *
-   * Set on the FIRST event of each contiguous run, so an event that reports the code in force
-   * where the recording RESUMED is distinguishable from a transition the hardware actually
-   * latched. `undefined` everywhere else, and always `undefined` on a probed index, because
-   * nobody has read the onsets in between.
+   * Set on the event whose tick IS the run's resume instant, and on no other — so an event that
+   * reports the code in force where the recording RESUMED is distinguishable from a transition the
+   * hardware actually latched.
+   *
+   * A window that begins part-way into the first record after a gap therefore yields events and
+   * none of them carries this: the gap precedes the RUN, not whichever sample the window happened
+   * to admit first. This said "the FIRST event of each contiguous run" until 0.3.92, which is the
+   * rule 0.3.67 replaced.
+   *
+   * `undefined` everywhere else, and always `undefined` on a probed index, because nobody has read
+   * the onsets in between.
    */
   readonly precededByGap: EdfGap | undefined;
 }

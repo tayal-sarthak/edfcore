@@ -5,6 +5,7 @@
  * expectations are the codes it wrote — not anything edfcore produced.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeStatusWord, getStatusSignal, readTriggers } from '../../src/biosemi.js';
 import { byteSource } from '../../src/io/bytes.js';
@@ -510,4 +511,72 @@ describe('the gap goes on the event at the resume, not on the first event in the
       expect(events[0]?.precededByGap).toBeUndefined();
     },
   );
+});
+
+describe('the published precededByGap rule matches the code', () => {
+  /**
+   * 0.3.67 narrowed the flag from "the first event the window admits" to "the event whose tick IS
+   * the run's resume instant". Three statements kept the old rule — `src/biosemi.ts`, `src/types.ts`
+   * (both of which ship in `dist/*.d.ts` as editor hover text) and `api-helpers.md` — so a consumer
+   * reading any of them expected every windowed run to hand them a gap and got none
+   * (fixed in 0.3.92).
+   */
+  const signed = (word: number): number => (word >= 0x800000 ? word - 0x1000000 : word);
+
+  const TWO_SEGMENTS = buildEdf({
+    format: 'BDF',
+    plus: 'D',
+    recordCount: 6,
+    recordDurationSeconds: 1,
+    signals: [
+      {
+        label: 'Status',
+        samplesPerRecord: 4,
+        physicalMinimum: -262144,
+        physicalMaximum: 262144,
+        digitalMinimum: -8388608,
+        digitalMaximum: 8388607,
+        sample: (r: number, s: number) => signed(10 + r * 10 + s),
+      },
+    ],
+    annotationSignals: [{ samplesPerRecord: 30 }],
+    // Records 3..5 resume at 10 s, after a 7 s hole.
+    recordOnsetSeconds: (r: number) => (r < 3 ? r : r + 7),
+  });
+
+  async function flaggedAt(startSeconds: number): Promise<readonly number[]> {
+    const opened = await openEdf(byteSource(TWO_SEGMENTS));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    const events = await readTriggers(recording, { startSeconds, durationSeconds: 1 });
+    expect(events.length).toBeGreaterThan(0);
+    return events.filter((e) => e.precededByGap !== undefined).map((e) => e.seconds);
+  }
+
+  it('flags the event at the resume instant', async () => {
+    expect(await flaggedAt(10)).toEqual([10]);
+  });
+
+  it('flags nothing when the window opens after the resume, though events are returned', async () => {
+    // Both windows yield four events; neither contains the resume instant.
+    expect(await flaggedAt(10.4)).toEqual([]);
+    expect(await flaggedAt(10.9)).toEqual([]);
+  });
+
+  it('is stated that way everywhere it is published', () => {
+    const sources = [
+      readFileSync(new URL('../../src/biosemi.ts', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../src/types.ts', import.meta.url), 'utf8'),
+      readFileSync(
+        new URL('../../website/src/content/docs/api-helpers.md', import.meta.url),
+        'utf8',
+      ),
+    ];
+    for (const text of sources) {
+      // The pre-0.3.67 rule, in either of the two phrasings it was written in.
+      expect(text).not.toMatch(
+        /first in-window sample of every contiguous run produces an event,?\s*\n?\s*\*?\s*and that event carries/,
+      );
+      expect(text).not.toMatch(/Set on the FIRST event of each contiguous run/);
+    }
+  });
 });

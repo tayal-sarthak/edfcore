@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.92
+
+- **Fixed** three statements of `readTriggers`' `precededByGap` rule that describe the behaviour
+  0.3.67 replaced. Two of them ship in `dist/*.d.ts` as the hover text an editor shows.
+  - They say the flag goes on "the first in-window sample of every contiguous run"
+    (`src/biosemi.ts`, `api-helpers.md`) or "the FIRST event of each contiguous run"
+    (`src/types.ts`). 0.3.67 narrowed it to the event whose tick **is** the run's resume instant,
+    because `resolveTimeWindow` is record-aligned and a window is not — so the flag was landing on
+    whichever sample the window happened to admit first, up to a record later than the resume.
+  - The consequence of the stale wording is the opposite of harmless. On a window that opens after
+    the resume instant, **no** event carries the gap: `[10.4, 11.4)` over a file resuming at 10 s
+    returns four events and zero flags. A consumer following any of the three expected one per run
+    and got none, with nothing to indicate the difference.
+- The test asserts both halves of the real rule — flagged at the resume instant, not flagged when
+  the window opens after it, with events returned in both cases — and then greps all three published
+  statements for either phrasing of the retired one.
+
 ## 0.3.91
 
 - **Fixed** `edfcore gaps` claiming that `edfcore validate` "is the gate, and it already exits 1 on
