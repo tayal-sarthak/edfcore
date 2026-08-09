@@ -31,7 +31,7 @@ import { byteSource } from '../../src/io/bytes.js';
 import { cachedSource } from '../../src/io/cached.js';
 import { readHeader, readRecordBytes } from '../../src/io/read.js';
 import { assertExactRead } from '../../src/io/source.js';
-import { fileHandleSource } from '../../src/node.js';
+import { type FileHandleLike, fileHandleSource } from '../../src/node.js';
 import { openEdf, readAnnotations, readRecords } from '../../src/recording.js';
 import type { BlobLike, ByteSource } from '../../src/types.js';
 import { failingSource, shortReadingSource, spySource } from '../support/spy-source.js';
@@ -681,5 +681,47 @@ describe('fileHandleSource honours a signal that flips mid-read', () => {
     expect(read.length).toBe(256);
     expect(Array.from(read.subarray(0, 8))).toEqual(Array.from(bytes.subarray(0, 8)));
     expect(reads).toBe(1);
+  });
+});
+
+describe('a bundled adapter diagnoses its own short read', () => {
+  /**
+   * When the bytes behind `fileHandleSource` run out — the file was truncated or rotated after
+   * `fileSource` stat'd it, or a caller passed a `byteLength` larger than the file — the read fell
+   * through to `assertExactRead`, whose message exists for a `ByteSource` the CALLER wrote and ends
+   * "Next: make read() loop until `length` bytes have arrived". The loop it asks for is twelve
+   * lines above and already reads until EOF; no amount of looping produces bytes the file does not
+   * contain. Same shape as the HTTP buffered-body path fixed in 0.3.75 (fixed in 0.3.93).
+   */
+  function handleOver(realBytes: number): FileHandleLike {
+    return {
+      async read(buffer: Uint8Array, offset: number, length: number, position: number) {
+        const available = Math.max(0, Math.min(length, realBytes - position));
+        for (let i = 0; i < available; i += 1) buffer[offset + i] = (position + i) % 251;
+        return { bytesRead: available };
+      },
+      async close() {},
+    } as unknown as FileHandleLike;
+  }
+
+  it("names the file length and the size it was built for, not the caller's read()", async () => {
+    const source = fileHandleSource(handleOver(100), 4096);
+    const error = await source.read(0, 512).then(
+      () => undefined,
+      (e: unknown) => e as Error,
+    );
+
+    expect(error).toBeInstanceOf(EdfSourceError);
+    expect(error?.message).toContain('the file ended after 100');
+    expect(error?.message).toContain('built for 4096 bytes');
+    // The advice that cannot be acted on.
+    expect(error?.message).not.toContain('make read() loop');
+    expect((error as EdfSourceError | undefined)?.receivedLength).toBe(100);
+  });
+
+  it('still reads normally when the file really does hold the bytes', async () => {
+    const source = fileHandleSource(handleOver(4096), 4096);
+    const bytes = await source.read(10, 4);
+    expect(Array.from(bytes)).toEqual([10, 11, 12, 13]);
   });
 });

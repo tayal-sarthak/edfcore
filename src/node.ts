@@ -117,6 +117,27 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): By
       // `blobSource` has always rejected in that situation, and one adapter honouring a signal
       // that another quietly ignores is worse than either rule on its own.
       throwIfAborted(options);
+      /*
+       * Diagnosed HERE rather than left to `assertExactRead`. That guard exists for a `ByteSource`
+       * the CALLER wrote — its message ends "make read() loop until `length` bytes have arrived" —
+       * and the loop it asks for is the one twelve lines above, which already reads until EOF. No
+       * amount of looping produces bytes the file does not contain.
+       *
+       * The real cause is that this source was built for more bytes than the file holds:
+       * `fileSource` stats the file and the file was then truncated or rotated, or a caller passed
+       * a `byteLength` larger than the file, or a picked `File`'s backing file shrank. Same shape
+       * as the HTTP buffered-body path, fixed in 0.3.75 (fixed here in 0.3.93).
+       */
+      if (filled < length) {
+        throw new EdfSourceError(
+          `Reading bytes ${offset}..${offset + length - 1}: the file ended after ${filled} of ` +
+            `them. This source was built for ${byteLength} bytes, so the range asked for is past ` +
+            'the end of the file as it is now. Next: the file was truncated or replaced after it ' +
+            'was opened, or options.byteLength is larger than the file — re-open it, or pass the ' +
+            'size the file actually has.',
+          { offset, requestedLength: length, receivedLength: filled },
+        );
+      }
       return assertExactRead(buffer.subarray(0, filled), offset, length);
     },
     async close(): Promise<void> {

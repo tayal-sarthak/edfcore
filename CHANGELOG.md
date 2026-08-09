@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.93
+
+- **Fixed** `fileHandleSource` handing a short read the advice written for a source the CALLER
+  wrote.
+  - When the bytes run out — `fileSource` stat'd the file and it was then truncated or rotated, a
+    caller passed a `byteLength` larger than the file, or a picked `File`'s backing file shrank —
+    the read fell through to `assertExactRead`, whose message ends "Next: make read() loop until
+    `length` bytes have arrived, and reject if they never do." The loop it asks for is twelve lines
+    above it, edfcore wrote it, and it already reads until EOF. No amount of looping produces bytes
+    the file does not contain.
+  - It now says what happened: the file ended after N of the bytes asked for, the source was built
+    for M, and the two ways that happens. `assertExactRead` still backstops the return.
+- Same shape as 0.3.75, which fixed it on the HTTP buffered-body path. The guard is for a
+  `ByteSource` edfcore did not write; when the source IS edfcore's, its advice names a `read()` the
+  caller does not have.
+
 ## 0.3.92
 
 - **Fixed** three statements of `readTriggers`' `precededByGap` rule that describe the behaviour
