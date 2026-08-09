@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.100
+
+- **Fixed** `diagnostics.md` recommending, as the alternative to a gate it warns against, a gate
+  that gives the same verdict.
+  - The callout says `summarizeDiagnostics(...).errors > 0` must not gate a read, because the
+    deferred group carries `error` severity while the file parses and decodes perfectly — one signal
+    has no `scale` and every other signal is fine. It then offered "the thrown `EdfError`, or
+    `validateRecording`'s `report.ok`".
+  - `report.ok` is `diagnostics.every((d) => d.severity !== 'error')` over a **superset** of
+    `header.diagnostics`, so it is false on exactly the files the callout is about. On a two-signal
+    file with one degenerate physical range: `errors > 0` is `true`, `report.ok` is `false`, and the
+    good signal reads all sixteen of its samples. A reader who followed the advice moved from one
+    gate to an identical one and still threw away the file.
+  - The callout now names the thrown `EdfError` alone as the read gate, and says what `report.ok`
+    actually answers — "did this pass a conformance sweep", a different and stricter question.
+- The test builds that file and asserts the two gates AGREE, which is the fact that made the
+  recommendation wrong, then checks the retired sentence is gone.
+
 ## 0.3.99
 
 - **Fixed** the CLI usage banner scoping `--patient` to "(header, json)". `redaction(args)` is

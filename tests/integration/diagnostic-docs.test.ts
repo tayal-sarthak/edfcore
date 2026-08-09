@@ -20,10 +20,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { summarizeDiagnostics } from '../../src/diagnostics/summary.js';
 import { formatStartTimeNaive } from '../../src/header/dates.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf } from '../../src/recording.js';
+import { openEdf, readWindow } from '../../src/recording.js';
 import { validateRecording } from '../../src/validate.js';
 import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
 
@@ -190,6 +191,44 @@ describe('diagnostics.md agrees with the same source', () => {
     const word = spelled[fatal];
     if (word === undefined) throw new Error(`no spelling for ${fatal}; add one`);
     expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
+  });
+
+  it('does not offer report.ok as an alternative to errors > 0', async () => {
+    /*
+     * The callout warns against gating a read on `summarizeDiagnostics(...).errors > 0`, because
+     * the deferred group carries `error` severity while the file reads perfectly — and then offered
+     * `validateRecording`'s `report.ok` as the alternative. `report.ok` is
+     * `diagnostics.every((d) => d.severity !== 'error')` over a SUPERSET of the same array, so it
+     * is false on exactly those files (fixed in 0.3.100).
+     */
+    const bytes = minimalEdfPlus({
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [
+        { label: 'Good', samplesPerRecord: 4, physicalMinimum: -500, physicalMaximum: 500 },
+        // Degenerate physical range: no scale for this signal, every other signal fine.
+        { label: 'Flat', samplesPerRecord: 4, physicalMinimum: 7, physicalMaximum: 7 },
+      ],
+    });
+    const recording = await openEdf(byteSource(bytes));
+
+    // The two gates agree, which is what makes recommending one over the other wrong.
+    expect(summarizeDiagnostics(recording.header.diagnostics).errors).toBeGreaterThan(0);
+    expect((await validateRecording(recording)).ok).toBe(false);
+    // And the file reads.
+    const chunks = await readWindow(recording, {
+      startSeconds: 0,
+      durationSeconds: 4,
+      signalIndices: [0],
+    });
+    expect(chunks[0]?.signals[0]?.sampleCount).toBe(16);
+
+    const page = ALL_PAGES[
+      Object.keys(ALL_PAGES).find((p) => p.endsWith('diagnostics.md')) ?? ''
+    ] as string;
+    expect(page).not.toMatch(
+      /Gate on the\s*\n?>?\s*thrown `EdfError`, or on `validateRecording`'s `report\.ok`/,
+    );
   });
 
   it('counts the validateHeader table correctly', () => {

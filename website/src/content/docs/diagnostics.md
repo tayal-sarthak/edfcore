@@ -138,8 +138,14 @@ list: `TIMEKEEPING_TAL_MISSING` is reported per record, so a 130,000-record file
 
 > **`errors > 0` does not mean the file failed to read.** The deferred group below carries `error`
 > severity while the file parses, reads and decodes perfectly — one signal has no `scale` and
-> every other signal is fine. Gating a read on this count throws away good data. Gate on the
-> thrown `EdfError`, or on `validateRecording`'s `report.ok`.
+> every other signal is fine. Gating a read on this count throws away good data. **Gate on the
+> thrown `EdfError`**: if nothing threw, the file read.
+>
+> `validateRecording`'s `report.ok` is not the alternative. It is `severity !== 'error'` over a
+> superset of `header.diagnostics`, so it is false on exactly the files this callout is about — a
+> file with one unscalable signal has `errors > 0` **and** `report.ok === false`, and reads fine.
+> `report.ok` answers "did this file pass a conformance sweep", which is a different and stricter
+> question than "can I read it".
 
 ## `strict: true`
 
