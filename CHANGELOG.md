@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.102
+
+- **Fixed** `tests/corpus/coverage.test.ts` asserting nothing on the run it exists to protect.
+  - The file's docblock says it "checks the parts that need no corpus at all — that the manifest and
+    the goldens agree. A golden for a file the manifest no longer lists ... is a real drift that no
+    amount of skipping should hide." Its one test early-returned when the corpus was absent, with
+    `expect(corpusGoldens().length).toBeGreaterThanOrEqual(0)`. A length is never negative, so on
+    `git clone && npm test` — no corpus, which is the case the whole file is about — it checked
+    nothing.
+  - The manifest-versus-goldens half is now its own test and always runs: both sides are committed,
+    so it needs no corpus. The half that genuinely needs the files still skips without them, and
+    says so.
+- Canaried in the state that matters: with `tests/corpus/files/` moved away and a manifest entry
+  removed, the new test fails and names the orphaned golden. Before this it passed.
+- Fifth release in this batch about defect shape (e) — a guard that would still pass if what it
+  names regressed. Found by sweeping the whole suite for self-comparisons and structurally weak
+  assertions after 0.3.101, rather than one at a time.
+
 ## 0.3.101
 
 - **Fixed** an assertion in `tests/corpus/whole-api.test.ts` that compared a value with itself:

@@ -87,19 +87,40 @@ describe('corpus coverage', () => {
     expect(summary).toContain('corpus:');
   });
 
-  it('has a parity golden for every corpus file that carries data', () => {
-    if (present.length === 0) {
-      // Nothing fetched: there is nothing to be out of sync with, and saying so is the answer.
-      expect(corpusGoldens().length).toBeGreaterThanOrEqual(0);
-      return;
-    }
+  const goldenNames = (): Set<string> =>
+    new Set(corpusGoldens().map((file) => file.slice('corpus-'.length, -'.json'.length)));
 
+  it('has no golden for a file the manifest no longer lists', () => {
+    /*
+     * Needs no corpus at all — both sides are committed — which is why this is its own test.
+     *
+     * The single test here used to early-return on a fresh clone with
+     * `expect(corpusGoldens().length).toBeGreaterThanOrEqual(0)`: a length is never negative, so
+     * on the run this file exists to protect — `git clone && npm test`, no corpus — it asserted
+     * nothing. That is the half of point 2 of this file's own docblock that needs no corpus, and
+     * it was the half that never ran (fixed in 0.3.102).
+     */
+    const listed = new Set(manifest.files.map((entry) => entry.name));
+    const orphaned = [...goldenNames()].filter((name) => !listed.has(name));
+    expect(
+      orphaned,
+      'goldens for files the manifest no longer lists — delete them, or restore the entry',
+    ).toEqual([]);
+
+    // And the premise: there really are goldens and manifest entries to compare.
+    expect(goldenNames().size).toBeGreaterThan(0);
+    expect(listed.size).toBeGreaterThan(0);
+  });
+
+  it('has a parity golden for every corpus file that carries data', () => {
     // Every fetched file should have a golden, or the parity suite is quietly narrower than the
     // corpus it claims to cover. `SC4001EC-Hypnogram.edf` included — it has no signals, and its
     // golden holds its 154 annotations.
-    const goldens = new Set(
-      corpusGoldens().map((file) => file.slice('corpus-'.length, -'.json'.length)),
-    );
+    //
+    // Skipped without the corpus, unlike the test above: this half genuinely needs the files.
+    if (present.length === 0) return;
+
+    const goldens = goldenNames();
     const uncovered = present.map((entry) => entry.name).filter((name) => !goldens.has(name));
     expect(
       uncovered,
