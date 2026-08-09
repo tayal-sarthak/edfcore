@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.97
+
+- **Fixed** `httpSource()` issuing its size probe after the caller cancelled, and resolving a live
+  source for a call that had already been aborted.
+  - `resolveSource` polls the signal once, at entry, then issues the HEAD inside a bare `catch {}`
+    that swallows every rejection — including the `AbortError` the platform `fetch` raises on
+    cancellation — with no poll between that catch and the one-byte `Range` probe.
+  - For a caller holding a bare `{ aborted }` shim the harm is complete: `attachSignal` cannot hand
+    such a signal to `fetch`, so nothing else observes the flip, and `httpSource()` completed both
+    requests and returned a usable source. With `allowFullDownload` that is a whole file
+    transferred after cancellation.
+  - `api-sources.md` promises "a caller who passed a bare `{ aborted }` shim is still served by the
+    polls around the request, so cancellation works either way", and the comment above the entry
+    poll says resolution must catch this "otherwise `httpSource()` itself does network work after
+    cancellation". Both were true of reads and not of resolution.
+- One poll, after the catch. The test asserts the request METHODS issued are exactly `['HEAD']`, so
+  it pins that nothing goes out after the flip rather than only that the call rejects. It sits
+  beside the existing shim test for `read`, which was the path that already had one.
+
 ## 0.3.96
 
 - **Fixed** the `edfcore header` signal table's column header row, which was one to two characters

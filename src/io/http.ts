@@ -220,6 +220,20 @@ async function resolveSource(
     // one-byte range probe rather than failing on it.
   }
 
+  /*
+   * Polled again, because the catch above swallows EVERY rejection — including the `AbortError`
+   * the platform `fetch` raises when the caller cancels mid-HEAD. Without this the probe went out
+   * after the flip, and for a caller holding a bare `{ aborted }` shim — which `attachSignal`
+   * cannot hand to `fetch`, so nothing else observes it — `httpSource()` completed both requests
+   * and resolved a live source for a call that had already been cancelled.
+   *
+   * `api-sources.md` promises "a caller who passed a bare `{ aborted }` shim is still served by
+   * the polls around the request, so cancellation works either way", and the entry poll above says
+   * resolution has to catch this "otherwise httpSource() itself does network work after
+   * cancellation". Both were true of reads and not of resolution (fixed in 0.3.97).
+   */
+  throwIfSignalAborted(signal);
+
   const probeHeaders = { ...baseHeaders, Range: 'bytes=0-0' };
   const probe = await request(fetchImpl, href, probeHeaders, 'GET', signal);
 

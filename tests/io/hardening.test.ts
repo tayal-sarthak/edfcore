@@ -163,6 +163,43 @@ describe('httpSource honours a source-level AbortSignalLike shim', () => {
     );
     expect(gets()).toBe(1);
   });
+
+  it('does not issue the size probe after the shim flips during the HEAD', async () => {
+    /*
+     * `resolveSource` polled the signal once, at entry, then issued the HEAD inside a bare
+     * `catch {}` that swallows every rejection — including the `AbortError` the platform `fetch`
+     * raises on cancellation — with no poll between that catch and the one-byte Range probe. So a
+     * shim that flipped mid-HEAD got both requests and a live source back (fixed in 0.3.97).
+     *
+     * A rejected HEAD is the documented common case here: CORS, or an object store that forbids it.
+     */
+    const requests: string[] = [];
+    const signal = { aborted: false };
+    const fetchImpl = (async (
+      _href: string,
+      init?: { method?: string; headers?: Record<string, string> },
+    ) => {
+      const method = init?.method ?? 'GET';
+      requests.push(method);
+      if (method === 'HEAD') {
+        signal.aborted = true;
+        throw new TypeError('Failed to fetch');
+      }
+      return {
+        status: 206,
+        headers: {
+          get: (n: string) => (n.toLowerCase() === 'content-range' ? 'bytes 0-0/4096' : null),
+        },
+        arrayBuffer: async () => new ArrayBuffer(1),
+      } satisfies HttpResponseLike;
+    }) as unknown as FetchLike;
+
+    await expect(
+      httpSource('https://example.invalid/f.edf', { fetch: fetchImpl, signal }),
+    ).rejects.toThrow(expect.objectContaining({ name: 'AbortError' }) as Error);
+    // The HEAD went out before the flip; nothing after it did.
+    expect(requests).toEqual(['HEAD']);
+  });
 });
 
 // ---------------------------------------------------------------------------
