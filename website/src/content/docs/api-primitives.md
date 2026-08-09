@@ -451,7 +451,16 @@ decodeHeaderLatin1(bytes.subarray(0, 8));  // '0       '
 function formatStartTimeNaive(startTime: EdfStartTime): string | undefined
 ```
 
-Renders the recording start as `'1951-08-02T09:00:00.000'`. **There is no zone designator, because EDF has no zone.** Returns `undefined` when `startTime.resolvedDate` is `undefined`, i.e. the file carries no resolvable date.
+Renders the recording start as `'1951-08-02T09:00:00.000'`. **There is no zone designator, because EDF has no zone.**
+
+Returns `undefined` when the file states no start instant, which is **two** conditions, not one:
+
+| Condition | What the file did |
+| --- | --- |
+| `startTime.resolvedDate === undefined` | neither the `dd.mm.yy` field nor the EDF+ `Startdate` subfield gave a date |
+| `startTime.clockSource === 'none'` | the `hh.mm.ss` field failed its grammar, so `startTime.clock` is a substituted midnight |
+
+The second was added in 0.3.17 and matters more than it looks: without it a file whose starttime reads `23.59.60` came back as `...T00:00:00.000`, a wall-clock instant the file never gave — and for a sleep study midnight is the most believable start there is. A caller who checks only `resolvedDate` before calling will still see `undefined`.
 
 The milliseconds are always `.000`. The header stores whole seconds. The sub-second start of an EDF+ recording lives in record 0's timekeeping TAL (`timeline.startOffsetSeconds`).
 

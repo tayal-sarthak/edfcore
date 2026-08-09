@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.86
+
+- **Fixed** `formatStartTimeNaive`'s reference entry naming one of its two `undefined` cases, and
+  naming it as an equivalence: "Returns `undefined` when `startTime.resolvedDate` is `undefined`,
+  i.e. the file carries no resolvable date."
+  - It also returns `undefined` when `startTime.clockSource === 'none'` — the `hh.mm.ss` field
+    failed its grammar, so `startTime.clock` is a substituted midnight and there is no instant to
+    render. That case was added deliberately in 0.3.17, because a file whose starttime reads
+    `23.59.60` otherwise came back as `...T00:00:00.000`: a wall-clock instant the file never gave,
+    and for a sleep study the most believable start there is.
+  - `validation.md` and the source docblock both state it. The function's own reference page did
+    not, so a caller who checked `resolvedDate` first — exactly what the "i.e." invites — still got
+    `undefined` and had nothing to look up.
+- The entry now lists both conditions in a table and says which release added the second. The guard
+  checks the page names both **and** exercises the behaviour on a `23.59.60` file, so the page is
+  pinned to the code rather than to itself.
+
 ## 0.3.85
 
 - **Fixed** four pages denying a comparison the test suite performs on every run.

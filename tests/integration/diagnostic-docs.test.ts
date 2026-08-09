@@ -20,6 +20,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { formatStartTimeNaive } from '../../src/header/dates.js';
+import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
 import { validateRecording } from '../../src/validate.js';
@@ -188,6 +190,32 @@ describe('diagnostics.md agrees with the same source', () => {
     const word = spelled[fatal];
     if (word === undefined) throw new Error(`no spelling for ${fatal}; add one`);
     expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
+  });
+
+  it('names both conditions under which formatStartTimeNaive returns undefined', async () => {
+    /*
+     * It returns `undefined` for an unresolved DATE and for a refused CLOCK — the second added in
+     * 0.3.17, because a file whose starttime reads `23.59.60` otherwise came back as
+     * `...T00:00:00.000`, a wall-clock instant the file never gave. `validation.md` and the source
+     * docblock both say so; the function's own reference entry stated only the first, as an
+     * equivalence ("i.e. the file carries no resolvable date"), so a caller who checked
+     * `resolvedDate` and called anyway still got `undefined` (fixed in 0.3.86).
+     */
+    const reference = ALL_PAGES[
+      Object.keys(ALL_PAGES).find((p) => p.endsWith('api-primitives.md')) ?? ''
+    ] as string;
+    const at = reference.indexOf('formatStartTimeNaive(startTime: EdfStartTime)');
+    expect(at).toBeGreaterThan(-1);
+    const section = reference.slice(at, at + 1400);
+    expect(section).toContain('resolvedDate');
+    expect(section).toContain("clockSource === 'none'");
+
+    // The behaviour, so the page is checked against the code and not only against itself.
+    const bytes = minimalEdf({ startDate: '11.03.19', raw: { startTime: '23.59.60' } });
+    const header = parseHeader(bytes, bytes.byteLength);
+    expect(header.startTime.resolvedDate).toBeDefined();
+    expect(header.startTime.clockSource).toBe('none');
+    expect(formatStartTimeNaive(header.startTime)).toBeUndefined();
   });
 
   it('does not deny a pyEDFlib comparison the harness performs', () => {
