@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.87
+
+- **Fixed** `api-validate.md` saying "The other five are also emitted by the parser" under a
+  ten-row table from which four codes had just been excluded. Ten minus four is six, and all six
+  really are parser codes: `RECORD_SIZE_ABOVE_RECOMMENDED`, `PATIENT_ID_NONCONFORMANT`,
+  `RECORDING_ID_NONCONFORMANT`, `DATE_UNPARSEABLE`, `DATE_FIELDS_DISAGREE` and
+  `STARTTIME_UNPARSEABLE`.
+- The sentence is load-bearing — it is how a reader knows the report stands on its own rather than
+  only making sense beside `header.diagnostics` — so a reader who counted the table and got a
+  different answer had reason to doubt the claim rather than the arithmetic.
+- Both numbers are now derived from the table itself: the count of rows, minus the count the prose
+  says exist nowhere else. Adding a row fails the suite until the prose is updated, which is the
+  rule 0.3.63 applied to `diagnostics.md` after the same kind of drift.
+
 ## 0.3.86
 
 - **Fixed** `formatStartTimeNaive`'s reference entry naming one of its two `undefined` cases, and

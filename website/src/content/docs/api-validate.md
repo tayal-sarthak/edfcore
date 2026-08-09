@@ -70,7 +70,7 @@ additional specification 9, and `DATE_IMPLAUSIBLE`. None of them can ever be fat
 `EdfDiagnosticCode` is an open union so codes can be added here without breaking a `switch` in your
 code. Keep the `default` branch.
 
-The other five are also emitted by the parser, so a report stands on its own instead of only making
+The other six are also emitted by the parser, so a report stands on its own instead of only making
 sense next to `header.diagnostics`.
 
 A few details are easy to trip over:

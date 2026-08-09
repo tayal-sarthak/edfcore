@@ -192,6 +192,43 @@ describe('diagnostics.md agrees with the same source', () => {
     expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
   });
 
+  it('counts the validateHeader table correctly', () => {
+    /*
+     * The section tables ten codes, names four that exist nowhere else, and then said "The other
+     * five are also emitted by the parser". Ten minus four is six, and all six really are parser
+     * codes (fixed in 0.3.87).
+     *
+     * Both numbers are derived from the table, so adding a row fails this until the prose is
+     * updated — the same rule 0.3.63 applied to diagnostics.md.
+     */
+    const page = ALL_PAGES[
+      Object.keys(ALL_PAGES).find((p) => p.endsWith('api-validate.md')) ?? ''
+    ] as string;
+    const start = page.indexOf('| code | condition |');
+    expect(start).toBeGreaterThan(-1);
+    const rest = page.slice(start);
+    const table = rest.slice(0, rest.indexOf('\n\n'));
+    const rows = [...table.matchAll(/^\| `([A-Z_0-9]+)` \|/gm)].map((m) => m[1] as string);
+    expect(rows.length).toBe(10);
+
+    const spelled: Readonly<Record<number, string>> = {
+      3: 'Three',
+      4: 'Four',
+      5: 'Five',
+      6: 'six',
+      7: 'seven',
+    };
+    const prose = rest.slice(0, rest.indexOf('A few details'));
+    const exclusiveMatch = /^(Three|Four|Five|Six) of those exist nowhere else/m.exec(prose);
+    expect(exclusiveMatch).not.toBeNull();
+    const exclusive = { Three: 3, Four: 4, Five: 5, Six: 6 }[exclusiveMatch?.[1] ?? ''] ?? 0;
+
+    const remaining = rows.length - exclusive;
+    expect(prose, `the remainder is ${remaining}`).toContain(
+      `The other ${spelled[remaining] ?? String(remaining)} are also emitted by the parser`,
+    );
+  });
+
   it('names both conditions under which formatStartTimeNaive returns undefined', async () => {
     /*
      * It returns `undefined` for an unresolved DATE and for a refused CLOCK — the second added in
