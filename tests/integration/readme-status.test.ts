@@ -112,3 +112,57 @@ describe('the shipped .d.ts states no version this package is not at', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('the node subpath states the reachability invariant the right way round', () => {
+  /**
+   * The packaging invariant is that NOTHING the universal entry can reach imports `node:` — that is
+   * what lets `edfcore` bundle for a browser. 0.3.84 replaced one wrong sentence with another that
+   * asserted the opposite ("the only module REACHABLE FROM THE UNIVERSAL ENTRY that imports
+   * anything from `node:`"), contradicting the paragraph four lines below it (fixed in 0.3.103).
+   */
+  const NODE_SRC = read('../../src/node.ts');
+
+  /**
+   * The HEADLINE only — the paragraph before the history note.
+   *
+   * The note quotes both retired sentences on purpose, so a whole-file match finds the quotation
+   * rather than the claim. The first version of this guard did exactly that, which is the same trap
+   * 0.3.78 fell into.
+   */
+  const headline = NODE_SRC.slice(0, NODE_SRC.indexOf('Two wordings have been wrong here'));
+
+  it('finds the headline', () => {
+    expect(headline).not.toBe('');
+    expect(headline).toContain('The Node adapters');
+  });
+
+  it('does not describe itself as reachable from the universal entry', () => {
+    expect(headline).not.toMatch(/REACHABLE FROM THE UNIVERSAL ENTRY/i);
+    expect(headline).toMatch(/NOT reachable from the universal/i);
+  });
+
+  it('and nothing the universal entry reaches imports this module', () => {
+    // The invariant itself, checked against the source rather than against the sentence.
+    const files: Array<{ name: string; text: string }> = [];
+    const collect = (dir: URL, prefix: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) collect(new URL(`${entry.name}/`, dir), `${prefix}${entry.name}/`);
+        else if (entry.name.endsWith('.ts')) {
+          files.push({
+            name: `${prefix}${entry.name}`,
+            text: read(new URL(entry.name, dir).pathname),
+          });
+        }
+      }
+    };
+    collect(new URL('../../src/', import.meta.url), '');
+    expect(files.length).toBeGreaterThan(20);
+
+    // `node.ts` is the module itself; `cli.ts` is the `bin` entry, which no import path reaches.
+    const importers = files
+      .filter(({ name }) => name !== 'node.ts' && name !== 'cli.ts')
+      .filter(({ text }) => /from '\.{1,2}\/(?:[\w./-]*\/)?node\.js'/.test(text))
+      .map(({ name }) => name);
+    expect(importers).toEqual([]);
+  });
+});

@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.103
+
+- **Fixed** a regression 0.3.84 introduced in the `edfcore/node` docblock, which ships in
+  `dist/node.d.ts` as the subpath's hover text.
+  - 0.3.84 correctly removed "the ONLY module in edfcore that imports anything from `node:`" —
+    `src/cli.ts` imports two and ships as `bin` — and replaced it with "the only module **reachable
+    from the universal entry** that imports anything from `node:`". That asserts the opposite of the
+    invariant: the point of this module is that `edfcore` **cannot** reach it, which is what lets
+    the universal entry bundle for a browser. The paragraph four lines below said so, so the
+    docblock contradicted itself.
+  - It now leads with the invariant, and the history note keeps both retired sentences so the
+    mistake is not made a third time.
+- The guard checks the HEADLINE only. The history note quotes both retired sentences deliberately,
+  so a whole-file match finds the quotation rather than the claim — which is exactly what the first
+  draft of this guard did, the same trap as 0.3.78. It also asserts the invariant itself: no module
+  in `src/` other than the `bin` entry imports `./node.js`.
+
 ## 0.3.102
 
 - **Fixed** `tests/corpus/coverage.test.ts` asserting nothing on the run it exists to protect.

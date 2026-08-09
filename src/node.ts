@@ -1,15 +1,17 @@
 /**
- * The Node adapters — the only module REACHABLE FROM THE UNIVERSAL ENTRY that imports anything
- * from `node:`.
+ * The Node adapters — importable only as `edfcore/node`, and NOT reachable from the universal
+ * entry, which is the point.
  *
- * Layer 7, published as `edfcore/node`. Keeping it out of everything `edfcore` can reach is what
- * lets the universal entry be bundled for a browser without a polyfill and without a resolution
- * alias, and a packaging test greps the built universal bundle for `node:` to prove exactly that.
+ * Layer 7. Keeping this module out of everything `edfcore` can reach is what lets the universal
+ * entry be bundled for a browser without a polyfill and without a resolution alias, and a
+ * packaging test greps the built universal bundle for `node:` to prove exactly that.
  *
- * Not "the only file in the package": `src/cli.ts` imports `node:fs/promises` and `node:process`
- * and ships as the `bin` entry, which is a Node program by definition and is reachable from no
- * import path. This said "the ONLY module in edfcore" until 0.3.84, and the sentence shipped in
- * `dist/node.d.ts` as the hover text for this subpath.
+ * Two wordings have been wrong here. It said "the ONLY module in edfcore that imports anything
+ * from `node:`" until 0.3.84 — `src/cli.ts` imports `node:fs/promises` and `node:process` and
+ * ships as the `bin` entry, a Node program by definition that no import path reaches. The fix then
+ * said "the only module REACHABLE FROM THE UNIVERSAL ENTRY that imports anything from `node:`",
+ * which asserts the opposite of the invariant and contradicts the paragraph directly below it
+ * (fixed in 0.3.103). Both shipped in `dist/node.d.ts` as this subpath's hover text.
  *
  * Two decisions are load-bearing.
  *
