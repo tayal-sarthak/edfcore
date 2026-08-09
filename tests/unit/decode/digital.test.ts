@@ -483,7 +483,7 @@ describe('record range and buffer length', () => {
     });
   }
 
-  it('reports how many whole records the buffer actually held', () => {
+  it('reports how many whole records the buffer actually held, in the message', () => {
     const fixture = rangeFixture();
     const short = recordsOf(fixture, { start: 0, count: 3 }).subarray(0, 8 * 2 + 3);
     try {
@@ -494,7 +494,42 @@ describe('record range and buffer length', () => {
       const rangeError = error as EdfRangeError;
       expect(rangeError.requested).toEqual({ start: 0, count: 3 });
       // 19 bytes is two whole 8-byte records and a fragment; nothing is padded into existence.
-      expect(rangeError.available).toEqual({ start: 0, count: 2 });
+      expect(rangeError.message).toContain('2 whole record(s)');
+    }
+  });
+
+  it("reports the FILE's range in `available`, whichever check refused", () => {
+    /*
+     * `available` has one documented meaning — `api-errors.md`: "what the file has, always
+     * starting at 0" — and `clampToFile(error.available)` is the recipe that page shows. The
+     * buffer-length check passed `{ start: records.start, count: <whole records in the buffer> }`
+     * instead, so the same error class described two different things and the recipe clamped
+     * against a range the file never had. The buffer's count is now in the message, where the
+     * rest of the byte arithmetic already was (fixed in 0.3.80).
+     */
+    const fixture = rangeFixture();
+    const fileRange = { start: 0, count: fixture.header.recordCount };
+
+    // Out of range: the branch that was always right.
+    try {
+      decodeDigital(fixture.header, new Uint8Array(0), { start: 4, count: 99 }, 0);
+      expect.unreachable('a range outside the file must not decode');
+    } catch (error) {
+      expect((error as EdfRangeError).available).toEqual(fileRange);
+    }
+
+    // A mis-sized buffer for a range that does NOT start at 0 — the case where the two meanings
+    // differ. The range must stay INSIDE the file, or the check above fires first and this proves
+    // nothing: records 1..2 of a three-record file, handed the buffer for records 0..2.
+    const wholeFile = recordsOf(fixture, { start: 0, count: 3 });
+    try {
+      decodeDigital(fixture.header, wholeFile, { start: 1, count: 2 }, 0);
+      expect.unreachable('a mis-sized buffer must not decode');
+    } catch (error) {
+      const rangeError = error as EdfRangeError;
+      expect(rangeError.requested).toEqual({ start: 1, count: 2 });
+      // The old value here was { start: 1, count: 3 }: not the file's range, and not based at 0.
+      expect(rangeError.available).toEqual(fileRange);
     }
   });
 

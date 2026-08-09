@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.80
+
+- **Fixed** `EdfRangeError.available` meaning two different things depending on which check refused.
+  - `api-errors.md` documents one meaning — "what the file has, always starting at `0`" — and shows
+    `clampToFile(error.available)` as the recipe. The out-of-range check passes exactly that. The
+    buffer-length check beside it passed `{ start: records.start, count: <whole records in the
+    buffer> }`: not the file's range, and not based at 0. `decodeAnnotations` had the same.
+  - On a three-record file, `decodeDigital(header, wholeFileBuffer, { start: 1, count: 2 })` reported
+    `available` as `{ start: 1, count: 3 }` — a range the file never had — so the documented clamp
+    produced records 1..3 of a file that ends at 2.
+  - Both now pass the file's range. This is a **behaviour change** to a public field, and one
+    existing test asserted the old value.
+- The buffer's whole-record count is not lost: it moves into the message, which already stated the
+  rest of the byte arithmetic exactly, so "19 bytes — 2 whole record(s) — but 3 records of 8 bytes
+  each are exactly 24" now says everything the field used to carry.
+- The new test drives a mis-sized buffer for a range that starts at 1 and stays **inside** the file.
+  At `{ start: 2, count: 2 }` on three records the out-of-range check fires first and the case
+  proves nothing — which is how the first draft of this test passed with the bug reinstated.
+
 ## 0.3.79
 
 - **Fixed** `cachedSource` leaving an aborting caller pending for the whole underlying block read.

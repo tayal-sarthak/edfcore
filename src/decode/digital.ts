@@ -99,11 +99,18 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
   const wholeRecords =
     header.recordByteLength > 0 ? Math.floor(recordBytes.length / header.recordByteLength) : 0;
   throw new EdfRangeError(
-    `recordBytes is ${recordBytes.length} bytes, but ${records.count} records of ` +
-      `${header.recordByteLength} bytes each are exactly ${expectedBytes}. decodeDigital ` +
-      'cannot tell which record a differently sized buffer begins at, so it will not guess. ' +
+    `recordBytes is ${recordBytes.length} bytes — ${wholeRecords} whole record(s) — but ` +
+      `${records.count} records of ${header.recordByteLength} bytes each are exactly ` +
+      `${expectedBytes}. decodeDigital cannot tell which record a differently sized buffer ` +
+      'begins at, so it will not guess. ' +
       'Next: pass the buffer returned by readRecordBytes(source, header, records) unmodified.',
-    { requested: records, available: { start: records.start, count: wholeRecords } },
+    // `available` is the FILE's range — "what the file has, always starting at 0", which is what
+    // `api-errors.md` documents and what the branch above passes. This one passed the buffer's
+    // whole-record count based at `records.start`, so the same error class described two different
+    // things and the documented recipe, `clampToFile(error.available)`, clamped against a range
+    // the file never had. The byte counts are already stated exactly in the message above, so
+    // nothing is lost (fixed in 0.3.80).
+    { requested: records, available },
   );
 }
 

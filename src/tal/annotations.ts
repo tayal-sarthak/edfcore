@@ -155,14 +155,13 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
 
   const expected = records.count * header.recordByteLength;
   if (recordBytes.length !== expected) {
-    const whole =
-      header.recordByteLength > 0 ? Math.floor(recordBytes.length / header.recordByteLength) : 0;
     throw new EdfRangeError(
       `decodeAnnotations(): recordBytes is ${recordBytes.length} bytes, but records ` +
         `${describeRange(records)} of this file is exactly ${expected} bytes ` +
         `(${records.count} x ${header.recordByteLength}). ` +
         'Next: pass the buffer readRecordBytes() returned for this exact range, unsliced.',
-      { requested: records, available: { start: records.start, count: whole } },
+      // The FILE's range, for the reason `decode/digital.ts` states at the same check.
+      { requested: records, available: { start: 0, count: header.recordCount } },
     );
   }
 }
