@@ -1,9 +1,15 @@
 /**
- * The Node adapters — the ONLY module in edfcore that imports anything from `node:`.
+ * The Node adapters — the only module REACHABLE FROM THE UNIVERSAL ENTRY that imports anything
+ * from `node:`.
  *
- * Layer 7, published as `edfcore/node`. Keeping the import in exactly one file is what lets the
- * universal entry (`edfcore`) be bundled for a browser without a polyfill and without a
- * resolution alias, and a packaging test greps the built universal bundle for `node:` to prove it.
+ * Layer 7, published as `edfcore/node`. Keeping it out of everything `edfcore` can reach is what
+ * lets the universal entry be bundled for a browser without a polyfill and without a resolution
+ * alias, and a packaging test greps the built universal bundle for `node:` to prove exactly that.
+ *
+ * Not "the only file in the package": `src/cli.ts` imports `node:fs/promises` and `node:process`
+ * and ships as the `bin` entry, which is a Node program by definition and is reachable from no
+ * import path. This said "the ONLY module in edfcore" until 0.3.84, and the sentence shipped in
+ * `dist/node.d.ts` as the hover text for this subpath.
  *
  * Two decisions are load-bearing.
  *
@@ -81,7 +87,7 @@ const fs: NodeFsPromises = nodeFsPromises as unknown as NodeFsPromises;
  * opened, while a caller wrapping a handle it already had may know something better (a range it
  * intends to expose, a size it verified). Neither is guessed here.
  *
- * `close()` closes the handle. edfcore has no other lifetime mechanism in v0.1 —
+ * `close()` closes the handle. edfcore has no other lifetime mechanism yet —
  * `Symbol.asyncDispose` is not Baseline yet — so a caller that opened a file is the one that
  * closes it.
  */

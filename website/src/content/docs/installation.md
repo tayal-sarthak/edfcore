@@ -60,7 +60,7 @@ It gives you the parser (`parseHeader`, `decodeDigital`, `decodeAnnotations`, `t
 
 ### `edfcore/node` (filesystem adapters)
 
-Two functions, and the only module in the package that imports from `node:`.
+Two functions, and the only module the universal entry can reach that imports from `node:`.
 
 ```ts
 import { fileHandleSource, fileSource } from 'edfcore/node';
@@ -68,7 +68,7 @@ import { fileHandleSource, fileSource } from 'edfcore/node';
 
 `fileSource(path)` opens a file and hands you a `ByteSource` over it; you close it with `source.close()` when you're done. `fileHandleSource(handle, byteLength)` wraps a file handle you already opened, for the cases where you know something about the size that the handle does not.
 
-The `node:` import lives in exactly one file, and a packaging test greps the built universal bundle for that scheme prefix.
+Nothing `edfcore` can reach imports from `node:`, and a packaging test greps the built universal bundle for that scheme prefix. The `bin` program (`dist/cli.js`) does import `node:fs/promises` and `node:process` — it is a Node program, and no import path reaches it.
 
 ### `edfcore/validate` (conformance)
 

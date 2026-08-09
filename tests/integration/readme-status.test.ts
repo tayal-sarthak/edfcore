@@ -75,3 +75,40 @@ describe('the docs state no version this package is not at', () => {
     },
   );
 });
+
+describe('the shipped .d.ts states no version this package is not at', () => {
+  /**
+   * `tsconfig.build.json` sets `removeComments: false`, so every docblock in `src/` is copied
+   * verbatim into `dist/*.d.ts` and becomes the hover text an editor shows. `src/node.ts` said
+   * "edfcore has no other lifetime mechanism in v0.1" — the exact scoping 0.3.64 removed from three
+   * website pages, still shipping to every consumer of `edfcore/node` (fixed in 0.3.84).
+   *
+   * The website sweep above cannot see these, so this is the same rule applied to the other half of
+   * what is published.
+   */
+  const SOURCES = (function collect(dir: URL, into: Array<{ name: string; text: string }>) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const child = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) collect(child, into);
+      else if (entry.name.endsWith('.ts'))
+        into.push({ name: entry.name, text: read(child.pathname) });
+    }
+    return into;
+  })(new URL('../../src/', import.meta.url), []);
+
+  it('finds the sources', () => {
+    expect(SOURCES.length).toBeGreaterThan(20);
+  });
+
+  it('scopes no present-tense claim to a past series', () => {
+    const [major, minor] = VERSION.split('.');
+    const offenders: string[] = [];
+    for (const { name, text } of SOURCES) {
+      // "in v0.1", "in 0.2" — a claim about what the package currently is, tied to a dead series.
+      for (const match of text.matchAll(/\bin v?(\d+\.\d+)\b(?!\.\d)/g)) {
+        if (match[1] !== `${major}.${minor}`) offenders.push(`${name}: ${match[0]}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.84
+
+- **Fixed** four statements that the `node:` import lives in exactly one file. `src/cli.ts` imports
+  `node:fs/promises` and `node:process` and ships as the package's `bin`.
+  - `src/node.ts` called itself "the ONLY module in edfcore that imports anything from `node:`" and
+    said "keeping the import in exactly one file" is what makes the browser build work.
+    `installation.md` repeated both. The invariant the packaging test actually checks is narrower and
+    is the one that matters: nothing **reachable from the universal entry** imports `node:`, which
+    is why `edfcore` bundles for a browser without a polyfill.
+  - The `bin` program is a Node program by definition and no import path reaches it, so the code is
+    right and only the claims were wrong. All four now state the reachability rule, and
+    `installation.md` names the CLI's imports outright rather than leaving a reader to discover a
+    fourth published entry that contradicts the page.
+- **Also fixed** `src/node.ts` saying "edfcore has no other lifetime mechanism in v0.1". Because
+  `tsconfig.build.json` keeps comments, that sentence ships in `dist/node.d.ts` as the hover text
+  for `fileHandleSource` — the same "v0.1" scoping 0.3.64 removed from three website pages, still
+  reaching every consumer of the subpath.
+- The version guard from 0.3.53 swept the website only. It now sweeps `src/` too, since those
+  docblocks are published, and it catches the exact sentence this release removed.
+
 ## 0.3.83
 
 - **Fixed** two pages calling `buildRecordIndex` "the only function in edfcore that reads the whole
