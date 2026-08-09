@@ -22,7 +22,8 @@
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
-import { minimalEdf } from '../support/writer.js';
+import { validateRecording } from '../../src/validate.js';
+import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
 
 interface RawModuleGlob {
   glob(
@@ -187,6 +188,31 @@ describe('diagnostics.md agrees with the same source', () => {
     const word = spelled[fatal];
     if (word === undefined) throw new Error(`no spelling for ${fatal}; add one`);
     expect(DIAGNOSTICS_PAGE).toContain(`All ${word} throw \`EdfFormatError\``);
+  });
+
+  it('does not call buildRecordIndex the ONLY function that reads the whole file', async () => {
+    /*
+     * `record-index.ts`'s own docblock says "one of only two functions that read the whole file,
+     * the other being `validateRecording`", and the source is right: on an EDF+/BDF+ file with no
+     * supplied index, `validateRecording` reads every record to derive the annotation onsets — even
+     * with `scanSamples: false`, which is what 0.3.77 is about. Two pages said "the only"
+     * (fixed in 0.3.83).
+     */
+    for (const [path, text] of Object.entries(ALL_PAGES)) {
+      expect(text, `${path.split('/').pop()} overstates it`).not.toMatch(
+        /only function in edfcore that reads the whole file/,
+      );
+    }
+
+    // The behaviour behind the correction: a full-file read from the other function.
+    const bytes = minimalEdfPlus({
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'A', samplesPerRecord: 2 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const report = await validateRecording(recording, { scanSamples: false });
+    expect(report.recordsScanned).toBe(6);
   });
 
   it('does not claim strict throws on an info code, or empties the list', async () => {

@@ -352,7 +352,7 @@ function buildRecordIndex(
 ): Promise<EdfRecordIndex>
 ```
 
-Reads every record's onset and returns a `'complete'` index carrying the segments and gaps they imply. **This is the only function in edfcore that reads the whole file, and it is never called implicitly.**
+Reads every record's onset and returns a `'complete'` index carrying the segments and gaps they imply. **This is one of only two functions that read the whole file — `validateRecording` is the other — and it is never called implicitly.**
 
 The traversal is chunked so memory stays bounded whatever the file size: each chunk holds `min(4 MiB, maxMaterializeBytes) / recordByteLength` records, and never fewer than one. `onProgress` fires once per chunk. A file with no annotations signal is not scanned at all, because its record onsets are arithmetic. `onProgress` still fires once with the traversal complete, so a progress bar finishes.
 

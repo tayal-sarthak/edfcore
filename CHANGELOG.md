@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.83
+
+- **Fixed** two pages calling `buildRecordIndex` "the only function in edfcore that reads the whole
+  file" — `api-reading.md` in bold, `discontinuous.md` in its opening line.
+  - The docblock on the function itself says "one of only two functions that read the whole file,
+    the other being `validateRecording`", and the source is right: on an EDF+/BDF+ file with no
+    supplied index, `validateRecording` reads every record to derive the annotation onsets. It does
+    so even with `scanSamples: false`, which is exactly what 0.3.77 was about.
+  - Someone planning I/O against a remote file reads that sentence to decide which calls are safe to
+    make. Both pages now carry the source's own count.
+- The guard sweeps every docs page for the retired sentence and then asserts the behaviour behind
+  the correction — `validateRecording(recording, { scanSamples: false })` reporting
+  `recordsScanned` equal to the file's record count — so it is anchored to the second full-file
+  reader actually existing.
+
 ## 0.3.82
 
 - **Corrected** the `time/segments.ts` docblock, which promised that running

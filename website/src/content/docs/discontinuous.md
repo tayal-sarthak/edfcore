@@ -158,7 +158,7 @@ const index = await buildRecordIndex(recording, {
 index.coverage;  // 'complete'
 ```
 
-This is the only function in edfcore that reads the whole file, and it is never called implicitly.
+This is one of only two functions that read the whole file — `validateRecording` is the other — and it is never called implicitly.
 It reads in bounded chunks (at most about 4 MiB in flight, or less if you lower
 `maxMaterializeBytes`), so memory stays flat whatever the file size. `onProgress` fires once per
 chunk with the number of records finished. Its cost is proportional to the file, which is why it
