@@ -31,11 +31,17 @@ import { segmentAt } from './record-index.js';
 import { floorDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import type { EdfRecording, EdfSampleLocation, EdfSegment, EdfSignal } from './types.js';
 
-function resolveSignal(recording: EdfRecording, signalIndex: number, caller: string): EdfSignal {
+/**
+ * Shared by `sampleAt` and `sampleStartTicksOf`, so the messages name NO function — the rule
+ * `envelope.ts` states for its own shared helpers. `sampleStartSecondsOf` is a one-line delegation
+ * to `sampleStartTicksOf`, so a hard-coded name here reached a caller who never wrote it
+ * (completed in 0.3.134; 0.3.133 fixed only the three messages outside this function).
+ */
+function resolveSignal(recording: EdfRecording, signalIndex: number): EdfSignal {
   const signal = recording.header.signals[signalIndex];
   if (signal === undefined) {
     throw new EdfChannelNotFoundError(
-      `${caller}(): signalIndex ${signalIndex} is outside the ` +
+      `signalIndex ${signalIndex} is outside the ` +
         `${recording.header.signals.length} signals this file declares. Next: pass an index from ` +
         'header.dataSignalIndices, or resolve one with getSignal(header, label).',
       {
@@ -46,21 +52,21 @@ function resolveSignal(recording: EdfRecording, signalIndex: number, caller: str
   }
   if (signal.kind === 'annotations') {
     throw new RangeError(
-      `${caller}(): signal ${signalIndex} (${JSON.stringify(signal.label)}) is an annotations ` +
+      `signal ${signalIndex} (${JSON.stringify(signal.label)}) is an annotations ` +
         'channel, whose region holds TAL text rather than samples, so it has no sample grid. ' +
         'Next: use onsetTicksFromFirstRecord on the annotations themselves.',
     );
   }
   if (signal.samplesPerRecord <= 0) {
     throw new RangeError(
-      `${caller}(): signal ${signalIndex} (${JSON.stringify(signal.label)}) declares ` +
+      `signal ${signalIndex} (${JSON.stringify(signal.label)}) declares ` +
         `${signal.samplesPerRecord} samples per record, so it has no sample grid to index. ` +
         'Next: check header.diagnostics for ZERO_SAMPLES_PER_RECORD.',
     );
   }
   if (recording.header.recordDurationTicks <= 0n) {
     throw new RangeError(
-      `${caller}(): this file declares a record duration of zero, so records do not advance in ` +
+      'this file declares a record duration of zero, so records do not advance in ' +
         'time and no elapsed time maps to a sample. This is legal EDF and a scoring file relies ' +
         'on it. Next: index by record with readRecords().',
     );
@@ -131,7 +137,7 @@ export function sampleAt(
   signalIndex: number,
   seconds: number,
 ): EdfSampleLocation | undefined {
-  const signal = resolveSignal(recording, signalIndex, 'sampleAt');
+  const signal = resolveSignal(recording, signalIndex);
   if (!Number.isFinite(seconds)) {
     throw new RangeError(`sampleAt(): seconds must be a finite number, received ${seconds}.`);
   }
@@ -209,7 +215,7 @@ export function sampleStartTicksOf(
   signalIndex: number,
   sampleIndex: number,
 ): bigint {
-  const signal = resolveSignal(recording, signalIndex, 'sampleStartTicksOf');
+  const signal = resolveSignal(recording, signalIndex);
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(`sampleIndex must be a whole number, received ${sampleIndex}.`);
   }

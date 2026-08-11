@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.134
+
+- **Completed** 0.3.133, which fixed only the three messages outside `resolveSignal`. That helper
+  is shared by `sampleAt` and `sampleStartTicksOf` and took a `caller` string, so its four messages
+  still said `sampleStartTicksOf():` when reached through `sampleStartSecondsOf`. The parameter is
+  gone and the messages name no function, which is what `envelope.ts` already does for its own
+  shared helpers.
+
 ## 0.3.133
 
 - **Removed** the hard-coded `sampleStartTicksOf():` prefix from that function's three messages, the
