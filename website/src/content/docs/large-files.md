@@ -177,9 +177,10 @@ budget:
 | `decodeDigital` | `Int32Array` of digital values | 4 |
 | `toPhysical` | `Float64Array` of physical values | 8 |
 
-Three more refuse against the same budget off that path, and none of them is proportional to the
-samples you asked for: the record-index scan block, `readEnvelope`'s bucket accumulator, and
-`validateRecording`'s sample-scan scratch.
+Two more refuse against the same budget off that path, and neither is proportional to the samples
+you asked for: `readEnvelope`'s bucket accumulator and `validateRecording`'s sample-scan scratch.
+The record-index scan reads the budget too, but as a cap on its block size rather than as a
+refusal — a full traversal never throws for being large, it just reads in smaller pieces.
 
 Passing an `out` array to `decodeDigital` or `toPhysical` skips the allocation, and with it the
 budget check for that stage. That's how to run a viewer that reads continuously. `readRecordBytes`

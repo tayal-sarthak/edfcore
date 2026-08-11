@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.129
+
+- **Corrected** 0.3.119's own sentence, which called all three off-path budget sites refusals. Two
+  are: the envelope accumulator and `validateRecording`'s scratch both throw `EdfBudgetError`.
+  `scanChunkRecords` reads the budget as a cap on its block size and never throws — a full
+  traversal reads in smaller pieces instead of refusing.
+
 ## 0.3.128
 
 - **Fixed** the same `readWindow` claim 0.3.121 corrected on the docs page, in `recording.ts`'s own
