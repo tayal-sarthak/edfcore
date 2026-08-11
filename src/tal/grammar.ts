@@ -272,6 +272,13 @@ export function rawBytesText(bytes: Uint8Array, offset: number, length: number):
  * bytes they found — `the onset "??" is not …` — and keying on those would be unbounded. The
  * per-region issue count stays bounded by the number of KINDS, which is what the collapsing
  * exists to protect.
+ *
+ * Keying by kind stops two DIFFERENT TALs from describing each other; it does nothing for one TAL
+ * describing itself twice, which is what `onset-unsigned` did until 0.3.105 — it was logged before
+ * the four branches that can still discard the TAL, so a region could carry two `TAL_MALFORMED`
+ * entries with the same offset, length and raw bytes asserting opposite dispositions. It is now
+ * logged only once the TAL is known to survive, which means its `occurrences` counts SURVIVING
+ * unsigned onsets and its offset is the first surviving one.
  */
 type TalIssueKind =
   | 'text-not-utf8'
@@ -433,6 +440,7 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
   const onsetRaw = decodeHeaderLatin1(sliceBytes(region, start, onsetEnd - start));
   const signedOnset = parseSignedTicks(onsetRaw);
   let onsetTicks = signedOnset.ticks;
+  let onsetWasUnsigned = false;
   if (!signedOnset.ok) {
     // `parseSignedTicks` fails for a missing sign and for a bad magnitude alike. Only the first
     // is recoverable, and re-parsing without the sign is how they are told apart.
@@ -451,16 +459,11 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
       return { tal: undefined, next };
     }
     onsetTicks = unsignedOnset.ticks;
-    logIssue(
-      log,
-      'TAL_MALFORMED',
-      'onset-unsigned',
-      region,
-      start,
-      onsetEnd - start,
-      `the onset "${onsetRaw}" has no mandatory sign; the value is unambiguous, so the TAL was ` +
-        'kept and the onset read as positive',
-    );
+    // DEFERRED, not logged here. This is the one "the TAL was kept" message that sits upstream of
+    // a discard branch — four of them, in fact — so an unsigned onset combined with any of them
+    // reported two dispositions of the same TAL, and the one that ran first was the false one.
+    // See the flush below the duration checks (fixed in 0.3.105).
+    onsetWasUnsigned = true;
   }
   if (outsideInt64(onsetTicks)) {
     logIssue(
@@ -529,6 +532,22 @@ function scanTal(region: Uint8Array, start: number, ordinal: number, log: IssueL
       return { tal: undefined, next };
     }
     durationTicks = duration.ticks;
+  }
+
+  // Past every branch that can discard the TAL, so this is the first point at which "the TAL was
+  // kept" is true. It sits ahead of the text scan rather than beside the return so that a kept
+  // TAL's issues stay in the order they were in before 0.3.105 — onset, then text.
+  if (onsetWasUnsigned) {
+    logIssue(
+      log,
+      'TAL_MALFORMED',
+      'onset-unsigned',
+      region,
+      start,
+      onsetEnd - start,
+      `the onset "${onsetRaw}" has no mandatory sign; the value is unambiguous, so the TAL was ` +
+        'kept and the onset read as positive',
+    );
   }
 
   const texts: TalText[] = [];

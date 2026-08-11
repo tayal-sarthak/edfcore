@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.105
+
+- **Fixed** a discarded TAL still reporting that it was kept.
+  - The `onset-unsigned` defect — "so the TAL was kept and the onset read as positive" — was logged
+    at the point the missing sign was recovered, which is upstream of the four branches that can
+    still throw the same TAL away: an out-of-range onset, an over-long duration field, a bad
+    duration grammar and an out-of-range duration. An unsigned onset combined with any of them
+    produced two `TAL_MALFORMED` entries about one TAL asserting opposite outcomes, and the one
+    that ran first was the false one. With an out-of-range onset the pair is indistinguishable by
+    anything but prose: same code, same offset, same length, same raw bytes, `occurrences` 1 each.
+  - It is now logged once the TAL is known to survive, ahead of the text scan so a kept TAL's
+    issues keep the order they had. Consequently its `occurrences` counts surviving unsigned
+    onsets, and its offset and raw bytes are the first surviving one's.
+  - 0.3.19 fixed the cross-TAL version of this by keying the log on the defect kind. That stops two
+    different TALs from describing each other and does nothing for one TAL describing itself twice;
+    both guards written for it build two TALs, so they passed throughout. The new guard builds one.
+
 ## 0.3.104
 
 - **Fixed** annotation text reaching a diagnostic message unescaped, which let a file forge a

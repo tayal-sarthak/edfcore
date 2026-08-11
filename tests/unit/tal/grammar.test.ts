@@ -417,6 +417,45 @@ describe('a malformed TAL is skipped and the rest of the region is still parsed'
     expect(at(parse.issues, 1).detail).toContain('the text was kept verbatim');
   });
 
+  it('does not let ONE TAL claim both dispositions of itself', () => {
+    /*
+     * The two tests above build two TALs, so keying the log on the defect kind was enough: it
+     * stopped one defect from owning the other's `detail`. It does nothing for a single TAL that
+     * contradicts itself, which is what `onset-unsigned` did — logged at the point the sign was
+     * recovered, upstream of the four branches that can still discard the same TAL.
+     *
+     * This region is the case that cannot be argued away as per-region aggregation: both entries
+     * carry the same code, the same offset, the same length and the same raw bytes, with
+     * `occurrences` 1 each, and they assert opposite outcomes for the one TAL in the region
+     * (fixed in 0.3.105).
+     */
+    const tal = concat(
+      ascii('99999999999999999999999'),
+      Uint8Array.of(MARK),
+      ascii('Seizure'),
+      Uint8Array.of(MARK, NUL),
+    );
+    const parse = parseTalRegion(padRegion(48, tal), 0, 48);
+
+    expect(parse.tals).toHaveLength(0);
+    expect(parse.issues).toHaveLength(1);
+    expect(at(parse.issues, 0).detail).toContain('so the TAL was skipped');
+    // The rule, not this one region: nothing claims a TAL was kept when none was.
+    for (const issue of parse.issues) expect(issue.detail).not.toContain('the TAL was kept');
+  });
+
+  it('still reports an unsigned onset on a TAL that survives', () => {
+    // The other half of 0.3.105: deferring the log must not silence it. Same defect, nothing
+    // downstream to discard the TAL.
+    const tal = concat(ascii('1.5'), Uint8Array.of(MARK), ascii('x'), Uint8Array.of(MARK, NUL));
+    const parse = parseTalRegion(padRegion(48, tal), 0, 48);
+
+    expect(parse.tals).toHaveLength(1);
+    expect(parse.issues).toHaveLength(1);
+    expect(at(parse.issues, 0).byteOffsetInRegion).toBe(0);
+    expect(at(parse.issues, 0).detail).toContain('the TAL was kept and the onset read as positive');
+  });
+
   it('tells an out-of-range duration apart from a malformed one', () => {
     /*
      * `9223372036855` seconds is ~292,000 years — past the +/-2^63 tick range, and the same
