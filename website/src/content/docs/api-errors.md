@@ -101,9 +101,10 @@ try {
 } catch (error) {
   if (isEdfError(error) && error.edfErrorKind === 'format') {
     const formatError = error as EdfFormatError;
-    console.log(formatError.code);                           // 'DATE_CLIPPED_TO_1985_2084'
-    console.log(formatError.field, formatError.byteOffset);  // 'startDate' 168
-    console.log(formatError.diagnostic?.specReference);      // 'EDF+ additional specification 2 ...'
+    console.log(formatError.code);                           // 'DEGENERATE_DIGITAL_RANGE'
+    console.log(formatError.field, formatError.byteOffset);  // 'digitalMinimum' 504
+    console.log(formatError.signalIndex);                    // 1
+    console.log(formatError.diagnostic?.specReference);      // 'EDF+ additional specification 5'
   }
 }
 ```

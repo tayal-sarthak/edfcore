@@ -404,6 +404,31 @@ describe('diagnostics.md agrees with the same source', () => {
     expect(strict.header.diagnostics[0]?.severity).toBe('info');
   });
 
+  it('does not make the same claim as an annotated value in a code block', () => {
+    /*
+     * `api-errors.md`'s worked example for `EdfFormatError` wrapped `openEdf(source, { strict:
+     * true })` in a try/catch and annotated the catch body with
+     * `formatError.code // 'DATE_CLIPPED_TO_1985_2084'` — a catch body that cannot run for that
+     * code, since it is `info`. The page states the exemption correctly a hundred lines below it.
+     *
+     * Both earlier sweeps, and the widened prose guard above, match SENTENCES. This one asserts
+     * the same claim as a value, so it walked past all three (fixed in 0.3.114).
+     */
+    const infoCodes = [...byCode.entries()].filter(([, d]) => d === 'info').map(([code]) => code);
+    expect(infoCodes.length).toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const [path, text] of Object.entries(ALL_PAGES)) {
+      for (const block of text.match(/```[\s\S]*?```/g) ?? []) {
+        if (!block.includes('strict: true') || !/\bcatch\b/.test(block)) continue;
+        for (const code of infoCodes) {
+          if (block.includes(code)) offenders.push(`${path.split('/').pop()}: ${code}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('names every info code where it explains them', () => {
     const infoCodes = [...byCode.entries()].filter(([, d]) => d === 'info').map(([c]) => c);
     const explanation = DIAGNOSTICS_PAGE.slice(DIAGNOSTICS_PAGE.indexOf('codes are `info`'));

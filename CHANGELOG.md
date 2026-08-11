@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.114
+
+- **Fixed** `api-errors.md`'s `EdfFormatError` example printing a code strict can never throw.
+  - The example wraps `openEdf(source, { strict: true })` in a try/catch and annotates the catch
+    body with `formatError.code // 'DATE_CLIPPED_TO_1985_2084'`. That code is `info`, so the parse
+    resolves and the catch body never runs — while the same page states the exemption correctly a
+    hundred lines below. It now uses `DEGENERATE_DIGITAL_RANGE`, with the field, byte offset,
+    signal index and spec reference an actual run produces.
+  - This is the claim 0.3.76, 0.3.90 and 0.3.108 retired from eight places, made as an annotated
+    VALUE rather than a sentence — which is why all three sweeps, including the one that widened
+    the guard yesterday, walked past it. The guard now also checks every fenced block containing
+    `strict: true` and a `catch` against the `info` codes in the dispositions table.
+
 ## 0.3.113
 
 - **Added** the case that pins `trimToWindow`'s out-of-range re-count. No behaviour change; the
