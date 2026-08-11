@@ -13,7 +13,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { formatDiagnostics } from '../../../src/diagnostics/format.js';
-import { EdfFormatError, EdfRangeError } from '../../../src/errors.js';
+import {
+  EdfChannelNotFoundError,
+  EdfFormatError,
+  EdfRangeError,
+  isEdfError,
+} from '../../../src/errors.js';
 import { parseHeader } from '../../../src/header/parse.js';
 import { decodeAnnotations } from '../../../src/tal/annotations.js';
 import type {
@@ -193,6 +198,32 @@ describe('the first TAL of the first annotation signal is timekeeping, and only 
       expect(error).toBeInstanceOf(RangeError);
       expect(error).not.toBeInstanceOf(EdfFormatError);
       expect(error).not.toBeInstanceOf(EdfRangeError);
+    }
+  });
+
+  it('refuses an index the file does not have the way every other read does', () => {
+    /*
+     * The carve-out above is about a signal the file HAS: parsing its samples as text is the
+     * garbage this module prevents. An index outside `header.signals` is a different mistake, and
+     * the ten other entry points that take a signal index all answer it with
+     * `EdfChannelNotFoundError`. Both went through one branch, so this threw a bare `RangeError`
+     * carrying no `selector`, `isEdfError` returned false for it, and the message said "is not an
+     * annotation signal" — which describes a signal that exists with the wrong kind.
+     *
+     * The test above names the general rule but only covers index 0, which is how the two halves
+     * drifted apart unnoticed. This is the other half (fixed in 0.3.106).
+     */
+    try {
+      decode(twoSignals, allRecords(twoSignals), { signalIndices: [99] });
+      expect.unreachable('expected an EdfChannelNotFoundError');
+    } catch (error) {
+      expect(error).toBeInstanceOf(EdfChannelNotFoundError);
+      expect(isEdfError(error)).toBe(true);
+      expect((error as EdfChannelNotFoundError).selector).toBe(99);
+      expect((error as EdfChannelNotFoundError).availableLabels).toHaveLength(
+        twoSignals.header.signals.length,
+      );
+      expect((error as Error).message).not.toContain('is not an annotation signal');
     }
   });
 });

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.106
+
+- **Changed** `decodeAnnotations` and `readAnnotations` to throw `EdfChannelNotFoundError` for a
+  signal index the file does not have, matching the ten other entry points that take one.
+  - `resolveSignals` collapsed two different mistakes into one branch. An index outside
+    `header.signals` therefore produced a bare `RangeError` with no `selector` and no
+    `availableLabels`, `isEdfError` returned `false` for it, and the message read "signal 99 is not
+    an annotation signal" — which describes a signal that exists with the wrong kind. This is the
+    asymmetry 0.3.35 fixed for the envelope path, where `isEdfError` answered differently depending
+    on which read the caller had reached for.
+  - The plain `RangeError` stays for the case the docs actually describe and the carve-out's own
+    reason covers: a real data signal, whose samples this module exists to keep out of a text
+    parser. There are no samples at index 99.
+  - The test named for that rule only exercised index 0, which is how the two halves drifted apart.
+    It now covers both.
+
 ## 0.3.105
 
 - **Fixed** a discarded TAL still reporting that it was kept.

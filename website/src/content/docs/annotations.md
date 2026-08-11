@@ -315,6 +315,10 @@ await readAnnotations(recording, records, { signalIndices: [0] });
 // annotation signals are [1]. Next: pass one of those, or omit signalIndices to read them all.
 ```
 
+An index the file does not have is a different mistake, and it throws `EdfChannelNotFoundError`
+carrying `selector` and `availableLabels`, exactly as every other read that takes a signal index
+does.
+
 ## Provenance
 
 Every annotation says where it came from, down to the byte:

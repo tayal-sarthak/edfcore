@@ -35,7 +35,7 @@
 import { sliceBytes } from '../bytes/view.js';
 import { TICKS_PER_SECOND } from '../constants.js';
 import { DiagnosticSink } from '../diagnostics/collector.js';
-import { EdfRangeError } from '../errors.js';
+import { EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
 import type {
   DecodeAnnotationsOptions,
   EdfAnnotation,
@@ -173,6 +173,13 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
  * A non-annotation index is refused with a plain `RangeError`, not an `EdfError`: parsing a data
  * signal's samples as text is exactly the garbage this module exists to prevent, and it can only
  * happen through a caller's mistake, never through a file's.
+ *
+ * That reason is about a signal the file HAS. An index the file does not have is a different
+ * mistake, and it throws `EdfChannelNotFoundError` like the ten other entry points that take a
+ * signal index — the same asymmetry 0.3.35 fixed for the envelope path, where `isEdfError`
+ * answered differently depending on which read the caller had reached for. The two were one
+ * branch, so index 99 into a 2-signal file was refused as "not an annotation signal", which
+ * describes a signal that exists with the wrong kind (fixed in 0.3.106).
  */
 function resolveSignals(
   header: EdfHeader,
@@ -185,7 +192,15 @@ function resolveSignals(
     if (seen.has(index)) continue;
     seen.add(index);
     const signal = header.signals[index];
-    if (signal === undefined || signal.kind !== 'annotations') {
+    if (signal === undefined) {
+      throw new EdfChannelNotFoundError(
+        `signalIndex ${index} is outside the ${header.signals.length} signals this file ` +
+          'declares. Next: pass an index from header.annotationSignalIndices, or omit ' +
+          'signalIndices to read them all.',
+        { selector: index, availableLabels: header.signals.map((one) => one.label) },
+      );
+    }
+    if (signal.kind !== 'annotations') {
       throw new RangeError(
         `decodeAnnotations(): signal ${index} is not an annotation signal. This file's ` +
           `annotation signals are [${header.annotationSignalIndices.join(', ')}]. ` +
