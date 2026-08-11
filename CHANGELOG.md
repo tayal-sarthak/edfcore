@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.122
+
+- **Fixed** the "emitted by" column for `SCALE_UNAVAILABLE`, which named only `toPhysical`.
+  `toPhysicalEnvelope` throws it too — and after 0.3.111 it is the same builder, so the two can no
+  longer be listed apart.
+
 ## 0.3.121
 
 - **Fixed** `api-reading.md` saying `readWindow` on a continuous file "always has exactly one

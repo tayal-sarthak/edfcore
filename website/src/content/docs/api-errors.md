@@ -351,7 +351,7 @@ Codes outside the core vocabulary already exist, and none of them can ever be fa
 |---|---|---|
 | `INSPECTION_FAILED` | `inspectEdf` | an `EdfError` that was not a format error stopped the inspection; the message names what was refused |
 | `HEADER_EXCEEDS_INSPECTION_BUDGET` | `inspectEdf` | the declared header is larger than the 128 KiB ceiling triage reads; call `readHeader` or `openEdf`, which read the whole header however large |
-| `SCALE_UNAVAILABLE` | `toPhysical` | a signal has no scale and matches none of the four known conditions |
+| `SCALE_UNAVAILABLE` | `toPhysical`, `toPhysicalEnvelope` | a signal has no scale and matches none of the four known conditions |
 | `LABEL_CONVENTION_NONCONFORMANT` | `edfcore/validate` | the label is not the EDF+ `"<type> <sensor>"` form |
 | `PREFILTERING_NONCONFORMANT` | `edfcore/validate` | the prefiltering field is not written as `HP:`/`LP:`/`N:`/`G:` terms |
 | `TRANSDUCER_TYPE_BLANK` | `edfcore/validate` | a data signal leaves the transducer field empty |
