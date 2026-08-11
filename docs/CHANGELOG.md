@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.1
+
+- **Moved** `CHANGELOG.md` to `docs/CHANGELOG.md`. It still ships in the tarball, so the release
+  record is still readable out of `node_modules/edfcore/` — at the new path. That is the only
+  change in this release a consumer can observe.
+- The three build configs moved to `config/`, and every `npm` script now names its config instead
+  of relying on a tool's default lookup. Repository only: nothing under `src/` changed, so the API,
+  the shipped types and the arithmetic are identical to 0.4.0.
+
 ## 0.4.0
 
 The public API is unchanged: nothing was added, removed or renamed, and no arithmetic moved. This

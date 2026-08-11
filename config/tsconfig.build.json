@@ -23,9 +23,9 @@
     "declarationMap": true,
     "sourceMap": true,
     "removeComments": false,
-    "outDir": "dist",
-    "rootDir": "src",
+    "outDir": "../dist",
+    "rootDir": "../src",
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["../src"]
 }

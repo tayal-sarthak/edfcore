@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_JSON = join(ROOT, 'package.json');
-const CHANGELOG = join(ROOT, 'CHANGELOG.md');
+const CHANGELOG = join(ROOT, 'docs', 'CHANGELOG.md');
 const CONSTANTS = join(ROOT, 'src/constants.ts');
 
 const args = process.argv.slice(2);
@@ -114,11 +114,11 @@ console.log(`\n  edfcore ${current} -> ${next}${dryRun ? '  (dry run)' : ''}\n`)
 const changelog = readFileSync(CHANGELOG, 'utf8');
 const firstHeading = /^## (\d+\.\d+\.\d+.*)$/m.exec(changelog);
 if (!firstHeading) {
-  die('CHANGELOG.md has no "## <version>" heading. Add the entry for this release first.');
+  die('docs/CHANGELOG.md has no "## <version>" heading. Add the entry for this release first.');
 }
 if (firstHeading[1] !== next) {
   die(
-    `CHANGELOG.md's top entry is "## ${firstHeading[1]}" but this release is ${next}.\n\n` +
+    `docs/CHANGELOG.md's top entry is "## ${firstHeading[1]}" but this release is ${next}.\n\n` +
       `  Fix the heading to "## ${next}" and run again. If a number was skipped — a release that\n` +
       '  failed after bumping consumes one — record it as never released, the way 0.2.29, 0.2.36\n' +
       '  and 0.2.59 are.',

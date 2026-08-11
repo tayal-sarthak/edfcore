@@ -352,7 +352,7 @@ whole point, since a reader that swapped the bounds would return plausible micro
 sign and invert the clinical reading of the trace.
 
 **Still open before 1.0.** Nothing named. The remaining work is API, not verification — see the
-0.3 note in [CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/CHANGELOG.md).
+0.3 note in [CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/docs/CHANGELOG.md).
 
 **Shipped since 0.1.6.** Min/max envelope decimation (`readEnvelope`,
 `readEnvelopeAtResolution`). BioSemi Status-byte helpers (`readTriggers`). Streaming iteration
@@ -361,7 +361,7 @@ the header and the validation report. Chunk joining that refuses to concatenate 
 (`mergeChunks`). Timeline lookup with no read (`segmentAt`, `gapAt`, `contiguityOf`). Signal
 lookup by pattern (`matchSignals`) and ordered physical bounds (`physicalRangeOf`). See
 [API — helpers](https://edfcore.vercel.app/docs/api-helpers) and
-[CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/CHANGELOG.md).
+[CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/docs/CHANGELOG.md).
 
 **Still later, additive.** The `edffloat` logarithmic inverse transform, opt-in — still detected
 and rejected, because applying an inverse edfcore cannot verify against a real edffloat file is

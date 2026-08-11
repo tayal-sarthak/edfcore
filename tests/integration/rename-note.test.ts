@@ -24,7 +24,7 @@ const read = (relative: string): string => readFileSync(new URL(relative, import
 
 const MIGRATING = read('../../website/src/content/docs/migrating-to-0-3.md');
 const HELPERS = read('../../website/src/content/docs/api-helpers.md');
-const CHANGELOG = read('../../CHANGELOG.md');
+const CHANGELOG = read('../../docs/CHANGELOG.md');
 
 /** The `| old | new |` rows of the rename table. */
 function renames(page: string): ReadonlyArray<readonly [string, string]> {

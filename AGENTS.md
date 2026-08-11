@@ -13,7 +13,9 @@ runtime dependencies and that is a permanent constraint, not a current state.
 | Path | What it is |
 |---|---|
 | `src/` | The library. Layered strictly: `bytes` → `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import from a lower layer. |
-| `tests/` | 1113 tests. Every fixture is built in memory by `tests/support/writer.ts`; there are no binary files in git. |
+| `tests/` | 1906 tests. Every fixture is built in memory by `tests/support/writer.ts`; there are no binary files in git. |
+| `config/` | `tsconfig.build.json` and the two vitest configs. Every path inside them is relative to `config/`, and every `npm` script names them explicitly — nothing here is found by a tool's default lookup. |
+| `docs/CHANGELOG.md` | The release record. `scripts/release.mjs` refuses to tag unless its top `## <version>` heading matches. |
 | `website/src/content/docs/design-decisions.md` | Why the API is shaped as it is. **Read it before proposing an architectural change** — most obvious improvements were considered and rejected for a stated reason. |
 | `website/` | The Astro documentation site and the browser-based inspector. |
 
@@ -26,7 +28,7 @@ npm run build       # tsc to dist/
 npm run dev --prefix website
 ```
 
-`npm run typecheck` runs **two** configs on purpose: `tsconfig.build.json` compiles `src/` with
+`npm run typecheck` runs **two** configs on purpose: `config/tsconfig.build.json` compiles `src/` with
 `lib: ["ES2022"]` and `types: []`, so neither the DOM nor `@types/node` can leak into the
 published types. If you add a DOM or Node global to `src/`, that build fails — use the
 structural shims in `src/types.ts` instead.
