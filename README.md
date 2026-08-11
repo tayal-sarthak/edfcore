@@ -326,7 +326,7 @@ What else those files establish, which synthetic fixtures cannot:
 | Streaming equals reading | 42 streamed chunks concatenated and compared sample by sample |
 | **Random access is real** | a 30-second window twelve hours in costs **under 64 KB** over HTTP |
 | `validate` is usable as a CI gate | exits 0 on a real recording from a real sleep lab |
-| The sample scan sees what pyEDFlib sees | whole-signal digital extremes, all five files |
+| The sample scan sees what pyEDFlib sees | whole-signal digital extremes, all seven files |
 
 Those tests need the corpus and skip without it. `coverage.test.ts` always runs and says which
 state you are in, because a skipped test and a passing one look identical in a summary line:

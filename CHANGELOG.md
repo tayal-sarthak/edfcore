@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.135
+
+- **Fixed** the README's claims table saying the pyEDFlib sample-scan parity covers "all five
+  files". `corpus-parity.test.ts` runs that sweep over `CASES`, which lists seven — the two Sleep-EDF
+  files, three teuniz.net generators, `chb01_01.edf` and `calib.rec`.
+
 ## 0.3.134
 
 - **Completed** 0.3.133, which fixed only the three messages outside `resolveSignal`. That helper
