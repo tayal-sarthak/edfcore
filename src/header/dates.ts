@@ -407,6 +407,11 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
     // perfectly good and it is the clock that was refused, so a caller branching on the code
     // acted on the wrong half of the start time. 0.3.17 corrected the prose that described this
     // as one condition; this splits the condition (fixed in 0.3.27).
+    //
+    // "No calendar date at all" was itself too strong, and 0.3.107 corrected it everywhere:
+    // DATE_UNPARSEABLE is about the 8-BYTE FIELD, which can be unreadable while the EDF+
+    // recording-identification Startdate still supplies the date. What the code does say in every
+    // case is that `startTime.headerDate` is undefined.
     sink.report({
       code: 'STARTTIME_UNPARSEABLE',
       message:

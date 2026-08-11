@@ -59,7 +59,7 @@ channel.
 | `TRANSDUCER_TYPE_BLANK` | a data signal leaves the transducer field empty |
 | `PATIENT_ID_NONCONFORMANT` | `header.patient.conformant` is false, on an EDF+ or BDF+ file |
 | `RECORDING_ID_NONCONFORMANT` | `header.recording.conformant` is false, on an EDF+ or BDF+ file |
-| `DATE_UNPARSEABLE` | `header.startTime.dateSource` is `'none'` |
+| `DATE_UNPARSEABLE` | the 8-byte startdate field is unreadable, whether or not the EDF+ `Startdate` rescues the date |
 | `STARTTIME_UNPARSEABLE` | `header.startTime.clockSource` is `'none'` |
 | `DATE_FIELDS_DISAGREE` | the header date and the recording-id `Startdate` name different days |
 | `DATE_IMPLAUSIBLE` | the start date is not a real day, or the patient birthdate is after it |

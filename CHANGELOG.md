@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.107
+
+- **Fixed** `DATE_UNPARSEABLE` meaning one thing in `edfcore` and another in `edfcore/validate`.
+  - The parser reports it whenever the 8-byte `dd.mm.yy` field fails its grammar. `validateHeader`
+    reported it on `startTime.dateSource === 'none'` instead — the resolved date rather than the
+    field — so a header with `32.13.05` beside a conformant `Startdate 02-AUG-1951` was called
+    defective by one published entry point and clean by the other. A caller on the recommended
+    two-read, no-I/O path was told the date fields were fine. Same for a blank field and for
+    `00.00.00`, which are the commoner real-world shapes.
+  - `validateHeader` now uses the field-level condition. `32.13.05` is eight corrupt bytes whether
+    or not something else rescues the date; narrowing the parser instead would have left them with
+    no diagnostic anywhere. The message branches, so the rescued case says the date survives rather
+    than claiming the recording has none.
+  - The three doc statements that equated the code with "no calendar date at all"
+    (`api-errors.md`, `api-validate.md`, `validation.md`) now say what it means, and record that
+    `startTime.dateSource` is what distinguishes the two outcomes.
+  - This is the asymmetry 0.3.81 fixed for `DATE_FIELDS_DISAGREE` under the `yy` escape, and the
+    last of the shared codes still holding it. The new guard asserts both halves on one header,
+    against `validateHeader` rather than `validateRecording` — the latter merges
+    `header.diagnostics` into its report, so asserting there would have passed on the parser's copy
+    alone and pinned nothing.
+
 ## 0.3.106
 
 - **Changed** `decodeAnnotations` and `readAnnotations` to throw `EdfChannelNotFoundError` for a

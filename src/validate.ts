@@ -281,17 +281,43 @@ function compareDates(a: EdfCalendarDate, b: EdfCalendarDate): number {
 function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
   const { startTime, patient } = header;
 
-  if (startTime.dateSource === 'none') {
+  /*
+   * The FIELD's condition, not `dateSource === 'none'`.
+   *
+   * `resolveStartTime` reports `DATE_UNPARSEABLE` whenever the 8-byte field fails its grammar,
+   * whether or not the EDF+ recording-identification `Startdate` then supplies a good date.
+   * Gating here on the RESOLVED date meant the two published entry points disagreed about whether
+   * the same header has this defect: `32.13.05` beside a conformant `Startdate 02-AUG-1951` was
+   * called defective by the parser and clean by `validateHeader`, so a caller on the recommended
+   * two-read, no-I/O path was told the date fields were fine. That is the asymmetry 0.3.81 fixed
+   * for `DATE_FIELDS_DISAGREE` under the `yy` escape, and this was the last of the shared codes
+   * still holding it (fixed in 0.3.107).
+   *
+   * Converging on the field-level rule rather than the resolved one: `32.13.05` is eight corrupt
+   * bytes whether or not something else rescues the date, and narrowing the parser instead would
+   * have left them with no diagnostic anywhere in the package.
+   */
+  const dateParse = parseHeaderStartDate(header.raw.startDate);
+  const rescued = startTime.recordingIdDate !== undefined;
+  const startDateUnreadable =
+    dateParse.status === 'unparseable' || (dateParse.status === 'yearEscape' && !rescued);
+
+  if (startDateUnreadable) {
     into.push(
       createDiagnostic({
         code: 'DATE_UNPARSEABLE',
         message:
-          `the startdate field is ${JSON.stringify(trimEdfField(header.raw.startDate))} and the ` +
-          'recording identification carries no readable Startdate, so the recording has no ' +
-          'calendar date at all. EDF specification, header record bytes 168-175. Next: ' +
-          'every elapsed time in the file is unaffected, and only formatStartTimeNaive() has ' +
-          'nothing to return. The clock is a separate field with a separate code: check ' +
-          'startTime.clockSource, and look for STARTTIME_UNPARSEABLE.',
+          `the startdate field is ${JSON.stringify(trimEdfField(header.raw.startDate))} and ` +
+          (rescued
+            ? 'cannot be read as dd.mm.yy. The recording identification carries a readable ' +
+              'Startdate, so startTime.recordingIdDate holds the date and startTime.resolvedDate ' +
+              'is taken from it. EDF specification, header record bytes 168-175. Next: nothing ' +
+              'is lost, but the 8 bytes are wrong on disk and a stricter reader may refuse them.'
+            : 'the recording identification carries no readable Startdate, so the recording has ' +
+              'no calendar date at all. EDF specification, header record bytes 168-175. Next: ' +
+              'every elapsed time in the file is unaffected, and only formatStartTimeNaive() has ' +
+              'nothing to return. The clock is a separate field with a separate code: check ' +
+              'startTime.clockSource, and look for STARTTIME_UNPARSEABLE.'),
         field: 'startDate',
         byteOffset: 168,
         byteLength: 8,

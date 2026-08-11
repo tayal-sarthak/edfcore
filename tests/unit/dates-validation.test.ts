@@ -52,6 +52,35 @@ describe('a start date that names no real day', () => {
     expect(validation).toContain('DATE_UNPARSEABLE');
     expect(validation).not.toContain('DATE_IMPLAUSIBLE');
   });
+
+  it('reports the same code from both halves when the EDF+ Startdate rescues the date', async () => {
+    /*
+     * The parser reports `DATE_UNPARSEABLE` on the FIELD; `validateHeader` used to gate on the
+     * RESOLVED date, so for this header — corrupt 8 bytes beside a conformant `Startdate` — the
+     * two published entry points disagreed about whether it has the defect, and a caller on the
+     * recommended two-read path was told the date fields were clean. That is the 0.3.81 shape one
+     * code later (fixed in 0.3.107).
+     *
+     * Both halves are asserted on ONE header on purpose: asserting either side alone is exactly
+     * what let the two drift apart, and the test above does not reach this case because its file
+     * carries no Startdate.
+     */
+    const bytes = buildEdf({
+      ...BASE,
+      recordingId: 'Startdate 02-AUG-1951 X X X',
+      raw: { startDate: '32.13.05' },
+    });
+    const header = parseHeader(bytes, bytes.byteLength);
+
+    // The premise: the date really was rescued, so this is not the no-date case.
+    expect(header.startTime.dateSource).toBe('recordingIdField');
+    expect(header.startTime.resolvedDate).toEqual({ year: 1951, month: 8, day: 2 });
+
+    // `validateHeader`, NOT `validateRecording`: the report merges `header.diagnostics` in, so
+    // asserting against it would pass on the parser's copy alone and pin nothing here.
+    expect(header.diagnostics.map((one) => one.code)).toContain('DATE_UNPARSEABLE');
+    expect(validateHeader(header).map((one) => one.code)).toContain('DATE_UNPARSEABLE');
+  });
 });
 
 describe('a patient birthdate after the recording', () => {
