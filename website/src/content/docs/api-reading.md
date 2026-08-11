@@ -167,7 +167,7 @@ function readWindow(
 ): Promise<readonly EdfChunk[]>
 ```
 
-Reads a time window as **one chunk per contiguous run of records**. The return type is always an array, including on a continuous file where it always has exactly one element.
+Reads a time window as **one chunk per contiguous run of records**. The return type is always an array, and on a continuous file a window that selects any records is a single element.
 
 An empty array means the window falls entirely inside a gap, entirely outside the recording, or has a non-positive duration. It never means the read failed. Nothing is ever filled in. There's no gap-fill, and no gap-fill option.
 

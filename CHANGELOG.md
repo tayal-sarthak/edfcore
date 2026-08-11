@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.121
+
+- **Fixed** `api-reading.md` saying `readWindow` on a continuous file "always has exactly one
+  element". The paragraph immediately below it says an empty array means the window fell outside
+  the recording or had a non-positive duration — both of which happen on a continuous file. One
+  page answered the same question two ways, two lines apart.
+
 ## 0.3.120
 
 - **Fixed** `DIGITAL_RANGE_EXCEEDS_FORMAT` promising extrapolated physical values on a data signal
