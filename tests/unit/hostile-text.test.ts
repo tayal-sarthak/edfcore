@@ -22,14 +22,16 @@ import { formatHeader } from '../../src/format-header.js';
 import { formatValidationReport } from '../../src/format-report.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf } from '../../src/recording.js';
+import { openEdf, readAnnotations } from '../../src/recording.js';
 import type { EdfAnnotation, EdfDiagnostic, ValidationReport } from '../../src/types.js';
 import { validateRecording } from '../../src/validate.js';
-import { buildEdf } from '../support/writer.js';
+import { patchBytes } from '../support/corrupt.js';
+import { buildEdf, encodeTal } from '../support/writer.js';
 
 const NEWLINE = String.fromCharCode(0x0a);
 const TAB = String.fromCharCode(0x09);
 const DEL = String.fromCharCode(0x7f);
+const ESC = String.fromCharCode(0x1b);
 
 /** `A<LF>B<TAB>C`, which is a legal 16-byte EDF label and a plausible one to receive. */
 const HOSTILE_LABEL = `A${NEWLINE}B${TAB}C`;
@@ -236,5 +238,52 @@ describe('the CLI, whose output is tab-separated on purpose', () => {
     const rows = out.split(NEWLINE).filter((line) => /^\s{2,}\d+\s{2}/.test(line));
     expect(rows).toHaveLength(2);
     expect(out).toContain('Seizure.onset');
+  });
+});
+
+/**
+ * A diagnostic MESSAGE built from file text, which is the case this class kept missing.
+ *
+ * Until 0.3.104 the reasoning that retired the class argued the message was safe because
+ * `formatDiagnostics` indents its continuation lines — true of the left margin, false of the
+ * detail indent, which is the same two spaces. A newline in annotation text therefore produced a
+ * line indistinguishable from a `spec:` or `raw:` detail edfcore emitted, inside a genuine
+ * diagnostic block, and an ESC reached stdout with `color: false`.
+ *
+ * The assertion is the rule rather than the rendering: no message edfcore builds carries a control
+ * character, whatever the file put in the field it quotes.
+ */
+describe('diagnostic messages', () => {
+  const HOSTILE_EVENT = `Sleep stage W${NEWLINE}  spec: EDF+ B.4 (no defect here)${NEWLINE}${ESC}[31m`;
+
+  /** `hostileFile` with record 0's timekeeping TAL rewritten to carry `text`. */
+  function fileWithHostileTimekeeping(text: string): Uint8Array {
+    // 256 bytes of fixed header plus 256 per signal, then record 0's one data signal (4 samples
+    // of 2 bytes) — the annotation region follows it.
+    const regionStart = 256 * (1 + 2) + 4 * 2;
+    const region = new Uint8Array(32 * 2);
+    region.set(encodeTal({ onset: 0, texts: [text] }), 0);
+    return patchBytes(hostileFile(), regionStart, region);
+  }
+
+  function controlsIn(text: string): readonly number[] {
+    return [...text].map((ch) => ch.charCodeAt(0)).filter((code) => code < 0x20 || code === 0x7f);
+  }
+
+  it('escapes annotation text quoted by the timekeeping-TAL defect', async () => {
+    const recording = await openEdf(byteSource(fileWithHostileTimekeeping(HOSTILE_EVENT)));
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: 1 });
+
+    // Not vacuous: the patch has to reach the message that quotes the text.
+    const quoting = diagnostics.filter((one) => one.message.includes('Sleep stage W'));
+    expect(quoting).toHaveLength(1);
+    expect(quoting[0]?.message).toContain('Sleep stage W\\x0a');
+
+    for (const diagnostic of diagnostics) expect(controlsIn(diagnostic.message)).toEqual([]);
+
+    // And the rendered block carries only the detail lines edfcore wrote.
+    const rendered = formatDiagnostics(diagnostics);
+    expect(rendered.split(NEWLINE).filter((line) => line.startsWith('  spec: '))).toHaveLength(1);
+    expect(rendered).not.toContain(ESC);
   });
 });

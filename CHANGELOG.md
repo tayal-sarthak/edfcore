@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.104
+
+- **Fixed** annotation text reaching a diagnostic message unescaped, which let a file forge a
+  detail line inside a genuine `TIMEKEEPING_TAL_NONCONFORMANT` block.
+  - `formatDiagnostics` re-emits a message's continuation lines at the same two-space indent
+    `detail()` uses. Annotation text carrying 0x0a therefore rendered as a line indistinguishable
+    from a `spec:` or `raw:` detail edfcore emitted — visible on stdout through `edfcore validate`.
+    An ESC byte passed through with `color: false`. The TAL grammar reserves only 0x00, 0x14 and
+    0x15, so both bytes reach `annotation.text` unchanged.
+  - This is the class 0.3.2, 0.3.16, 0.3.47 and 0.3.48 were all applied for. The reasoning that
+    retired it argued the message was safe *because* continuation lines are indented — true of the
+    left margin, false of the detail indent, which is the same two spaces. `hostile-text.test.ts`,
+    the guard named for the class, had no case for a message built from file text; it does now, and
+    it asserts the rule (no message carries a control character) rather than one rendering.
+  - `escapeControls` is now exported from `src/tal/grammar.ts`. `previewBytes` escapes for exactly
+    this reason but takes a byte slice; annotation text arrives already decoded.
+
 ## 0.3.103
 
 - **Fixed** a regression 0.3.84 introduced in the `edfcore/node` docblock, which ships in

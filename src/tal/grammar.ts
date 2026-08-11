@@ -209,8 +209,12 @@ const C1_LAST = 0x9f;
  * 0xA0-0xFF stay literal. Those are printable in Latin-1 and é must remain readable — that is the
  * reason the preview decodes as Latin-1 in the first place. The rule below 0xA0 now matches
  * `quote()` in `diagnostics/format.ts`, which escapes anything non-printable.
+ *
+ * Exported because a message can carry decoded text as well as raw bytes: the timekeeping-TAL
+ * defect quotes `annotation.text`, which is decoded rather than sliced and so cannot go through
+ * `previewBytes` (fixed in 0.3.104).
  */
-function escapeControls(text: string): string {
+export function escapeControls(text: string): string {
   let out = '';
   for (let i = 0; i < text.length; i += 1) {
     const code = text.charCodeAt(i);

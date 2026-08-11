@@ -45,6 +45,7 @@ import type {
   RecordRange,
 } from '../types.js';
 import {
+  escapeControls,
   type ParsedTal,
   parseTalRegion,
   previewBytes,
@@ -286,14 +287,23 @@ function timekeepingDefect(tal: ParsedTal): TimekeepingDefect | undefined {
   // and left this order alone; the test written for it builds a timekeeping TAL with text and NO
   // duration, so the combination stayed uncovered. A writer that merges a scored epoch into the
   // timekeeping TAL writes both (fixed in 0.3.19).
+  // ESCAPED, because this is the one message in the module built from decoded file text rather
+  // than from a byte slice. `previewBytes` escapes for exactly this reason; the text arrives
+  // already decoded, so it needs `escapeControls` directly. Unescaped, a text carrying 0x0a
+  // rendered through `formatDiagnostics` as a continuation line at the same two-space indent
+  // `detail()` uses — a `spec:` or `raw:` line indistinguishable from one edfcore emitted — and a
+  // 0x1b reached stdout with `color: false`. The TAL grammar reserves only 0x00, 0x14 and 0x15,
+  // so both bytes reach `run.text` unchanged (fixed in 0.3.104).
   const texts = tal.texts.map((run) => run.text).filter((text) => text.length > 0);
   if (texts.length > 0) {
     const strayDuration =
-      tal.durationRaw === undefined ? '' : ` (and the duration "${tal.durationRaw}")`;
+      tal.durationRaw === undefined
+        ? ''
+        : ` (and the duration "${escapeControls(tal.durationRaw)}")`;
     return {
       reason:
-        `carries the text ${texts.map((text) => `"${text}"`).join(', ')}${strayDuration}, which ` +
-        'is dropped: the timekeeping TAL is not an annotation',
+        `carries the text ${texts.map((text) => `"${escapeControls(text)}"`).join(', ')}` +
+        `${strayDuration}, which is dropped: the timekeeping TAL is not an annotation`,
       destructive: true,
     };
   }
