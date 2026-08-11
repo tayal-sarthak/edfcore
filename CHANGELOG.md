@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.130
+
+- **Fixed** `options.ts` saying `maxMaterializeBytes` is read "in four modules spread across four
+  layers". Six read it, and they are now named — the same undercount 0.3.119 corrected on
+  `large-files.md`, in the docblock whose whole argument is that a guard applied in only some of
+  them is not a guard. It ships in `dist/options.d.ts`.
+
 ## 0.3.129
 
 - **Corrected** 0.3.119's own sentence, which called all three off-path budget sites refusals. Two

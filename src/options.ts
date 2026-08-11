@@ -2,8 +2,9 @@
  * Numeric options, refused rather than silently coerced.
  *
  * Layer 1. Imports one constant and nothing else, so every layer can reach it — which is the
- * point: `maxMaterializeBytes` is read in four modules spread across four layers, and a guard
- * that only one of them applies is not a guard.
+ * point: `maxMaterializeBytes` is read in six modules spread across the stack — `io/read.ts`,
+ * `decode/digital.ts`, `decode/physical.ts`, `record-index.ts`, `envelope.ts` and `validate.ts` —
+ * and a guard that only one of them applies is not a guard.
  *
  * These options are typed `number`, which admits `NaN` and `Infinity`, and both arrive easily:
  * `Number(process.env.EDF_BUDGET)`, `Number(searchParams.get('block'))` and any absent key in a
