@@ -9,10 +9,12 @@
  *
  * - `readRecords` returns exactly ONE chunk and costs exactly one read. The caller named the
  *   records, so a gap inside them cannot surprise anyone.
- * - `readWindow` ALWAYS returns an array, one chunk per contiguous run, including for a
- *   continuous file where the array always has one element. If two shapes existed, consumers
- *   would write against the easy one and misbehave on EDF+D. A window entirely inside a gap
- *   returns `[]`, and nothing is ever filled in: there is no gap-fill and no gap-fill option.
+ * - `readWindow` ALWAYS returns an array, one chunk per contiguous run, and on a continuous file a
+ *   window that selects any records is a single element. If two shapes existed, consumers would
+ *   write against the easy one and misbehave on EDF+D. A window entirely inside a gap, past the
+ *   end, or of non-positive duration returns `[]` — the last two on a continuous file too, which
+ *   the sentence above said could not happen. Nothing is ever filled in: there is no gap-fill and
+ *   no gap-fill option.
  * - Chunks stay RECORD-ALIGNED and are therefore usually wider than the window asked for. The
  *   exact per-signal narrowing is `trimToWindow`, which is pure and testable without I/O.
  *

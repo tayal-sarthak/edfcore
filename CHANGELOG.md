@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.128
+
+- **Fixed** the same `readWindow` claim 0.3.121 corrected on the docs page, in `recording.ts`'s own
+  module docblock — "a continuous file where the array always has one element", three lines above
+  the sentence saying an empty array is returned. It ships in `dist/recording.d.ts`.
+
 ## 0.3.127
 
 - **Changed** the `signals` line in `edfcore --help` to say the output is tab-separated, which is
