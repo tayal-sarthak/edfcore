@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.119
+
+- **Fixed** `large-files.md` stating "there are three allocation points" as a closed enumeration.
+  Six call sites refuse against `maxMaterializeBytes`. The table lists the three on the read path,
+  which is what its bytes-per-sample column is for; the other three — the index scan block, the
+  envelope accumulator and `validateRecording`'s scratch — are not sample-proportional and are now
+  named instead of implied not to exist.
+
 ## 0.3.118
 
 - **Corrected** the comment on `sampleAt`'s segment bound, which justified the check with a

@@ -168,13 +168,18 @@ and eight in the `Float64Array` of physical values: a **4x expansion** to physic
 eight-hour file whole needs 1.6 GiB of `Float64Array` for 422 MiB of disk. For BDF the ratio is
 8/3, since samples are three bytes on disk.
 
-There are three allocation points, and each is checked independently against the same budget:
+Three allocation points sit on the read path, and each is checked independently against the same
+budget:
 
 | call | allocates | bytes per sample |
 |---|---|---|
 | `readRecordBytes` | the raw record buffer | 2 (EDF) or 3 (BDF) |
 | `decodeDigital` | `Int32Array` of digital values | 4 |
 | `toPhysical` | `Float64Array` of physical values | 8 |
+
+Three more refuse against the same budget off that path, and none of them is proportional to the
+samples you asked for: the record-index scan block, `readEnvelope`'s bucket accumulator, and
+`validateRecording`'s sample-scan scratch.
 
 Passing an `out` array to `decodeDigital` or `toPhysical` skips the allocation, and with it the
 budget check for that stage. That's how to run a viewer that reads continuously. `readRecordBytes`
