@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.132
+
+- **Removed** the hard-coded `decodeAnnotations():` prefix from the three caller-error messages in
+  `tal/annotations.ts`. `readAnnotations` reaches all three, so a caller who never wrote
+  `decodeAnnotations` was told about it — the `annotations.md` example demonstrated exactly that,
+  calling `readAnnotations` and printing the other name. This is the rule `envelope.ts:113` states
+  and 0.3.35 applied to the envelope helpers, which are shared the same way.
+
 ## 0.3.131
 
 - **Added** `tests/types/` to the Layout table in `tests/README.md`. It holds the four `.test-d.ts`

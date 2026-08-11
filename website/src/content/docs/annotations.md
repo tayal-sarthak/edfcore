@@ -311,7 +311,7 @@ samples as text is a caller's mistake rather than a file's:
 
 ```ts
 await readAnnotations(recording, records, { signalIndices: [0] });
-// RangeError: decodeAnnotations(): signal 0 is not an annotation signal. This file's
+// RangeError: signal 0 is not an annotation signal. This file's
 // annotation signals are [1]. Next: pass one of those, or omit signalIndices to read them all.
 ```
 

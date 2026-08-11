@@ -148,7 +148,7 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
     records.count >= 0;
   if (!validIndices || records.start + records.count > header.recordCount) {
     throw new EdfRangeError(
-      `decodeAnnotations(): records ${describeRange(records)} is not inside the ` +
+      `records ${describeRange(records)} is not inside the ` +
         `${header.recordCount} records this file has. ` +
         `Next: clamp the range to [0, ${header.recordCount}).`,
       { requested: records, available },
@@ -158,7 +158,7 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
   const expected = records.count * header.recordByteLength;
   if (recordBytes.length !== expected) {
     throw new EdfRangeError(
-      `decodeAnnotations(): recordBytes is ${recordBytes.length} bytes, but records ` +
+      `recordBytes is ${recordBytes.length} bytes, but records ` +
         `${describeRange(records)} of this file is exactly ${expected} bytes ` +
         `(${records.count} x ${header.recordByteLength}). ` +
         'Next: pass the buffer readRecordBytes() returned for this exact range, unsliced.',
@@ -203,7 +203,7 @@ function resolveSignals(
     }
     if (signal.kind !== 'annotations') {
       throw new RangeError(
-        `decodeAnnotations(): signal ${index} is not an annotation signal. This file's ` +
+        `signal ${index} is not an annotation signal. This file's ` +
           `annotation signals are [${header.annotationSignalIndices.join(', ')}]. ` +
           'Next: pass one of those, or omit signalIndices to read them all.',
       );
