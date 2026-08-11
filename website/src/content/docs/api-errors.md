@@ -121,9 +121,11 @@ byteOffset?, signalIndex?, recordIndex?, cause? }`. You need it only if you cons
 | `label` | `string` | that signal's trimmed label |
 
 Thrown by `toPhysical` for a signal whose `scale` is `undefined`. The code is re-derived from the
-signal by applying the same four tests the header applied, in the same order. It therefore names
-the same cause the header recorded. A signal that matches none of them yet still has no scale
-reports `SCALE_UNAVAILABLE` rather than the nearest-looking code.
+signal by applying the same four tests the header applied, in the same order. For those four it
+names the same cause the header recorded. A signal that matches none of them yet still has no scale
+reports `SCALE_UNAVAILABLE` rather than the nearest-looking code — including `buildScale`'s fifth
+refusal, a derived gain that is not a usable float64, which the header records as
+`DEGENERATE_PHYSICAL_RANGE` and which cannot be re-derived from an `EdfSignal` alone.
 
 ### EdfRangeError
 

@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.117
+
+- **Fixed** `api-errors.md` claiming `EdfScalingError.code` always names the cause the header
+  recorded. It does for the four re-derivable tests. `buildScale` has a fifth refusal — a derived
+  gain that is not a usable float64 — which the header records as `DEGENERATE_PHYSICAL_RANGE` and
+  which `describeScalingFailure` cannot re-derive from an `EdfSignal`, so `toPhysical` reports
+  `SCALE_UNAVAILABLE` and a lookup by code finds no matching header entry.
+
 ## 0.3.116
 
 - **Fixed** two reference tables calling `EdfSignal.physicalDimension` "exactly as written". It is
