@@ -8,18 +8,29 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { toPhysical } from '../../src/decode/physical.js';
 import {
   envelopeOfSamples,
   readEnvelope,
   readEnvelopeAtResolution,
   toPhysicalEnvelope,
 } from '../../src/envelope.js';
-import { EdfChannelNotFoundError, isEdfError } from '../../src/errors.js';
+import { EdfChannelNotFoundError, type EdfScalingError, isEdfError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import type { EdfChunkSignal, EdfRecording } from '../../src/types.js';
 import { buildEdf, minimalEdfPlus } from '../support/writer.js';
+
+/** The thrown error, or `undefined` when the call unexpectedly succeeded. */
+function catchError(call: () => unknown): EdfScalingError | undefined {
+  try {
+    call();
+    return undefined;
+  } catch (error) {
+    return error as EdfScalingError;
+  }
+}
 
 const RECORDS = 40;
 const SAMPLES_PER_RECORD = 25;
@@ -952,5 +963,57 @@ describe('readEnvelopeAtResolution delivers the resolution it was asked for', ()
       secondsPerBucket: 30,
     });
     expect(chunk?.bucketCount).toBe(2);
+  });
+});
+
+describe('a signal with no scale is refused the same way by both converters', () => {
+  it('names the cause the header recorded, not SCALE_UNAVAILABLE', async () => {
+    /*
+     * `toPhysicalEnvelope` hard-coded `{ code: 'SCALE_UNAVAILABLE' }`. That code is defined —
+     * in the deferred-fatal table and in `describeScalingFailure` itself — as the case where none
+     * of the other conditions applies, so on a signal whose digital range is degenerate it was
+     * positively false, and `toPhysical` and `toPhysicalEnvelope` answered the same question
+     * about the same signal with different codes. The envelope message also carried no raw
+     * fields and no spec reference (fixed in 0.3.111).
+     */
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 3,
+      recordDurationSeconds: 1,
+      signals: [
+        { label: 'Fp1', samplesPerRecord: 4 },
+        { label: 'Flat', samplesPerRecord: 4, digitalMinimum: 5, digitalMaximum: 5 },
+      ],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const flat = recording.header.signals[1];
+    if (flat === undefined) throw new Error('no signal');
+
+    // The premise: the header really did record a specific cause for this signal.
+    expect(flat.scale).toBeUndefined();
+    expect(
+      recording.header.diagnostics.filter((one) => one.signalIndex === 1).map((one) => one.code),
+    ).toContain('DEGENERATE_DIGITAL_RANGE');
+
+    const chunks = await readEnvelope(recording, {
+      startSeconds: 0,
+      durationSeconds: 3,
+      signalIndices: [1],
+      buckets: 3,
+    });
+    const envelope = chunks[0]?.signals[0];
+    if (envelope === undefined) throw new Error('no envelope');
+
+    const fromSamples = catchError(() => toPhysical(flat, Int32Array.from([1, 2, 3])));
+    const fromEnvelope = catchError(() => toPhysicalEnvelope(flat, envelope));
+
+    expect(fromEnvelope?.code).toBe('DEGENERATE_DIGITAL_RANGE');
+    expect(fromEnvelope?.code).toBe(fromSamples?.code);
+    // The evidence the envelope message used to omit.
+    expect(fromEnvelope?.message).toContain('Raw fields:');
+    expect(fromEnvelope?.message).toContain('Digital maximum must be larger');
+    // And its own next step, which is the part that genuinely differs.
+    expect(fromEnvelope?.message).toContain('plot the digital envelope');
   });
 });

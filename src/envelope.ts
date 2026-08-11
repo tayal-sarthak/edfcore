@@ -22,8 +22,9 @@
  */
 
 import { decodeDigitalCounted } from './decode/digital.js';
+import { scalingError } from './decode/physical.js';
 import { appendChunkDiagnostics } from './diagnostics/collector.js';
-import { EdfBudgetError, EdfChannelNotFoundError, EdfScalingError } from './errors.js';
+import { EdfBudgetError, EdfChannelNotFoundError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
@@ -452,12 +453,15 @@ export function toPhysicalEnvelope(
 ): EdfPhysicalEnvelope {
   const scale = signal.scale;
   if (scale === undefined) {
-    throw new EdfScalingError(
-      `signal ${signal.index} (${JSON.stringify(signal.label)}) has no usable scale, so its ` +
-        'envelope has no physical units. Next: check signal.scale before converting, or plot ' +
-        'the digital envelope as it is.',
-      { code: 'SCALE_UNAVAILABLE', signalIndex: signal.index, label: signal.label },
-    );
+    // `scalingError`, not a hard-coded SCALE_UNAVAILABLE. That code is defined as "none of the
+    // other conditions applies", so on a signal the header diagnosed DEGENERATE_DIGITAL_RANGE it
+    // was positively false, and `toPhysical` and this function answered the same question about
+    // the same signal with different codes (fixed in 0.3.111).
+    throw scalingError(signal, {
+      consequence: 'its envelope has no physical units',
+      nextStep:
+        'Next: check signal.scale before converting, or plot the digital envelope as it is.',
+    });
   }
 
   /*

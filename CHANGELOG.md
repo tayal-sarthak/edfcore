@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.111
+
+- **Changed** `toPhysicalEnvelope` to report the cause of a missing scale rather than always
+  `SCALE_UNAVAILABLE`.
+  - It hard-coded that code. `SCALE_UNAVAILABLE` is defined — in the deferred-fatal code table and
+    in `describeScalingFailure` itself — as the case where none of the specific conditions applies,
+    so for a signal declaring `digitalMinimum == digitalMaximum` it was positively false: the
+    header had already recorded `DEGENERATE_DIGITAL_RANGE` for that signal, and `toPhysical` named
+    it. Two public entry points answered the same question about the same signal with two codes.
+  - `scalingError` is now shared. The re-derivation order stays owned by `header/scale.ts` and its
+    follower in `decode/physical.ts`, so the envelope path cannot drift from it again, and the
+    envelope error gains the raw fields and the spec reference it had been dropping. The
+    consequence clause and the next step — plot the digital envelope, rather than call
+    `decodeDigital` — are what genuinely differ, and stay per-caller.
+
 ## 0.3.110
 
 - **Fixed** `formatHeader` printing a calendar year without the padding every other renderer in the

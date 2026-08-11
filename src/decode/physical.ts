@@ -132,16 +132,35 @@ function describeScalingFailure(signal: EdfSignal): ScalingFailure {
   };
 }
 
-function scalingError(signal: EdfSignal): EdfScalingError {
+/**
+ * The one place a "this signal has no scale" refusal is built.
+ *
+ * Exported because `toPhysicalEnvelope` refuses the same signals for the same reasons. It used to
+ * hard-code `{ code: 'SCALE_UNAVAILABLE' }`, so the two published entry points answered "why has
+ * this signal no scale?" with different codes for one signal — and `SCALE_UNAVAILABLE` is defined
+ * as the case where none of the other conditions applies, which made it positively false for a
+ * signal the header had already diagnosed `DEGENERATE_DIGITAL_RANGE`. The envelope message also
+ * carried no raw fields and no spec reference (fixed in 0.3.111).
+ *
+ * `consequence` and `nextStep` are what genuinely differ between the two: a sample read tells you
+ * `decodeDigital()` still works, an envelope tells you to plot the digital one. The cause, the
+ * code, the re-derivation ORDER and the evidence stay here.
+ */
+export function scalingError(
+  signal: EdfSignal,
+  tail?: { readonly consequence?: string; readonly nextStep?: string },
+): EdfScalingError {
   const failure = describeScalingFailure(signal);
+  const consequence = tail?.consequence ?? 'physical units are undefined for it';
   const message =
     `[${failure.code}] signal ${signal.index} "${signal.label}" ${failure.reason}, so ` +
-    'physical units are undefined for it. Raw fields: digital minimum ' +
+    `${consequence}. Raw fields: digital minimum ` +
     `"${signal.raw.digitalMinimum}", digital maximum "${signal.raw.digitalMaximum}", ` +
     `physical minimum "${signal.raw.physicalMinimum}", physical maximum ` +
     `"${signal.raw.physicalMaximum}", physical dimension "${signal.raw.physicalDimension}". ` +
     (failure.specReference === undefined ? '' : `${failure.specReference}. `) +
-    (failure.nextStep ??
+    (tail?.nextStep ??
+      failure.nextStep ??
       'Next: decodeDigital() still works on this signal; edfcore will not invent a gain.');
   return new EdfScalingError(message, {
     code: failure.code,
