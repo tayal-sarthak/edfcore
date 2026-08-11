@@ -128,7 +128,7 @@ signal.raw.digitalMinimum; // '-2048   '
 | `label` | `string` | trimmed; `raw.label` keeps the padding |
 | `transducerType` | `string` | trimmed free text, e.g. `'AgAgCl electrode'` |
 | `prefiltering` | `string` | trimmed free text, e.g. `'HP:0.1Hz LP:75Hz'`; never parsed |
-| `physicalDimension` | `string` | the unit exactly as written |
+| `physicalDimension` | `string` | the unit, trimmed; `raw.physicalDimension` keeps the padding |
 | `unit` | `string` | `physicalDimension` with every spelling of micro collapsed to `u`, for comparison only |
 | `physicalMinimum` | `number` | as declared |
 | `physicalMaximum` | `number` | as declared; **may be below the minimum** |

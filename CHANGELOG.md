@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.116
+
+- **Fixed** two reference tables calling `EdfSignal.physicalDimension` "exactly as written". It is
+  `trimEdfField(raw.physicalDimension)`, the same treatment `label`, `transducerType` and
+  `prefiltering` get — and those neighbouring rows already say "trimmed", so the table singled this
+  field out as the one that is not.
+
 ## 0.3.115
 
 - **Fixed** the two TAL-level diagnostics whose `raw` was not the bytes their `byteOffset` and

@@ -102,7 +102,7 @@ Validation order is pinned and tested. Under `strict: true` the first would-be d
 | `label` | `string` | Trimmed. `raw.label` keeps the padding. |
 | `transducerType` | `string` | Trimmed. |
 | `prefiltering` | `string` | Trimmed. |
-| `physicalDimension` | `string` | Exactly as written. |
+| `physicalDimension` | `string` | Trimmed. `raw.physicalDimension` keeps the padding. |
 | `unit` | `string` | Normalised for comparison only. The several encodings of micro all become `u`. |
 | `physicalMinimum` | `number` | As declared. |
 | `physicalMaximum` | `number` | **May be less than the minimum.** That is a negative amplifier gain, it is legal, and edfcore never "fixes" it. |
