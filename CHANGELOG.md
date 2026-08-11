@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.0
+
+The public API is unchanged: nothing was added, removed or renamed, and no arithmetic moved. This
+is a series marker, and it exists because the 0.3.104-0.3.136 patches carried observable changes
+that a consumer pinning `~0.3.x` would rather have been told about in a version number:
+
+- **Error classes.** `decodeAnnotations` and `readAnnotations` now throw `EdfChannelNotFoundError`,
+  not a plain `RangeError`, for a signal index the file does not have (0.3.106). Code branching on
+  `isEdfError` sees a different answer for that input.
+- **Error codes.** `toPhysicalEnvelope` reports the cause the header recorded rather than always
+  `SCALE_UNAVAILABLE` (0.3.111).
+- **Diagnostics.** A discarded TAL no longer also reports that it was kept (0.3.105), and
+  `validateHeader` now reports `DATE_UNPARSEABLE` for an unreadable startdate field that the EDF+
+  `Startdate` rescued — a case it previously called clean (0.3.107).
+- **Message text.** Annotation text quoted in a diagnostic is escaped (0.3.104), the TAL
+  diagnostics carry the bytes their offsets name (0.3.115), and four refusals no longer prefix
+  themselves with a function the caller did not call (0.3.132-0.3.136).
+
+Nothing here changes which samples you read. If you assert on message strings, read those four
+entries; otherwise this is a drop-in replacement for 0.3.136.
+
 ## 0.3.136
 
 - **Removed** the last hard-coded `readRecordBytes():` prefix, and pinned the rule. Eight modules
