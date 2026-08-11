@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.120
+
+- **Fixed** `DIGITAL_RANGE_EXCEEDS_FORMAT` promising extrapolated physical values on a data signal
+  whose scale is then refused. The check runs before `buildScale` and picked its consequence on
+  `kind === 'annotations'` alone, so a range that is also degenerate or inverted — a writer
+  stamping BDF bounds into an EDF header — was told to expect a conversion `toPhysical` throws for.
+  0.3.72 split out the annotations case and left this one unconditional.
+
 ## 0.3.119
 
 - **Fixed** `large-files.md` stating "there are three allocation points" as a closed enumeration.

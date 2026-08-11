@@ -267,8 +267,17 @@ function checkDigitalRangeFitsFormat(
         ? 'nothing is scaled from these fields. An annotations signal carries TAL text rather ' +
           'than a measurement, so no scale is built for it and toPhysical() refuses it. The ' +
           'range is worth correcting because it says the writer confused the two sample widths.'
-        : 'the declared range is used for scaling exactly as written — edfcore never clamps — ' +
-          'so expect physical values that extrapolate beyond the declared physical range.'),
+        : // 0.3.72 split the annotations case out and left this one unconditional, but it runs
+          // BEFORE `buildScale` and never asks whether a scale will exist. A range that is also
+          // degenerate or inverted — the two commonest ways a writer stamps BDF bounds into an
+          // EDF header — gets no scale at all, so promising extrapolated values described a
+          // conversion that cannot happen here either (fixed in 0.3.120).
+          digitalMinimum >= digitalMaximum
+          ? 'no scale is built from this range, because digitalMinimum is not below ' +
+            'digitalMaximum, and toPhysical() refuses the signal. The range is still worth ' +
+            'correcting because it says the writer confused the two sample widths.'
+          : 'the declared range is used for scaling exactly as written — edfcore never clamps — ' +
+            'so expect physical values that extrapolate beyond the declared physical range.'),
     field: 'digitalMinimum',
     byteOffset,
     byteLength: SIGNAL_FIELD_WIDTHS.digitalMinimum,
