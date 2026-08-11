@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.131
+
+- **Added** `tests/types/` to the Layout table in `tests/README.md`. It holds the four `.test-d.ts`
+  type-level checks — including the one pinning what each subpath can name on its own — and was the
+  only tracked test directory the table left out.
+
 ## 0.3.130
 
 - **Fixed** `options.ts` saying `maxMaterializeBytes` is read "in four modules spread across four

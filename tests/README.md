@@ -24,6 +24,7 @@ together; keeping them independent is what makes the round-trip and property tes
 | `io/` | The read *pattern* — how many requests, which ranges, how many bytes. This is where "does not load the whole file" is actually proven |
 | `property/` | Writer→reader round-trip and seeded byte-flip fuzzing against the safety invariant |
 | `integration/` | End-to-end journeys through the public barrel |
+| `types/` | `.test-d.ts` type-level checks: what each subpath can name on its own, and that the documented examples typecheck |
 | `corpus/` | Real EDF/BDF files from teuniz.net and PhysioNet, skipped unless fetched, plus the reference-parity harness — see below |
 | `support/` | The writer, the corruptor, and a `ByteSource` spy. Never exported from the package |
 
