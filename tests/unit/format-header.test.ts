@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { formatHeader } from '../../src/format-header.js';
-import { formatStartTimeNaive } from '../../src/header/dates.js';
+import { formatCalendarDate, formatStartTimeNaive } from '../../src/header/dates.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
@@ -141,6 +141,40 @@ describe('the start line never invents a clock', () => {
     expect(startLine(withStartTime('23.59.60'))).toContain('unknown');
     expect(withStartTime('23.59.60').startTime.clockSource).toBe('none');
     expect(withStartTime('23.59.59').startTime.clockSource).toBe('headerField');
+  });
+
+  it('spells a date the way every other output in the package spells it', () => {
+    /*
+     * `formatHeader` had its own `formatDate`, which padded the month and the day but not the
+     * year. Any year below 1000 therefore came out one way here and another way in
+     * `formatCalendarDate`, `formatStartTimeNaive` and every diagnostic — and that year is
+     * reachable from a conforming-length field, since `parseSubfieldDate` requires the EDF+
+     * `dd-MMM-yyyy` Startdate year to be four CHARACTERS, not to be >= 1000.
+     *
+     * One `edfcore header` run printed `985-04-24` on the start line and `0985-04-24` in a
+     * DATE_FIELDS_DISAGREE diagnostic eight lines below it (fixed in 0.3.110).
+     */
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
+      startDate: '24.04.85',
+      recordingId: 'Startdate 24-APR-0985 X X X',
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    });
+    const header = parseHeader(bytes, bytes.byteLength);
+
+    // The premise: a three-digit year really did resolve, so this is not a vacuous case.
+    const resolved = header.startTime.resolvedDate;
+    expect(resolved).toEqual({ year: 985, month: 4, day: 24 });
+    if (resolved === undefined) throw new Error('no resolved date');
+
+    const rendered = formatCalendarDate(resolved);
+    expect(rendered).toBe('0985-04-24');
+    expect(startLine(header)).toContain(rendered);
+    // And the header's own output agrees with the diagnostics printed under it.
+    expect(formatStartTimeNaive(header.startTime)).toContain(rendered);
   });
 
   it('gives formatStartTimeNaive nothing to return when the clock was refused', () => {

@@ -15,14 +15,22 @@
 import { trimEdfField } from './bytes/latin1.js';
 import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
+import { formatCalendarDate } from './header/dates.js';
 import { printable } from './text/printable.js';
 import type { EdfCalendarDate, EdfHeader, FormatHeaderOptions } from './types.js';
 
+/**
+ * `formatCalendarDate`, not a second renderer for the same type.
+ *
+ * The private copy this replaced padded the month and the day but not the year, so any year below
+ * 1000 came out one way here and another way everywhere else. That is reachable from a
+ * conforming-length field: `parseSubfieldDate` requires the EDF+ `dd-MMM-yyyy` Startdate year to be
+ * four characters, not to be >= 1000, so `Startdate 24-APR-0985` resolves to year 985 and one
+ * `edfcore header` run printed `985-04-24` on the start line and `0985-04-24` in a
+ * DATE_FIELDS_DISAGREE diagnostic eight lines below it (fixed in 0.3.110).
+ */
 function formatDate(date: EdfCalendarDate | undefined): string {
-  if (date === undefined) return 'unknown';
-  const month = String(date.month).padStart(2, '0');
-  const day = String(date.day).padStart(2, '0');
-  return `${date.year}-${month}-${day}`;
+  return date === undefined ? 'unknown' : formatCalendarDate(date);
 }
 
 /**

@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.110
+
+- **Fixed** `formatHeader` printing a calendar year without the padding every other renderer in the
+  package applies, so one `edfcore header` run spelled the same date two ways.
+  - `format-header.ts` carried its own `formatDate`, which padded the month and the day but not the
+    year. `formatCalendarDate` in `header/dates.ts` — used by `formatStartTimeNaive` and by every
+    diagnostic — pads all three. A year below 1000 is reachable from a conforming-length field:
+    `parseSubfieldDate` requires the EDF+ `dd-MMM-yyyy` Startdate year to be four CHARACTERS, not
+    to be at least 1000, so `Startdate 24-APR-0985` resolves to year 985. The header line then read
+    `985-04-24` while a `DATE_FIELDS_DISAGREE` diagnostic eight lines below it read `0985-04-24`.
+  - `formatHeader` now calls `formatCalendarDate`, keeping its own `undefined` → `unknown` branch.
+    One renderer for the type.
+
 ## 0.3.109
 
 - **Fixed** three more places saying one file in the package holds every `node:` import.
