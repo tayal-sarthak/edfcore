@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.115
+
+- **Fixed** the two TAL-level diagnostics whose `raw` was not the bytes their `byteOffset` and
+  `byteLength` name.
+  - `TIMEKEEPING_TAL_NONCONFORMANT` and `NEGATIVE_ANNOTATION_ONSET` set the span to the whole TAL
+    but `raw` to the onset alone, and set no `rawBytes`. So `raw` was two characters for a
+    twelve-byte span — against the documented meaning of the field, "those bytes as text, exactly
+    as written including padding" — and `formatDiagnostics` printed no `bytes:` line, on the one
+    diagnostic whose Next: step tells the reader to read the bytes at that offset.
+  - Both now carry the named span, bounded by the same evidence cap `reportIssue` uses. That
+    function in the same file has done this correctly since 0.3.68; these two were never brought
+    in line. The onset is still in each message's own `onset "..."` clause, so nothing is lost.
+
 ## 0.3.114
 
 - **Fixed** `api-errors.md`'s `EdfFormatError` example printing a code strict can never throw.

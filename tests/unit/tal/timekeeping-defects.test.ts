@@ -12,6 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { formatDiagnostics } from '../../../src/diagnostics/format.js';
 import { byteSource } from '../../../src/io/bytes.js';
 import { openEdf, readAnnotations } from '../../../src/recording.js';
 import { buildEdf } from '../../support/writer.js';
@@ -175,5 +176,41 @@ describe('a timekeeping TAL that carries a duration AS WELL AS text', () => {
     const { diagnostics } = await readAnnotations(recording, { start: 0, count: RECORDS });
     const dropped = diagnostics.filter((d) => d.message.includes('dropped'));
     expect(dropped.map((d) => d.recordIndex)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+});
+
+describe('the evidence the diagnostic names is the evidence it carries', () => {
+  it('publishes the bytes at [byteOffset, byteOffset + byteLength)', async () => {
+    /*
+     * `byteOffset`/`byteLength` name the whole TAL, but `raw` held `tal.onsetRaw` alone and no
+     * `rawBytes` was set — so `raw` was two characters for a twelve-byte span, contradicting the
+     * documented meaning of the field ("those bytes as text, exactly as written including
+     * padding"), and `formatDiagnostics` printed no `bytes:` line on the one diagnostic whose
+     * Next: step sends the reader to the bytes. `reportIssue` has done this correctly since
+     * 0.3.68 (fixed in 0.3.115).
+     */
+    const recording = await sloppyWriter();
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: RECORDS });
+    const dropped = diagnostics.filter(
+      (one) => one.code === 'TIMEKEEPING_TAL_NONCONFORMANT' && one.message.includes('dropped'),
+    );
+    expect(dropped).toHaveLength(2);
+
+    const file = await recording.source.read(0, recording.source.byteLength);
+    for (const diagnostic of dropped) {
+      const { byteOffset, byteLength } = diagnostic;
+      expect(byteOffset).toBeDefined();
+      expect(byteLength).toBeDefined();
+      if (byteOffset === undefined || byteLength === undefined) throw new Error('no span');
+
+      const named = file.subarray(byteOffset, byteOffset + byteLength);
+      // The bytes it carries ARE the bytes it names — not a prefix of them, not the onset alone.
+      expect(diagnostic.rawBytes).toBeDefined();
+      expect(Array.from(diagnostic.rawBytes ?? [])).toEqual(Array.from(named));
+      expect(diagnostic.raw?.length).toBe(byteLength);
+    }
+
+    // And the rendered block carries the `bytes:` line the Next: step points at.
+    expect(formatDiagnostics(dropped)).toMatch(/\n {2}bytes: /);
   });
 });

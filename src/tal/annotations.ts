@@ -49,6 +49,7 @@ import {
   type ParsedTal,
   parseTalRegion,
   previewBytes,
+  rawBytesText,
   splitChannelLabel,
   TAL_PREVIEW_MAX_BYTES,
   type TalIssue,
@@ -369,7 +370,20 @@ function reportTimekeepingDefect(
     field: 'timekeeping TAL',
     byteOffset: context.fileOffset + tal.byteOffsetInRegion,
     byteLength: tal.byteLength,
-    raw: tal.onsetRaw,
+    // The bytes the offset above NAMES, not the onset alone. `EdfDiagnostic.raw` is documented as
+    // "those bytes as text, exactly as written including padding", so a `raw` of `"+0"` beside a
+    // 12-byte span contradicted the field's own meaning — and with no `rawBytes`,
+    // `formatDiagnostics` printed no `bytes:` line at all, on the one diagnostic whose Next: step
+    // sends the reader to the bytes. `reportIssue` above has done this correctly since 0.3.68; the
+    // two TAL-level reporters were never brought in line (fixed in 0.3.115).
+    //
+    // The onset is still in the message's own `onset "..."` clause, so nothing is lost.
+    rawBytes: sliceBytes(
+      context.bytes,
+      context.offset + tal.byteOffsetInRegion,
+      Math.min(tal.byteLength, RAW_EVIDENCE_MAX_BYTES),
+    ),
+    raw: rawBytesText(context.bytes, context.offset + tal.byteOffsetInRegion, tal.byteLength),
     signalIndex: context.signal.index,
     recordIndex: context.recordIndex,
     specReference: TIMEKEEPING_SPEC,
@@ -390,7 +404,13 @@ function reportNegativeOnset(sink: DiagnosticSink, context: RegionContext, tal: 
     field: 'annotation onset',
     byteOffset: context.fileOffset + tal.byteOffsetInRegion,
     byteLength: tal.byteLength,
-    raw: tal.onsetRaw,
+    // Same rule as `reportTimekeepingDefect` above: `raw` is the bytes the span names.
+    rawBytes: sliceBytes(
+      context.bytes,
+      context.offset + tal.byteOffsetInRegion,
+      Math.min(tal.byteLength, RAW_EVIDENCE_MAX_BYTES),
+    ),
+    raw: rawBytesText(context.bytes, context.offset + tal.byteOffsetInRegion, tal.byteLength),
     signalIndex: context.signal.index,
     recordIndex: context.recordIndex,
     specReference: ONSET_SPEC,
