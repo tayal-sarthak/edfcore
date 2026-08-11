@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.123
+
+- **Updated** the README's test count from "1,200+" to "1,900+". The suite runs 1,904. The old
+  number was still true and 58% low, which is the same way a claim goes stale that the version
+  guards exist for.
+
 ## 0.3.122
 
 - **Fixed** the "emitted by" column for `SCALE_UNAVAILABLE`, which named only `toPhysical`.
