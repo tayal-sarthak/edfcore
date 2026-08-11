@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.126
+
+- **Removed** the stray blank line inside the `Options` block of `edfcore --help`, which split
+  `--version` off from the other four and read as the start of a second section.
+
 ## 0.3.125
 
 - **Fixed** the CLI flag list on `api-helpers.md`, which named no scopes at all — so a reader
