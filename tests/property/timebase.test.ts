@@ -560,6 +560,39 @@ describe('the recording-aware sample functions are on the recording axis', () =>
     expect(sampleAt(edf, 0, trueOnsetSeconds(RECORDS - 1) + 0.5)).toBeDefined();
   });
 
+  it('bounds it on the CONTIGUOUS branch too, at the first instant past the end', async () => {
+    /*
+     * The test above builds its recording with `scanned()`, so `sampleAt` returns from the segment
+     * branch and never reaches the contiguous bound. Every other `sampleAt` assertion in the suite
+     * is either segmented or asks for a time so far past the end (100 s on a 6 s file) that any
+     * bound rejects it — so the one value the contiguous branch decides, the first instant past
+     * the last record, was asked for nowhere. Relaxing that branch to `recordIndex >
+     * recordCount`, or deleting the `recordIndex < 0` half, left all 1901 tests green while
+     * `sampleAt` named a record the file does not have — which is exactly the
+     * `gridSampleIndexAt` behaviour the docblock says it exists not to have (fixed in 0.3.112).
+     */
+    const edf = await openEdf(
+      byteSource(
+        buildEdf({
+          recordCount: RECORDS,
+          recordDurationSeconds: 1,
+          signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD }],
+        }),
+      ),
+    );
+
+    // The premise: this is the branch under test, not the segmented one.
+    expect(edf.index.segments).toBeUndefined();
+    expect(edf.header.recordCount).toBe(RECORDS);
+
+    // The last sample the file has, and then the very next instant.
+    expect(sampleAt(edf, 0, RECORDS - 0.5)?.recordIndex).toBe(RECORDS - 1);
+    expect(sampleAt(edf, 0, RECORDS)).toBeUndefined();
+    // The lower bound, equally unpinned before now.
+    expect(sampleAt(edf, 0, 0)?.sampleIndex).toBe(0);
+    expect(sampleAt(edf, 0, -0.5)).toBeUndefined();
+  });
+
   it('round-trips: the sample at a sample start is that sample', async () => {
     // The invariant tying the pair together, across the gap.
     const edf = await scanned();

@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.112
+
+- **Added** the assertion that pins `sampleAt`'s file bound on the contiguous branch. No behaviour
+  change; the behaviour was already right and nothing held it there.
+  - `it('bounds its answer by the file, before and after')` is the only test that names the rule,
+    and it builds its recording with `buildRecordIndex`, so `sampleAt` returns from the SEGMENT
+    branch and never reaches the contiguous bound. Every other `sampleAt` assertion in the suite is
+    either segmented or asks for a time so far past the end (100 s on a 6 s file) that any bound
+    rejects it — so the one value that branch decides, the first instant past the last record, was
+    asked for nowhere.
+  - Both mutants were silent: relaxing the upper bound to `recordIndex > recordCount` and deleting
+    the `recordIndex < 0` half each left all 1901 tests green, with `sampleAt` naming a record the
+    file does not have — the exact `gridSampleIndexAt` behaviour its docblock says it exists not to
+    have. Both now fail.
+
 ## 0.3.111
 
 - **Changed** `toPhysicalEnvelope` to report the cause of a missing scale rather than always

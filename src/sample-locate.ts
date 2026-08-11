@@ -178,6 +178,9 @@ export function sampleAt(
   }
 
   // Contiguous, probed: the nominal grid is the true one, and the answer is bounded by the file.
+  // Both halves of that bound are what separates this from `gridSampleIndexAt`, which happily
+  // names a record the file does not have. Neither was pinned until 0.3.112 — the test named for
+  // the rule built a SEGMENTED recording, so it returned above and never reached this line.
   const recordIndex = Number(floorDiv(ticks, duration));
   if (recordIndex < 0 || recordIndex >= recording.header.recordCount) return undefined;
   const withinTicks = ticks - BigInt(recordIndex) * duration;
