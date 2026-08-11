@@ -166,3 +166,56 @@ describe('the node subpath states the reachability invariant the right way round
     expect(importers).toEqual([]);
   });
 });
+
+describe('nothing claims one file in the PACKAGE holds every node: import', () => {
+  /*
+   * The true statement is about REACHABILITY, and 0.3.84 corrected four places to say so. It
+   * missed two pages saying the package-wide version instead — "the only module in the package
+   * that imports a Node built-in (`node:fs/promises`, and nothing else)" and "the only module in
+   * the package that imports anything from `node:`" — plus `src/index.ts`, which ships in
+   * `dist/index.d.ts`. `src/cli.ts` imports two Node built-ins and is the package's `bin`, inside
+   * the published `files` list, so all three were false (fixed in 0.3.109).
+   *
+   * Anchored to the code below, not only to three sentences: the premise is that two modules in
+   * `src/` import `node:` and that the second is unreachable from the universal entry.
+   */
+  const SOURCES = (() => {
+    const found: Array<{ name: string; text: string }> = [];
+    const walk = (dir: URL, prefix: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) walk(new URL(`${entry.name}/`, dir), `${prefix}${entry.name}/`);
+        else if (entry.name.endsWith('.ts')) {
+          found.push({
+            name: `${prefix}${entry.name}`,
+            text: read(new URL(entry.name, dir).pathname),
+          });
+        }
+      }
+    };
+    walk(new URL('../../src/', import.meta.url), '');
+    return found;
+  })();
+
+  const PAGES = readdirSync(new URL('../../website/src/content/docs/', import.meta.url))
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => ({ name, text: read(`../../website/src/content/docs/${name}`) }));
+
+  it('is a claim about more than one module, in the source', () => {
+    // The premise. If a future refactor really did leave one importer, this test says so and the
+    // sentences below become sayable again.
+    const importers = SOURCES.filter(({ text }) =>
+      /^\s*import[^;]*from '(node:[\w/]+)'/m.test(text),
+    ).map(({ name }) => name);
+    expect(importers.sort()).toEqual(['cli.ts', 'node.ts']);
+  });
+
+  it('says none of it in a doc page or a shipped docblock', () => {
+    // Whitespace-normalised, so a wrapped docblock and a prose line are matched the same way.
+    const claim =
+      /only (?:module|file) in (?:the|this) package[^.]{0,60}imports|(?:keeping|keep) (?:that|the) import in exactly one file/i;
+    for (const { name, text } of [...PAGES, ...SOURCES]) {
+      const flat = text.replace(/^\s*\*\s?/gm, ' ').replace(/\s+/g, ' ');
+      expect(flat, `${name} states the package-wide version`).not.toMatch(claim);
+    }
+  });
+});

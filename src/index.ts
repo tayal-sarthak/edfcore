@@ -6,7 +6,8 @@
  *
  * Two rules hold for everything reachable from this file, transitively:
  *
- * - NO import of a Node built-in, transitively. `edfcore/node` is the only module allowed one, and
+ * - NO import of a Node built-in, transitively. `edfcore/node` is the only module in this graph
+ *   allowed one — the `bin` entry has its own, and nothing reaches it from here — and
  *   a packaging test greps the built universal bundle for the scheme prefix to prove it — which is
  *   also why that prefix is not written out anywhere in this file. It is what lets one build serve
  *   Node, browsers, Deno and Bun with no environment conditions in the exports map: conditions are

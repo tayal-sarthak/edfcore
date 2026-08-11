@@ -146,7 +146,7 @@ A `Blob` read is the one place where the platform may legitimately return fewer 
 
 ## fileSource and fileHandleSource (Node)
 
-These live in `edfcore/node`, the only module in the package that imports anything from `node:`. Keeping the import in exactly one file lets the universal entry point bundle for a browser with no polyfill and no resolver alias.
+These live in `edfcore/node`, the only module the universal entry can reach that imports anything from `node:`. Keeping every such import out of that graph lets the universal entry point bundle for a browser with no polyfill and no resolver alias. The `bin` program imports Node built-ins too, and nothing reaches it from `edfcore`.
 
 ```ts
 import { fileSource } from 'edfcore/node';

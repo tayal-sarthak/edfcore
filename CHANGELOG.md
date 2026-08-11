@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.109
+
+- **Fixed** three more places saying one file in the package holds every `node:` import.
+  - The true statement is about reachability, which is what the packaging test checks and what
+    0.3.84 corrected four places to say. It missed `api-sources.md` ("the only module in the
+    package that imports a Node built-in (`node:fs/promises`, and nothing else)"),
+    `data-sources.md` (the same in the other phrasing) and `src/index.ts`, which ships in
+    `dist/index.d.ts`. `src/cli.ts` imports `node:fs/promises` **and** `node:process` and is the
+    package's `bin`, inside the published `files` list, so all three were false — and the
+    parenthetical was false twice over.
+  - The guard is anchored to the code rather than to three sentences: it asserts the premise
+    (exactly `cli.ts` and `node.ts` import `node:`, and nothing reachable from the universal entry
+    imports `node.js`) and only then sweeps every page and every `src/` docblock for the
+    package-wide phrasing. If a refactor ever really does leave one importer, the premise fails
+    first and the sentences become sayable again.
+
 ## 0.3.108
 
 - **Fixed** the strict-mode claim in three more places, and rewrote the guard so a rewording cannot
