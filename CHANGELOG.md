@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.125
+
+- **Fixed** the CLI flag list on `api-helpers.md`, which named no scopes at all — so a reader
+  learned from `--help` that `--patient` applies to three commands and from the docs that it
+  applies to all six. 0.3.91 scoped it in the usage text and left the page behind.
+
 ## 0.3.124
 
 - **Changed** the `--limit` line in `edfcore --help` to name the commands it applies to, the way

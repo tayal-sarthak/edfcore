@@ -517,9 +517,10 @@ npx edfcore json <file>        # the header as JSON, for piping into jq
 npx edfcore --version          # the installed version
 ```
 
-Flags: `--patient` includes patient identification, `--list` makes `events` print one event per
-line instead of counting them by text, `--limit <n>` caps the individual diagnostics or events
-printed.
+Flags: `--patient` includes patient identification (`header`, `validate`, `json`), `--list` makes
+`events` print one event per line instead of counting them by text, and `--limit <n>` caps the
+diagnostics or events printed (`header`, `validate`, `events`). Each is accepted and ignored by the
+commands it does not name.
 
 ```bash
 npx edfcore events recording.edf --list --limit 100
