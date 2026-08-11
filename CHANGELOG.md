@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.113
+
+- **Added** the case that pins `trimToWindow`'s out-of-range re-count. No behaviour change; the
+  behaviour was already right and no test could tell it from the wrong one.
+  - `it('re-counts out-of-range samples only when narrowing can have dropped one')` is written for
+    `keptEverything = firstIndex === 0 && digital.length === chunk.digital.length`, but its fixture
+    put the out-of-range sample at index 0. A head-anchored trim then keeps the offender, so
+    re-counting and reusing both give 1; the other case it checks has both halves false. Rewriting
+    the `&&` as `||` left all 1902 tests green, including this one — while a head trim that dropped
+    the offender reported one out-of-range sample in a view that has none.
+  - The offender now sits at the tail, and the test covers the head-anchored partial trim, which is
+    the only shape in which the two halves disagree.
+
 ## 0.3.112
 
 - **Added** the assertion that pins `sampleAt`'s file bound on the contiguous branch. No behaviour

@@ -441,8 +441,19 @@ describe('trimToWindow returns a view, corrected and clamped', () => {
   });
 
   it('re-counts out-of-range samples only when narrowing can have dropped one', () => {
-    // 40000 is outside the declared 16-bit digital range and is trimmed away here.
-    const digital = Int32Array.from([40000, 1, 2, 3, 4, 5, 6, 7, 8]);
+    /*
+     * 40000 is outside the declared 16-bit digital range, and it sits at the TAIL on purpose.
+     *
+     * With it at index 0 — as this test had it until 0.3.113 — no case could tell the guard's two
+     * halves apart. `keptEverything` is `firstIndex === 0 && digital.length === chunk.length`; a
+     * head-anchored trim that keeps the offender re-counts and reuses to the same 1, and a
+     * middle trim has both halves false. Rewriting the `&&` as `||` left all 1902 tests green,
+     * including this one, while a head trim that DROPS the offender reported one out-of-range
+     * sample in a view that has none.
+     *
+     * The head-anchored partial trim below is the only shape in which the two halves disagree.
+     */
+    const digital = Int32Array.from([0, 1, 2, 3, 4, 5, 6, 7, 40000]);
     const chunk = chunkSignalOf({
       sampleCount: 9,
       startSeconds: 0,
@@ -450,8 +461,14 @@ describe('trimToWindow returns a view, corrected and clamped', () => {
       outOfDigitalRangeCount: 1,
     });
 
+    // Anchored at the start, but narrowed: the offender is gone, so the count must be re-derived.
+    expect(trimToWindow(header, chunk, 0, 1).outOfDigitalRangeCount).toBe(0);
+    // Narrowed away from the start, offender still gone.
     expect(trimToWindow(header, chunk, 1, 1).outOfDigitalRangeCount).toBe(0);
+    // Nothing dropped: the chunk's own count is reused, and it is still right.
     expect(trimToWindow(header, chunk, 0, 3).outOfDigitalRangeCount).toBe(1);
+    // And a narrowing that KEEPS the offender still finds it.
+    expect(trimToWindow(header, chunk, 2, 1).outOfDigitalRangeCount).toBe(1);
   });
 
   it('holds every sample at the chunk start when the record duration is zero', () => {

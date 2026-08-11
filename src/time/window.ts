@@ -219,6 +219,11 @@ function trimmed(
   start: { ticks: bigint; seconds: number },
 ): EdfChunkSignal {
   const digital = chunkSignal.digital.subarray(firstIndex, firstIndex + sampleCount);
+  // The LENGTH check is what decides this; `firstIndex === 0` follows from it for any non-empty
+  // chunk and is kept because it states the intent. The test named for this line put its
+  // out-of-range sample at index 0, where a head-anchored trim keeps the offender and re-counting
+  // and reusing agree — so `&&` and `||` were indistinguishable across the whole suite, and under
+  // `||` a head trim that dropped the offender still reported it (pinned in 0.3.113).
   const keptEverything = firstIndex === 0 && digital.length === chunkSignal.digital.length;
   return {
     signalIndex: chunkSignal.signalIndex,
