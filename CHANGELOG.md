@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.136
+
+- **Removed** the last hard-coded `readRecordBytes():` prefix, and pinned the rule. Eight modules
+  call that helper, so `readAnnotations(recording, { start: 0, count: 99 })` reported a function the
+  caller had never written — the fourth instance of what 0.3.132-0.3.134 fixed, and the one those
+  three missed.
+- The guard asserts it at the delegating entry point, which is the side that was wrong: no message
+  thrown by `readAnnotations` or `sampleStartSecondsOf` contains a `someFunction():` prefix. It is
+  what found this instance.
+
 ## 0.3.135
 
 - **Fixed** the README's claims table saying the pyEDFlib sample-scan parity covers "all five

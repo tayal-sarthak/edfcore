@@ -88,7 +88,7 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
   const countValid = Number.isSafeInteger(records.count) && records.count >= 0;
   if (startValid && countValid && records.start + records.count <= header.recordCount) return;
   throw new EdfRangeError(
-    `readRecordBytes(): records ${describeRange(records)} is not inside the ` +
+    `records ${describeRange(records)} is not inside the ` +
       `${header.recordCount} data records this file contains. Next: clamp the range against ` +
       'header.recordCount, or call index.locate(seconds) to find a record index for a time.',
     { requested: records, available },
