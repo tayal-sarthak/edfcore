@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.133
+
+- **Removed** the hard-coded `sampleStartTicksOf():` prefix from that function's three messages, the
+  other half of 0.3.132. `sampleStartSecondsOf` is a one-line delegation to it, so every caller of
+  the seconds variant was told about a function they never called.
+
 ## 0.3.132
 
 - **Removed** the hard-coded `decodeAnnotations():` prefix from the three caller-error messages in

@@ -211,9 +211,7 @@ export function sampleStartTicksOf(
 ): bigint {
   const signal = resolveSignal(recording, signalIndex, 'sampleStartTicksOf');
   if (!Number.isSafeInteger(sampleIndex)) {
-    throw new RangeError(
-      `sampleStartTicksOf(): sampleIndex must be a whole number, received ${sampleIndex}.`,
-    );
+    throw new RangeError(`sampleIndex must be a whole number, received ${sampleIndex}.`);
   }
 
   const perRecord = signal.samplesPerRecord;
@@ -227,7 +225,7 @@ export function sampleStartTicksOf(
   // answer for a sample that does not exist.
   if (sampleIndex < 0 || recordIndex >= recording.header.recordCount) {
     throw new RangeError(
-      `sampleStartTicksOf(): sample ${sampleIndex} is outside the ` +
+      `sample ${sampleIndex} is outside the ` +
         `${recording.header.recordCount * perRecord} samples signal ${signalIndex} has. ` +
         'Next: clamp the index, or read signal.sampleCount first.',
     );
@@ -235,7 +233,7 @@ export function sampleStartTicksOf(
 
   if (recording.index.segments === undefined && probedIndexNeedsScan(recording)) {
     throw new RangeError(
-      'sampleStartTicksOf(): this file has gaps and its index has not been scanned, so the true ' +
+      'this file has gaps and its index has not been scanned, so the true ' +
         'start of a record after a gap is not known. Next: await buildRecordIndex(recording) and ' +
         'read the result into the recording.',
     );
