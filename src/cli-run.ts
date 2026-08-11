@@ -60,7 +60,7 @@ Options
   --help, -h                      print this and exit 0
   --patient                       include patient identification (header, validate, json)
   --list                          list events one per line instead of counting (events)
-  --limit <n>                     individual diagnostics or events to print (default 20)
+  --limit <n>                     diagnostics or events to print, default 20 (header, validate, events)
 
   --version, -v                   print the version and exit
 

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.124
+
+- **Changed** the `--limit` line in `edfcore --help` to name the commands it applies to, the way
+  `--patient` and `--list` already do. It is honoured by `header`, `validate` and `events`; on
+  `gaps`, `signals` and `json` it is accepted and ignored.
+
 ## 0.3.123
 
 - **Updated** the README's test count from "1,200+" to "1,900+". The suite runs 1,904. The old
