@@ -53,7 +53,7 @@ const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
   npx edfcore validate <file>     a full conformance sweep, scanning every sample
   npx edfcore events <file>       the annotations, counted by text
   npx edfcore gaps <file>         the discontinuities, after a full scan
-  npx edfcore signals <file>      one line per signal, for grep and awk
+  npx edfcore signals <file>      one tab-separated line per signal, for grep and awk
   npx edfcore json <file>         the header as JSON, for piping into jq
 
 Options

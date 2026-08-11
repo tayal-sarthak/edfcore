@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.127
+
+- **Changed** the `signals` line in `edfcore --help` to say the output is tab-separated, which is
+  what `awk` needs to be told. The docs page has always said it; the usage text recommended the
+  tools without naming the separator.
+
 ## 0.3.126
 
 - **Removed** the stray blank line inside the `Options` block of `edfcore --help`, which split
