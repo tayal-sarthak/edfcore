@@ -152,11 +152,11 @@ export function sampleAt(
 
     const offsetTicks = ticks - segment.startTicks;
     const recordOffset = floorDiv(offsetTicks, duration);
-    // Bounded by the SEGMENT, as the nominal branch is bounded by the record count. `segmentAt`
-    // compares float seconds while this compares exact ticks, and `secondsToTicks` rounds to the
-    // nearest tick — so a time within half a tick of `segment.endSeconds` is inside the segment
-    // for one and at its end for the other, and without this it walked into the next segment or
-    // off the end of the file.
+    // Bounded by the SEGMENT, as the nominal branch is bounded by the record count. Stated as an
+    // invariant rather than as a guard against a disagreement: `segmentAt` has resolved its bounds
+    // in TICKS, through the same `secondsToTicks`, since 0.3.6, so a segment it returned already
+    // implies `0 <= recordOffset < segment.records.count`. The comment here still described the
+    // pre-0.3.6 float-seconds comparison as if it were live (corrected in 0.3.118).
     if (recordOffset < 0n || recordOffset >= BigInt(segment.records.count)) return undefined;
 
     const recordIndex = segment.records.start + Number(recordOffset);

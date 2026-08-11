@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.118
+
+- **Corrected** the comment on `sampleAt`'s segment bound, which justified the check with a
+  float-seconds-versus-ticks disagreement `segmentAt` stopped producing in 0.3.6. It resolves its
+  bounds in ticks through the same `secondsToTicks`, so the bound is an invariant rather than a
+  guard. The check itself is unchanged; this ships in `dist/` as hover text.
+
 ## 0.3.117
 
 - **Fixed** `api-errors.md` claiming `EdfScalingError.code` always names the cause the header
