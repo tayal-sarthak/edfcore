@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.3.108
+
+- **Fixed** the strict-mode claim in three more places, and rewrote the guard so a rewording cannot
+  walk past it again.
+  - `collector.ts` gates on `this.strict && diagnostic.severity !== 'info'`, so a strict parse of a
+    file whose only note is `info` resolves with that note present — and
+    `DATE_CLIPPED_TO_1985_2084` is carried by nearly every conforming EDF file. Still saying
+    otherwise: `api-reading.md` twice ("the first defect of any severity", "the first diagnostic of
+    any severity", four lines from a row on the same page stating the exemption),
+    `api-primitives.md` ("Empty under `strict`, because the first one threw"), and the
+    `collector.ts` module docblock itself — sixty lines above the gate that disproves it, and
+    shipped verbatim in `dist/diagnostics/collector.d.ts` as hover text.
+  - The guard now normalises whitespace and comment leaders before matching, tests the CLAIM rather
+    than a sentence, and sweeps `src/**/*.ts` as well as the doc pages — `tsconfig.build.json`
+    keeps comments, so a `src/` docblock is published documentation. 0.3.76 pinned two exact
+    strings and missed three pages; 0.3.90 widened the strings and missed three more. A guard that
+    would still pass if the claim came back is not a guard, and this one had failed that test twice.
+
 ## 0.3.107
 
 - **Fixed** `DATE_UNPARSEABLE` meaning one thing in `edfcore` and another in `edfcore/validate`.

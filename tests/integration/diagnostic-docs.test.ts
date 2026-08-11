@@ -66,6 +66,31 @@ const ALL_PAGES = (import.meta as unknown as RawModuleGlob).glob(
   '../../website/src/content/docs/*.md',
   { query: '?raw', import: 'default', eager: true },
 );
+/**
+ * Every source file, because `tsconfig.build.json` keeps comments: a claim in a `src/` docblock is
+ * published verbatim in `dist/**\/*.d.ts` and is what an editor shows on hover. 0.3.84 widened the
+ * version guard this way for the same reason; the strict-mode claim below needed it too, and did
+ * not have it (widened in 0.3.108).
+ */
+const ALL_SOURCE = (import.meta as unknown as RawModuleGlob).glob('../../src/**/*.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+/**
+ * One line, no comment leaders, so a claim is matched however it happens to be wrapped.
+ *
+ * Pinning the exact sentence is what let this class come back three times: 0.3.76 pinned two
+ * strings and missed three pages, 0.3.90 widened the strings and missed three more, because a
+ * markdown table cell, a wrapped docblock and a prose paragraph spell the same claim differently.
+ */
+function claimText(text: string): string {
+  return text
+    .replace(/^\s*\*\s?/gm, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 type Disposition = 'fatal' | 'deferred' | 'warning' | 'info';
 
@@ -352,17 +377,24 @@ describe('diagnostics.md agrees with the same source', () => {
      * and the published `ParseOptions` docblock all said every `diagnostics` array is
      * "consequently empty" under strict (fixed in 0.3.76; `concepts.md` was 0.3.62).
      */
-    for (const [path, text] of Object.entries(ALL_PAGES)) {
+    /*
+     * Matched by CLAIM, not by phrasing, and over `src/` as well as the pages.
+     *
+     * 0.3.76 pinned the two exact sentences it had found and missed three pages saying the same
+     * thing in other words; 0.3.90 widened those strings and missed three MORE — "the first defect
+     * of any severity", "the first diagnostic of any severity", "Empty under `strict`, because the
+     * first one threw" — plus the module docblock in `collector.ts` itself, which the page glob
+     * never looked at and which ships in `dist/diagnostics/collector.d.ts`. A guard that a
+     * rewording walks past is a guard that would still pass if the claim came back, which is what
+     * happened twice (fixed in 0.3.108).
+     */
+    const empties = /empty[^.]{0,40}under \*?`?strict|under \*?`?strict`?[^.]{0,60}empty/i;
+    const exemptsNothing = /exempts nothing|(?:of|at) \*?any\*? (?:disposition|severity)/i;
+    for (const [path, text] of [...Object.entries(ALL_PAGES), ...Object.entries(ALL_SOURCE)]) {
       const where = path.split('/').pop();
-      // Matched by CLAIM, not by phrasing. 0.3.76 pinned the two exact sentences it had found and
-      // missed three more pages saying the same thing in other words — "empty by construction",
-      // "of *any* disposition" — which sweep 6 then reported as fresh findings (widened in 0.3.90).
-      expect(text, `${where} should not say strict empties the list`).not.toMatch(
-        /every `?diagnostics`? array is[\s\S]{0,30}empty/,
-      );
-      expect(text, `${where} should not say strict exempts nothing`).not.toMatch(
-        /exempts nothing|of \*?any\*? disposition throws/,
-      );
+      const claim = claimText(text);
+      expect(claim, `${where} should not say strict empties the list`).not.toMatch(empties);
+      expect(claim, `${where} should not say strict exempts nothing`).not.toMatch(exemptsNothing);
     }
     // The behaviour those sentences described, so this test is anchored to the code and not only
     // to two strings that could be reworded back into the same falsehood.

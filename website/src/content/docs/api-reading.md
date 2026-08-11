@@ -40,7 +40,7 @@ Opens a recording: parses the header, then establishes the time axis. It's the e
 
 The returned `index` has `coverage: 'probed'`, and its `segments` and `gaps` are `undefined`. Two probes detect any *net* drift of the timeline, but they can't prove the file is contiguous. [`buildRecordIndex`](#buildrecordindex) promotes it.
 
-Throws `EdfFormatError` for a header defect edfcore cannot proceed past, and under `strict: true` for the first defect of any severity. Throws `EdfSourceError` if the source breaks its length contract. A source-level failure (a dead socket, a vanished file) rejects with whatever the source rejected with.
+Throws `EdfFormatError` for a header defect edfcore cannot proceed past, and under `strict: true` for the first defect that is not `info`. Throws `EdfSourceError` if the source breaks its length contract. A source-level failure (a dead socket, a vanished file) rejects with whatever the source rejected with.
 
 ```ts
 import { openEdf } from 'edfcore';
@@ -530,7 +530,7 @@ Start plus count, never start plus end. Every range in edfcore has this shape.
 
 | Class | `edfErrorKind` | Thrown when |
 | --- | --- | --- |
-| `EdfFormatError` | `'format'` | The file is wrong in a way edfcore cannot proceed past. Under `strict`, the first diagnostic of any severity. Carries `code`, `diagnostic`, `field`, `byteOffset`, `signalIndex`, `recordIndex`. |
+| `EdfFormatError` | `'format'` | The file is wrong in a way edfcore cannot proceed past. Under `strict`, the first diagnostic whose severity is not `info`. Carries `code`, `diagnostic`, `field`, `byteOffset`, `signalIndex`, `recordIndex`. |
 | `EdfRangeError` | `'range'` | You asked for records that do not exist. Carries `requested` and `available` as `RecordRange`. |
 | `EdfChannelNotFoundError` | `'channel'` | A signal index or label the file does not have. Carries `selector` and `availableLabels`. |
 | `EdfAmbiguousChannelError` | `'channel'` | A label matching more than one signal. Carries `label` and `matchingIndices`. |

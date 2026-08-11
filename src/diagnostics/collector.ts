@@ -4,8 +4,9 @@
  * Layer 1. Every diagnostic edfcore emits is built here, which is what makes two invariants
  * structural rather than conventional:
  *
- * - `strict: true` throws `EdfFormatError` carrying the first would-be diagnostic, so under
- *   strict every `diagnostics` array is empty by construction;
+ * - `strict: true` throws `EdfFormatError` carrying the first would-be diagnostic whose severity
+ *   is not `info`; `info` notes are exempt and are still collected, which is why a strict parse
+ *   of a conforming file can still return a `diagnostics` array;
  * - a code whose disposition is `fatal` throws whether or not `strict` is set, because
  *   proceeding would require inventing data.
  *

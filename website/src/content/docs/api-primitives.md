@@ -89,7 +89,7 @@ Validation order is pinned and tested. Under `strict: true` the first would-be d
 | `reserved` | `string` | The full 44 reserved bytes, verbatim. |
 | `raw` | `EdfRawHeaderFields` | Every fixed-header field as written, before trimming or interpretation. |
 | `rawBytes` | `Uint8Array` | A copy of the whole header, for hexdumps and bug reports. |
-| `diagnostics` | `readonly EdfDiagnostic[]` | Everything the parse found. Empty under `strict`, because the first one threw. |
+| `diagnostics` | `readonly EdfDiagnostic[]` | Everything the parse found. Under `strict` the first non-`info` diagnostic threw instead, so only `info` notes can be here. |
 
 `raw` holds `version`, `patientId`, `recordingId`, `startDate`, `startTime`, `headerByteLength`, `reserved`, `recordCount`, `recordDuration` and `signalCount`, all as `string`. Anything that can be checked against the file is exposed twice: as parsed value, and as the bytes it came from.
 
