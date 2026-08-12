@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.29
+
+- **Added** the guard for 0.4.26: no `.astro` file may hard-code a version. That footer read
+  "Version 0.1.0." for the whole 0.2, 0.3 and 0.4 history because nothing swept it — `PAGES` in
+  `readme-status.test.ts` reads only the markdown under `content/docs/`, and `astro check` checks
+  types, not prose. Verified by reintroducing the string and watching it fail.
+
 ## 0.4.28
 
 - **Added** `npm run corpus:fetch` to the commands in `AGENTS.md`. Without it every corpus test

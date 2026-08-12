@@ -219,3 +219,31 @@ describe('nothing claims one file in the PACKAGE holds every node: import', () =
     }
   });
 });
+
+/**
+ * The site's `.astro` files are the surface nothing else sweeps: `PAGES` above reads only the
+ * markdown under `content/docs/`, and `astro check` validates types and content collections
+ * rather than prose. The footer therefore read "MIT licensed. Version 0.1.0." through the whole
+ * 0.2, 0.3 and 0.4 history, and no run of `npm run check` could have said so (fixed in 0.4.26 by
+ * rendering `VERSION`). A version belongs in an `.astro` file only as that import.
+ */
+describe('the site states no version of its own', () => {
+  const ASTRO = (function collect(dir: URL, into: Array<{ name: string; text: string }>) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const child = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) collect(child, into);
+      else if (entry.name.endsWith('.astro'))
+        into.push({ name: entry.name, text: read(child.pathname) });
+    }
+    return into;
+  })(new URL('../../website/src/', import.meta.url), []);
+
+  it('finds the components', () => {
+    expect(ASTRO.length).toBeGreaterThan(4);
+  });
+
+  it.each(ASTRO.map(({ name }) => ({ name })))('$name hard-codes no version', ({ name }) => {
+    const text = ASTRO.find((one) => one.name === name)?.text ?? '';
+    expect(text).not.toMatch(/\bv(?:ersion)?[\s:]*\d+\.\d+\.\d+/i);
+  });
+});
