@@ -67,12 +67,12 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
       overlapping
         ? `mergeChunks: chunk ${index} is preceded by an overlap of ${-gap.durationSeconds} s — ` +
             'the records on either side of the join both claim that time. Concatenating them would ' +
-            'store it twice and date every sample after the join late by it. Merge each contiguous ' +
-            'run separately.'
+            'store it twice and date every sample after the join late by it. Next: merge each ' +
+            'contiguous run separately.'
         : `mergeChunks: chunk ${index} is preceded by a gap of ${gap.durationSeconds} s. ` +
             'Concatenating across it would put two samples that are seconds apart next to each ' +
             'other in one array, and every time computed from an index after the join would be ' +
-            'wrong by the gap. Merge each contiguous run separately.',
+            'wrong by the gap. Next: merge each contiguous run separately.',
     );
   }
 

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.42
+
+- **Fixed** the gap and overlap refusals in `mergeChunks` stating their remedy as trailing prose
+  rather than the `Next:` clause 0.4.41 wrote down. Both said "Merge each contiguous run
+  separately"; both now say it where a reader scanning for the instruction looks.
+
 ## 0.4.41
 
 - **Added** the `Next:` rule to the conventions in `AGENTS.md`. Over 150 messages in `src/` end
