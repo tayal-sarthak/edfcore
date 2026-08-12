@@ -129,7 +129,9 @@ export function gridSampleStartTicks(
   assertGrid(signal, recordDurationTicks);
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
-      `gridSampleStartTicks(): sampleIndex must be a whole number, received ${sampleIndex}.`,
+      `gridSampleStartTicks(): sampleIndex must be a whole number, received ${sampleIndex}. ` +
+        "Next: pass a whole index; this family measures the signal's own grid, so a fractional " +
+        'one has no position on it.',
     );
   }
   const perRecord = BigInt(signal.samplesPerRecord);

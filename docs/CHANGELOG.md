@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.34
+
+- **Fixed** `gridSampleStartTicks()` refusing a fractional `sampleIndex` with no `Next:` clause,
+  where the other three refusals in the same file all carry one. It now says which grid the index
+  is meant to be on, which is the distinction the `grid` prefix exists to hold.
+
 ## 0.4.33
 
 - **Fixed** the `sampleIndex must be a whole number` refusal carrying no `Next:` clause. A
