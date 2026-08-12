@@ -108,9 +108,10 @@ console.log(`\n  edfcore ${current} -> ${next}${dryRun ? '  (dry run)' : ''}\n`)
 // while the heading still names the old one. Every entry after it then inherits the drift.
 //
 // This has happened twice: 0.2.29 and 0.2.36 were both consumed that way, and both times every
-// heading after them was off by one until someone compared `git show <tag>:CHANGELOG.md` against
-// the tags by hand. Catching it here costs one file read and turns a silent documentation defect
-// into a message before anything is committed.
+// heading after them was off by one until someone compared `git show <tag>:docs/CHANGELOG.md`
+// against the tags by hand — `<tag>:CHANGELOG.md` for anything before v0.4.1, which is where the
+// file moved. Catching it here costs one file read and turns a silent documentation defect into a
+// message before anything is committed.
 
 const changelog = readFileSync(CHANGELOG, 'utf8');
 const firstHeading = /^## (\d+\.\d+\.\d+.*)$/m.exec(changelog);

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.6
+
+- **Fixed** the drift-recovery note in `scripts/release.mjs` telling you to run
+  `git show <tag>:CHANGELOG.md`. That returns nothing for v0.4.1 and later, which is the range a
+  future drift would be in; the note now gives both paths and says where they split.
+
 ## 0.4.5
 
 - **Fixed** `scripts/release.mjs` saying the workflow publishes "through trusted publishing".
