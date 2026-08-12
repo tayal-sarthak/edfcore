@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.4
+
+- **Fixed** the 122-column line in `buildRecordIndex`'s docblock, left unwrapped by an earlier
+  edit. It was the longest line in `src/` by twenty columns, against a stated 100-column
+  convention, and `removeComments: false` ships it as the hover text for the function.
+
 ## 0.4.3
 
 - **Fixed** the `edfcore/node` docblock naming `tsconfig.build.json` at the repository root. It

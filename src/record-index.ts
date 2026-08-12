@@ -413,10 +413,11 @@ async function scanOnsets(
 /**
  * A `'complete'` index: every onset verified, with the segments and gaps they imply.
  *
- * This is one of only two functions that read the whole file, the other being `validateRecording`, and it is never called
- * implicitly. Its diagnostics are deliberately not returned — an `EdfRecordIndex` is a
- * structural answer, and `validateRecording()` is the call that reports on a traversal — but a
- * non-monotonic timeline still throws, because no index over it would mean anything.
+ * This is one of only two functions that read the whole file, the other being
+ * `validateRecording`, and it is never called implicitly. Its diagnostics are deliberately not
+ * returned — an `EdfRecordIndex` is a structural answer, and `validateRecording()` is the call
+ * that reports on a traversal — but a non-monotonic timeline still throws, because no index over
+ * it would mean anything.
  *
  * `EdfRecording` is a plain struct, so the returned index is used by rebuilding one:
  * `readWindow({ ...recording, index }, selection)`.
