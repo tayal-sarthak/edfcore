@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.17
+
+- **Fixed** `installation.md` calling `edfcore/node` "the only module the universal entry can reach
+  that imports from `node:`". The universal entry reaches no such module — `public-api.test.ts`
+  asserts exactly that, and it is the guarantee the browser support rests on. The sentence claimed
+  the opposite of the package's central promise.
+
 ## 0.4.16
 
 - **Fixed** `api-validate.md` opening its surface section with "Two functions and three types".
