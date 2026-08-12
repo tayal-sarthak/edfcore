@@ -269,7 +269,7 @@ Three rules the rest of the library depends on:
 2. `recordOnsetTicks` has one entry for **every** record in the decoded range, always.
 3. Onsets are exposed under both conventions as separately named fields, never as an option.
 
-Passing `signalIndices` that omits the timekeeping signal is legal and means no timekeeping is read. Every `recordOnsetTicks` entry then falls back to the nominal grid. Passing a data-signal index throws a plain `RangeError`.
+Passing `signalIndices` that omits the timekeeping signal is legal and means no timekeeping is read. Every `recordOnsetTicks` entry then falls back to the nominal grid. Passing a data-signal index throws a plain `RangeError` — a signal the file has, of the wrong kind. An index the file does not have is a different mistake and throws `EdfChannelNotFoundError`, as every other entry point taking a signal index does.
 
 Diagnostic volume is bounded. `TIMEKEEPING_TAL_MISSING` is reported per record, because it names a record whose onset was derived and that information exists nowhere else. `NEGATIVE_ANNOTATION_ONSET` and `TIMEKEEPING_TAL_NONCONFORMANT` are reported once per call. Grammar defects are deduplicated per region and carry an occurrence count.
 

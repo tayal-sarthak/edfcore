@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.18
+
+- **Fixed** `api-primitives.md` documenting only the `RangeError` branch of `decodeAnnotations`.
+  0.3.106 split that refusal in two — a signal of the wrong kind stays a plain `RangeError`, an
+  index the file does not have became `EdfChannelNotFoundError` — and the page still described the
+  single branch that conflating them had produced.
+
 ## 0.4.17
 
 - **Fixed** `installation.md` calling `edfcore/node` "the only module the universal entry can reach
