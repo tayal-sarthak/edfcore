@@ -67,10 +67,10 @@ const ALL_PAGES = (import.meta as unknown as RawModuleGlob).glob(
   { query: '?raw', import: 'default', eager: true },
 );
 /**
- * Every source file, because `tsconfig.build.json` keeps comments: a claim in a `src/` docblock is
- * published verbatim in `dist/**\/*.d.ts` and is what an editor shows on hover. 0.3.84 widened the
- * version guard this way for the same reason; the strict-mode claim below needed it too, and did
- * not have it (widened in 0.3.108).
+ * Every source file, because `config/tsconfig.build.json` keeps comments: a claim in a `src/`
+ * docblock is published verbatim in `dist/**\/*.d.ts` and is what an editor shows on hover.
+ * 0.3.84 widened the version guard this way for the same reason; the strict-mode claim below
+ * needed it too, and did not have it (widened in 0.3.108).
  */
 const ALL_SOURCE = (import.meta as unknown as RawModuleGlob).glob('../../src/**/*.ts', {
   query: '?raw',

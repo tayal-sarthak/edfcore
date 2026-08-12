@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.13
+
+- **Fixed** the last stale `tsconfig.build.json` reference, in `diagnostic-docs.test.ts`. Same
+  reason as 0.4.12: the sweep exists because that config keeps comments, so the path has to be
+  openable. This closes the set the 0.4.1 move left behind.
+
 ## 0.4.12
 
 - **Fixed** `readme-status.test.ts` naming `tsconfig.build.json` at the root. The `.d.ts` sweep it
