@@ -78,7 +78,7 @@ describe('the docs state no version this package is not at', () => {
 
 describe('the shipped .d.ts states no version this package is not at', () => {
   /**
-   * `tsconfig.build.json` sets `removeComments: false`, so every docblock in `src/` is copied
+   * `config/tsconfig.build.json` sets `removeComments: false`, so every docblock in `src/` is copied
    * verbatim into `dist/*.d.ts` and becomes the hover text an editor shows. `src/node.ts` said
    * "edfcore has no other lifetime mechanism in v0.1" — the exact scoping 0.3.64 removed from three
    * website pages, still shipping to every consumer of `edfcore/node` (fixed in 0.3.84).

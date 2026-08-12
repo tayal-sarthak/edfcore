@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.12
+
+- **Fixed** `readme-status.test.ts` naming `tsconfig.build.json` at the root. The `.d.ts` sweep it
+  introduces only makes sense because that config sets `removeComments: false`, so the reader has
+  to be able to open it — it moved to `config/` in 0.4.1.
+
 ## 0.4.11
 
 - **Fixed** `browser-safety.test.ts` saying "the 1,290-odd tests in this repository". There are
