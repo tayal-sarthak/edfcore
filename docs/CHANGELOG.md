@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.15
+
+- **Fixed** the README's "Event times are exact" note ending on "Compare `onsetTicks`, not the
+  float". The precision half was right and the field was the header-axis one; against a window the
+  axis that matches is `onsetTicksFromFirstRecord`. Same correction as 0.4.14, other file.
+
 ## 0.4.14
 
 - **Fixed** `AGENTS.md` telling generated code to compare event times with `annotation.onsetTicks`.

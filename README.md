@@ -165,7 +165,8 @@ rather than a floating-point rate, and `sampleRateHz` is `undefined` when the re
 zero (which is legal EDF).
 
 **Event times are exact.** Annotation onsets are parsed digit by digit into `bigint`
-hundred-nanosecond ticks, not through `parseFloat`. Compare `onsetTicks`, not the float.
+hundred-nanosecond ticks, not through `parseFloat`. Compare in ticks, not floats — and against a
+window use `onsetTicksFromFirstRecord`, the axis reads measure from, rather than `onsetTicks`.
 
 **Gaps are structural.** `readWindow` always returns an array of chunks, one per contiguous
 run, including for continuous files. A window that falls inside a gap returns `[]`. There's no
