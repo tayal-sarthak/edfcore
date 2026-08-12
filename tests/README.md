@@ -27,6 +27,7 @@ together; keeping them independent is what makes the round-trip and property tes
 | `types/` | `.test-d.ts` type-level checks: what each subpath can name on its own, and that the documented examples typecheck |
 | `corpus/` | Real EDF/BDF files from teuniz.net and PhysioNet, skipped unless fetched, plus the reference-parity harness — see below |
 | `support/` | The writer, the corruptor, and a `ByteSource` spy. Never exported from the package |
+| `scratch/` | Throwaway reproductions, gitignored and excluded from this suite. Run with `npm run test:scratch` |
 
 ## The safety invariant
 

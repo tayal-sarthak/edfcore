@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.24
+
+- **Added** `scratch/` to the suite layout table in `tests/README.md`, the one directory of the
+  eight under `tests/` the table omitted. It has its own vitest config and npm script, and both
+  vitest configs explain at length why it is excluded — the layout was the only place silent about
+  it. Same omission 0.3.131 fixed for `tests/types`.
+
 ## 0.4.23
 
 - **Fixed** the `--limit` line of `edfcore --help` running to 103 characters, so the one line
