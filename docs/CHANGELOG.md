@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.33
+
+- **Fixed** the `sampleIndex must be a whole number` refusal carrying no `Next:` clause. A
+  fractional index almost always arrives from `round(t * sampleRateHz)`, which the docs warn
+  against and the message did not — it names no function on purpose, since 0.3.134, but that is
+  no reason to name no remedy either.
+
 ## 0.4.32
 
 - **Fixed** `sampleAt()` refusing a non-finite `seconds` without naming the axis the caller was

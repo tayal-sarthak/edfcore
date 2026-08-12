@@ -220,7 +220,10 @@ export function sampleStartTicksOf(
 ): bigint {
   const signal = resolveSignal(recording, signalIndex);
   if (!Number.isSafeInteger(sampleIndex)) {
-    throw new RangeError(`sampleIndex must be a whole number, received ${sampleIndex}.`);
+    throw new RangeError(
+      `sampleIndex must be a whole number, received ${sampleIndex}. Next: index by ` +
+        'samplesPerRecord rather than deriving one from a float sampleRateHz.',
+    );
   }
 
   const perRecord = signal.samplesPerRecord;
