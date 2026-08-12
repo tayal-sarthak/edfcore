@@ -17,7 +17,10 @@ import { decodeHeaderLatin1 } from './latin1.js';
  */
 function assertInBounds(bytes: Uint8Array, offset: number, length: number): void {
   if (!Number.isSafeInteger(offset) || offset < 0) {
-    throw new RangeError(`byte offset must be a non-negative safe integer, got ${offset}`);
+    throw new RangeError(
+      `byte offset must be a non-negative safe integer, got ${offset}. Next: report this — the ` +
+        'offset is computed by edfcore rather than passed in.',
+    );
   }
   if (!Number.isSafeInteger(length) || length < 0) {
     throw new RangeError(`byte length must be a non-negative safe integer, got ${length}`);

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.38
+
+- **Fixed** the byte-offset bounds refusal in `bytes/view.ts` carrying no `Next:` clause. Nothing
+  a caller passes reaches it directly — every offset is computed by edfcore — so the useful
+  instruction is to report it, which the message now gives.
+
 ## 0.4.37
 
 - **Fixed** the only refusal in `decode/digital.ts` without a `Next:` clause, where the other four
