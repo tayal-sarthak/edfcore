@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.26
+
+- **Fixed** the documentation site footer reading "MIT licensed. Version 0.1.0." on every page. It
+  was hard-coded, and `npm run check` never looks at the website — `astro check` validates types
+  and content collections, not prose — so it survived the whole 0.2, 0.3 and 0.4 history. It now
+  reads `VERSION` from the package, which is the one value `scripts/release.mjs` already bumps.
+
 ## 0.4.25
 
 - **Added** `scripts/` to the layout table in `AGENTS.md`. It holds the release script and the
