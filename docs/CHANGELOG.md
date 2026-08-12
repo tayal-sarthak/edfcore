@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.30
+
+- **Fixed** `segmentAt()` refusing a non-finite time without saying what to do about it. 147
+  messages in `src/` end with a `Next:` clause and this was one of seventeen that did not, so the
+  one case that reaches it — a rate derived by dividing by a legal zero record duration — went
+  unnamed.
+
 ## 0.4.29
 
 - **Added** the guard for 0.4.26: no `.astro` file may hard-code a version. That footer read
