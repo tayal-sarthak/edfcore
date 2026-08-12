@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.41
+
+- **Added** the `Next:` rule to the conventions in `AGENTS.md`. Over 150 messages in `src/` end
+  with one and seventeen did not, which 0.4.30-0.4.40 closed — an unwritten convention is one new
+  code drifts off, so it is now written down beside the formatting rules.
+
 ## 0.4.40
 
 - **Fixed** the last refusal in `assertInBounds` without a `Next:` clause, and the one of the
