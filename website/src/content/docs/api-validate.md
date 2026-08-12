@@ -9,7 +9,7 @@ lead: A separate entry point holding the conformance checks that do not affect a
 ## The surface
 
 ```ts
-import { validateHeader, validateRecording } from 'edfcore/validate';
+import { formatValidationReport, validateHeader, validateRecording } from 'edfcore/validate';
 import type { ObservedSignalStats, ValidateOptions, ValidationReport } from 'edfcore/validate';
 
 function validateHeader(header: EdfHeader): readonly EdfDiagnostic[];
@@ -19,7 +19,8 @@ function validateRecording(
 ): Promise<ValidationReport>;
 ```
 
-Two functions and three types. The three types are declared in the same file as every other public
+Three functions and three types — `formatValidationReport` renders a report as text, and is
+covered under [API — helpers](/docs/api-helpers). The three types are declared in the same file as every other public
 shape and re-exported here. You can name a `ValidationReport` without reaching into the universal
 entry point for it.
 

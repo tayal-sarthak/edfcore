@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.16
+
+- **Fixed** `api-validate.md` opening its surface section with "Two functions and three types".
+  `edfcore/validate` exports three functions; `formatValidationReport` was missing from the count
+  and from the import above it, so the page describing that subpath was the one place it did not
+  appear.
+
 ## 0.4.15
 
 - **Fixed** the README's "Event times are exact" note ending on "Compare `onsetTicks`, not the
