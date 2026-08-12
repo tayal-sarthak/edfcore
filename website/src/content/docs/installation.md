@@ -60,9 +60,8 @@ It gives you the parser (`parseHeader`, `decodeDigital`, `decodeAnnotations`, `t
 
 ### `edfcore/node` (filesystem adapters)
 
-Two functions, and the only module in the package that imports from `node:`. The universal entry
-cannot reach it — that is what makes `edfcore` safe in a browser, and a test walks the module graph
-to prove it.
+Two functions. The universal entry cannot reach this module — that is what makes `edfcore` safe in
+a browser, and a test walks the module graph to prove it.
 
 ```ts
 import { fileHandleSource, fileSource } from 'edfcore/node';
