@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.46
+
+- **Fixed** the `mergeChunks` sample-continuity refusal. It already said to trim after merging
+  rather than before, as trailing prose; it now says it as the `Next:` clause and names
+  `trimToWindow()` as the call that takes the merged chunk.
+
 ## 0.4.45
 
 - **Fixed** the `mergeChunks` signal-order refusal, the sibling of 0.4.44's. It now says that

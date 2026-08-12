@@ -143,7 +143,8 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
       throw new RangeError(
         `mergeChunks: signal ${after.signalIndex} of chunk ${index} starts at sample ` +
           `${after.firstSampleIndex}, but the chunk before it ends at ${expectedSample}. ` +
-          'A trimmed chunk cannot be merged with the one after it — trim after merging, not before.',
+          'A trimmed chunk cannot be merged with the one after it. Next: trim after merging, not ' +
+          'before — trimToWindow() takes the merged chunk.',
       );
     }
   }
