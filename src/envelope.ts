@@ -611,7 +611,8 @@ export async function readEnvelopeAtResolution(
   if (!Number.isFinite(secondsPerBucket) || secondsPerBucket <= 0) {
     throw new RangeError(
       `readEnvelopeAtResolution(): secondsPerBucket must be a positive finite number, received ` +
-        `${secondsPerBucket}.`,
+        `${secondsPerBucket}. Next: pass seconds per pixel, or call readEnvelope() with a ` +
+        'bucket count if what you have is a plot width.',
     );
   }
   // Validated before the window is resolved, exactly as `readEnvelope` does it and for the same

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.35
+
+- **Fixed** `readEnvelopeAtResolution()` refusing a bad `secondsPerBucket` without pointing at
+  `readEnvelope()`. The two differ by exactly which quantity you hold — seconds per pixel against
+  a pixel count — so a caller who passed the wrong one is the caller most likely to see this.
+
 ## 0.4.34
 
 - **Fixed** `gridSampleStartTicks()` refusing a fractional `sampleIndex` with no `Next:` clause,
