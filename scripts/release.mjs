@@ -2,8 +2,9 @@
  * Cut a release.
  *
  * Publishing happens in CI, not here. This script only moves the version forward and creates
- * the GitHub Release; `.github/workflows/publish.yml` sees that release and publishes to npm
- * through trusted publishing, which needs no npm credential on this machine.
+ * the GitHub Release; `.github/workflows/publish.yml` sees that release and publishes to npm with
+ * the NPM_TOKEN repository secret, so no npm credential is needed on this machine. Trusted
+ * publishing would be better and is not available here — see the note in that workflow.
  *
  *   node scripts/release.mjs patch          0.1.1 -> 0.1.2
  *   node scripts/release.mjs minor          0.1.1 -> 0.2.0

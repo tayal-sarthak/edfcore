@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.5
+
+- **Fixed** `scripts/release.mjs` saying the workflow publishes "through trusted publishing".
+  `publish.yml` records that registering trusted publishing returns 400 against this package and
+  that it authenticates with the NPM_TOKEN secret. The two files described different mechanisms.
+
 ## 0.4.4
 
 - **Fixed** the 122-column line in `buildRecordIndex`'s docblock, left unwrapped by an earlier
