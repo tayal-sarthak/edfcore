@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.25
+
+- **Added** `scripts/` to the layout table in `AGENTS.md`. It holds the release script and the
+  golden generators, neither of which runs in `npm run check` — the two things an agent is most
+  likely to reach for and least likely to find from a table that did not mention the directory.
+
 ## 0.4.24
 
 - **Added** `scratch/` to the suite layout table in `tests/README.md`, the one directory of the

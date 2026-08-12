@@ -16,6 +16,7 @@ runtime dependencies and that is a permanent constraint, not a current state.
 | `tests/` | 1906 tests. Every fixture is built in memory by `tests/support/writer.ts`; there are no binary files in git. |
 | `config/` | `tsconfig.build.json` and the two vitest configs. Every path inside them is relative to `config/`, and every `npm` script names them explicitly — nothing here is found by a tool's default lookup. |
 | `docs/CHANGELOG.md` | The release record. `scripts/release.mjs` refuses to tag unless its top `## <version>` heading matches. |
+| `scripts/` | `release.mjs` cuts a release; `golden/*.py` regenerate the pyEDFlib and MNE reference values in a venv. Neither runs in `npm run check`. |
 | `website/src/content/docs/design-decisions.md` | Why the API is shaped as it is. **Read it before proposing an architectural change** — most obvious improvements were considered and rejected for a stated reason. |
 | `website/` | The Astro documentation site and the browser-based inspector. |
 
