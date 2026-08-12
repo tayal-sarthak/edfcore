@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.2
+
+- **Fixed** `src/index.ts` crediting "a packaging test" that "greps the built universal bundle" for
+  the `node:` prefix. The check is `public-api.test.ts`, and it walks the `src/` module graph — the
+  built bundle is what `browser-safety.test.ts` runs, for globals rather than imports.
+
 ## 0.4.1
 
 - **Moved** `CHANGELOG.md` to `docs/CHANGELOG.md`. It still ships in the tarball, so the release
