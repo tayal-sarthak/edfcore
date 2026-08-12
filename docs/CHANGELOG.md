@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.22
+
+- **Added** `--limit <n>` to the README's CLI section. `edfcore --help` and the website both
+  document it; the README mentioned only `--patient` and `--list`, so the one place that says
+  output is truncated at twenty was the one a reader is least likely to have open.
+
 ## 0.4.21
 
 - **Fixed** `api-sources.md` calling `edfcore/node` "the only module the universal entry can reach

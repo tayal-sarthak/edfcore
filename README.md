@@ -19,7 +19,8 @@ npx edfcore validate overnight.edf        # full conformance sweep; exits 1 on f
 npx edfcore json overnight.edf            # the header as JSON, for jq
 ```
 
-Patient identification is omitted unless you pass `--patient`.
+Patient identification is omitted unless you pass `--patient`. Diagnostics and events print twenty
+at a time; `--limit <n>` changes that.
 
 ## How do I read an EDF file in JavaScript?
 
