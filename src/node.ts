@@ -33,10 +33,10 @@
  *
  * The suppression on the import is the unconditional `ts-ignore` directive rather than
  * `@ts-expect-error`, and that is not laziness. Whether the specifier resolves depends on whether
- * a `@types/node` happens to be reachable at all: `tsconfig.build.json` compiles `src/` alone and
- * it is not, while `tsconfig.json` also pulls in a dev tool carrying a triple-slash reference to
- * it and it may be. `@ts-expect-error` errors for being UNUSED in the second case, so it would
- * break whichever of the two configurations the machine happens to disagree with.
+ * a `@types/node` happens to be reachable at all: `config/tsconfig.build.json` compiles `src/`
+ * alone and it is not, while `tsconfig.json` also pulls in a dev tool carrying a triple-slash
+ * reference to it and it may be. `@ts-expect-error` errors for being UNUSED in the second case, so
+ * it would break whichever of the two configurations the machine happens to disagree with.
  */
 
 // biome-ignore lint/suspicious/noTsIgnore: @ts-expect-error errors when unused — see above.

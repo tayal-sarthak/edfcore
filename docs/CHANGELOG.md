@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.3
+
+- **Fixed** the `edfcore/node` docblock naming `tsconfig.build.json` at the repository root. It
+  moved to `config/` in 0.4.1, and this sentence ships as the hover text on the subpath, so the
+  path a consumer is told to look at had to be the real one.
+
 ## 0.4.2
 
 - **Fixed** `src/index.ts` crediting "a packaging test" that "greps the built universal bundle" for
