@@ -123,7 +123,8 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
   if (next.signals.length !== previous.signals.length) {
     throw new RangeError(
       `mergeChunks: chunk ${index} carries ${next.signals.length} signal(s), the chunk before it ` +
-        `${previous.signals.length}. Every chunk must have been read with the same signal selection.`,
+        `${previous.signals.length}. Every chunk must have been read with the same signal ` +
+        'selection. Next: reuse one signalIndices array across every read you intend to merge.',
     );
   }
 

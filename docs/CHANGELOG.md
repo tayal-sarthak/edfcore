@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.44
+
+- **Fixed** the `mergeChunks` signal-count refusal naming the rule without the fix. Chunks with
+  different signal counts come from reads given different `signalIndices`, so the message now
+  says to reuse one array across the reads you mean to merge.
+
 ## 0.4.43
 
 - **Fixed** the `mergeChunks` adjacency refusal stating the rule but not the action. A caller
