@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.27
+
+- **Fixed** `AGENTS.md` stating "there are no binary files in git". Six EDF/BDF files have been
+  committed under `tests/corpus/golden/` since 0.2.34, and `tests/README.md` explains why they
+  must be: regenerating them with `support/writer.ts` would make the pyEDFlib comparison circular.
+  An agent trusting that sentence would treat them as strays.
+
 ## 0.4.26
 
 - **Fixed** the documentation site footer reading "MIT licensed. Version 0.1.0." on every page. It
