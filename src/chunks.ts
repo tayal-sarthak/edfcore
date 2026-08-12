@@ -134,7 +134,8 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
     if (after.signalIndex !== before.signalIndex) {
       throw new RangeError(
         `mergeChunks: chunk ${index} has signal ${after.signalIndex} in position ${i}, the chunk ` +
-          `before it signal ${before.signalIndex}. The selection must be in the same order too.`,
+          `before it signal ${before.signalIndex}. The selection must be in the same order too. ` +
+          'Next: pass signalIndices in one fixed order — readWindow() preserves the order given.',
       );
     }
     const expectedSample = before.firstSampleIndex + before.sampleCount;
