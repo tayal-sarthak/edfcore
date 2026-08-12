@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.28
+
+- **Added** `npm run corpus:fetch` to the commands in `AGENTS.md`. Without it every corpus test
+  skips, and `coverage.test.ts` exists precisely because a skipped test and a passing one look
+  identical in a summary line — so an agent could read a green run as covering the real files.
+
 ## 0.4.27
 
 - **Fixed** `AGENTS.md` stating "there are no binary files in git". Six EDF/BDF files have been

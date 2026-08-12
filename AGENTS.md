@@ -26,6 +26,7 @@ runtime dependencies and that is a permanent constraint, not a current state.
 npm run check       # lint + typecheck (both configs) + tests — run this before finishing
 npm test            # vitest, ~10s
 npm run build       # tsc to dist/
+npm run corpus:fetch # ~59 MB, gitignored — without it the corpus tests skip rather than fail
 npm run dev --prefix website
 ```
 
