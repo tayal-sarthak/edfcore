@@ -12,7 +12,7 @@ runtime dependencies and that is a permanent constraint, not a current state.
 
 | Path | What it is |
 |---|---|
-| `src/` | The library. Layered strictly: `bytes` → `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import from a lower layer. |
+| `src/` | The library. Layered strictly: `bytes`/`text` → `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import from a lower layer. |
 | `tests/` | 1906 tests. Every fixture is built in memory by `tests/support/writer.ts`; there are no binary files in git. |
 | `config/` | `tsconfig.build.json` and the two vitest configs. Every path inside them is relative to `config/`, and every `npm` script names them explicitly — nothing here is found by a tool's default lookup. |
 | `docs/CHANGELOG.md` | The release record. `scripts/release.mjs` refuses to tag unless its top `## <version>` heading matches. |

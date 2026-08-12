@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.9
+
+- **Fixed** the layer chain in `AGENTS.md` omitting `src/text/`. It is a Layer 1 module, alongside
+  `bytes`, and the chain is the rule an agent checks an import against — a layer missing from it
+  has no stated position to be checked.
+
 ## 0.4.8
 
 - **Fixed** `AGENTS.md` advertising `npm test` as "~2s". The suite is 1906 tests and takes about
