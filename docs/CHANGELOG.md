@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.31
+
+- **Fixed** the same missing `Next:` clause in `gapAt()`, two functions below the one 0.4.30
+  fixed. The refusal above it in the same function already carried one, so a caller got guidance
+  for a probed index and none for a `NaN`.
+
 ## 0.4.30
 
 - **Fixed** `segmentAt()` refusing a non-finite time without saying what to do about it. 147

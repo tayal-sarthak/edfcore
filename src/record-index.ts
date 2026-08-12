@@ -548,7 +548,10 @@ export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefine
     );
   }
   if (!Number.isFinite(seconds)) {
-    throw new RangeError(`gapAt() needs a finite time in seconds, received ${seconds}.`);
+    throw new RangeError(
+      `gapAt() needs a finite time in seconds, received ${seconds}. Next: pass a number, the ` +
+        'way segmentAt() requires one — the two agree about every boundary.',
+    );
   }
 
   // In ticks, for the reason `segmentAt` states: these two must agree about every boundary, and
