@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.11
+
+- **Fixed** `browser-safety.test.ts` saying "the 1,290-odd tests in this repository". There are
+  1906. The number carries the argument for why that test exists — all of them run under
+  `environment: 'node'` — so it should be the real one.
+
 ## 0.4.10
 
 - **Fixed** the fixture policy in `tests/README.md` opening with "the first and third are in use"
