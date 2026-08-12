@@ -69,7 +69,7 @@ import { fileHandleSource, fileSource } from 'edfcore/node';
 
 `fileSource(path)` opens a file and hands you a `ByteSource` over it; you close it with `source.close()` when you're done. `fileHandleSource(handle, byteLength)` wraps a file handle you already opened, for the cases where you know something about the size that the handle does not.
 
-Nothing `edfcore` can reach imports from `node:`, and a packaging test greps the built universal bundle for that scheme prefix. The `bin` program (`dist/cli.js`) does import `node:fs/promises` and `node:process` — it is a Node program, and no import path reaches it.
+Nothing `edfcore` can reach imports from `node:`, and a packaging test walks the module graph from the universal entry to prove no such specifier hides in it. The `bin` program (`dist/cli.js`) does import `node:fs/promises` and `node:process` — it is a Node program, and no import path reaches it.
 
 ### `edfcore/validate` (conformance)
 

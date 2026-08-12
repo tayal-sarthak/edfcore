@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.20
+
+- **Fixed** the last copy of the "greps the built universal bundle" claim, in `installation.md`.
+  The check walks the module graph, which is what `api-sources.md` already said — the three pages
+  describing one guarantee now describe the same mechanism.
+
 ## 0.4.19
 
 - **Fixed** the `edfcore/node` docblock crediting "a packaging test" that "greps the built
