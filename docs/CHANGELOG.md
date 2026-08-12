@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.23
+
+- **Fixed** the `--limit` line of `edfcore --help` running to 103 characters, so the one line
+  explaining the truncation was itself the only line that wrapped on an 80-column terminal. The
+  widest line is now 89, which is what every other option already fitted in.
+
 ## 0.4.22
 
 - **Added** `--limit <n>` to the README's CLI section. `edfcore --help` and the website both

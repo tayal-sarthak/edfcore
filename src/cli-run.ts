@@ -60,7 +60,8 @@ Options
   --help, -h                      print this and exit 0
   --patient                       include patient identification (header, validate, json)
   --list                          list events one per line instead of counting (events)
-  --limit <n>                     diagnostics or events to print, default 20 (header, validate, events)
+  --limit <n>                     diagnostics or events to print, default 20
+                                  (header, validate, events)
   --version, -v                   print the version and exit
 
 Exit codes: 0 success, 1 the file is unreadable or failed validation, 2 bad usage.
