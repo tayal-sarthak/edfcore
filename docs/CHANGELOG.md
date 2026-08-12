@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.43
+
+- **Fixed** the `mergeChunks` adjacency refusal stating the rule but not the action. A caller
+  reaching it has usually reordered or filtered the array, which is now what the message says to
+  undo.
+
 ## 0.4.42
 
 - **Fixed** the gap and overlap refusals in `mergeChunks` stating their remedy as trailing prose

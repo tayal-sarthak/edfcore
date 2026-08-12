@@ -80,7 +80,8 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
   if (next.records.start !== expectedStart) {
     throw new RangeError(
       `mergeChunks: chunk ${index} starts at record ${next.records.start}, but the chunk before ` +
-        `it ends at ${expectedStart}. Chunks must be adjacent and in order.`,
+        `it ends at ${expectedStart}. Chunks must be adjacent and in order. Next: pass them in ` +
+        'the order readWindow() returned them, with none dropped.',
     );
   }
 
