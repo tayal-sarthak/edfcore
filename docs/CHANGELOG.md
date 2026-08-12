@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.19
+
+- **Fixed** the `edfcore/node` docblock crediting "a packaging test" that "greps the built
+  universal bundle". It is `public-api.test.ts`, walking the module graph from `src/index.ts` —
+  the same correction 0.4.2 made in the barrel, and this copy ships as the subpath's hover text.
+
 ## 0.4.18
 
 - **Fixed** `api-primitives.md` documenting only the `RangeError` branch of `decodeAnnotations`.

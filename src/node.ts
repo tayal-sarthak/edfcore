@@ -4,7 +4,8 @@
  *
  * Layer 7. Keeping this module out of everything `edfcore` can reach is what lets the universal
  * entry be bundled for a browser without a polyfill and without a resolution alias, and a
- * packaging test greps the built universal bundle for `node:` to prove exactly that.
+ * `public-api.test.ts` walks the module graph from `src/index.ts` for `node:` to prove exactly
+ * that.
  *
  * Two wordings have been wrong here. It said "the ONLY module in edfcore that imports anything
  * from `node:`" until 0.3.84 — `src/cli.ts` imports `node:fs/promises` and `node:process` and
