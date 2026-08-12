@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.7
+
+- **Fixed** `publish.yml`'s `permissions` comment claiming `id-token: write` is for trusted
+  publishing and that "no long-lived secret is stored anywhere". The publish step in the same file
+  says the opposite: trusted publishing 400s here, and NPM_TOKEN is the credential. The permission
+  is for the provenance attestation, which is the one claim that survived.
+
 ## 0.4.6
 
 - **Fixed** the drift-recovery note in `scripts/release.mjs` telling you to run

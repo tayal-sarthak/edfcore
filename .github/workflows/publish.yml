@@ -7,10 +7,10 @@ on:
 
 permissions:
   contents: read
-  # Required for npm trusted publishing. npm exchanges this short-lived OIDC token for
-  # publish rights, so no long-lived secret is stored anywhere, and provenance is attested
-  # automatically. Classic npm tokens were revoked at the end of 2025, so this is now the
-  # normal path rather than the advanced one.
+  # Required for the provenance attestation on the publish step below, which signs the tarball
+  # with this short-lived OIDC token. NOT for trusted publishing: registering that returns 400
+  # against this package, so the publish authenticates with the NPM_TOKEN secret instead — see
+  # the note on that step.
   id-token: write
 
 jobs:
