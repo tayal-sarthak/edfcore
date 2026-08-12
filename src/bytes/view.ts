@@ -23,7 +23,10 @@ function assertInBounds(bytes: Uint8Array, offset: number, length: number): void
     );
   }
   if (!Number.isSafeInteger(length) || length < 0) {
-    throw new RangeError(`byte length must be a non-negative safe integer, got ${length}`);
+    throw new RangeError(
+      `byte length must be a non-negative safe integer, got ${length}. Next: report this — the ` +
+        'length comes from the header layout, not from the call site.',
+    );
   }
   if (offset + length > bytes.length) {
     throw new RangeError(

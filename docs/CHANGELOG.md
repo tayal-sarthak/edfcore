@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.39
+
+- **Fixed** the byte-length bounds refusal, the sibling of the one 0.4.38 fixed and the second of
+  three in `assertInBounds` without a `Next:` clause.
+
 ## 0.4.38
 
 - **Fixed** the byte-offset bounds refusal in `bytes/view.ts` carrying no `Next:` clause. Nothing
