@@ -22,7 +22,12 @@ import type { EdfChunk, EdfChunkSignal, EdfDiagnostic } from './types.js';
 /** Reads as one line at the call site, and keeps the `chunks[i]` non-null assertions out of it. */
 function at(chunks: readonly EdfChunk[], index: number): EdfChunk {
   const chunk = chunks[index];
-  if (chunk === undefined) throw new RangeError(`mergeChunks: no chunk at ${index}.`);
+  if (chunk === undefined) {
+    throw new RangeError(
+      `mergeChunks: no chunk at ${index}. Next: pass the array readWindow() returned, with no ` +
+        'holes and nothing spliced out of it.',
+    );
+  }
   return chunk;
 }
 

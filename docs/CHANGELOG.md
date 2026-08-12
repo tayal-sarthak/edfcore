@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.36
+
+- **Fixed** `mergeChunks: no chunk at N.` carrying no `Next:` clause. It fires when the array has
+  a hole, which happens when a caller has spliced or filtered what `readWindow` returned — and
+  that is what the message now says to check.
+
 ## 0.4.35
 
 - **Fixed** `readEnvelopeAtResolution()` refusing a bad `secondsPerBucket` without pointing at
