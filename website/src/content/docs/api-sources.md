@@ -11,7 +11,7 @@ import { byteSource, blobSource, httpSource, cachedSource } from 'edfcore';
 import { fileSource, fileHandleSource } from 'edfcore/node';
 ```
 
-`edfcore/node` is the only module the universal entry can reach that imports a Node built-in, and `node:fs/promises` is the only one it imports. Keeping every such import out of that graph is what lets the universal entry point be bundled for a browser with no polyfill and no resolution alias. The `bin` program (`dist/cli.js`) imports `node:fs/promises` and `node:process`, and no import path from `edfcore` reaches it. A packaging test walks the whole module graph reachable from `edfcore` and checks that no `node:` specifier hides in it.
+`edfcore/node` imports one Node built-in, `node:fs/promises`, and the universal entry cannot reach it. Keeping every such import out of that graph is what lets the universal entry point be bundled for a browser with no polyfill and no resolution alias. The `bin` program (`dist/cli.js`) imports `node:fs/promises` and `node:process`, and no import path from `edfcore` reaches it. A packaging test walks the whole module graph reachable from `edfcore` and checks that no `node:` specifier hides in it.
 
 ## ByteSource
 

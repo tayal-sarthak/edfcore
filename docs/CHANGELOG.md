@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.21
+
+- **Fixed** `api-sources.md` calling `edfcore/node` "the only module the universal entry can reach
+  that imports a Node built-in". The universal entry reaches none — the same inversion 0.4.17
+  removed from `installation.md`, and the sentence two lines later already said so.
+
 ## 0.4.20
 
 - **Fixed** the last copy of the "greps the built universal bundle" claim, in `installation.md`.
