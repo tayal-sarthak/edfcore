@@ -30,7 +30,8 @@ function assertInBounds(bytes: Uint8Array, offset: number, length: number): void
   }
   if (offset + length > bytes.length) {
     throw new RangeError(
-      `byte range [${offset}, ${offset + length}) is outside the ${bytes.length}-byte buffer`,
+      `byte range [${offset}, ${offset + length}) is outside the ${bytes.length}-byte buffer. ` +
+        'Next: check that the header and these bytes came from the same file.',
     );
   }
 }

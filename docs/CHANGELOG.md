@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.40
+
+- **Fixed** the last refusal in `assertInBounds` without a `Next:` clause, and the one of the
+  three with a cause a caller can act on: its own docblock says this fires when a header is mixed
+  with bytes from another file, which the message never passed on.
+
 ## 0.4.39
 
 - **Fixed** the byte-length bounds refusal, the sibling of the one 0.4.38 fixed and the second of
