@@ -71,7 +71,7 @@ npm test
 
 ## Fixture policy
 
-Three tiers were planned; the first and third are in use.
+Three tiers were planned, and all three are in use.
 
 - **Tier 1 — synthetic, in memory.** Almost everything. No binaries in git, no licence questions,
   no network.

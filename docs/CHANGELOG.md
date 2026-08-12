@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.10
+
+- **Fixed** the fixture policy in `tests/README.md` opening with "the first and third are in use"
+  and then describing Tier 2 as in use since 0.2.34, three lines below. All three are.
+
 ## 0.4.9
 
 - **Fixed** the layer chain in `AGENTS.md` omitting `src/text/`. It is a Layer 1 module, alongside
