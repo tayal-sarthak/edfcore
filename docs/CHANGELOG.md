@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.8
+
+- **Fixed** `AGENTS.md` advertising `npm test` as "~2s". The suite is 1906 tests and takes about
+  ten seconds; a contributor timing it against that number would think something had hung.
+
 ## 0.4.7
 
 - **Fixed** `publish.yml`'s `permissions` comment claiming `id-token: write` is for trusted

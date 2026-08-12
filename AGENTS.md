@@ -23,7 +23,7 @@ runtime dependencies and that is a permanent constraint, not a current state.
 
 ```bash
 npm run check       # lint + typecheck (both configs) + tests — run this before finishing
-npm test            # vitest, ~2s
+npm test            # vitest, ~10s
 npm run build       # tsc to dist/
 npm run dev --prefix website
 ```
