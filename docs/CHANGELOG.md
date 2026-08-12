@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.14
+
+- **Fixed** `AGENTS.md` telling generated code to compare event times with `annotation.onsetTicks`.
+  `src/types.ts` says that field is the wrong one for comparing an annotation against a window —
+  `readWindow` and `readEnvelope` put `t = 0` at record 0, which is `onsetTicksFromFirstRecord` —
+  and the two are up to a second apart on a file with a sub-second start offset.
+
 ## 0.4.13
 
 - **Fixed** the last stale `tsconfig.build.json` reference, in `diagnostic-docs.test.ts`. Same

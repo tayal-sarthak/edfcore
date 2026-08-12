@@ -76,7 +76,10 @@ The mistakes to avoid, in order of how often they happen:
 2. **`readWindow` returns an array.** Destructure or index it; do not treat it as one chunk.
 3. **Do not compute sample indices from `sampleRateHz`.** It is derived and can be `undefined`.
    Use `samplesPerRecord`, or `trimToWindow` for an exact window.
-4. **Compare event times with `annotation.onsetTicks`** (bigint, 100 ns units), not the floats.
+4. **Compare event times in `bigint` ticks, not the floats.** Against a window or a chunk use
+   `onsetTicksFromFirstRecord`, which is the axis every read puts `t = 0` on. `onsetTicks` is the
+   header's axis, for comparing annotations with each other; the two differ by record 0's
+   sub-second offset.
 5. **Signals have different sample rates.** There is no single rate for a recording.
 6. **Diagnostics are values on the result**, not exceptions and not log output. Check
    `recording.header.diagnostics`; edfcore never writes to the console.
