@@ -139,7 +139,10 @@ export function sampleAt(
 ): EdfSampleLocation | undefined {
   const signal = resolveSignal(recording, signalIndex);
   if (!Number.isFinite(seconds)) {
-    throw new RangeError(`sampleAt(): seconds must be a finite number, received ${seconds}.`);
+    throw new RangeError(
+      `sampleAt(): seconds must be a finite number, received ${seconds}. Next: pass a time on ` +
+        'the recording axis, where t = 0 is the start of record 0.',
+    );
   }
 
   const duration = recording.header.recordDurationTicks;

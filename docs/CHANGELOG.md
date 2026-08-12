@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.32
+
+- **Fixed** `sampleAt()` refusing a non-finite `seconds` without naming the axis the caller was
+  supposed to measure on. Which axis is the thing this package is most often got wrong, so the
+  refusal is the right place to say it.
+
 ## 0.4.31
 
 - **Fixed** the same missing `Next:` clause in `gapAt()`, two functions below the one 0.4.30
