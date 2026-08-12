@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.37
+
+- **Fixed** the only refusal in `decode/digital.ts` without a `Next:` clause, where the other four
+  in that file all have one. It fires on a header whose offsets contradict its record size, which
+  is an edfcore bug unless the header was hand-built — so the message now says to report it.
+
 ## 0.4.36
 
 - **Fixed** `mergeChunks: no chunk at N.` carrying no `Next:` clause. It fires when the array has

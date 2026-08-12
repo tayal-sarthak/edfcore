@@ -124,7 +124,8 @@ function assertSignalFitsRecord(header: EdfHeader, signal: EdfSignal, blockBytes
   throw new RangeError(
     `signal ${signal.index} occupies bytes [${signal.recordByteOffset}, ` +
       `${signal.recordByteOffset + blockBytes}) of a ${header.recordByteLength}-byte record, ` +
-      'which does not fit. The header this was called with is internally inconsistent.',
+      'which does not fit. The header this was called with is internally inconsistent. Next: if ' +
+      'it came from parseHeader() rather than being built by hand, report it as a bug.',
   );
 }
 
