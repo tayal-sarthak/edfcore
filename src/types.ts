@@ -703,6 +703,11 @@ export interface EdfAnnotationsResult {
 // Diagnostics
 // ===========================================================================
 
+/**
+ * Something the file got wrong that edfcore could proceed past. These are VALUES on the result,
+ * never exceptions and never console output: if edfcore had to invent something it would have
+ * thrown instead, so a diagnostic always describes a file it read anyway.
+ */
 export interface EdfDiagnostic {
   readonly code: EdfDiagnosticCode;
   readonly severity: EdfSeverity;

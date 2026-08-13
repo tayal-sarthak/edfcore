@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.56
+
+- **Added** a docblock to `EdfDiagnostic` stating the rule the whole library is built on where a
+  consumer meets it: a diagnostic is a value on the result, never an exception and never console
+  output, because anything edfcore could not proceed past would have thrown instead.
+
 ## 0.4.55
 
 - **Added** a docblock to `EdfChunkSignal` saying on the type that `digital` holds stored ADC
