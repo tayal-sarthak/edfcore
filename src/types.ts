@@ -162,6 +162,11 @@ export interface EdfCalendarDate {
   readonly day: number;
 }
 
+/**
+ * Wall-clock time as the file states it. Local at the patient, with no zone and no offset field
+ * anywhere in EDF to recover one from — so two readers in different zones must agree these are
+ * the same digits, not the same instant.
+ */
 export interface EdfClockTime {
   readonly hour: number;
   readonly minute: number;

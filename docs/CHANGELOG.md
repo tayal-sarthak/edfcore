@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.69
+
+- **Added** a docblock to `EdfClockTime`, the companion to the `EdfCalendarDate` one in 0.4.65.
+  The `EdfStartTime` below already explains why edfcore produces no `Date`; the clock type an
+  editor shows on hover said nothing about the zone it does not carry.
+
 ## 0.4.68
 
 - **Added** a docblock to `HttpResponseLike`, the last of the three shims. It names the practical
