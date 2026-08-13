@@ -119,6 +119,11 @@ export interface ByteSource {
   close?(): Promise<void> | void;
 }
 
+/**
+ * Configuration for `httpSource`, which needs the server to honour range requests. Concurrency
+ * belongs here rather than in the reading calls: a source owns how many requests it issues, so
+ * the read pattern a caller observes stays the one they asked for.
+ */
 export interface HttpSourceOptions extends ReadOptions {
   readonly fetch?: FetchLike;
   readonly headers?: Readonly<Record<string, string>>;

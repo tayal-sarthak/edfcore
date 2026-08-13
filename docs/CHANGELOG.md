@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.74
+
+- **Added** a docblock to `HttpSourceOptions` saying why `maxConcurrency` lives on the source
+  rather than on a read. `readWindow` issues its runs in order precisely so the pattern a caller
+  observes is the one they asked for; concurrency is the source's business.
+
 ## 0.4.73
 
 - **Added** a docblock to `CacheOptions` naming what makes `cachedSource` the only cache in the
