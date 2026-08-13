@@ -857,6 +857,11 @@ export interface ObservedSignalStats {
   readonly sampleCount: number;
 }
 
+/**
+ * The result of a full conformance sweep. `recordsScanned` and `bytesRead` are reported because
+ * this is the one call in edfcore that reads the whole file, so what it cost is part of the
+ * answer rather than something a caller has to infer.
+ */
 export interface ValidationReport {
   readonly ok: boolean;
   readonly diagnostics: readonly EdfDiagnostic[];

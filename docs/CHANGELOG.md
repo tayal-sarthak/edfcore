@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.64
+
+- **Added** a docblock to `ValidationReport` saying why it reports `recordsScanned` and
+  `bytesRead`. `validateRecording` is one of only two calls that read the whole file, so what the
+  sweep cost belongs in the answer rather than being left for a caller to infer.
+
 ## 0.4.63
 
 - **Added** the docblock `EdfRawHeaderFields` was missing. `EdfRawSignalFields` sits directly
