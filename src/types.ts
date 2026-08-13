@@ -261,6 +261,11 @@ export interface EdfSignal {
   readonly raw: EdfRawSignalFields;
 }
 
+/**
+ * The parsed header, and the only thing every read needs. Values are resolved rather than
+ * verbatim — `recordCount` is what the file actually holds, not what it declared — and each
+ * declared counterpart is kept beside it so a disagreement stays visible.
+ */
 export interface EdfHeader {
   readonly variant: EdfVariant;
   readonly continuity: 'continuous' | 'discontinuous';

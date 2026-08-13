@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.49
+
+- **Added** a docblock to `EdfHeader`, the type every read takes. Its per-field comments already
+  said which values are resolved rather than verbatim; the type itself never said that resolved
+  values are the rule, with the declared counterpart kept beside each one.
+
 ## 0.4.48
 
 - **Added** a docblock to `EdfRecording`. `removeComments: false` ships these as the hover text in
