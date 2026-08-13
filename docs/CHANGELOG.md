@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.76
+
+- **Added** a docblock to `StreamSelection` naming what it buys: peak memory of `chunkRecords`
+  worth of records rather than the whole window, which is the difference between processing a
+  22-hour recording and having it refused on the materialize budget.
+
 ## 0.4.75
 
 - **Added** a docblock to `EnvelopeSelection`. Its `buckets` field already explained itself; the

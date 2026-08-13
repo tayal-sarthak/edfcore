@@ -654,6 +654,11 @@ export interface EdfAnnotationWindow {
   readonly durationSeconds: number;
 }
 
+/**
+ * A window to iterate rather than materialise. `streamRecords` yields one chunk at a time, so
+ * peak memory is `chunkRecords` worth of records instead of the whole window — the difference
+ * between processing a 22-hour recording and refusing it on the budget.
+ */
 export interface StreamSelection extends WindowSelection {
   /** Records held at once. Defaults to 256. The record is the only unit every signal shares. */
   readonly chunkRecords?: number;
