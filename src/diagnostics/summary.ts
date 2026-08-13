@@ -15,6 +15,11 @@
 
 import type { EdfDiagnostic, EdfDiagnosticCode, EdfSeverity } from '../types.js';
 
+/**
+ * One diagnostic code and how often it fired. The severity is carried here too so a caller
+ * ranking codes never has to reach back into the diagnostics array to find out whether the most
+ * frequent one is also the most serious — it usually is not.
+ */
 export interface EdfCodeCount {
   readonly code: EdfDiagnosticCode;
   readonly severity: EdfSeverity;

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.88
+
+- **Added** a docblock to `EdfCodeCount` saying why it carries `severity` beside the count.
+  `byCode` is sorted most-frequent-first, and the most frequent code is usually not the most
+  serious one, so the severity has to travel with it.
+
 ## 0.4.87
 
 - **Added** a docblock to `EdfDiagnosticSummary` saying what it is FOR. A file can carry hundreds
