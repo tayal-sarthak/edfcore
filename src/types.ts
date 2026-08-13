@@ -399,6 +399,11 @@ export interface EdfTimeline {
   readonly diagnostics: readonly EdfDiagnostic[];
 }
 
+/**
+ * What is known about where records start, and how much of it was actually read. `coverage` is
+ * the field to branch on: under `probed` the answers come from two reads, and `segments` and
+ * `gaps` are absent rather than empty so nothing here can read as "continuous" unchecked.
+ */
 export interface EdfRecordIndex {
   /** `probed` = record 0 and the last record only. `complete` = every record verified. */
   readonly coverage: 'probed' | 'complete';

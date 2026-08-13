@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.58
+
+- **Added** a docblock to `EdfRecordIndex` naming `coverage` as the field to branch on, and why
+  `segments` and `gaps` are absent rather than empty under a probed index: an empty array would
+  read as "no gaps" when nothing had looked.
+
 ## 0.4.57
 
 - **Added** a docblock to `EdfAnnotationsResult` saying why it carries `recordOnsetTicks` beside
