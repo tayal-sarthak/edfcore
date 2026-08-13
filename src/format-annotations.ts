@@ -20,6 +20,11 @@ import { floorDiv } from './tal/ticks.js';
 import { printable } from './text/printable.js';
 import type { EdfAnnotation } from './types.js';
 
+/**
+ * Options for `formatAnnotations`. Truncation always says how much it withheld — a listing that
+ * silently stopped would be indistinguishable from a recording that simply had no more events,
+ * which is the one thing a reader scanning event output cannot afford to guess at.
+ */
 export interface FormatAnnotationsOptions {
   /** Rows to print. Defaults to every annotation; the count of the rest is always stated. */
   readonly maxItems?: number;

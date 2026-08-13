@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.89
+
+- **Added** a docblock to `FormatAnnotationsOptions` stating the property that makes `maxItems`
+  safe: truncation always reports how much it withheld, so a listing that stopped early can never
+  be mistaken for a recording that had no more events.
+
 ## 0.4.88
 
 - **Added** a docblock to `EdfCodeCount` saying why it carries `severity` beside the count.
