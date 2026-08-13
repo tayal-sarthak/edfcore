@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.83
+
+- **Added** a docblock to `FormatReportOptions` naming the asymmetry with 0.4.82's type: a report
+  cannot withhold identification by default, because a diagnostic about a non-conformant field
+  must quote it to be useful — so `redactFields` is the deliberate step before sharing one.
+
 ## 0.4.82
 
 - **Added** a docblock to `FormatHeaderOptions` naming the default as opt-IN rather than

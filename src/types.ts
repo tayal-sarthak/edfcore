@@ -638,6 +638,11 @@ export interface EdfPhysicalEnvelope {
   readonly max: Float64Array;
 }
 
+/**
+ * Options for `formatValidationReport`. Unlike `formatHeader`, this one cannot withhold by
+ * default: a diagnostic about a non-conformant identification field has to quote the field to be
+ * useful, so `redactFields` is the deliberate step before sharing a report.
+ */
 export interface FormatReportOptions {
   /** Only used to name signals; a report reads fine without it. */
   readonly header?: EdfHeader;
