@@ -912,6 +912,11 @@ export interface EdfInspection {
 // Validation (edfcore/validate)
 // ===========================================================================
 
+/**
+ * How much of the file a conformance sweep should read. `scanSamples` is the expensive half —
+ * it is what turns declared digital ranges into observed ones — and `index` exists so a
+ * recording you have already scanned is not traversed a second time.
+ */
 export interface ValidateOptions extends ReadOptions {
   /** Reuse a completed index so conformance costs one traversal, not two. */
   readonly index?: EdfRecordIndex;

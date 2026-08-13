@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.80
+
+- **Added** a docblock to `ValidateOptions` naming which field costs what. `scanSamples` is the
+  expensive half and the one that produces the observed digital ranges, which is the distinction
+  a caller weighing a full sweep against a header check needs.
+
 ## 0.4.79
 
 - **Added** a docblock to `OpenOptions`. It is the entry point most callers meet first and hovered
