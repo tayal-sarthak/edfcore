@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.48
+
+- **Added** a docblock to `EdfRecording`. `removeComments: false` ships these as the hover text in
+  `dist/types.d.ts`, and the type `openEdf` returns had none — so the struct-not-class shape, which
+  is what makes `{ ...recording, index }` the way to attach a scanned index, was documented
+  everywhere except on the type itself.
+
 ## 0.4.47
 
 - **Fixed** the last `mergeChunks` refusal without a `Next:` clause, completing the sweep

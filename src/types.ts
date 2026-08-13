@@ -691,6 +691,11 @@ export interface EdfDiagnostic {
 // Recording and selections
 // ===========================================================================
 
+/**
+ * What `openEdf` returns, and a plain struct on purpose: swapping in a better index is
+ * `{ ...recording, index }` rather than a method call, which is how a scanned index reaches
+ * `readWindow`.
+ */
 export interface EdfRecording {
   readonly source: ByteSource;
   readonly header: EdfHeader;
