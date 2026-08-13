@@ -88,6 +88,11 @@ export interface ReadOptions {
   readonly maxMaterializeBytes?: number;
 }
 
+/**
+ * The one option that changes what a parse does rather than what it costs. Everything else in
+ * edfcore reports a departure as a diagnostic on the result; `strict` turns the first one into a
+ * rejection instead, for callers who would rather not receive a file at all than inspect it.
+ */
 export interface ParseOptions {
   /**
    * When true the first would-be diagnostic throws `EdfFormatError` carrying it, so a file that

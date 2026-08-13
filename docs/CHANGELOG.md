@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.78
+
+- **Added** a docblock to `ParseOptions`. Its `strict` field is documented at length; the type
+  never said what makes it unlike every other option in edfcore — it changes what a parse DOES,
+  where the rest only change what one costs.
+
 ## 0.4.77
 
 - **Added** a docblock to `TriggerSelection` answering the question its shape raises: it is the
