@@ -872,6 +872,11 @@ export interface WindowSelection {
   readonly signalIndices: readonly number[];
 }
 
+/**
+ * Options for decoding a record range's annotations. Two of these carry record 0's true start,
+ * consumed at different sites and each falling back to the other, because a range that does not
+ * contain record 0 cannot derive it and would otherwise place every event on the wrong origin.
+ */
 export interface DecodeAnnotationsOptions extends ParseOptions {
   /** Defaults to every annotation signal. Only the first carries timekeeping. */
   readonly signalIndices?: readonly number[];

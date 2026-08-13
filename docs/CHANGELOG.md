@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.84
+
+- **Added** a docblock to `DecodeAnnotationsOptions`, the last public type in `types.ts` without
+  one. It says up front that two of its fields are the same quantity — record 0's true start —
+  which is the thing a reader otherwise discovers only by reading both field comments.
+
 ## 0.4.83
 
 - **Added** a docblock to `FormatReportOptions` naming the asymmetry with 0.4.82's type: a report
