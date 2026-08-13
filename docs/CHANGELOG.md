@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.82
+
+- **Added** a docblock to `FormatHeaderOptions` naming the default as opt-IN rather than
+  redact-on-request. A formatted header is something people paste into issues, and which way that
+  default points is the part worth knowing before pasting one.
+
 ## 0.4.81
 
 - **Added** a docblock to `BuildIndexOptions` saying why `onProgress` appears here and nowhere

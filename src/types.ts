@@ -651,6 +651,11 @@ export interface FormatReportOptions {
   readonly redactFields?: readonly string[];
 }
 
+/**
+ * Options for `formatHeader`. There is one, and it is opt-IN: a formatted header is something
+ * people paste into issues and logs, so identification is withheld unless a caller asks for it
+ * rather than redacted only when they remember to.
+ */
 export interface FormatHeaderOptions {
   /** Off by default: a header carries a name and a birth date, and a summary gets pasted around. */
   readonly includePatientId?: boolean;
