@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.86
+
+- **Added** a docblock to `EdfSeverity` naming the `info` exemption on the type. That level
+  describes files the reader got RIGHT and is exempt from `strict`, so treating the diagnostics
+  array as uniformly bad is the mistake this hover now heads off.
+
 ## 0.4.85
 
 - **Added** a docblock to `EdfErrorKind` saying to branch on it rather than on `instanceof`. The

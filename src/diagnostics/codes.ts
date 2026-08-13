@@ -14,6 +14,11 @@
  * - `info`     — the file is correct; the note exists because the situation surprises people.
  */
 
+/**
+ * How much a diagnostic should worry you. `info` is the one to know: those describe correct
+ * files, are carried by nearly every conforming EDF, and are exempt from `strict` — so filtering
+ * on severity rather than treating the array as uniformly bad is usually what a caller wants.
+ */
 export type EdfSeverity = 'error' | 'warning' | 'info';
 
 /** How a code behaves when it fires. See the module comment. */
