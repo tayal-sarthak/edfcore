@@ -219,6 +219,11 @@ export interface EdfPatientId {
   readonly extraSubfields: readonly string[];
 }
 
+/**
+ * The recording field, parsed the way `EdfPatientId` is and with the same `conformant` caveat.
+ * Its `startDate` subfield is the EDF+ one, which can carry a four-digit year the 8-character
+ * date field at the top of the header cannot.
+ */
 export interface EdfRecordingId {
   readonly raw: string;
   readonly conformant: boolean;

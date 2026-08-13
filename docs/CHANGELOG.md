@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.71
+
+- **Added** a docblock to `EdfRecordingId`, the sibling of the type 0.4.70 documented. It names
+  why its `startDate` subfield matters: the EDF+ one carries a four-digit year, which the
+  8-character date field at the top of the header cannot express.
+
 ## 0.4.70
 
 - **Added** a docblock to `EdfPatientId` naming `conformant` as the field to check first. A plain
