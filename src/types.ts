@@ -760,6 +760,11 @@ export interface RecordSelection {
   readonly signalIndices: readonly number[];
 }
 
+/**
+ * A time window to read. Seconds here are on the recording axis, where `t = 0` is the start of
+ * record 0 — the same axis `onsetTicksFromFirstRecord` uses. Unlike the reported times, these
+ * bounds are a caller's request, so rounding them to the tick grid is by design.
+ */
 export interface WindowSelection {
   readonly startSeconds: number;
   readonly durationSeconds: number;

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.59
+
+- **Added** a docblock to `WindowSelection` naming the axis its seconds are on, and why it is a
+  SELECTION type: reported times all carry an exact `*Ticks` twin, and these deliberately do not,
+  because rounding a caller's requested bound to the tick grid is the intended behaviour.
+
 ## 0.4.58
 
 - **Added** a docblock to `EdfRecordIndex` naming `coverage` as the field to branch on, and why
