@@ -358,6 +358,11 @@ export interface EdfLocation {
   readonly offsetInRecordTicks: bigint;
 }
 
+/**
+ * Where the recording begins and how far it runs, from the two probes `openEdf` issues.
+ * `spanTicks === coveredTicks` is its contiguity verdict, and it is only what two reads can see:
+ * a gap that a later overlap cancels leaves both ends exactly where a contiguous file would.
+ */
 export interface EdfTimeline {
   readonly recordCount: number;
   readonly recordDurationSeconds: number;

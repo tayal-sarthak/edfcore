@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.53
+
+- **Added** a docblock to `EdfTimeline` saying on the type what its `coveredTicks` field says in
+  its own comment: the contiguity verdict is what TWO probes can see, and a gap an overlap cancels
+  defeats it. That limit is the one worth reading before trusting the verdict, and hovering the
+  type never showed it.
+
 ## 0.4.52
 
 - **Added** a docblock to `EdfAnnotation` naming which onset field goes with which axis. That
