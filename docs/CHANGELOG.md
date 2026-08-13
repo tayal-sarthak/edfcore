@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.51
+
+- **Added** a docblock to `EdfChunk`, stating the two things a caller gets wrong about it: chunks
+  are record-aligned and therefore usually wider than the window asked for, and `precededByGap`
+  being `undefined` means nobody looked, not that there is no gap.
+
 ## 0.4.50
 
 - **Added** a docblock to `EdfSignal`, naming the two fields that decide what a caller can do with

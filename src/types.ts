@@ -446,6 +446,11 @@ export interface EdfChunkSignal {
   readonly outOfDigitalRangeCount: number;
 }
 
+/**
+ * One contiguous run of records, as read. Chunks stay RECORD-ALIGNED, so a chunk is usually
+ * wider than the window that asked for it — `trimToWindow` narrows it exactly — and
+ * `precededByGap` is `undefined` on a probed index, which is "nobody looked" rather than "no gap".
+ */
 export interface EdfChunk {
   readonly records: RecordRange;
   readonly startSeconds: number;
