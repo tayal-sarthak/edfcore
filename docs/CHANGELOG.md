@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.77
+
+- **Added** a docblock to `TriggerSelection` answering the question its shape raises: it is the
+  one selection type with no `signalIndices`, because `readTriggers` locates the Status channel
+  itself rather than letting an ordinary signal be decoded as trigger words.
+
 ## 0.4.76
 
 - **Added** a docblock to `StreamSelection` naming what it buys: peak memory of `chunkRecords`

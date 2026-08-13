@@ -714,6 +714,11 @@ export interface EdfTriggerEvent {
   readonly precededByGap: EdfGap | undefined;
 }
 
+/**
+ * A window of BioSemi trigger events to read. It names no `signalIndices` because there is only
+ * one channel to read: `readTriggers` finds the Status channel itself, and decoding any other as
+ * a trigger word would produce plausible events out of ordinary samples.
+ */
 export interface TriggerSelection {
   readonly startSeconds: number;
   readonly durationSeconds: number;
