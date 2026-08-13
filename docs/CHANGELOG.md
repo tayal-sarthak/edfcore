@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.60
+
+- **Added** a docblock to `RecordSelection` saying what distinguishes it from `WindowSelection`:
+  naming records directly is what makes a gap unable to surprise the caller, and therefore what
+  lets `readRecords` return one chunk where `readWindow` must return an array.
+
 ## 0.4.59
 
 - **Added** a docblock to `WindowSelection` naming the axis its seconds are on, and why it is a

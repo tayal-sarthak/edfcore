@@ -753,6 +753,11 @@ export interface EdfRecording {
   readonly index: EdfRecordIndex;
 }
 
+/**
+ * Records to read, named directly rather than resolved from a time. This is the selection that
+ * cannot be surprised by a gap — you said which records you wanted — which is why `readRecords`
+ * returns exactly one chunk where `readWindow` returns an array.
+ */
 export interface RecordSelection {
   readonly records: RecordRange;
   /** Required, with no "all signals" default: a 256-channel file must never be read
