@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.79
+
+- **Added** a docblock to `OpenOptions`. It is the entry point most callers meet first and hovered
+  as a bare intersection of two other types; it now says why that is the whole definition —
+  opening introduces no policy of its own.
+
 ## 0.4.78
 
 - **Added** a docblock to `ParseOptions`. Its `strict` field is documented at length; the type

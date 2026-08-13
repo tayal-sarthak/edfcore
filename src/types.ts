@@ -109,6 +109,11 @@ export interface ParseOptions {
   readonly strict?: boolean;
 }
 
+/**
+ * What `openEdf` takes: how to parse, and how to read. It is an intersection rather than a type
+ * of its own because opening declares no policy — the two halves are the same ones every parse
+ * and every read already answer to.
+ */
 export type OpenOptions = ParseOptions & ReadOptions;
 
 /**
