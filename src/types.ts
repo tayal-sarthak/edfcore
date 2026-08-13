@@ -633,6 +633,11 @@ export interface TriggerSelection {
   readonly durationSeconds: number;
 }
 
+/**
+ * One event. Its onset is exposed on both axes as separately named fields rather than behind an
+ * option: `onsetTicks` is the header's timebase, `onsetTicksFromFirstRecord` is the one every
+ * read measures from. Comparing an event against a window needs the second.
+ */
 export interface EdfAnnotation {
   /** Verbatim on-disk value, relative to the header startdate/starttime (EDF+ 2.2.4). */
   readonly onsetSecondsFromHeaderStart: number;

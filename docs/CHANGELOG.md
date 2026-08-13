@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.52
+
+- **Added** a docblock to `EdfAnnotation` naming which onset field goes with which axis. That
+  choice was corrected in the README and `AGENTS.md` in 0.4.14 and 0.4.15; the type an editor
+  actually shows on hover still said it only in the per-field comments below.
+
 ## 0.4.51
 
 - **Added** a docblock to `EdfChunk`, stating the two things a caller gets wrong about it: chunks
