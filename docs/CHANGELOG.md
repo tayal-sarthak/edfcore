@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.85
+
+- **Added** a docblock to `EdfErrorKind` saying to branch on it rather than on `instanceof`. The
+  barrel explains that a class identity is false across a realm boundary; the type a consumer
+  hovers while writing the `switch` did not.
+
 ## 0.4.84
 
 - **Added** a docblock to `DecodeAnnotationsOptions`, the last public type in `types.ts` without

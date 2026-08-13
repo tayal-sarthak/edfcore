@@ -11,6 +11,11 @@
 
 import type { EdfDiagnostic, EdfDiagnosticCode, RecordRange } from './types.js';
 
+/**
+ * The supported way to tell edfcore's errors apart. Branch on `error.edfErrorKind`, not on
+ * `instanceof`: a class identity is false across a realm boundary — an iframe, a worker, two
+ * copies of the package in one tree — where these six strings are not.
+ */
 export type EdfErrorKind = 'format' | 'scaling' | 'range' | 'source' | 'budget' | 'channel';
 
 const EMPTY_DIAGNOSTICS: readonly EdfDiagnostic[] = Object.freeze([]);
