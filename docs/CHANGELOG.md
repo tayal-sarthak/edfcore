@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.55
+
+- **Added** a docblock to `EdfChunkSignal` saying on the type that `digital` holds stored ADC
+  counts rather than the signal's units. `AGENTS.md` lists mistaking those for microvolts as the
+  single most common error against this API, and the field an editor shows on hover never said so.
+
 ## 0.4.54
 
 - **Added** a docblock to `EdfLocation`, the shape `sampleAt` and `index.locate` return. It says

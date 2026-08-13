@@ -430,6 +430,11 @@ export interface BuildIndexOptions extends ParseOptions, ReadOptions {
 // Samples and annotations
 // ===========================================================================
 
+/**
+ * One signal's samples out of a chunk. `digital` is raw stored ADC counts, not the signal's
+ * units — `toPhysical(signal, digital)` is the conversion, and it is a separate call because it
+ * can fail where decoding cannot.
+ */
 export interface EdfChunkSignal {
   readonly signalIndex: number;
   /** The truth. Never padded to a round number. */
