@@ -129,6 +129,11 @@ export interface HttpSourceOptions extends ReadOptions {
   readonly allowFullDownload?: boolean;
 }
 
+/**
+ * Tuning for `cachedSource`, which is the only cache in edfcore — everything else reads through.
+ * That is why this is opt-in and visible at the call site: caching is removed by deleting one
+ * wrapper, so it can never be the hidden reason two reads disagreed.
+ */
 export interface CacheOptions {
   /** Block size in bytes. Default 1 MiB. Blocks are byte-aligned, not record-aligned: the
    *  cache is format-independent by construction and never sees a header to learn a record

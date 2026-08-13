@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.73
+
+- **Added** a docblock to `CacheOptions` naming what makes `cachedSource` the only cache in the
+  package, and why that matters: it is one wrapper, so it can be removed, and caching can never
+  be the hidden explanation for two reads disagreeing.
+
 ## 0.4.72
 
 - **Added** a docblock to `ObservedSignalStats` saying what the numbers are for. The type exists
