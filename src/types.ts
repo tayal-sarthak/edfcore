@@ -601,6 +601,11 @@ export interface EdfEnvelopeChunk {
   readonly diagnostics: readonly EdfDiagnostic[];
 }
 
+/**
+ * A window to reduce to min/max pairs rather than read in full. This is what makes plotting a
+ * twelve-hour recording tractable: the file is still read, but only the extremes per bucket are
+ * kept, so memory is bounded by the plot rather than by the window.
+ */
 export interface EnvelopeSelection extends WindowSelection {
   /**
    * How many buckets to reduce the window into — in a viewer, the pixel width of the plot.

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.75
+
+- **Added** a docblock to `EnvelopeSelection`. Its `buckets` field already explained itself; the
+  type never said what the shape is for — memory bounded by the plot rather than by the window,
+  which is what makes rendering a twelve-hour recording possible at all.
+
 ## 0.4.74
 
 - **Added** a docblock to `HttpSourceOptions` saying why `maxConcurrency` lives on the source
