@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.68
+
+- **Added** a docblock to `HttpResponseLike`, the last of the three shims. It names the practical
+  consequence of its narrowness: a test double for `httpSource` needs a status, a header lookup
+  and the bytes, not a conforming `Response`.
+
 ## 0.4.67
 
 - **Added** a docblock to `BlobLike` naming the thing a browser caller actually holds: a `File`

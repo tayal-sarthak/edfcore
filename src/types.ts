@@ -50,6 +50,11 @@ export interface BlobLike {
   arrayBuffer(): Promise<ArrayBuffer>;
 }
 
+/**
+ * A stand-in for `Response`, structural like the two shims above. Only three members are named,
+ * which is the whole point: a test double for `httpSource` needs a status, a header lookup and
+ * the bytes, not a conforming `Response`.
+ */
 export interface HttpResponseLike {
   readonly status: number;
   readonly headers: { get(name: string): string | null };
