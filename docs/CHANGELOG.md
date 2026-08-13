@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.50
+
+- **Added** a docblock to `EdfSignal`, naming the two fields that decide what a caller can do with
+  a channel: `kind`, because an annotations channel holds TAL text rather than samples, and
+  `scale`, which is `undefined` when no gain can be derived.
+
 ## 0.4.49
 
 - **Added** a docblock to `EdfHeader`, the type every read takes. Its per-field comments already

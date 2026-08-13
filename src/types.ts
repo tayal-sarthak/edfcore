@@ -228,6 +228,11 @@ export interface EdfRawHeaderFields {
   readonly signalCount: string;
 }
 
+/**
+ * One channel of the header. Two fields decide most of what a caller can do with it: `kind`,
+ * because an annotations channel holds TAL text rather than samples, and `scale`, which is
+ * `undefined` when no gain can be derived and makes `toPhysical` throw rather than invent one.
+ */
 export interface EdfSignal {
   readonly index: number;
   readonly kind: 'data' | 'annotations';
