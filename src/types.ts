@@ -884,6 +884,11 @@ export interface ValidateOptions extends ReadOptions {
   readonly onProgress?: (done: number, total: number) => void;
 }
 
+/**
+ * What a signal's samples actually contained, against what its header declared. A narrow
+ * observed range on a long recording usually means the declared range is wrong rather than the
+ * amplifier idle, and `outOfDigitalRangeCount` above zero means it is definitely wrong.
+ */
 export interface ObservedSignalStats {
   readonly signalIndex: number;
   readonly observedDigitalMin: number;

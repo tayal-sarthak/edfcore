@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.72
+
+- **Added** a docblock to `ObservedSignalStats` saying what the numbers are for. The type exists
+  to be compared against the declared range, and the comparison worth making — a non-zero
+  `outOfDigitalRangeCount` means the declaration is wrong, not the samples — was stated only in
+  the validation guide.
+
 ## 0.4.71
 
 - **Added** a docblock to `EdfRecordingId`, the sibling of the type 0.4.70 documented. It names
