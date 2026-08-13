@@ -30,6 +30,11 @@ export type {
 // asserts the real ones remain assignable.
 // ===========================================================================
 
+/**
+ * A stand-in for `AbortSignal`, structural so the published types name no DOM lib. A real
+ * `AbortSignal` is assignable to it, so callers pass one normally; only `aborted` is read, and
+ * the runtime uses the object it was actually given.
+ */
 export interface AbortSignalLike {
   readonly aborted: boolean;
 }

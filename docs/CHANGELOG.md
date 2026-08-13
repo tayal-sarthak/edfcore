@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.66
+
+- **Added** a docblock to `AbortSignalLike`. The section comment above the shims explains why they
+  exist, but a consumer hovering the type in their editor sees the type alone — and the thing they
+  need to know is that a real `AbortSignal` is assignable, so nothing about the call changes.
+
 ## 0.4.65
 
 - **Added** a docblock to `EdfCalendarDate` naming both hazards in the obvious conversion. Its
