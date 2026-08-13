@@ -204,6 +204,11 @@ export interface EdfStartTime {
   readonly secondsSinceMidnight: number;
 }
 
+/**
+ * The patient field, parsed into EDF+ subfields where it follows the convention. Check
+ * `conformant` before trusting any of them: a plain EDF file may put anything in this field, and
+ * `raw` is the only value guaranteed to mean what the writer intended.
+ */
 export interface EdfPatientId {
   readonly raw: string;
   readonly conformant: boolean;

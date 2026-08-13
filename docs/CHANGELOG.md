@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.70
+
+- **Added** a docblock to `EdfPatientId` naming `conformant` as the field to check first. A plain
+  EDF file may put anything in that header field, so the parsed subfields beside it are only
+  meaningful when the convention was followed.
+
 ## 0.4.69
 
 - **Added** a docblock to `EdfClockTime`, the companion to the `EdfCalendarDate` one in 0.4.65.
