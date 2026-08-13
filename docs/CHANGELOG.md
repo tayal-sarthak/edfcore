@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.47
+
+- **Fixed** the last `mergeChunks` refusal without a `Next:` clause, completing the sweep
+  0.4.30 started. It also named only one of the two ways `readWindow` returns `[]` — a window
+  past the end — where the other, a window landing entirely inside a gap, is the one a caller
+  merging a discontinuous recording actually hits.
+
 ## 0.4.46
 
 - **Fixed** the `mergeChunks` sample-continuity refusal. It already said to trim after merging

@@ -164,7 +164,8 @@ export function mergeChunks(chunks: readonly EdfChunk[]): EdfChunk {
   if (chunks.length === 0) {
     throw new RangeError(
       'mergeChunks: nothing to merge. `readWindow` returns [] for a window that lands past the ' +
-        'end of the recording, so check the length before merging.',
+        'end of the recording, and for one that lands entirely inside a gap. Next: check the ' +
+        'length before merging.',
     );
   }
 
