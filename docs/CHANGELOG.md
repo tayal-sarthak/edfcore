@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.57
+
+- **Added** a docblock to `EdfAnnotationsResult` saying why it carries `recordOnsetTicks` beside
+  the events. Reading annotations is how edfcore learns where records truly start, so the onsets
+  are the point rather than a by-product of the same decode.
+
 ## 0.4.56
 
 - **Added** a docblock to `EdfDiagnostic` stating the rule the whole library is built on where a

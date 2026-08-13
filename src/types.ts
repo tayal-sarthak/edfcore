@@ -689,6 +689,11 @@ export interface EdfAnnotation {
   readonly textEncoding: 'utf-8' | 'latin-1-fallback';
 }
 
+/**
+ * What one annotation decode yields: the events, and the per-record onsets read from the same
+ * bytes. The onsets are not a by-product — they are what the timeline is built from, which is
+ * why decoding annotations is also how edfcore learns where records truly start.
+ */
 export interface EdfAnnotationsResult {
   /** Timekeeping TALs and empty texts excluded. Stable sort by
    *  (onsetTicks, signalIndex, byteOffsetInRecord). */
