@@ -21,6 +21,11 @@ export interface EdfCodeCount {
   readonly count: number;
 }
 
+/**
+ * Counts over a diagnostics array, for deciding what to show before showing anything. A file
+ * with four hundred notes is a real case — one bad field repeated per record — so the summary
+ * exists to be rendered instead of the list, not alongside it.
+ */
 export interface EdfDiagnosticSummary {
   readonly total: number;
   readonly errors: number;

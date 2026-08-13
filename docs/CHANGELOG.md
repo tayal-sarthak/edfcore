@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.87
+
+- **Added** a docblock to `EdfDiagnosticSummary` saying what it is FOR. A file can carry hundreds
+  of notes when one bad field repeats per record, so the summary is meant to be rendered instead
+  of the list rather than beside it.
+
 ## 0.4.86
 
 - **Added** a docblock to `EdfSeverity` naming the `info` exemption on the type. That level
