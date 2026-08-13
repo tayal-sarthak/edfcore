@@ -135,6 +135,11 @@ export interface CacheOptions {
  */
 export type EdfVariant = 'EDF' | 'EDF+C' | 'EDF+D' | 'BDF' | 'BDF+C' | 'BDF+D';
 
+/**
+ * A date as the file states it, with no zone attached and none implied. Passing these straight
+ * into `new Date(y, m, d)` is wrong twice over: the month is 1-based, and the constructor would
+ * apply the reader's timezone to a date the recording never expressed one in.
+ */
 export interface EdfCalendarDate {
   readonly year: number;
   /** 1-12. Not a JavaScript month index. */

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.65
+
+- **Added** a docblock to `EdfCalendarDate` naming both hazards in the obvious conversion. Its
+  `month` field already warned it is 1-based; the type never said that `new Date(y, m, d)` also
+  applies the reader's timezone to a date the recording expressed none in.
+
 ## 0.4.64
 
 - **Added** a docblock to `ValidationReport` saying why it reports `recordsScanned` and
