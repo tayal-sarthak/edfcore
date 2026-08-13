@@ -225,6 +225,7 @@ export interface EdfRawSignalFields {
   readonly reserved: string;
 }
 
+/** Header text exactly as written, before trimming or interpretation. */
 export interface EdfRawHeaderFields {
   readonly version: string;
   readonly patientId: string;
