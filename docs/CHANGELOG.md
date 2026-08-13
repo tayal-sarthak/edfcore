@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.81
+
+- **Added** a docblock to `BuildIndexOptions` saying why `onProgress` appears here and nowhere
+  else in the reading API: `buildRecordIndex` is the only call whose cost scales with the file
+  rather than with the window.
+
 ## 0.4.80
 
 - **Added** a docblock to `ValidateOptions` naming which field costs what. `scanSamples` is the

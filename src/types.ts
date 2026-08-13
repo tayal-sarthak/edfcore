@@ -493,6 +493,11 @@ export interface EdfRecordIndex {
   locate(seconds: number, options?: ReadOptions): Promise<EdfLocation | undefined>;
 }
 
+/**
+ * Options for the one call that reads every record's onset. `onProgress` is here and nowhere
+ * else in the reading API, because this is the only operation whose cost scales with the file
+ * rather than with the window — long enough on a million-record recording to want a progress bar.
+ */
 export interface BuildIndexOptions extends ParseOptions, ReadOptions {
   readonly onProgress?: (done: number, total: number) => void;
 }
