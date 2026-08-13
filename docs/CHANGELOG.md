@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.54
+
+- **Added** a docblock to `EdfLocation`, the shape `sampleAt` and `index.locate` return. It says
+  why the record and the offset within it are separate fields: only on a contiguous recording does
+  adding them back together give elapsed time.
+
 ## 0.4.53
 
 - **Added** a docblock to `EdfTimeline` saying on the type what its `coveredTicks` field says in

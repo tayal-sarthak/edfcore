@@ -350,6 +350,11 @@ export interface EdfGap {
   readonly durationTicks: bigint;
 }
 
+/**
+ * A time resolved to a place in the file: which record, and how far into it. Split in two
+ * because the record is what a read takes and the offset is what survives a gap — adding them
+ * back together only reconstructs elapsed time on a contiguous recording.
+ */
 export interface EdfLocation {
   readonly recordIndex: number;
   readonly recordStartSeconds: number;
