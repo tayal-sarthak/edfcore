@@ -128,6 +128,11 @@ export interface CacheOptions {
 // Header model
 // ===========================================================================
 
+/**
+ * Which dialect the file declares. `BDF*` means 24-bit samples rather than 16; the `+D` suffix
+ * means the writer says records are discontinuous. Neither is a promise — `header.continuity`
+ * carries the declared claim, and only a complete index can confirm it.
+ */
 export type EdfVariant = 'EDF' | 'EDF+C' | 'EDF+D' | 'BDF' | 'BDF+C' | 'BDF+D';
 
 export interface EdfCalendarDate {

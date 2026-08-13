@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.62
+
+- **Added** a docblock to `EdfVariant` saying what the two axes in those six strings mean, and
+  that neither is a promise: `+D` is what the writer declared, and only a complete index can
+  confirm whether records are actually discontinuous.
+
 ## 0.4.61
 
 - **Added** a docblock to `ReadOptions` stating the property that makes it safe to pass anywhere:
