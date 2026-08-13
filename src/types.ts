@@ -62,6 +62,11 @@ export type FetchLike = (
 // I/O
 // ===========================================================================
 
+/**
+ * The trailing argument on everything that touches bytes. Both fields bound a cost rather than
+ * change an answer: cancelling a read and capping an allocation never alter what a completed
+ * call returns.
+ */
 export interface ReadOptions {
   readonly signal?: AbortSignalLike;
   /** Refuse before allocating rather than dying inside it. Default 256 MiB. */

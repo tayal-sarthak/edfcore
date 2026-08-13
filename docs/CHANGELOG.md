@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.61
+
+- **Added** a docblock to `ReadOptions` stating the property that makes it safe to pass anywhere:
+  both fields bound a cost, neither changes an answer. `maxMaterializeBytes` altering a result is
+  the exact defect class 0.3.23-0.3.34 swept, so the type says it is not allowed to.
+
 ## 0.4.60
 
 - **Added** a docblock to `RecordSelection` saying what distinguishes it from `WindowSelection`:
