@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.67
+
+- **Added** a docblock to `BlobLike` naming the thing a browser caller actually holds: a `File`
+  from an `<input type="file">` satisfies it directly, which is why `blobSource(file)` needs no
+  cast despite the published types naming no DOM lib.
+
 ## 0.4.66
 
 - **Added** a docblock to `AbortSignalLike`. The section comment above the shims explains why they

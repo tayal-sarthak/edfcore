@@ -39,6 +39,11 @@ export interface AbortSignalLike {
   readonly aborted: boolean;
 }
 
+/**
+ * A stand-in for `Blob`, structural for the same reason as `AbortSignalLike`. A browser `File`
+ * from an `<input type="file">` satisfies it directly, which is what lets `blobSource(file)`
+ * take one with no cast and no DOM lib in the published types.
+ */
 export interface BlobLike {
   readonly size: number;
   slice(start?: number, end?: number): BlobLike;
