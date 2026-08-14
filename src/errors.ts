@@ -228,6 +228,11 @@ export class EdfAmbiguousChannelError extends EdfError {
   }
 }
 
+/**
+ * A signal was asked for that the file does not have, by label or by index. It carries
+ * `availableLabels` because the useful next step is almost always to look at what the file
+ * actually declares — recovering that from the error beats re-reading the header to find out.
+ */
 export class EdfChannelNotFoundError extends EdfError {
   readonly edfErrorKind = 'channel' as const;
   readonly selector: string | number;

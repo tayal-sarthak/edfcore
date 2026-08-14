@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.96
+
+- **Added** a docblock to `EdfChannelNotFoundError`, the one error class in the file without one.
+  It names why the class carries `availableLabels`: recovering what the file declares from the
+  error beats re-reading the header to find out.
+
 ## 0.4.95
 
 - **Added** a docblock to `EdfError`, the abstract base every thrown error extends. It states the
