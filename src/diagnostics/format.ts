@@ -13,6 +13,11 @@ import { trimEdfField } from '../bytes/latin1.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
 
+/**
+ * How to render a diagnostics array as text. `redactFields` is the one to reach for before the
+ * output leaves your machine — a diagnostic quotes the bytes it is complaining about, and for an
+ * identification field those bytes are a person's name.
+ */
 export interface FormatDiagnosticsOptions {
   readonly color?: boolean;
   readonly maxItems?: number;

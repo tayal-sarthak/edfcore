@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.97
+
+- **Added** a docblock to `FormatDiagnosticsOptions` surfacing `redactFields` on the type. Its
+  field comment explains the hazard in full, but a caller has to already be reading the field to
+  find it — the one place a warning about pasting a patient's name should not be.
+
 ## 0.4.96
 
 - **Added** a docblock to `EdfChannelNotFoundError`, the one error class in the file without one.
