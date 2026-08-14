@@ -13,6 +13,11 @@
 import type { BlobLike, ByteSource, ReadOptions } from '../types.js';
 import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
 
+/**
+ * A `ByteSource` over a `Blob` or `File` — the browser entry point, and what an
+ * `<input type="file">` hands you. Reads are ranged, so opening a file the user picked costs the
+ * header rather than the recording.
+ */
 export function blobSource(blob: BlobLike): ByteSource {
   const byteLength = blob.size;
 

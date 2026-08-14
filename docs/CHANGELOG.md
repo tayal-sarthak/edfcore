@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.90
+
+- **Added** a docblock to `blobSource`. It is the browser entry point and the first call most
+  visitors write, and hovering it showed nothing — the module comment above explains the shim, not
+  what the function is for.
+
 ## 0.4.89
 
 - **Added** a docblock to `FormatAnnotationsOptions` stating the property that makes `maxItems`
