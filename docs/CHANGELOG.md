@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.100
+
+- **Added** a docblock to `Segmentation` saying why segments and gaps are derived and returned
+  together. Computed apart they can disagree about a boundary, which is the shape of several
+  defects this project has already fixed.
+
 ## 0.4.99
 
 - **Added** a docblock to `DiagnosticSink`, the single place `strict` becomes a decision. Its

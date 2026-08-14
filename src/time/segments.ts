@@ -27,6 +27,11 @@
 import { ticksToSeconds } from '../tal/ticks.js';
 import type { EdfGap, EdfSegment } from '../types.js';
 
+/**
+ * A recording partitioned into contiguous runs and the gaps between them. Segments and gaps are
+ * derived together and returned together on purpose: computed apart they can disagree about a
+ * boundary, and a gap that no segment pair brackets describes a discontinuity nothing else sees.
+ */
 export interface Segmentation {
   /** In time order, contiguous within each entry, and covering every record exactly once. */
   readonly segments: readonly EdfSegment[];
