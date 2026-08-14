@@ -148,6 +148,11 @@ export function fatalError(init: DiagnosticInit, cause?: unknown): EdfFormatErro
   return toFormatError(createDiagnostic(init), cause);
 }
 
+/**
+ * The one place `strict` is turned into a decision. Every module that finds a departure reports
+ * it here rather than choosing between collecting and throwing itself, which is what keeps the
+ * rule — and the `info` exemption — from being reimplemented slightly differently per caller.
+ */
 export class DiagnosticSink {
   /**
    * Readable so a caller can skip building a message it is about to throw away. Never so a
