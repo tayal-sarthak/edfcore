@@ -432,6 +432,11 @@ function compareAnnotations(a: PendingAnnotation, b: PendingAnnotation): number 
   return a.order - b.order;
 }
 
+/**
+ * Decodes the TAL regions of a record range into events, and the per-record onsets alongside
+ * them. Pure and synchronous over bytes you already hold — `readAnnotations` is this plus one
+ * read, and is what most callers want.
+ */
 export function decodeAnnotations(
   header: EdfHeader,
   recordBytes: Uint8Array,

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.94
+
+- **Added** a docblock to `decodeAnnotations`, the last function in the public barrel without
+  one. It points at `readAnnotations` as the call most people actually want — this is the pure
+  half, over bytes you already hold.
+
 ## 0.4.93
 
 - **Added** a docblock to `httpSource`, including why it is the one adapter that returns a
