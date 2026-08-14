@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.101
+
+- **Added** a docblock to `DecodedDigital` saying why the out-of-range tally travels with the
+  samples: the decode loop already visits every one, so counting there is free where asking
+  afterwards would be a second pass over the whole array.
+
 ## 0.4.100
 
 - **Added** a docblock to `Segmentation` saying why segments and gaps are derived and returned

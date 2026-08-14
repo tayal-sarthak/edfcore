@@ -26,6 +26,11 @@ export interface MaterializeOptions {
   readonly maxMaterializeBytes?: number;
 }
 
+/**
+ * Samples, plus what was noticed about them on the way past. The out-of-range tally rides along
+ * because the decode loop is already visiting every sample — counting it here costs nothing,
+ * where asking for it afterwards would be a second pass over the whole array.
+ */
 export interface DecodedDigital {
   readonly digital: Int32Array;
   /**
