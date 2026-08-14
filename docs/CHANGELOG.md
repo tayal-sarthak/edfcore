@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.95
+
+- **Added** a docblock to `EdfError`, the abstract base every thrown error extends. It states the
+  split the class hierarchy encodes: an `EdfError` means the FILE was the problem, and a plain
+  `RangeError` from this package means the call was.
+
 ## 0.4.94
 
 - **Added** a docblock to `decodeAnnotations`, the last function in the public barrel without

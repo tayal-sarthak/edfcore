@@ -20,6 +20,11 @@ export type EdfErrorKind = 'format' | 'scaling' | 'range' | 'source' | 'budget' 
 
 const EMPTY_DIAGNOSTICS: readonly EdfDiagnostic[] = Object.freeze([]);
 
+/**
+ * The base every error edfcore throws extends — abstract, so it is a category rather than
+ * something to construct. A plain `RangeError` from this package is therefore deliberate and
+ * means the opposite: the file is fine and the call was wrong. `isEdfError` is the check.
+ */
 export abstract class EdfError extends Error {
   abstract readonly edfErrorKind: EdfErrorKind;
 
