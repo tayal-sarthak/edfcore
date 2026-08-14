@@ -263,6 +263,11 @@ async function resolveSource(
   );
 }
 
+/**
+ * A `ByteSource` over an HTTP URL, using range requests — which is what makes reading ten
+ * seconds out of a remote twelve-hour recording cost ten seconds of bytes. Async because it
+ * probes the server for range support and a length before returning.
+ */
 export async function httpSource(
   url: string | { readonly href: string },
   options?: HttpSourceOptions,

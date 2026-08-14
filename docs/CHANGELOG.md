@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.93
+
+- **Added** a docblock to `httpSource`, including why it is the one adapter that returns a
+  promise: it probes the server for range support and a length before handing back a source, so
+  an origin that cannot serve ranges fails at construction rather than mid-read.
+
 ## 0.4.92
 
 - **Added** a docblock to `cachedSource` saying when wrapping is worth it — over HTTP, where a
