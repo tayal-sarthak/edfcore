@@ -81,6 +81,11 @@ function watchSignal(
   return { aborted, dispose: () => dispose() };
 }
 
+/**
+ * Wraps a source in an LRU block cache — worth it over HTTP, where a scan re-reads neighbouring
+ * bytes, and pointless over an in-memory one. It is the only cache in edfcore and it is a
+ * wrapper, so removing it is deleting this call rather than finding a flag.
+ */
 export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSource {
   const byteLength = source.byteLength;
   const maxBytes = Math.max(

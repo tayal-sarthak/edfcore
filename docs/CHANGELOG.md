@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.92
+
+- **Added** a docblock to `cachedSource` saying when wrapping is worth it — over HTTP, where a
+  scan re-reads neighbouring bytes — and when it is not. 0.4.73 documented its options type; the
+  function itself still hovered blank.
+
 ## 0.4.91
 
 - **Added** a docblock to `byteSource` naming the check that happens at construction. A typed
