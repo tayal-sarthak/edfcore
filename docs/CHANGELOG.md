@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.98
+
+- **Added** a docblock to `EdfFormatErrorInit`, the last public type in the package without one.
+  It says why the type is exported at all: its fields become properties on the thrown error, and
+  `collected` is the one worth reading — the diagnostics found before the fatal one.
+
 ## 0.4.97
 
 - **Added** a docblock to `FormatDiagnosticsOptions` surfacing `redactFields` on the type. Its

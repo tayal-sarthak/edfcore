@@ -76,6 +76,11 @@ export function isEdfError(value: unknown): value is AnyEdfError {
   );
 }
 
+/**
+ * What an `EdfFormatError` is constructed from. Public because the fields become properties on
+ * the thrown error and are worth reading there — `collected` in particular, which keeps the
+ * diagnostics found before the fatal one rather than discarding them with the parse.
+ */
 export interface EdfFormatErrorInit {
   readonly code: EdfDiagnosticCode;
   readonly diagnostic?: EdfDiagnostic;
