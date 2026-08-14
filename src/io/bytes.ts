@@ -42,6 +42,11 @@ function describe(value: unknown): string {
  */
 const BUFFER_TAGS = new Set(['[object ArrayBuffer]', '[object SharedArrayBuffer]']);
 
+/**
+ * A `ByteSource` over bytes already in memory, for a file you fetched yourself or a fixture in a
+ * test. The signedness of the view is checked at construction rather than at first read: an
+ * `Int8Array` has one byte per element and would decode into plausible, wrong sample values.
+ */
 export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
   // Refused at CONSTRUCTION, because the alternative is worse than an error. `new Uint8Array(x)`
   // accepts almost anything: a string, a plain object and `null` all yield an empty array, and a

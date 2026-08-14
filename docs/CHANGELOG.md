@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.91
+
+- **Added** a docblock to `byteSource` naming the check that happens at construction. A typed
+  array of the wrong signedness passes a length test and then decodes into plausible, wrong
+  samples, which is why the refusal is up front rather than at first read.
+
 ## 0.4.90
 
 - **Added** a docblock to `blobSource`. It is the browser entry point and the first call most
