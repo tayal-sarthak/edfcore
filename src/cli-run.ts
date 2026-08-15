@@ -80,6 +80,11 @@ const COMMANDS: ReadonlySet<string> = new Set([
   'json',
 ]);
 
+/**
+ * A parsed command line, with nothing decided yet. `command` and `file` are `undefined` rather
+ * than defaulted because a missing one is bad usage and exits 2 — supplying a default here would
+ * turn `edfcore` alone into a silent success.
+ */
 export interface Args {
   readonly command: string | undefined;
   readonly file: string | undefined;

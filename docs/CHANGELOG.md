@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.114
+
+- **Added** a docblock to `Args` saying why `command` and `file` are `undefined` rather than
+  defaulted: a missing one is bad usage and exits 2, and a default here would turn a bare
+  `edfcore` into a silent success.
+
 ## 0.4.113
 
 - **Removed** the npm version, types and licence badges added in 0.4.112. They restate what the
