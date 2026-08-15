@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.120
+
+- **Added** a docblock to `resolveTwoDigitYear` naming the rule as the specification's rather than
+  a heuristic. The pivot is fixed, so a recording from before 1985 or after 2084 cannot state its
+  year in that field at all — which is what the EDF+ `Startdate` subfield carries instead.
+
 ## 0.4.119
 
 - **Added** a docblock to `createDiagnostic` naming why severity is derived from the code rather

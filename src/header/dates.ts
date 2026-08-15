@@ -137,6 +137,11 @@ function threeFields(text: string): readonly [string, string, string] | undefine
   return [first, second, third];
 }
 
+/**
+ * The EDF 1985-2084 window, applied to a two-digit year. Not a heuristic and not adjustable: the
+ * specification fixes the pivot, so a file written in 1984 or after 2084 cannot state its year in
+ * this field at all — which is what the EDF+ `Startdate` subfield exists to carry instead.
+ */
 export function resolveTwoDigitYear(twoDigitYear: number): number {
   return twoDigitYear >= TWO_DIGIT_YEAR_PIVOT
     ? TWENTIETH_CENTURY + twoDigitYear
