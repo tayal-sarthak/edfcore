@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.123
+
+- **Added** a docblock to `StartTimeInput` saying why all three sources arrive together: the
+  resolved start depends on whether they agree, and a header date that hit the year escape is
+  only completed by the EDF+ `Startdate` subfield.
+
 ## 0.4.122
 
 - **Added** a docblock to `SubfieldDateParse` naming why it is a separate type from the header's

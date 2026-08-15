@@ -302,6 +302,11 @@ export function parseSubfieldDate(text: string): SubfieldDateParse {
   return { date, conformant: CONFORMANT_SUBFIELD_DATE.test(text) && namedMonth > 0 };
 }
 
+/**
+ * Everything that can bear on a start time: both header fields, and the EDF+ `Startdate` that may
+ * override them. All three arrive together because the answer depends on their agreement — a
+ * header date that hit the year escape is only completed by the subfield.
+ */
 export interface StartTimeInput {
   /** The raw eight bytes of the startdate field, as text, padding included. */
   readonly rawStartDate: string;
