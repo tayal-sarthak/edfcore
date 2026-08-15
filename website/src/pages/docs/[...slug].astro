@@ -1,4 +1,12 @@
 ---
+/**
+ * Every documentation page, from the one collection.
+ *
+ * The route is generated rather than enumerated, so adding a markdown file under
+ * `content/docs/` publishes it — and the same collection feeds the nav, the outline and the
+ * `llms.txt` endpoints. That is why the schema is strict about `section` and `order`: a page
+ * missing either would render here and be absent from every map of the site.
+ */
 import { getCollection, render } from 'astro:content';
 import DocsNav from '../../components/DocsNav.astro';
 import Base from '../../layouts/Base.astro';

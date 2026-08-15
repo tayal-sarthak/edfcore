@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.146
+
+- **Added** a docblock to the docs route naming what follows from generating it off the
+  collection: one markdown file publishes a page, and the same entries feed the nav, the outline
+  and the `llms.txt` endpoints — which is why the schema is strict about `section` and `order`.
+  Repository only.
+
 ## 0.4.145
 
 - **Added** a docblock to `index.astro` warning that its code samples are template strings nothing
