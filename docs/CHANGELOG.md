@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.116
+
+- **Added** a docblock to `runCli` naming what the shape buys: it returns an exit code and takes
+  every side effect through `io`, which is what lets the CLI be exercised without spawning a
+  process or building `dist` first.
+
 ## 0.4.115
 
 - **Added** a docblock to `parseArgs` naming the reason an unrecognised flag throws instead of

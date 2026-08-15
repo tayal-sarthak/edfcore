@@ -174,6 +174,11 @@ async function open(io: CliIo, file: string) {
   return openEdf(byteSource(await io.readFile(file)));
 }
 
+/**
+ * Runs one command and RETURNS an exit code rather than setting one. Every side effect arrives
+ * through `io`, which is what lets the CLI be driven from a test without spawning a process or
+ * building `dist` first — `cli.ts` is the only place a real process is touched.
+ */
 export async function runCli(args: Args, io: CliIo): Promise<number> {
   const { command, file } = args;
   // Before the command check: `edfcore --version` has no command, and a bare --version must not
