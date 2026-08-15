@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.111
+
+- **Added** an "API surface" table to the README: three entry points, 78 functions, classes and
+  constants, 64 public types, 46 diagnostic codes and 6 CLI commands.
+- Every number is asserted by `tests/integration/api-surface.test.ts` rather than written down and
+  trusted. It imports the three entry points and counts them, reads the disposition registry every
+  known code must appear in, and renders the CLI's own `--help` to count the commands. A count in
+  prose is exactly the claim that went stale unnoticed in the site footer for three minor series,
+  so this one ships with the check that catches it.
+
 ## 0.4.110
 
 - **Added** a docblock to `TalRegionParse` saying why it always carries both halves. A malformed

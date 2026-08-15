@@ -289,6 +289,22 @@ the reason to trust the reader.
 
 ---
 
+## API surface
+
+| | |
+|---|---|
+| Entry points | 3 — `edfcore`, `edfcore/node`, `edfcore/validate` |
+| Functions, classes and constants | 78 |
+| Public types | 64 |
+| Diagnostic codes | 46 |
+| CLI commands | 6 |
+
+Every number above is asserted against the package by
+[`tests/integration/api-surface.test.ts`](tests/integration/api-surface.test.ts) — it counts the
+real exports, renders the real `--help`, and fails when this table drifts from either.
+
+---
+
 ## Roadmap
 
 **0.1 — reads everything, lies about nothing.** All six variants, the primitive/I/O/convenience
