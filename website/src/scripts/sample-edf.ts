@@ -132,6 +132,11 @@ function trimNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(3)));
 }
 
+/**
+ * The bytes behind the demo's "load a sample recording". Generated in the browser rather than
+ * fetched: the inspector's whole claim is that a recording never leaves the machine, and shipping
+ * a sample file to download would undercut it on the one page built to demonstrate it.
+ */
 export function buildSampleEdf(): Uint8Array {
   const signalCount = CHANNELS.length + 1;
   const headerBytes = 256 * (signalCount + 1);

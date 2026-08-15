@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.136
+
+- **Added** a docblock to the demo's sample generator saying why the file is built in the browser
+  rather than downloaded: the inspector's claim is that a recording never leaves the machine, and
+  fetching a sample would undercut it on the page built to demonstrate it. Repository only.
+
 ## 0.4.135
 
 - **Added** a docblock to `SpySource` naming why it extends the real `ByteSource` rather than
