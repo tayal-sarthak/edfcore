@@ -29,6 +29,11 @@ export interface SpySource extends ByteSource {
   reset(): void;
 }
 
+/**
+ * Wraps a source and records what was asked of it. This is how "does not load the whole file" is
+ * proven rather than asserted: the claim is about the READ PATTERN — how many requests, which
+ * ranges, how many bytes — and none of that is visible in the values a read returns.
+ */
 export function spySource(inner: ByteSource): SpySource {
   const reads: RecordedRead[] = [];
   let bytesRead = 0;

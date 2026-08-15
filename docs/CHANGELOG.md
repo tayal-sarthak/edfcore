@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.134
+
+- **Added** a docblock to `spySource` naming what it exists to establish: "does not load the whole
+  file" is a claim about the read pattern, and none of that is visible in the values a read
+  returns. Repository only.
+
 ## 0.4.133
 
 - **Added** a docblock to `RawHeaderFieldOverrides` pointing at the two fields worth overriding:
