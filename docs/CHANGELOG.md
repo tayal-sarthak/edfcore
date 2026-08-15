@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.137
+
+- **Added** a docblock to the site's `collections` export naming what its schema guarantees:
+  `llms.txt` groups by `section` and orders by `order`, so a page missing either fails the build
+  instead of quietly vanishing from the map those endpoints hand to an agent. Repository only.
+
 ## 0.4.136
 
 - **Added** a docblock to the demo's sample generator saying why the file is built in the browser

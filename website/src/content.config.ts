@@ -20,4 +20,9 @@ const docs = defineCollection({
   }),
 });
 
+/**
+ * The one collection the site has. Its schema is what makes the generated endpoints possible:
+ * `llms.txt` groups by `section` and orders by `order`, so a page missing either fails the build
+ * rather than quietly disappearing from the map an agent is handed.
+ */
 export const collections = { docs };
