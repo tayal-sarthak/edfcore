@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.149
+
+- **Added** a docblock to `Header.astro` naming why longest-prefix matching is there for two
+  non-overlapping links: a plain `startsWith` over an unordered list lights two at once the first
+  time a nested destination is added, and this is the rule that survives it. Repository only.
+
 ## 0.4.148
 
 - **Added** a docblock to `CodeBlock.astro` naming what Shiki buys: highlighting runs at build

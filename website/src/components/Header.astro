@@ -1,4 +1,12 @@
 ---
+/**
+ * The site header, with exactly one link marked current.
+ *
+ * Two destinations and a longest-prefix match, which is more than it looks: `/docs` and `/demo`
+ * do not overlap today, and a plain `startsWith` over an unordered list would light two links at
+ * once the first time they do. Marking the most specific match is the rule that survives a third
+ * destination being added.
+ */
 const path = Astro.url.pathname;
 
 const links = [
