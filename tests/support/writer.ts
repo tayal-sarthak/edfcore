@@ -87,6 +87,11 @@ export interface TalSpec {
   readonly omitTerminator?: boolean;
 }
 
+/**
+ * An annotations channel. Its `tals` callback deliberately excludes the timekeeping TAL, which
+ * the writer synthesises per record: a test that had to write its own would be asserting against
+ * its own idea of where records start rather than against the format's.
+ */
 export interface AnnotationSignalSpec {
   /** Region size in samples; total bytes are `samplesPerRecord * bytesPerSample`. */
   readonly samplesPerRecord: number;

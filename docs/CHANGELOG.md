@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.131
+
+- **Added** a docblock to `AnnotationSignalSpec` naming why its `tals` callback excludes the
+  timekeeping TAL: the writer synthesises it, so a test cannot accidentally assert against its own
+  idea of where records start. Repository only.
+
 ## 0.4.130
 
 - **Added** a docblock to `SignalSpec` naming why `label` and `samplesPerRecord` are the only
