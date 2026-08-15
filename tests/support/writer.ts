@@ -66,6 +66,11 @@ export interface RawSignalFieldOverrides {
   reserved: string;
 }
 
+/**
+ * The fixed 256-byte header as literal text, the counterpart to the per-signal overrides above.
+ * `headerByteLength` and `signalCount` are the interesting ones: a file whose declared header size
+ * disagrees with its signal count is legal to write and is what the mismatch diagnostics are for.
+ */
 export interface RawHeaderFieldOverrides {
   version: string;
   patientId: string;

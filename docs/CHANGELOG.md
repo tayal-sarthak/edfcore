@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.133
+
+- **Added** a docblock to `RawHeaderFieldOverrides` pointing at the two fields worth overriding:
+  a declared header size that disagrees with the signal count is writable, and is exactly what the
+  mismatch diagnostics exist to report. Repository only.
+
 ## 0.4.132
 
 - **Added** a docblock to `RawSignalFieldOverrides` naming what it is for: expressing damage a
