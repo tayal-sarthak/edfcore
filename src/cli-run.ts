@@ -95,6 +95,11 @@ export interface Args {
   readonly limit: number | undefined;
 }
 
+/**
+ * Turns argv into `Args`, and refuses anything it does not recognise. An unknown flag throws
+ * `CliUsageError` rather than being ignored: a misspelled `--patinet` that silently did nothing
+ * would print a header without the identification the caller believed they had asked for.
+ */
 export function parseArgs(argv: readonly string[]): Args {
   const positional: string[] = [];
   let patient = false;

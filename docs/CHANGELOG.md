@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.115
+
+- **Added** a docblock to `parseArgs` naming the reason an unrecognised flag throws instead of
+  being ignored: a misspelled `--patinet` that did nothing would print a header without the
+  identification the caller believed they had asked for.
+
 ## 0.4.114
 
 - **Added** a docblock to `Args` saying why `command` and `file` are `undefined` rather than
