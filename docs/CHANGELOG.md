@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.112
+
+- **Added** shields.io badges to the README — npm version, exports, types and licence — and
+  `/api.json` on the documentation site to back the exports one.
+- The count is generated, not written. The site imports the three published entry points at deploy
+  time and counts them, so the badge follows the package without anyone editing a number. Three of
+  the four badges are served from npm's own metadata and update themselves the same way.
+
 ## 0.4.111
 
 - **Added** an "API surface" table to the README: three entry points, 78 functions, classes and
