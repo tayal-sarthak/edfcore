@@ -1,3 +1,12 @@
+/**
+ * The header's number grammar, which is not JavaScript's.
+ *
+ * `Number('  12  ')` is 12, `Number('')` is 0 and `Number('0x10')` is 16 — every one of which
+ * would accept a field the format does not allow, and the last two silently. These cases pin the
+ * stricter grammar and the failure contract that goes with it: a rejected field says so rather
+ * than resolving to a plausible number nobody asked for.
+ */
+
 import { describe, expect, it } from 'vitest';
 
 import {

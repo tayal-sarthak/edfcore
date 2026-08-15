@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.139
+
+- **Added** the missing docblock to `unit/bytes/numbers.test.ts`, naming why the header's number
+  grammar is stricter than `Number()`: an empty field would become 0 and a hex literal 16, both
+  silently. The file already tests both; it never said that was the point. Repository only.
+
 ## 0.4.138
 
 - **Added** the missing docblock to `unit/bytes/latin1.test.ts`. 146 of the suite's 151 files open
