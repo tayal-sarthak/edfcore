@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.109
+
+- **Added** a docblock to `IdentificationOptions` naming what `edfPlus` does and does not change:
+  the same bytes are parsed either way, since plain EDF files often follow the convention anyway,
+  and the flag only decides whether a deviation earns a diagnostic.
+
 ## 0.4.108
 
 - **Added** a docblock to `HeaderStartDateParse` saying why it carries partial results beside a

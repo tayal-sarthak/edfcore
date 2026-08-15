@@ -39,6 +39,11 @@ const PATIENT_GRAMMAR = 'code sex(F|M) birthdate(dd-MMM-yyyy) name';
 const RECORDING_GRAMMAR =
   'Startdate startdate(dd-MMM-yyyy) investigationCode technicianCode equipmentCode';
 
+/**
+ * Whether the subfield grammar is a requirement or a convention. The same bytes are parsed
+ * either way — plain EDF files often follow the convention anyway — and this only decides
+ * whether a deviation is worth reporting, which is why it is an option and not a mode.
+ */
 export interface IdentificationOptions {
   /**
    * The reserved field carries an EDF+/BDF+ marker, so the subfield grammar is required rather
