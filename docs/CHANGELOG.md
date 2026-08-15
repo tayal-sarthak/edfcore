@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.129
+
+- **Added** a docblock to `EdfSpec` naming why nearly every field is optional: a test states only
+  what it is about, so a fixture exercising one malformed field reads as a valid file with that
+  single thing changed. Repository only.
+
 ## 0.4.128
 
 - **Added** a docblock to `buildEdf`, the function every fixture in the suite is built with.

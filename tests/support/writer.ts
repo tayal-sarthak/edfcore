@@ -95,6 +95,11 @@ export interface AnnotationSignalSpec {
   readonly tals?: (recordIndex: number) => readonly TalSpec[];
 }
 
+/**
+ * One file, described. Almost every field is optional and defaults to something well formed, so a
+ * test states only what it is actually about — and a fixture exercising one malformed field is
+ * visibly a valid file with that one thing changed.
+ */
 export interface EdfSpec {
   readonly format?: 'EDF' | 'BDF';
   /** `false` is plain EDF/BDF; `'C'` and `'D'` are the EDF+/BDF+ continuity markers. */
