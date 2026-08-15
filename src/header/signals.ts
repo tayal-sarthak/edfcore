@@ -51,6 +51,11 @@ export interface SignalHeaderInput {
   readonly recordDurationSeconds: number;
 }
 
+/**
+ * Every per-signal field, plus the two things only a whole pass can know: the record's byte
+ * length, and which signals are annotations. Both are sums over all signals, so returning them
+ * here is what stops each caller re-walking the array to work them out.
+ */
 export interface ParsedSignalHeaders {
   readonly signals: readonly SignalDraft[];
   /** `bytesPerSample * SUM(samplesPerRecord)`. May be 0; the caller decides that is fatal. */

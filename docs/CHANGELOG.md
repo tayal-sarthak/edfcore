@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.107
+
+- **Added** a docblock to `ParsedSignalHeaders` naming why it returns more than the signals: the
+  record byte length and the annotation indices are sums over every signal, so computing them in
+  the one pass that already visits each is what keeps callers from re-walking the array.
+
 ## 0.4.106
 
 - **Added** a docblock to `EdfVariantInfo` saying why it keeps the parts apart instead of
