@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.147
+
+- **Added** a docblock to `DocsNav.astro` naming why its section list is written out rather than
+  derived: the order sections appear in is editorial, and no property of the entries expresses it.
+  A page with an unlisted `section` renders but never appears in the nav. Repository only.
+
 ## 0.4.146
 
 - **Added** a docblock to the docs route naming what follows from generating it off the

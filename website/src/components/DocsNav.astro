@@ -1,4 +1,12 @@
 ---
+/**
+ * The documentation sidebar, grouped by section and ordered within each.
+ *
+ * `SECTIONS` is written out rather than derived from the pages, because the order sections appear
+ * in is an editorial decision — "Start here" before "Reference" — and no property of the entries
+ * expresses it. A page whose `section` is not in this list therefore renders but never appears
+ * here, which the collection schema is what prevents.
+ */
 import { getCollection } from 'astro:content';
 
 interface Props {
