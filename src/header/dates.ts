@@ -149,6 +149,11 @@ export function resolveTwoDigitYear(twoDigitYear: number): number {
  */
 export type HeaderStartDateStatus = 'parsed' | 'yearEscape' | 'unparseable';
 
+/**
+ * The outcome of reading the 8-byte startdate, with the partial results kept rather than
+ * discarded. A field can yield a day and month but no year — that is what the `yy` escape means
+ * — and the EDF+ `Startdate` supplies the rest, so throwing the halves away would lose the date.
+ */
 export interface HeaderStartDateParse {
   readonly status: HeaderStartDateStatus;
   /** Present only when `status === 'parsed'`. */

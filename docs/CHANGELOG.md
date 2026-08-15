@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.108
+
+- **Added** a docblock to `HeaderStartDateParse` saying why it carries partial results beside a
+  status. A field can yield a day and month but no year — the `yy` escape — and the EDF+
+  `Startdate` supplies the rest, so discarding the halves would lose a date the file does state.
+
 ## 0.4.107
 
 - **Added** a docblock to `ParsedSignalHeaders` naming why it returns more than the signals: the
