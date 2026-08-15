@@ -43,6 +43,11 @@ export interface ScaleFieldOffsets {
   readonly digitalMaximum: number;
 }
 
+/**
+ * Everything the gain derivation is allowed to see. Deliberately not an `EdfSignal`: the scale is
+ * derived while the signal is still being built, so taking only the four numbers and the two
+ * strings keeps the dependency one-way and the function testable from literals.
+ */
 export interface ScaleInput {
   readonly signalIndex: number;
   /** Trimmed label, for the message. */
