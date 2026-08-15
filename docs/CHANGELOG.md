@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.102
+
+- **Added** a docblock to `TalTextEncoding` saying what `latin-1-fallback` records and why the
+  verdict is kept at all: `src/tal/` is the one place a real `TextDecoder` is permitted, so which
+  way a run decoded is worth reporting rather than assuming.
+
 ## 0.4.101
 
 - **Added** a docblock to `DecodedDigital` saying why the out-of-range tally travels with the

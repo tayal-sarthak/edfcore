@@ -34,6 +34,11 @@ import {
 } from '../constants.js';
 import { parseSignedTicks, parseUnsignedTicks } from './ticks.js';
 
+/**
+ * How a TAL text run decoded. `latin-1-fallback` means the bytes were not valid UTF-8 and were
+ * read byte-per-character instead — recorded rather than assumed, because this is the one region
+ * of the file where a real `TextDecoder` is allowed and its verdict is worth reporting.
+ */
 export type TalTextEncoding = 'utf-8' | 'latin-1-fallback';
 
 /** One text run of a TAL: the bytes between two 0x14 separators, decoded. */
