@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.142
+
+- **Added** a docblock to `HeaderFieldName` and `SignalFieldName` naming why the corruptor writes
+  its own offset tables: a test that damaged the bytes edfcore *believes* a field occupies would
+  agree with any offset bug the parser has. Repository only.
+
 ## 0.4.141
 
 - **Added** the missing docblock to `unit/diagnostics.test.ts`, the last test file in the suite

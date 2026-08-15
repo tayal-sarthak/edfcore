@@ -36,6 +36,12 @@ export const SIGNAL_FIELD = {
   reserved: [224, 32],
 } as const satisfies Record<string, readonly [number, number]>;
 
+/**
+ * The fields a test can damage by name, derived from the offset tables above rather than listed
+ * again. The offsets are written here from the specification and not imported from `src/`, so a
+ * test that corrupts `digitalMaximum` overwrites the bytes the FORMAT puts there — not the bytes
+ * edfcore believes it does, which would make the test agree with any offset bug it has.
+ */
 export type HeaderFieldName = keyof typeof HEADER_FIELD;
 export type SignalFieldName = keyof typeof SIGNAL_FIELD;
 
