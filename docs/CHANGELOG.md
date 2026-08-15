@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.122
+
+- **Added** a docblock to `SubfieldDateParse` naming why it is a separate type from the header's
+  date result: `dd-MMM-yyyy` carries a four-digit year, so there is no two-digit window to apply
+  and nothing to report as clipped.
+
 ## 0.4.121
 
 - **Added** a docblock to `HeaderStartTimeParse` naming what makes it simpler than the date

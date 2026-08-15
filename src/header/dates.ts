@@ -261,6 +261,11 @@ export function parseHeaderStartTime(raw: string): HeaderStartTimeParse {
   return { clock: { hour, minute, second }, conformant, raw };
 }
 
+/**
+ * A date read from an identification subfield — `dd-MMM-yyyy`, four-digit year, English month
+ * name. A different grammar from the header's `dd.mm.yy` and a different result type, because
+ * this one has no two-digit window to apply and therefore nothing to clip.
+ */
 export interface SubfieldDateParse {
   readonly date: EdfCalendarDate | undefined;
   /** The text is exactly `dd-MMM-yyyy` with an uppercase English month, and names a real day. */
