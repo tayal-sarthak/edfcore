@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.127
+
+- **Added** a docblock to `ceilDiv` naming why it exists at all: BigInt division truncates toward
+  zero, so neither flooring nor ceiling is what the operator gives for a negative operand — and a
+  time before the recording's start is exactly where that shows.
+
 ## 0.4.126
 
 - **Added** a docblock to `isValidCalendarDate` naming what it protects against: `new Date` rolls

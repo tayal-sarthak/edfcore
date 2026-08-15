@@ -164,6 +164,11 @@ export function floorDiv(a: bigint, b: bigint): bigint {
   return a % b === 0n || a > 0n ? quotient : quotient - 1n;
 }
 
+/**
+ * Division rounding toward positive infinity, the counterpart to `floorDiv` above. BigInt `/`
+ * truncates toward zero, so neither direction is what the operator gives for a negative operand —
+ * and a time before the recording's start is exactly where that matters.
+ */
 export function ceilDiv(a: bigint, b: bigint): bigint {
   const quotient = a / b;
   return a % b === 0n || a < 0n ? quotient : quotient + 1n;
