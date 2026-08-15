@@ -200,6 +200,11 @@ const DISPOSITIONS: Readonly<Record<EdfKnownDiagnosticCode, EdfDiagnosticDisposi
  */
 export type EdfDiagnosticCode = EdfKnownDiagnosticCode | (string & {});
 
+/**
+ * Every known code and how it behaves, as one table. Typed by `EdfKnownDiagnosticCode`, so adding
+ * a code to the union without deciding its disposition fails to compile — which is what keeps the
+ * two from drifting apart.
+ */
 export const DIAGNOSTIC_DISPOSITIONS: Readonly<
   Record<EdfKnownDiagnosticCode, EdfDiagnosticDisposition>
 > = DISPOSITIONS;

@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.117
+
+- **Added** a docblock to `DIAGNOSTIC_DISPOSITIONS` naming the property that makes it the registry
+  worth counting: it is typed by the known-code union, so adding a code without deciding how it
+  behaves fails to compile.
+
 ## 0.4.116
 
 - **Added** a docblock to `runCli` naming what the shape buys: it returns an exit code and takes
