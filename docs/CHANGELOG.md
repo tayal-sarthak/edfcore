@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.126
+
+- **Added** a docblock to `isValidCalendarDate` naming what it protects against: `new Date` rolls
+  31 April and a leap-day-in-a-common-year forward into the next month instead of rejecting them,
+  so a bad date in a header would silently become a plausible neighbouring one.
+
 ## 0.4.125
 
 - **Added** a docblock to `requireFiniteOption` naming the distinction it exists to keep: an

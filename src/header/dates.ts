@@ -86,6 +86,11 @@ function maxDaysInMonth(month: number): number {
   return DAYS_IN_MONTH[month - 1] ?? 0;
 }
 
+/**
+ * Whether a date names a day that exists. Real files carry 31 April and 29 February in common
+ * years, and a `Date` would roll both forward into a neighbouring month rather than reject them —
+ * which is the whole reason edfcore validates the digits itself.
+ */
 export function isValidCalendarDate(date: EdfCalendarDate): boolean {
   if (!Number.isInteger(date.year) || date.year < 1 || date.year > 9999) return false;
   if (!Number.isInteger(date.month) || date.month < 1 || date.month > MONTHS_PER_YEAR) return false;
