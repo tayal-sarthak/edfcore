@@ -28,6 +28,11 @@ export interface RecordOnsetProbe {
   readonly onsetTicks: bigint;
 }
 
+/**
+ * What a timeline can be built from: a header, and onsets someone else already read. Taking
+ * probes rather than a source is what keeps this module free of I/O — how many records to read
+ * and when is `record-index.ts`'s decision, and what they mean is this one's.
+ */
 export interface TimelineInput {
   readonly header: EdfHeader;
   /**

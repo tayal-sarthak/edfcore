@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.104
+
+- **Added** a docblock to `TimelineInput` naming the split it enforces: taking probes rather than
+  a source is what keeps `time/timeline.ts` free of I/O, so how many records to read stays
+  `record-index.ts`'s decision and what they mean stays this module's.
+
 ## 0.4.103
 
 - **Added** a docblock to `ScaleInput` answering the question its existence raises: why the scale
