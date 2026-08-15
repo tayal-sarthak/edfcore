@@ -18,6 +18,11 @@
 
 import { DEFAULT_MAX_MATERIALIZE_BYTES } from './constants.js';
 
+/**
+ * `undefined` takes the default; anything non-finite throws. The two are kept apart deliberately:
+ * an omitted option means "use the default", while a `NaN` means a caller computed something and
+ * got nothing — treating them alike would silently apply the default to a real mistake.
+ */
 export function requireFiniteOption(
   value: number | undefined,
   name: string,

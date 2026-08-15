@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.125
+
+- **Added** a docblock to `requireFiniteOption` naming the distinction it exists to keep: an
+  omitted option means "use the default", a `NaN` means a caller computed something and got
+  nothing, and treating them alike would apply the default to a real mistake.
+
 ## 0.4.124
 
 - **Added** a docblock to `SignalHeaderInput` naming the layout fact its shape follows from: the
