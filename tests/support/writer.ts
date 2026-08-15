@@ -48,6 +48,11 @@ export interface SignalSpec {
   readonly raw?: Partial<RawSignalFieldOverrides>;
 }
 
+/**
+ * Per-signal header fields as literal text, bypassing every formatter. This is how a fixture
+ * expresses damage a well-formed builder cannot — a non-numeric `physicalMaximum`, a label longer
+ * than its field — without the writer helpfully correcting it on the way out.
+ */
 export interface RawSignalFieldOverrides {
   label: string;
   transducerType: string;

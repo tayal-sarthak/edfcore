@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.132
+
+- **Added** a docblock to `RawSignalFieldOverrides` naming what it is for: expressing damage a
+  well-formed builder cannot, such as a non-numeric `physicalMaximum`, without the writer
+  correcting it on the way out. Repository only.
+
 ## 0.4.131
 
 - **Added** a docblock to `AnnotationSignalSpec` naming why its `tals` callback excludes the
