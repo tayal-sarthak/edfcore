@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.128
+
+- **Added** a docblock to `buildEdf`, the function every fixture in the suite is built with.
+  `tests/README.md` explains why it imports nothing from `src/` — a reader and a writer sharing a
+  misunderstanding agree with each other — and the function itself never said so. Repository only.
+
 ## 0.4.127
 
 - **Added** a docblock to `ceilDiv` naming why it exists at all: BigInt division truncates toward

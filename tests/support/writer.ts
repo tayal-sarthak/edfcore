@@ -260,6 +260,12 @@ interface ResolvedSignal {
   readonly sample: (recordIndex: number, sampleIndex: number) => number;
 }
 
+/**
+ * Writes a complete file from a spec, in memory. Built from the format specification and
+ * importing nothing from `src/` — a reader and a writer that share a misunderstanding agree with
+ * each other and are wrong together, so keeping them independent is what makes every round-trip
+ * and property test in this suite worth running.
+ */
 export function buildEdf(spec: EdfSpec): Uint8Array {
   const format = spec.format ?? 'EDF';
   const bytesPerSample = format === 'BDF' ? 3 : 2;
