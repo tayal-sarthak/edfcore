@@ -1,3 +1,12 @@
+/**
+ * Slicing, copying and the boundary between them.
+ *
+ * `sliceBytes` shares memory and `copyBytes` does not, which is the distinction every read in the
+ * package is built on: a diagnostic holding a slice of a buffer an I/O adapter is free to reuse
+ * would change its own `rawBytes` later. The bounds cases pin the other half — a range outside
+ * the buffer throws rather than returning a short array that reads as a truncated file.
+ */
+
 import { describe, expect, it } from 'vitest';
 
 import { copyBytes, readAsciiField, sliceBytes } from '../../../src/bytes/view.js';

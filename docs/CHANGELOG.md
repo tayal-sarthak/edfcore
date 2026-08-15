@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.140
+
+- **Added** the missing docblock to `unit/bytes/view.test.ts`, naming the distinction its two
+  halves hold: `sliceBytes` shares memory and `copyBytes` does not, which is why a diagnostic's
+  `rawBytes` cannot change under it later. Repository only.
+
 ## 0.4.139
 
 - **Added** the missing docblock to `unit/bytes/numbers.test.ts`, naming why the header's number
