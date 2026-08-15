@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.135
+
+- **Added** a docblock to `SpySource` naming why it extends the real `ByteSource` rather than
+  mocking it: the code under test cannot tell the difference, so the spy sits in the read path
+  rather than beside it. Repository only.
+
 ## 0.4.134
 
 - **Added** a docblock to `spySource` naming what it exists to establish: "does not load the whole

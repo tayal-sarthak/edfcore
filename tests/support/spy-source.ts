@@ -19,6 +19,11 @@ export interface RecordedRead {
   readonly sequence: number;
 }
 
+/**
+ * A `ByteSource` that also reports what it was asked for. Extending the real interface rather
+ * than mocking it means the code under test cannot tell the difference — the spy is in the read
+ * path, not beside it, so what it records is what actually happened.
+ */
 export interface SpySource extends ByteSource {
   readonly reads: readonly RecordedRead[];
   /** Total bytes handed back across every read. Overread shows up here. */
