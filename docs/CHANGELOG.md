@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.121
+
+- **Added** a docblock to `HeaderStartTimeParse` naming what makes it simpler than the date
+  counterpart 0.4.108 documented: there is no escape and no second field to rescue a partial
+  answer, so `conformant` carries the whole "read because tolerated" distinction.
+
 ## 0.4.120
 
 - **Added** a docblock to `resolveTwoDigitYear` naming the rule as the specification's rather than

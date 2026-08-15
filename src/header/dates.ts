@@ -229,6 +229,12 @@ export function parseHeaderStartDate(raw: string): HeaderStartDateParse {
   return { status: 'parsed', date, day, month, clippedYear, conformant, raw };
 }
 
+/**
+ * The outcome of reading the 8-byte starttime. Simpler than its date counterpart because there is
+ * no escape and no second field to rescue a partial answer: the clock either reads or it does
+ * not, and `conformant` separates "read because it was well formed" from "read because we
+ * tolerate".
+ */
 export interface HeaderStartTimeParse {
   readonly clock: EdfClockTime | undefined;
   /** The field is exactly `hh.mm.ss`. */
