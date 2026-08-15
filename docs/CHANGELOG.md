@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.143
+
+- **Added** a docblock to `Base.astro`, the shell every page renders into. It names the two
+  choices the file makes silently: fonts are bundled rather than linked, so the site fetches
+  nothing from a third party, and every absolute URL is derived from the deployment origin rather
+  than written down. Repository only.
+
 ## 0.4.142
 
 - **Added** a docblock to `HeaderFieldName` and `SignalFieldName` naming why the corruptor writes

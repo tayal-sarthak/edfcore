@@ -1,4 +1,12 @@
 ---
+/**
+ * The shell every page renders into: fonts, tokens, metadata, header and footer.
+ *
+ * Fonts are imported here rather than linked, so the site fetches nothing from a third party at
+ * runtime — the same reason the inspector reads files locally. Canonical and Open Graph URLs are
+ * derived from `Astro.site`, which Vercel supplies from the deployment origin, so no absolute URL
+ * is written down anywhere and none can point at the wrong domain.
+ */
 import '@fontsource-variable/archivo/standard.css';
 import '@fontsource-variable/newsreader/wght.css';
 import '@fontsource/ibm-plex-mono/400.css';
