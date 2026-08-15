@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.145
+
+- **Added** a docblock to `index.astro` warning that its code samples are template strings nothing
+  typechecks. The documented examples on the docs pages are covered by `tests/types`; these are
+  not, so anything a reader might copy belongs there instead. Repository only.
+
 ## 0.4.144
 
 - **Added** a docblock to `demo.astro` naming what the page is for: it makes the library's central
