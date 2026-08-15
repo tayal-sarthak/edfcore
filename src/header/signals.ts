@@ -42,6 +42,11 @@ export type SignalFieldName = keyof typeof SIGNAL_FIELD_WIDTHS;
  */
 export type SignalDraft = Omit<EdfSignal, 'sampleCount'>;
 
+/**
+ * The whole header block plus what the fixed part already established. The signal fields are
+ * FIELD-MAJOR — every label, then every transducer — so a signal cannot be parsed from a slice of
+ * its own, and the count has to be known before any of them can be located.
+ */
 export interface SignalHeaderInput {
   /** At least `256 * (signalCount + 1)` bytes; the caller has already refused anything less. */
   readonly headerBytes: Uint8Array;

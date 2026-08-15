@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.124
+
+- **Added** a docblock to `SignalHeaderInput` naming the layout fact its shape follows from: the
+  per-signal fields are field-major, so a signal cannot be parsed from a slice of its own and the
+  count must be known before any field can be located.
+
 ## 0.4.123
 
 - **Added** a docblock to `StartTimeInput` saying why all three sources arrive together: the
