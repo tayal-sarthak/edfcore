@@ -99,6 +99,11 @@ export function appendChunkDiagnostics(
   }
 }
 
+/**
+ * Builds a diagnostic with its severity derived rather than supplied. A caller choosing its own
+ * severity is how one code comes to mean two different things, so the code is the only input and
+ * `severityOf` decides — every diagnostic with the same code ranks the same everywhere.
+ */
 export function createDiagnostic(init: DiagnosticInit): EdfDiagnostic {
   return {
     code: init.code,

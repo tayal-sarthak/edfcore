@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.119
+
+- **Added** a docblock to `createDiagnostic` naming why severity is derived from the code rather
+  than passed in: a caller choosing its own is how one code comes to mean two different things,
+  and 0.3.12-0.3.22 was a sweep of exactly that class.
+
 ## 0.4.118
 
 - **Added** a docblock to `severityOf` saying why `fatal` and `deferred` both surface as `error`:
