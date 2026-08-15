@@ -1,4 +1,11 @@
 ---
+/**
+ * A highlighted snippet with an optional caption.
+ *
+ * Highlighting happens at build time through Shiki, so no syntax highlighter ships to the
+ * browser — a documentation site should not cost a reader a parser to render text that never
+ * changes. The single dark theme is deliberate and explained in `astro.config.mjs`.
+ */
 import { Code } from 'astro:components';
 
 interface Props {

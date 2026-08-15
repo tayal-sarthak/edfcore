@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.148
+
+- **Added** a docblock to `CodeBlock.astro` naming what Shiki buys: highlighting runs at build
+  time, so no syntax highlighter ships to the browser for text that never changes. Repository only.
+
 ## 0.4.147
 
 - **Added** a docblock to `DocsNav.astro` naming why its section list is written out rather than
