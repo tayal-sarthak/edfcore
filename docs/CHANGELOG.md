@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.106
+
+- **Added** a docblock to `EdfVariantInfo` saying why it keeps the parts apart instead of
+  collapsing them into `variant`. They disagree on real files — a 24-bit file whose reserved
+  field says nothing is BDF with no marker — and each consumer needs a different part.
+
 ## 0.4.105
 
 - **Added** a docblock to `EdfFamily` naming what the two values decide — 16-bit against 24-bit

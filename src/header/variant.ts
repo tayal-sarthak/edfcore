@@ -57,6 +57,11 @@ const RESERVED_MARKERS: readonly EdfReservedMarker[] = [
   '24BIT',
 ];
 
+/**
+ * Everything the two identifying fields yield, kept apart rather than collapsed into `variant`.
+ * The parts disagree on real files — a 24-bit file whose reserved field says nothing is BDF with
+ * no marker — and each consumer needs a different one, so none of them is derived twice.
+ */
 export interface EdfVariantInfo {
   readonly variant: EdfVariant;
   /** From the version block alone. Sample width follows from this and nothing else. */
