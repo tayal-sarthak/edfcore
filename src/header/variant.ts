@@ -39,6 +39,11 @@ const CHAR_SPACE = 0x20;
 const EDF_BYTES_PER_SAMPLE = 2 as const;
 const BDF_BYTES_PER_SAMPLE = 3 as const;
 
+/**
+ * The half of a variant that decides byte layout: EDF stores 16-bit samples, BDF 24-bit. It is
+ * detected from the version byte rather than the reserved marker, because a file can be BDF
+ * without ever claiming `BDF+`, and every offset in the record depends on getting this right.
+ */
 export type EdfFamily = 'EDF' | 'BDF';
 
 /** The recognised reserved-field prefixes. Matched on the first five bytes, never trimmed. */

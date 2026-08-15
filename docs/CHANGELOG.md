@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.105
+
+- **Added** a docblock to `EdfFamily` naming what the two values decide — 16-bit against 24-bit
+  samples — and that it comes from the version block rather than the reserved marker, since a
+  file can be BDF without ever claiming `BDF+`.
+
 ## 0.4.104
 
 - **Added** a docblock to `TimelineInput` naming the split it enforces: taking probes rather than
