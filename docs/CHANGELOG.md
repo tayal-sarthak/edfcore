@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.110
+
+- **Added** a docblock to `TalRegionParse` saying why it always carries both halves. A malformed
+  TAL does not stop the region, so the events after it are still returned, and the issues beside
+  them are the only signal that the list is not everything the bytes held.
+
 ## 0.4.109
 
 - **Added** a docblock to `IdentificationOptions` naming what `edfPlus` does and does not change:

@@ -95,6 +95,11 @@ export interface ParsedTal {
   readonly texts: readonly TalText[];
 }
 
+/**
+ * What one annotation region yielded, and what was wrong with it. Both, always: a malformed TAL
+ * does not stop the region, so events after it are still returned — and the issues alongside
+ * them are how the caller learns the list is not everything the bytes contained.
+ */
 export interface TalRegionParse {
   readonly tals: readonly ParsedTal[];
   readonly issues: readonly TalIssue[];
