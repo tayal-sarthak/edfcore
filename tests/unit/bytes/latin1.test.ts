@@ -1,3 +1,13 @@
+/**
+ * Header text decoding, byte by byte.
+ *
+ * `decodeHeaderLatin1` exists instead of a `TextDecoder` because every `latin1` label Node
+ * accepts decodes byte 0x80 differently from the WHATWG standard, so the same header would yield
+ * different strings in Node and in a browser. That is the claim these cases hold: one byte in,
+ * one code point out, for all 256 of them — which is what makes a header string the same value
+ * everywhere the package runs.
+ */
+
 import { describe, expect, it } from 'vitest';
 
 import {

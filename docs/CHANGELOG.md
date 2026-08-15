@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.138
+
+- **Added** the missing docblock to `unit/bytes/latin1.test.ts`. 146 of the suite's 151 files open
+  with one; this was among the five that did not, and it holds the rule that makes a header string
+  the same value in Node and in a browser. Repository only.
+
 ## 0.4.137
 
 - **Added** a docblock to the site's `collections` export naming what its schema guarantees:
