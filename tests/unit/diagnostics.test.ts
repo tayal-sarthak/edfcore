@@ -1,3 +1,12 @@
+/**
+ * The diagnostic machinery, apart from any file that would produce one.
+ *
+ * Severity is derived from the code and never passed in, `strict` becomes a decision in exactly
+ * one place, and a fatal keeps what was already collected rather than discarding it with the
+ * parse. Those are properties of the vocabulary itself, so they are pinned here from literals —
+ * which code a given file earns is a different claim, and the parser tests hold that one.
+ */
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {

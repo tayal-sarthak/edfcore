@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.141
+
+- **Added** the missing docblock to `unit/diagnostics.test.ts`, the last test file in the suite
+  without one. It names why the file works from literals rather than files: these are properties
+  of the vocabulary, not of any recording. Repository only.
+
 ## 0.4.140
 
 - **Added** the missing docblock to `unit/bytes/view.test.ts`, naming the distinction its two
