@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.130
+
+- **Added** a docblock to `SignalSpec` naming why `label` and `samplesPerRecord` are the only
+  required fields: a channel needs a name to be found by, and its sample count is what every byte
+  offset in the record is computed from. Repository only.
+
 ## 0.4.129
 
 - **Added** a docblock to `EdfSpec` naming why nearly every field is optional: a test states only

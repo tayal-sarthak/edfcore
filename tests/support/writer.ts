@@ -23,6 +23,11 @@ const TAL_DURATION_SEP = 0x15;
 const TAL_FIELD_END = 0x14;
 const TAL_END = 0x00;
 
+/**
+ * One data channel. `label` and `samplesPerRecord` are required because they are the two fields
+ * with no defensible default — a channel needs a name to be found by, and its sample count is
+ * what every byte offset in the record is computed from.
+ */
 export interface SignalSpec {
   readonly label: string;
   readonly transducerType?: string;
