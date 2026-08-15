@@ -214,6 +214,11 @@ export function dispositionOf(code: EdfDiagnosticCode): EdfDiagnosticDisposition
   return DISPOSITIONS[code as EdfKnownDiagnosticCode] ?? 'warning';
 }
 
+/**
+ * The severity a consumer sees, collapsed from the disposition. `fatal` and `deferred` both
+ * surface as `error` on purpose: they differ in WHEN they stop a parse, not in how wrong the file
+ * is, and that distinction is this module's business rather than a reader's.
+ */
 export function severityOf(code: EdfDiagnosticCode): EdfSeverity {
   const disposition = dispositionOf(code);
   if (disposition === 'fatal' || disposition === 'deferred') return 'error';

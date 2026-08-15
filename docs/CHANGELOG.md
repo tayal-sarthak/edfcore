@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.118
+
+- **Added** a docblock to `severityOf` saying why `fatal` and `deferred` both surface as `error`:
+  they differ in when they stop a parse, not in how wrong the file is, and that distinction is
+  internal rather than something a consumer should branch on.
+
 ## 0.4.117
 
 - **Added** a docblock to `DIAGNOSTIC_DISPOSITIONS` naming the property that makes it the registry
