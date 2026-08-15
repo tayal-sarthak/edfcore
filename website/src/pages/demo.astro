@@ -1,4 +1,12 @@
 ---
+/**
+ * The inspector: open a real recording and read it, with nothing uploaded.
+ *
+ * The page is the library's central claim made checkable — a browser can read these files, so a
+ * researcher never has to hand a patient recording to a server. Every byte is read through
+ * `blobSource` in the visitor's own tab, and the page issues no request carrying file data, which
+ * is a property anyone can confirm from their own network tab rather than take on trust.
+ */
 import Base from '../layouts/Base.astro';
 ---
 

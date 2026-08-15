@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.144
+
+- **Added** a docblock to `demo.astro` naming what the page is for: it makes the library's central
+  claim checkable, since a visitor can confirm from their own network tab that no request carries
+  file data. Repository only.
+
 ## 0.4.143
 
 - **Added** a docblock to `Base.astro`, the shell every page renders into. It names the two
