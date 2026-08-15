@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.113
+
+- **Removed** the npm version, types and licence badges added in 0.4.112. They restate what the
+  page already says a few lines down, and they pushed the one number worth showing into a row of
+  four. The badges are now the two counters: exports and downloads.
+
 ## 0.4.112
 
 - **Added** shields.io badges to the README — npm version, exports, types and licence — and
