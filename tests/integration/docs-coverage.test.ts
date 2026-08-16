@@ -20,6 +20,8 @@
 
 import { describe, expect, it } from 'vitest';
 import * as edfcore from '../../src/index.js';
+import * as edfcoreNode from '../../src/node.js';
+import * as edfcoreValidate from '../../src/validate.js';
 
 interface RawModuleGlob {
   glob(
@@ -47,6 +49,11 @@ function mentioned(name: string): boolean {
 /** Types are documented under their own names too, but only runtime exports are enumerable. */
 const RUNTIME_EXPORTS = Object.keys(edfcore).filter((name) => name !== 'default');
 
+/** What `./validate` and `./node` publish that the universal barrel does not re-export. */
+const SUBPATH_EXPORTS = [...Object.keys(edfcoreValidate), ...Object.keys(edfcoreNode)].filter(
+  (name) => name !== 'default' && !RUNTIME_EXPORTS.includes(name),
+);
+
 describe('the documentation set is the one being checked', () => {
   it('loaded the pages, so a passing run is not a vacuous one', () => {
     // Without this, a glob that silently matched nothing would make every assertion below pass.
@@ -73,14 +80,11 @@ describe('every runtime export is mentioned in the docs', () => {
 
 describe('the two entries that are not in the universal barrel', () => {
   it('documents edfcore/validate and edfcore/node too', () => {
-    for (const name of [
-      'validateHeader',
-      'validateRecording',
-      'formatValidationReport',
-      'fileSource',
-      'fileHandleSource',
-    ]) {
-      expect(mentioned(name), `${name} is exported but not documented`).toBe(true);
-    }
+    // Derived from the modules, not hand-listed. The list here used to name five symbols, which
+    // covered what `./validate` and `./node` exported on the day it was written and nothing added
+    // after — the same shape of gap this file exists to close for the universal barrel.
+    expect(SUBPATH_EXPORTS.length).toBeGreaterThanOrEqual(5);
+    const undocumented = SUBPATH_EXPORTS.filter((name) => !mentioned(name));
+    expect(undocumented).toEqual([]);
   });
 });
