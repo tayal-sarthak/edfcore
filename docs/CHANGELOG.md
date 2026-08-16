@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.204
+
+- **Corrected** the reason `publish.yml` pins npm. The step said trusted publishing needs
+  >= 11.5.1, which was true when f363feb added it on 2026-08-01 — but ed89f67 moved the workflow
+  to a granular access token two days later, and the note further down the same file now explains
+  that registering trusted publishing returns 400 for this package. One comment justified the step
+  by a mechanism another said was unavailable. The pin still earns its place; the reason is now
+  the one that applies.
+
 ## 0.4.203
 
 - **Corrected** the docblock of `changelog-continuity.test.ts`, which had gone stale twice over. It
