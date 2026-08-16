@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.171
+
+- **Added** BDF+ back to the landing page's opening sentence. The sentence was taken from the
+  repository's own one-line description, which lists three formats; the library reads four, and the
+  footer of the same page said so, so the page contradicted itself in two paragraphs.
+
 ## 0.4.170
 
 - **Corrected** the same attribution in the hero figure's caption, which is the text a screen
