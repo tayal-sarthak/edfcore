@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.183
+
+- **Added** the missing next step to a truncated diagnostics block. `edfcore header` and
+  `edfcore validate` ended with a bare `... and 11 more` and left the reader there, while
+  `events --list` two commands over already said how to see the rest. The notice itself belongs to
+  `formatDiagnostics`, where it is right as it stands - a library caller raises `maxItems`, not
+  `--limit` - so the CLI adds the line it alone can write, and only when something was withheld.
+
 ## 0.4.182
 
 - **Corrected** `tests/README.md` saying the published package "ships only `dist`, `src` and the
