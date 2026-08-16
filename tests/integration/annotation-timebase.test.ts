@@ -248,9 +248,15 @@ describe('a record with no timekeeping TAL starts at the same instant however it
     });
     const alone = await readAnnotations(recording, { start: 5, count: 1 });
 
+    // Narrowed rather than asserted with `!`. One record was requested, so an empty array is a
+    // real failure of this call, and it should be reported as itself instead of surfacing as
+    // arithmetic on `undefined` one line later.
+    const [onset] = alone.recordOnsetTicks;
+    if (onset === undefined) throw new Error('readAnnotations returned no onset for one record');
+
     // chunk.startTicks is on the recording axis (t = 0 at record 0); the onset is on the header
     // axis. They differ by exactly the start offset, and did not before the fix.
-    expect(alone.recordOnsetTicks[0]! - OFFSET_TICKS).toBe(chunk.startTicks);
+    expect(onset - OFFSET_TICKS).toBe(chunk.startTicks);
   });
 });
 

@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.208
+
+- **Fixed** the one lint warning the repository has been carrying: a non-null assertion on
+  `recordOnsetTicks[0]` in `annotation-timebase.test.ts`. `noUncheckedIndexedAccess` is on, so the
+  index really can be `undefined`, and `!` turned an empty result into arithmetic on `undefined`
+  rather than a failure naming itself. It now narrows and throws. `biome check` reports warnings
+  without failing, so this sat in every run — and a run that always prints a warning is a run where
+  the next one goes unread.
+
 ## 0.4.207
 
 - **Changed** the `--patient` scope guard to derive the commands it probes. Its note says the scope
