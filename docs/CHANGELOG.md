@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.205
+
+- **Added** a guard that the four copies of the documentation section list agree. The `z.enum` in
+  `content.config.ts` is written out again in `DocsNav.astro`, `llms.txt.ts` and `llms-full.txt.ts`,
+  and each groups pages by walking its own array — so a name in the enum and not in an array is a
+  section whose pages render at their URL and appear in no index, missing from the sidebar and from
+  both files agents read. DocsNav's docblock says a fifth section "fails the build rather than going
+  missing from the sidebar", which held only while four hand-written lists happened to match, and
+  adding to the enum is the very edit that breaks it. `astro check` sees four well-typed arrays.
+
 ## 0.4.204
 
 - **Corrected** the reason `publish.yml` pins npm. The step said trusted publishing needs
