@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.236
+
+- **Added** a check that every internal link on the site points at something that exists. The
+  documentation pages carry over a hundred `/docs/...` and `#anchor` links between them and
+  nothing checked one: `astro check` validates types and content collections, not hrefs, and a
+  static build turns a link to a renamed page into a 404 for the reader rather than an error for
+  the author. The 404 page exists because that happens — "the address may have moved when the docs
+  were reorganised" — which is a good page to have and a poor substitute for not shipping the
+  link. Anchors are the half that rots quietly, since one breaks when someone rewords a heading
+  three sections away and the link still looks right; 0.4.234 nearly shipped exactly that, a table
+  cell pointing at `#patient-identification` on a page whose redaction note has no heading. The
+  nine links hard-coded in `.astro` routes are swept too — the 404's three ways out and the
+  landing page's four are the ones a reader hits first. Nothing was broken today.
+
 ## 0.4.235
 
 - **Added** documentation for the three selection types, taking the recorded undocumented list
