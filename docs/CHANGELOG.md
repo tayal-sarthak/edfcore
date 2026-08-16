@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.175
+
+- **Fixed** the CLI crashing when its output is piped into something that stops reading.
+  `edfcore signals big.edf | head -1` closed stdout mid-write; nothing listened for `error` on the
+  stream, so Node rethrew EPIPE as an uncaught exception and printed a kilobyte of stack trace to
+  stderr. `head`, `less`, `grep -m1` and a `jq` that exits early all do this, and `signals` is
+  documented "for grep and awk". A closed pipe is now swallowed: the consumer got what it asked for
+  and is entitled to stop listening. Every other stdout error still throws.
+
 ## 0.4.174
 
 - **Added** `FormatHeaderOptions.diagnosticsHint`, and turned it off in `edfcore header`. That

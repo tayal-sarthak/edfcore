@@ -28,7 +28,10 @@ interface NodeFs {
 interface NodeProcess {
   readonly argv: readonly string[];
   exitCode: number | undefined;
-  readonly stdout: { write(text: string): unknown };
+  readonly stdout: {
+    write(text: string): unknown;
+    on(event: string, listener: (error: { code?: string }) => void): unknown;
+  };
   readonly stderr: { write(text: string): unknown };
 }
 
@@ -36,6 +39,23 @@ const fs: NodeFs = nodeFsPromises as unknown as NodeFs;
 const proc: NodeProcess =
   (nodeProcess as unknown as { default?: NodeProcess }).default ??
   (nodeProcess as unknown as NodeProcess);
+
+/*
+ * A closed pipe is not an error, and Node treats it as one.
+ *
+ * `edfcore signals big.edf | head -1` closes stdout while the CLI is still writing. The write
+ * fails with EPIPE, nothing is listening for `error` on the stream, and Node's default is to
+ * rethrow it as an uncaught exception — so a command documented "for grep and awk" answered a
+ * perfectly ordinary shell idiom with a kilobyte of stack trace on stderr. `head`, `less`,
+ * `grep -m1` and a `jq` that exits early all do this.
+ *
+ * Swallowed rather than reported: the consumer got what it asked for and stopped listening, which
+ * is what it is entitled to do. The remaining writes are dropped by the same handler, since the
+ * stream stays broken (fixed in 0.4.175).
+ */
+proc.stdout.on('error', (error) => {
+  if (error?.code !== 'EPIPE') throw error;
+});
 
 const io: CliIo = {
   readFile: (path) => fs.readFile(path),
