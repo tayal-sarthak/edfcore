@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.242
+
+- **Fixed** the link checker's own hand-written inventory, six releases after it was added to
+  catch exactly that. 0.4.236 listed the site's standalone routes — `/`, `/demo`, `/llms.txt` and
+  the rest — as a literal set, so deleting a route would have left the list vouching for it, and
+  the check meant to find dead links would have been the last thing claiming that one was alive.
+  Nothing about the site is written down there now: the pages come from the collection, the
+  standalone routes from the files under `pages/` and `public/`, and the redirects from
+  `astro.config.mjs`. A route is a path with the framework extension removed and nothing else, so
+  `llms.txt.ts` is `/llms.txt` — only the `.ts` comes off — and one assertion pins each shape the
+  derivation has to get right.
+
 ## 0.4.241
 
 - **Added** checks on `tests/README.md`, which described this suite with nothing checking that it

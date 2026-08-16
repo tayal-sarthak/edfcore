@@ -16,6 +16,12 @@
  * `.astro` routes are swept too. Nine of the links on this site are hard-coded there — the 404's
  * three ways out, the landing page's four — and those are the ones a reader hits first.
  *
+ * Nothing about the site is written down here. The pages come from the collection, the standalone
+ * routes from the files under `pages/` and `public/`, and the redirects from `astro.config.mjs`.
+ * That was not true when this file was written: the standalone routes were a hand-typed list, and
+ * a check for dead links whose idea of the site is a list can only ever be as current as the list
+ * (fixed in 0.4.242).
+ *
  * Slugs are generated the way Astro generates them, which is `github-slugger`: lowercase, strip
  * punctuation and backticks, spaces to hyphens. That is exact for the ASCII headings this site
  * uses; a heading needing more than that would be a heading worth simplifying.
@@ -50,19 +56,45 @@ const HEADINGS = new Map<string, ReadonlySet<string>>(
 );
 
 /**
- * Routes the site serves that are not collection pages. `/docs` is the redirect in
- * `astro.config.mjs`; the rest are files under `pages/` or `public/`.
+ * Routes the site serves that are not collection pages, derived from the files that serve them.
+ *
+ * 0.4.236 wrote these out by hand — `/`, `/demo`, `/llms.txt` and the rest — which is the defect
+ * this file exists to catch, one level up: an inventory of the site kept in a file that is not the
+ * site. Deleting a route would have left the list vouching for it, and the check that is supposed
+ * to find dead links would have been the last thing still claiming it was alive (fixed in
+ * 0.4.242).
+ *
+ * A page's route is its path under `pages/` with the framework extension removed: `index.astro` is
+ * `/`, `llms.txt.ts` is `/llms.txt` — the `.txt` is part of the route and only the `.ts` comes
+ * off. Dynamic segments are skipped; `[...slug].astro` is the collection, which `SLUGS` covers.
+ * `public/` is served at the root as-is, and `astro.config.mjs`'s redirects are routes too.
  */
-const STANDALONE_ROUTES = new Set([
-  '/',
-  '/docs',
-  '/demo',
-  '/favicon.svg',
-  '/llms.txt',
-  '/llms-full.txt',
-  '/robots.txt',
-  '/api.json',
-]);
+const STANDALONE_ROUTES: ReadonlySet<string> = (() => {
+  const routes = new Set<string>();
+
+  const walk = (dir: URL, prefix: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        walk(new URL(`${entry.name}/`, dir), `${prefix}${entry.name}/`);
+        continue;
+      }
+      if (entry.name.includes('[')) continue;
+      const name = entry.name.replace(/\.(astro|ts|mdx?|js)$/, '');
+      routes.add(name === 'index' ? `${prefix}` || '/' : `${prefix}${name}`);
+    }
+  };
+  walk(new URL('../../website/src/pages/', import.meta.url), '/');
+
+  for (const asset of readdirSync(new URL('../../website/public/', import.meta.url))) {
+    routes.add(`/${asset}`);
+  }
+
+  const config = readFileSync(new URL('../../website/astro.config.mjs', import.meta.url), 'utf8');
+  const redirects = /redirects:\s*\{([^}]*)\}/.exec(config)?.[1] ?? '';
+  for (const redirect of redirects.matchAll(/'([^']+)'\s*:/g)) routes.add(redirect[1] as string);
+
+  return routes;
+})();
 
 interface Link {
   readonly from: string;
@@ -161,6 +193,23 @@ describe('the links were found', () => {
     expect(SLUGS.size).toBeGreaterThan(15);
     expect(MARKDOWN_LINKS.length).toBeGreaterThan(80);
     expect(ASTRO_LINKS.length).toBeGreaterThan(5);
+  });
+
+  it('derives the standalone routes from the files that serve them', () => {
+    // Every shape the derivation has to get right, one example each: a page, an index, a route
+    // whose own name carries an extension, a public asset, and a configured redirect.
+    expect([...STANDALONE_ROUTES].sort()).toEqual([
+      '/',
+      '/404',
+      '/api.json',
+      '/demo',
+      '/docs',
+      '/favicon.svg',
+      '/llms-full.txt',
+      '/llms.txt',
+      '/og.png',
+      '/robots.txt',
+    ]);
   });
 
   it('can tell a resolving link from a broken one', () => {
