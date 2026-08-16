@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.242
+
+- **Fixed** the link checker's own hand-written inventory, six releases after it was added to
+  catch exactly that. 0.4.236 listed the site's standalone routes — `/`, `/demo`, `/llms.txt` and
+  the rest — as a literal set, so deleting a route would have left the list vouching for it, and
+  the check meant to find dead links would have been the last thing claiming that one was alive.
+  Nothing about the site is written down there now: the pages come from the collection, the
+  standalone routes from the files under `pages/` and `public/`, and the redirects from
+  `astro.config.mjs`. A route is a path with the framework extension removed and nothing else, so
+  `llms.txt.ts` is `/llms.txt` — only the `.ts` comes off — and one assertion pins each shape the
+  derivation has to get right.
+
+## 0.4.241
+
+- **Added** checks on `tests/README.md`, which described this suite with nothing checking that it
+  still did. It is where the root README sends a contributor, and the fixture policy it states is
+  the only reason six binary files are committed to a repository that otherwise builds every
+  fixture in memory. Two of its claims were inventories — a table with one row per directory under
+  `tests/`, and a count of the files under `corpus/golden/` stated four times across the two
+  READMEs — and neither was derived, so a new directory would join the suite and not the table,
+  and the number justifying those committed binaries could drift the way the site's page count did
+  one release ago. Both are read from the tree now. The counts stay spelled out and are read
+  through a word list: `tests/README.md` is prose someone reads start to finish, unlike the
+  one-line parenthetical 0.4.238 turned into a numeral.
+
 ## 0.4.240
 
 - **Extended** the link check added in 0.4.236 to the links that point back at this project by
