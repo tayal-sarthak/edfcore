@@ -13,8 +13,8 @@
  *   window that selects any records is a single element. If two shapes existed, consumers would
  *   write against the easy one and misbehave on EDF+D. A window entirely inside a gap, past the
  *   end, or of non-positive duration returns `[]` — the last two on a continuous file too, which
- *   the sentence above said could not happen. Nothing is ever filled in: there is no gap-fill and
- *   no gap-fill option.
+ *   is why the sentence above is about windows that select records and not about windows.
+ *   Nothing is ever filled in: there is no gap-fill and no gap-fill option.
  * - Chunks stay RECORD-ALIGNED and are therefore usually wider than the window asked for. The
  *   exact per-signal narrowing is `trimToWindow`, which is pure and testable without I/O.
  *

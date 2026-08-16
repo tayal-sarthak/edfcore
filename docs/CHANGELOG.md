@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.189
+
+- **Corrected** a pointer in `clock()` that sent the reader the wrong way. It cited "the paragraph
+  below" for why a negative onset is the unusual half of the range; that paragraph is the module
+  note at the top of the file, and nothing below the comment discusses it. It now names the note by
+  position instead of by direction, which is what rotted.
+
+## 0.4.188
+
+- **Corrected** the `readWindow` docblock, which told the reader the sentence above it "said could
+  not happen" about something that sentence no longer says. It did before 5f88404: the array
+  "always has one element" on a continuous file. That commit both fixed the sentence and added the
+  clause pointing back at it, so the accusation was false in the commit that shipped it. It now
+  gives the reason the qualifier is there instead.
+
+## 0.4.187
+
+- **Corrected** the `FormatHeaderOptions` docblock, which opened "There is one, and it is opt-IN".
+  0.4.174 added a second option and left the sentence behind, so the interface listed two fields
+  directly under a summary that counted one — and `diagnosticsHint` is opt-OUT, the opposite of
+  what that summary promises about the options as a group.
+
 ## 0.4.186
 
 - **Documented** which errors already carry their diagnostic code. A diagnostic-backed
