@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.191
+
+- **Corrected** the download size on `npm run corpus:fetch`. `tests/README.md` said ~59 MB, which
+  was exact for the five files in the manifest when it was written on 2026-08-01. CHB-MIT arrived
+  six days later and nearly doubled it; the manifest now totals 101,665,332 bytes across seven
+  files. Someone deciding whether to run the fetch on a metered connection was off by 42 MB.
+
 ## 0.4.190
 
 - **Widened** the docs-coverage guard to derive what `./validate` and `./node` export instead of

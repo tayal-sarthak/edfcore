@@ -66,7 +66,7 @@ which is which.
 and a passing one look identical in a summary line.
 
 ```bash
-npm run corpus:fetch    # ~59 MB, hash-verified, gitignored
+npm run corpus:fetch    # ~102 MB, hash-verified, gitignored
 npm test
 ```
 
