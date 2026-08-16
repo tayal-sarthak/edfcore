@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.244
+
+- **Added** a wait for CI before the GitHub release is created, which is what stops a green local
+  run from becoming a version that never reaches npm. `npm run check` runs on the machine cutting
+  the tag, and that is not the same question as whether it passes: twice this week a check was
+  green here and red on every runner — one read a file whose tsconfig lives in
+  `website/node_modules`, which CI does not install, and one required the gitignored
+  `tests/scratch/` to exist. Between them 0.4.231–0.4.236 and 0.4.241–0.4.242 were tagged and
+  never published, eight numbers refused by `publish.yml` long after this script had exited 0.
+  The script now polls the check runs for the exact commit it pushed and refuses to open the door
+  to npm if any of them fails. That turns a silent hole into a stop with the tag intact and the
+  version still recoverable by `gh release create` — the same recovery 0.4.226 wrote the message
+  for. It gives up after twenty minutes and says so rather than hanging.
+
 ## 0.4.243
 
 - **Fixed** the layout-table check added in 0.4.241, which compared `tests/README.md` against the
