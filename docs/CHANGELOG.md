@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.219
+
+- **Added** the same check to `corpus-parity.test.ts`, and deliberately did not gate it on the
+  corpus being present. Every other test in that file skips without `npm run corpus:fetch`, and CI
+  never fetches, so a gated version would have been the one check there that runs nowhere. The
+  goldens are committed, which is all it needs — and on a file whose normal state is "skipped", a
+  golden nothing compares against is especially hard to see.
+
+## 0.4.218
+
+- **Added** the same check to `mne-parity.test.ts`: a case for every committed `.mne.json`. This
+  file is the only thing that reads them, so a golden `generate-mne.py` produced and no entry names
+  would be compared by nothing and noticed by nothing — the second-reader evidence the file exists
+  to provide, silently absent.
+
+## 0.4.217
+
+- **Added** a check that `golden-values.test.ts` has a case for every committed golden that carries
+  samples. The list stays hand-written — each entry says why that file exists, which a directory
+  listing cannot — but it could fall behind `scripts/golden/generate.py`, and a golden generated
+  and committed with no entry is a pyEDFlib reference value nothing compares against. That is
+  indistinguishable from coverage until someone opens the directory.
+
 ## 0.4.216
 
 - **Changed** `diagnostic-docs.test.ts` to import `EdfDiagnosticDisposition` instead of declaring

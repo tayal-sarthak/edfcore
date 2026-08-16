@@ -23,7 +23,7 @@
  *     .venv/bin/python scripts/golden/generate.py
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
@@ -76,6 +76,33 @@ function load(name: (typeof CASES)[number]): { golden: Golden; bytes: Uint8Array
   const bytes = new Uint8Array(readFileSync(goldenDir(golden.file)));
   return { golden, bytes };
 }
+
+describe('the case list covers what is on disk', () => {
+  it('has a case for every committed golden that carries samples', () => {
+    // `CASES` is written out rather than globbed because each entry carries the reason it exists,
+    // and a directory listing cannot say why `edf-negative-gain` is worth a file. That leaves the
+    // list able to fall behind `scripts/golden/generate.py`: a golden generated and committed
+    // without an entry here is a reference value nothing compares against, which looks exactly
+    // like coverage until someone opens the directory. Adding one stays a deliberate act; missing
+    // the second half of it no longer passes.
+    const directory = fileURLToPath(new URL('./golden/', import.meta.url));
+    const sampleGoldens = readdirSync(directory)
+      .filter(
+        (entry) =>
+          entry.endsWith('.json') && !entry.endsWith('.mne.json') && !entry.startsWith('corpus-'),
+      )
+      .map((entry) => entry.slice(0, -'.json'.length))
+      .filter((name) => {
+        const parsed = JSON.parse(readFileSync(goldenDir(`${name}.json`), 'utf8')) as {
+          signals?: unknown;
+        };
+        return Array.isArray(parsed.signals);
+      });
+
+    expect(sampleGoldens.length).toBeGreaterThan(1);
+    expect([...sampleGoldens].sort()).toEqual([...CASES].sort());
+  });
+});
 
 describe('the goldens are pyEDFlib output, not ours', () => {
   it.each(CASES)('%s names its producer and carries real samples', (name) => {
