@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.193
+
+- **Added** the guard for 0.4.191 and 0.4.192: both corpus sizes in `tests/README.md` are now
+  measured against the manifest and the `corpus/golden/` directory. Each had gone stale by more
+  than 30% because a file joined a set and the sentence describing it did not, and neither was
+  checkable by reading the sentence. The tolerance is 10%, so a hedged "~" survives a fixture
+  gaining bytes and fails when the set changes.
+
 ## 0.4.192
 
 - **Corrected** the size of the committed parity fixtures, the other stale number in
