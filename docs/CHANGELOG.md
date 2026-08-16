@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.199
+
+- **Corrected** the title of `documented-examples.test-d.ts`, which read "The documented examples
+  in the docs compile". Three do. The three pages it covers carry 55 `ts` fences, and each covered
+  example needs a compiled twin written by hand, so the set is small on purpose — but a maintainer
+  reading the title would think a new snippet was already checked.
+
+## 0.4.198
+
+- **Corrected** the list of budget readers in `src/options.ts`. It named six modules; eight read
+  `maxMaterializeBytes`. `biosemi.ts` and `io/cached.ts` were missing, and neither is drift — both
+  already read it when 905810c, whose subject is "Name the six modules that read the budget", was
+  written. They read the raw option and hand it on rather than resolving it, so the six are now
+  named as the resolvers and the two as what they are.
+
 ## 0.4.197
 
 - **Corrected** the consumed-version count in `scripts/release.mjs`, which had drifted in the file

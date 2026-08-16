@@ -1,5 +1,9 @@
 /**
- * The documented examples in the docs compile.
+ * The three extension-point examples in the docs compile.
+ *
+ * Three, not all of them. Those pages carry 55 `ts` fences between them and most are signatures and
+ * one-liners; these are the ones a reader copies out and extends, and each needs a compiled twin
+ * written by hand, so the set is deliberately small rather than derived.
  *
  * `api-sources.md`, `api-primitives.md` and `api-errors.md` are the pages that tell a reader to go
  * and write their own code: a custom `FetchLike` adapter, a handler for a duplicate channel label,
