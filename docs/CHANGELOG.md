@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.163
+
+- **Fixed** an ungrammatical sentence in the `DocsNav` docblock ("which the collection schema is
+  what prevents") and named the mechanism it was reaching for: `section` is a `z.enum` over the
+  same four values, so an unlisted one fails the build.
+
+## 0.4.162
+
+- **Rewrote** the JSON-LD comment added in the SEO pass. It argued the escape was unnecessary while
+  the line below it performed one, and the sentence did not parse. It now says what the escape does
+  and why it is there.
+
 ## 0.4.161
 
 - **Fixed** `tests/README.md` contradicting itself five lines apart: its opening says six fixtures
