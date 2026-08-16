@@ -12,12 +12,23 @@
 
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf, readAnnotations } from '../../src/recording.js';
+import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
 import { sampleStartSecondsOf } from '../../src/sample-locate.js';
-import { minimalEdfPlus } from '../support/writer.js';
+import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
-/** Any `someFunction():` prefix — the shape 0.3.132-0.3.134 removed. */
-const NAMES_A_FUNCTION = /\b[a-zA-Z][A-Za-z0-9_]*\(\):/;
+/**
+ * A message that OPENS by naming a function, in either punctuation the package has used:
+ * `decodeAnnotations(): …` and `resolveTimeWindow() cannot …`.
+ *
+ * Anchored to the start rather than matched anywhere, because naming a function mid-sentence is
+ * usually right — `trimToWindow()` appears inside a refusal thrown for its caller, and there the
+ * name is the advice. It is the opening self-identification that tells a caller about a function
+ * they never wrote.
+ *
+ * Colon-only was the first spelling of this and it was too narrow: it passed for
+ * `resolveTimeWindow() cannot …`, so the guard added in 0.4.167 was vacuous until this widened it.
+ */
+const NAMES_A_FUNCTION = /^\s*[a-zA-Z][A-Za-z0-9_]*\(\)/;
 
 async function messageFrom(call: () => unknown): Promise<string> {
   try {
@@ -55,5 +66,26 @@ describe('a delegating entry point does not report the function it delegates to'
       expect(message.length).toBeGreaterThan(20);
       expect(message).not.toMatch(NAMES_A_FUNCTION);
     }
+  });
+  it('readWindow, which calls resolveTimeWindow', async () => {
+    // A probed index on a discontinuous file: the refusal comes from a helper five entry points
+    // share, and it named itself until 0.4.164. The two cases above only covered two of them,
+    // which is why this one went unnoticed.
+    const bytes = buildEdf({
+      plus: 'D',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (r) => (r < 2 ? r : r + 10),
+      signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+      annotationSignals: [{ samplesPerRecord: 30 }],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    expect(recording.index.coverage).toBe('probed');
+
+    const message = await messageFrom(() =>
+      readWindow(recording, { signalIndices: [0], startSeconds: 0, durationSeconds: 2 }),
+    );
+    expect(message).toContain('at least one gap');
+    expect(message).not.toMatch(NAMES_A_FUNCTION);
   });
 });
