@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.173
+
+- **Added** `website/design/`, holding the share card's SVG source and the two commands that
+  regenerate the PNG. 0.4.172 committed a binary nobody could edit; the source now sits beside a
+  README whose commands were verified to reproduce the shipped file byte for byte. The directory is
+  not served, so the site still ships one image.
+
 ## 0.4.172
 
 - **Redrew** the share card, which listed three of the four formats the reader supports, and
