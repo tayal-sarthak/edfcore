@@ -187,6 +187,80 @@ run('git', ['tag', '-a', tag, '-m', tag]);
 run('git', ['push', 'origin', 'main']);
 run('git', ['push', 'origin', tag]);
 
+// ---------------------------------------------------------------- CI, on this exact commit
+//
+// `npm run check` above ran on THIS machine, and that is not the same question as whether it
+// passes. Twice now a check has been green here and red on every runner: one read a file whose
+// tsconfig lives in `website/node_modules`, which CI does not install, and one required
+// `tests/scratch/` to exist, which is gitignored and never on a fresh clone. Between them,
+// 0.4.231 through 0.4.236 and 0.4.241 through 0.4.242 were tagged and never published — eight
+// numbers, each of which the publish run refused for the same reason, silently, because
+// publish.yml fails long after this script has exited 0.
+//
+// So the release waits for the runners before it opens the door to npm. CI runs on the push
+// above; this polls the check runs for that commit and refuses to create the GitHub release if
+// any of them fails. A failure now leaves the tag pushed and no release, which is recoverable —
+// fix, then `gh release create` — rather than a version that exists in git and nowhere else.
+
+const CI_POLL_SECONDS = 15;
+const CI_TIMEOUT_MINUTES = 20;
+
+/** Synchronous, and no subprocess: the script is a straight line and has nothing else to do. */
+const sleepSeconds = (seconds) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, seconds * 1000);
+
+/** `{ total, pending, failed }` for a commit's check runs, or undefined if gh could not say. */
+const checkRuns = (sha) => {
+  try {
+    return JSON.parse(
+      capture('gh', [
+        'api',
+        `repos/{owner}/{repo}/commits/${sha}/check-runs`,
+        '--jq',
+        '{total: .total_count,' +
+          ' pending: [.check_runs[] | select(.status != "completed")] | length,' +
+          ' failed: [.check_runs[] | select(.conclusion == "failure" or' +
+          ' .conclusion == "timed_out" or .conclusion == "cancelled")] | map(.name)}',
+      ]),
+    );
+  } catch {
+    return undefined;
+  }
+};
+
+const releaseSha = capture('git', ['rev-parse', 'HEAD']);
+if (!dryRun) {
+  console.log(`  Waiting for CI on ${releaseSha.slice(0, 7)}`);
+  const deadline = CI_TIMEOUT_MINUTES * 60;
+  let waited = 0;
+  for (;;) {
+    const status = checkRuns(releaseSha);
+    if (status !== undefined && status.failed.length > 0) {
+      die(
+        `${tag} is tagged and pushed, but CI failed on this commit: ${status.failed.join(', ')}.\n\n` +
+          '  No GitHub release was created, so nothing has gone to npm. The tag is public and\n' +
+          '  cannot be undone; fix what failed, push the fix, and finish this version by hand:\n\n' +
+          `      gh release create ${tag} --title "edfcore ${next}" --generate-notes\n\n` +
+          '  Re-running this script instead would cut the NEXT version and leave this one a hole,\n' +
+          '  which is how eight numbers were lost before this check existed.',
+      );
+    }
+    // `total: 0` means the runners have not registered yet, which is not the same as green.
+    if (status !== undefined && status.total > 0 && status.pending === 0) break;
+    if (waited >= deadline) {
+      die(
+        `${tag} is tagged and pushed, but CI has not finished after ${CI_TIMEOUT_MINUTES} minutes.\n\n` +
+          '  No GitHub release was created and nothing has gone to npm. Watch it with\n' +
+          '  `gh run watch`, and once it is green finish this version by hand:\n\n' +
+          `      gh release create ${tag} --title "edfcore ${next}" --generate-notes`,
+      );
+    }
+    sleepSeconds(CI_POLL_SECONDS);
+    waited += CI_POLL_SECONDS;
+  }
+  console.log('  CI is green');
+}
+
 // The one step whose failure the revert above cannot reach. By here the bump is committed and the
 // tag is pushed, so there is nothing local left to undo — and publish.yml triggers on a PUBLISHED
 // release, not on a tag, so stopping here leaves a version that exists in git and never reaches
