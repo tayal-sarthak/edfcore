@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.165
+
+- **Updated** `discontinuous.md`, which quoted the probed-index refusal with the function-name
+  prefix 0.4.164 removed.
+
 ## 0.4.164
 
 - **Removed** the `resolveTimeWindow()` prefix from the probed-index refusal. Five entry points
