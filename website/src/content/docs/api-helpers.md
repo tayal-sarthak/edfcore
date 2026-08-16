@@ -109,6 +109,9 @@ over a whole recording costs the buckets plus one chunk.
 `buckets` is clamped to the sample count of the densest signal in the run — asking for more
 buckets than there are samples would leave holes that mean nothing.
 
+The argument's type is `EnvelopeSelection`: a `WindowSelection` plus `buckets`, so everything
+`readWindow` accepts is accepted here.
+
 ### Physical units
 
 Use `toPhysicalEnvelope`, not `toPhysical`.
@@ -204,7 +207,10 @@ for await (const chunk of streamRecords(recording, {
 
 `chunkRecords` is a count of records, not of bytes or seconds, because the record is the only unit
 every signal in an EDF file shares — channels sample at different rates, so "a second of data" is
-a different number of samples per channel.
+a different number of samples per channel. It defaults to 256.
+
+The argument's type is `StreamSelection`: a `WindowSelection` plus `chunkRecords`, which is the
+one field that decides peak memory — a chunk's worth of records rather than the whole window.
 
 `signalIndices` is validated before the window is resolved, so a non-existent index or the
 annotations channel is refused even when the window selects no records at all — the same
@@ -404,6 +410,11 @@ trigger is held for as long as the stimulus computer asserts it, so the transiti
 the information. A return to `0` is reported too, because the release time is what gives a trigger
 its duration.
 
+The argument's type is `TriggerSelection`, and it is the one selection in the package with no
+`signalIndices`: `readTriggers` locates the Status channel itself. That is deliberate rather than
+a convenience — a 24-bit EEG sample decoded as a trigger word yields plausible-looking events out
+of ordinary data, so there is no way to point this call at the wrong channel.
+
 ### Times and the window
 
 `seconds` and `ticks` are elapsed recording time on the same axis as everything else: `t = 0` is
@@ -504,6 +515,40 @@ its first annotation, and clamping to zero would silently move the event.
 of the file each affects, then a capped sample of individual entries. A sweep over a damaged file
 can produce six figures of diagnostics — `TIMEKEEPING_TAL_MISSING` is per record — and a wall of
 them buries the answer.
+
+### The options types
+
+Each formatter's second argument has a name, exported from the same entry as the function. You
+need it to build one of these ahead of the call, or to accept one in a wrapper of your own.
+
+`FormatHeaderOptions`, from `edfcore`:
+
+| field | default | what it does |
+|---|---|---|
+| `includePatientId` | `false` | print the identification line. Opt-**in**, because the obvious thing to do with this string is paste it somewhere |
+| `diagnosticsHint` | `true` | append "Call formatDiagnostics(header.diagnostics) for the detail" under the counts. Opt-**out**, for the caller who is already printing that detail — `edfcore header` turns it off for exactly that reason |
+
+`FormatAnnotationsOptions`, from `edfcore`:
+
+| field | default | what it does |
+|---|---|---|
+| `maxItems` | every row | rows to print. The count of the rest is stated either way |
+| `includeChannel` | `false` | show the `description@@channel` label EDF+ allows. Off because most files carry none |
+
+`FormatReportOptions`, from `edfcore/validate`:
+
+| field | default | what it does |
+|---|---|---|
+| `header` | none | only used to name signals; a report reads fine without it |
+| `maxItems` | `20` | individual diagnostics to print. The counts above them are the summary |
+| `redactFields` | none | forwarded to `formatDiagnostics`; pass `['patientId', 'recordingId']` before a report leaves your machine — see the redaction note under [The CLI](#the-cli) |
+
+The two defaults point opposite ways on purpose. `includePatientId` withholds until asked, because
+the cost of forgetting is a person's name in an issue tracker. `diagnosticsHint` prints until told
+not to, because the cost of forgetting is one redundant line.
+
+`formatDiagnostics` takes `FormatDiagnosticsOptions`, which is the same shape one level down:
+`color`, `maxItems`, and the `redactFields` the report forwards to it.
 
 ## The CLI
 

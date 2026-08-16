@@ -6,6 +6,46 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.236
+
+- **Added** a check that every internal link on the site points at something that exists. The
+  documentation pages carry over a hundred `/docs/...` and `#anchor` links between them and
+  nothing checked one: `astro check` validates types and content collections, not hrefs, and a
+  static build turns a link to a renamed page into a 404 for the reader rather than an error for
+  the author. The 404 page exists because that happens — "the address may have moved when the docs
+  were reorganised" — which is a good page to have and a poor substitute for not shipping the
+  link. Anchors are the half that rots quietly, since one breaks when someone rewords a heading
+  three sections away and the link still looks right; 0.4.234 nearly shipped exactly that, a table
+  cell pointing at `#patient-identification` on a page whose redaction note has no heading. The
+  nine links hard-coded in `.astro` routes are swept too — the 404's three ways out and the
+  landing page's four are the ones a reader hits first. Nothing was broken today.
+
+## 0.4.235
+
+- **Added** documentation for the three selection types, taking the recorded undocumented list
+  from eleven to eight. `StreamSelection`, `EnvelopeSelection` and `TriggerSelection` are what
+  `streamRecords`, `readEnvelope` and `readTriggers` take, and every page showed an object literal
+  without ever naming the type — so a wrapper that accepts one had nothing to import.
+  `api-types.md` lists all three in the selections table and `api-helpers.md` names each in the
+  section that teaches its call, including the fact that the first two are a `WindowSelection`
+  plus one field.
+- **Fixed** the sentence under that table, which said `signalIndices` is required "on both
+  selections". There are five now, and `TriggerSelection` is the one with no channel field at all
+  — `readTriggers` finds the BioSemi Status signal itself, because a 24-bit EEG sample decoded as
+  a trigger word yields plausible events out of ordinary data.
+
+## 0.4.234
+
+- **Added** documentation for the three formatter options types, and took them off the recorded
+  list of undocumented ones. `FormatHeaderOptions`, `FormatAnnotationsOptions` and
+  `FormatReportOptions` are exported and every field of each was described somewhere in prose, but
+  none of the three was named on a page — so writing a wrapper that accepts one, or building an
+  options object ahead of the call, meant reading the `.d.ts`. `api-helpers.md` now gives each a
+  field table with its default, and says why `includePatientId` defaults off while
+  `diagnosticsHint` defaults on: the cost of forgetting the first is a person's name in an issue
+  tracker, and the cost of forgetting the second is one redundant line. `UNDOCUMENTED_TYPES` is
+  down from fourteen to eleven, which is the direction 0.4.220 built it to move in.
+
 ## 0.4.233
 
 - **Changed** the packaging checks to run on every push instead of only at publish time.

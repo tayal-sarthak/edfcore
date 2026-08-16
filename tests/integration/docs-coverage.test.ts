@@ -1,5 +1,5 @@
 /**
- * Every exported symbol is documented somewhere, bar fourteen types that are written down.
+ * Every exported symbol is documented somewhere, bar eight types that are written down.
  *
  * The exceptions are real and listed at `UNDOCUMENTED_TYPES`, not swept up in this sentence. An
  * unqualified title here would be the same defect this file exists to catch, one level up: a claim
@@ -68,9 +68,11 @@ const EXPORTED_TYPES: readonly string[] = [
  * Exported types that no page mentions today. Debt, written down.
  *
  * This half of the check did not exist before 0.4.220, and the comment where it should have been
- * asserted the opposite — "types are documented under their own names too". Fourteen are not. They
- * are listed rather than tolerated so that a fifteenth fails, and the second test below fails once
- * one of these is documented, so the list shrinks as the gap closes instead of outliving it.
+ * asserted the opposite — "types are documented under their own names too". Fourteen were not.
+ * They are listed rather than tolerated so that a fifteenth fails, and the third test below fails
+ * once one of these is documented, so the list shrinks as the gap closes instead of outliving it.
+ * It has: 0.4.234 wrote the three formatter options types up and 0.4.235 the three selection
+ * types, leaving eight.
  */
 const UNDOCUMENTED_TYPES = new Set([
   'EdfAnnotationWindow',
@@ -81,12 +83,6 @@ const UNDOCUMENTED_TYPES = new Set([
   'EdfPhysicalEnvelope',
   'EdfStatusWord',
   'EdfTriggerEvent',
-  'EnvelopeSelection',
-  'FormatAnnotationsOptions',
-  'FormatHeaderOptions',
-  'FormatReportOptions',
-  'StreamSelection',
-  'TriggerSelection',
 ]);
 
 /** What `./validate` and `./node` publish that the universal barrel does not re-export. */
