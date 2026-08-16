@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.229
+
+- **Added** a check that the Node floor is one number. It is written down eleven times — the
+  README's compatibility line, four statements on `installation.md`, two on
+  `design-decisions.md`, the `llms.txt` summary handed to agents, and the docblocks in
+  `src/index.ts` and `src/cli.ts`, which `removeComments: false` ships verbatim into `dist/*.d.ts`
+  as an editor's hover text — and one of the eleven is not prose. The CI matrix's lowest entry is
+  the version the suite is actually proven against, while `engines.node` is the version consumers
+  are told to have; raising one without the other gives either a package that installs where it
+  was never run, or a matrix job on a version nobody may use, and nothing said which. All of them
+  are now read against `engines.node`. The scan recognises a requirement and deliberately not
+  `Node v24.4.0`, which is the shape `src/bytes/latin1.ts` uses for "the runtime this was verified
+  on" — the `v` is what separates a version someone ran from one someone requires.
+
 ## 0.4.228
 
 - **Added** a test that actually runs `require()` of the built package from CommonJS. That it
