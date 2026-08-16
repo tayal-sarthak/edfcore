@@ -6,6 +6,34 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.216
+
+- **Changed** `diagnostic-docs.test.ts` to import `EdfDiagnosticDisposition` instead of declaring
+  its own identical union. It was the fifth copy of those four names and the one the compiler
+  trusted: every `as Disposition` in the file would have gone on compiling against a union that no
+  longer matched `codes.ts`, which is the opposite of what a cast is for. `SECTIONS` is now checked
+  against the real union — a heading with a disposition that does not exist is a type error naming
+  it, rather than a cast that quietly succeeds.
+
+## 0.4.215
+
+- **Changed** the two severity patterns in `diagnostic-docs.test.ts` to come from the `EdfSeverity`
+  union rather than spelling out `error|warning|info`. They select the sample `formatDiagnostics`
+  lines in the pages that get checked against the code, so a fourth severity would have meant every
+  example using it was simply not looked at. Preventive rather than a fix: unlike the disposition
+  list in 0.4.214 there is no second inventory for severity to fall out of step with, so nothing is
+  wrong today and no canary demonstrates otherwise.
+
+## 0.4.214
+
+- **Fixed** two hand-written copies of the disposition list in `diagnostic-docs.test.ts`. One was
+  the regex that decides which rows of `DISPOSITIONS` the file can see at all, so a fifth
+  disposition would have matched nothing, its codes would never have entered the map, and "every
+  code is documented" would have passed without having heard of them — invisible to the guard
+  rather than merely undocumented. The other was `SECTIONS`, which drives the per-disposition
+  checks. Both now come from the `EdfDiagnosticDisposition` union, and a new disposition without a
+  documented section is now a failure that names it.
+
 ## 0.4.213
 
 - **Fixed** the guard added in 0.4.205, which was the shape of the defect it catches. It compared
