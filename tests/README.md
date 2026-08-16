@@ -83,8 +83,9 @@ Three tiers were planned, and all three are in use.
   These are **generated locally by pyEDFlib**, not downloaded from anyone. They have to be
   committed rather than built in memory, because the whole point is to compare against bytes a
   DIFFERENT implementation wrote — regenerating them with `support/writer.ts` would make the
-  comparison circular and prove nothing. They are excluded from the published package, which ships
-  only `dist`, `src` and the changelog.
+  comparison circular and prove nothing. They are excluded from the published package, whose
+  `files` list is `dist`, `src` and the changelog - npm adds `README.md`, `LICENSE` and
+  `package.json` to that on its own, and nothing under `tests/` ever ships.
 - **Tier 3 — download on demand.** In use. [`corpus/manifest.json`](corpus/manifest.json)
   records the URL, byte size, SHA-256, licence and purpose of each file;
   `npm run corpus:fetch` downloads them into a gitignored directory and verifies every hash;

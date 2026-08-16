@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.182
+
+- **Corrected** `tests/README.md` saying the published package "ships only `dist`, `src` and the
+  changelog". That is the `files` list; npm adds `README.md`, `LICENSE` and `package.json` on its
+  own, so a reader checking the tarball against the sentence would find three files it says are not
+  there. The point it was making - that no test fixture ships - is now stated directly.
+
 ## 0.4.181
 
 - **Fixed** `edfcore events --list --limit 0` printing two blank lines and a withheld-count notice
