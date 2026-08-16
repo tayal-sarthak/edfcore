@@ -107,10 +107,11 @@ console.log(`\n  edfcore ${current} -> ${next}${dryRun ? '  (dry run)' : ''}\n`)
 // scratch file in the tree — that number is consumed and the next run produces a different one,
 // while the heading still names the old one. Every entry after it then inherits the drift.
 //
-// This has happened twice: 0.2.29 and 0.2.36 were both consumed that way, and both times every
-// heading after them was off by one until someone compared `git show <tag>:docs/CHANGELOG.md`
-// against the tags by hand — `<tag>:CHANGELOG.md` for anything before v0.4.1, which is where the
-// file moved. Catching it here costs one file read and turns a silent documentation defect into a
+// This has happened four times: 0.2.29, 0.2.36, 0.2.59 and 0.4.176 were all consumed that way. The
+// first two took every heading after them off by one until someone compared
+// `git show <tag>:docs/CHANGELOG.md` against the tags by hand — `<tag>:CHANGELOG.md` for anything
+// before v0.4.1, which is where the file moved. The later two were written down as never released
+// at the time. Catching it here costs one file read and turns a silent documentation defect into a
 // message before anything is committed.
 
 const changelog = readFileSync(CHANGELOG, 'utf8');
@@ -122,8 +123,8 @@ if (firstHeading[1] !== next) {
   die(
     `docs/CHANGELOG.md's top entry is "## ${firstHeading[1]}" but this release is ${next}.\n\n` +
       `  Fix the heading to "## ${next}" and run again. If a number was skipped — a release that\n` +
-      '  failed after bumping consumes one — record it as never released, the way 0.2.29, 0.2.36\n' +
-      '  and 0.2.59 are.',
+      '  failed after bumping consumes one — record it as never released, the way 0.2.29, 0.2.36,\n' +
+      '  0.2.59 and 0.4.176 are.',
   );
 }
 

@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.197
+
+- **Corrected** the consumed-version count in `scripts/release.mjs`, which had drifted in the file
+  written to stop exactly this. Its note said the failure "has happened twice" and named two; the
+  error message it prints named three. It has happened four times, and 0.4.176 was in neither list —
+  so the guidance handed to the next person to lose a number omitted the most recent one to be lost.
+
 ## 0.4.196
 
 - **Added** the guard for 0.4.194: the changelog's version headings must descend without repeating
