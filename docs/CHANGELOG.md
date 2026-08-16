@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.210
+
+- **Added** the guard for 0.4.208 and 0.4.209: `npm run lint` now passes `--error-on-warnings`, so
+  a warning fails the run instead of printing under it. Both diagnostics cleared in those releases
+  had been reported by every `npm run check` and every CI job without failing either, which is why
+  they lasted. This only became possible once the output was empty, and it is what stops it filling
+  up again.
+
 ## 0.4.209
 
 - **Changed** the `signals` row to a template literal, clearing the last standing lint diagnostic.
