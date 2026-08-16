@@ -40,26 +40,29 @@ function manySignalFile(): string {
   return path;
 }
 
-describe.skipIf(!built || process.platform === 'win32')('output piped to a reader that exits', () => {
-  it('says nothing on stderr when the pipe closes early', async () => {
-    const file = manySignalFile();
-    // `head -1` closes the pipe after one line. The shell is what makes this a real pipe.
-    const { stdout, stderr } = await run('/bin/sh', [
-      '-c',
-      `node ${JSON.stringify(CLI)} signals ${JSON.stringify(file)} | head -1`,
-    ]);
+describe.skipIf(!built || process.platform === 'win32')(
+  'output piped to a reader that exits',
+  () => {
+    it('says nothing on stderr when the pipe closes early', async () => {
+      const file = manySignalFile();
+      // `head -1` closes the pipe after one line. The shell is what makes this a real pipe.
+      const { stdout, stderr } = await run('/bin/sh', [
+        '-c',
+        `node ${JSON.stringify(CLI)} signals ${JSON.stringify(file)} | head -1`,
+      ]);
 
-    expect(stderr).toBe('');
-    expect(stdout.trim().split('\t')[1]).toBe('EEG C0');
-  });
+      expect(stderr).toBe('');
+      expect(stdout.trim().split('\t')[1]).toBe('EEG C0');
+    });
 
-  it('still writes every line when the reader stays', async () => {
-    // The other half: swallowing EPIPE must not swallow output nobody refused.
-    const file = manySignalFile();
-    const { stdout } = await run('/bin/sh', [
-      '-c',
-      `node ${JSON.stringify(CLI)} signals ${JSON.stringify(file)} | wc -l`,
-    ]);
-    expect(Number(stdout.trim())).toBe(300);
-  });
-});
+    it('still writes every line when the reader stays', async () => {
+      // The other half: swallowing EPIPE must not swallow output nobody refused.
+      const file = manySignalFile();
+      const { stdout } = await run('/bin/sh', [
+        '-c',
+        `node ${JSON.stringify(CLI)} signals ${JSON.stringify(file)} | wc -l`,
+      ]);
+      expect(Number(stdout.trim())).toBe(300);
+    });
+  },
+);
