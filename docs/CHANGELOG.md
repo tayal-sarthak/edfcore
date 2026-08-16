@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.213
+
+- **Fixed** the guard added in 0.4.205, which was the shape of the defect it catches. It compared
+  the section list in three consumer files against the schema — and named those three by hand, so a
+  fourth file writing the list out again would not have been one of them and the run would have
+  stayed green while the new copy drifted. It now finds every file under `website/src` that
+  declares `SECTIONS`. This is the third guard in three batches that turned out narrower than the
+  claim it guards.
+
 ## 0.4.212
 
 - **Added** the guard for 0.4.211, and the counterpart to 0.4.210 on the other side of the repo:
