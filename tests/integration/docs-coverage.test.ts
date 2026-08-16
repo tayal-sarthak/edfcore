@@ -27,6 +27,7 @@ import * as edfcore from '../../src/index.js';
 import * as edfcoreNode from '../../src/node.js';
 import * as edfcoreValidate from '../../src/validate.js';
 import { exportedTypes } from '../support/barrel-types.js';
+import { ALL_DOCS, DOCS_PAGES as DOCS } from '../support/docs-pages.js';
 
 interface RawModuleGlob {
   glob(
@@ -35,17 +36,7 @@ interface RawModuleGlob {
   ): Record<string, string>;
 }
 
-const DOC_SOURCES = (import.meta as unknown as RawModuleGlob).glob(
-  '../../website/src/content/docs/*.md',
-  { query: '?raw', import: 'default', eager: true },
-);
-
-/** Keyed by file name, e.g. `api-helpers.md`. */
-const DOCS = new Map<string, string>(
-  Object.entries(DOC_SOURCES).map(([path, source]) => [path.split('/').pop() ?? path, source]),
-);
-
-const ALL_DOCS = [...DOCS.values()].join('\n');
+const first = (modules: Record<string, string>): string => Object.values(modules)[0] ?? '';
 
 function mentioned(name: string): boolean {
   return new RegExp(`\\b${name}\\b`).test(ALL_DOCS);
@@ -109,6 +100,37 @@ describe('the documentation set is the one being checked', () => {
     expect(DOCS.size).toBeGreaterThan(15);
     expect(DOCS.has('api-helpers.md')).toBe(true);
     expect(ALL_DOCS.length).toBeGreaterThan(50_000);
+  });
+
+  it('reads the same set the site publishes', () => {
+    /*
+     * The reader in `tests/support/docs-pages.ts` and the collection loader are two patterns that
+     * have to mean the same thing, and until 0.4.231 they did not: the loader takes
+     * `**\/*.{md,mdx}` and every check here took `*.md`, so a nested page or an `.mdx` one was
+     * published and unswept. Comparing the two strings is what keeps the fix from being a one-off
+     * — narrowing either side again fails here rather than in a year.
+     */
+    const config = first(
+      (import.meta as unknown as RawModuleGlob).glob('../../website/src/content.config.ts', {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      }),
+    );
+    const reader = first(
+      (import.meta as unknown as RawModuleGlob).glob('../../tests/support/docs-pages.ts', {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      }),
+    );
+    const loaderPattern = /pattern:\s*'([^']+)'/.exec(config)?.[1];
+    // The `glob(...)` CALL, not the file text: a pattern quoted in the reader's own docblock would
+    // otherwise vouch for a narrower one in the code beneath it.
+    const readerPattern = /\.glob\(\s*'([^']+)'/.exec(reader)?.[1];
+    expect(loaderPattern, 'no glob pattern in website/src/content.config.ts').toBeDefined();
+    expect(readerPattern, 'no glob call in tests/support/docs-pages.ts').toBeDefined();
+    expect(readerPattern).toBe(`../../website/src/content/docs/${loaderPattern}`);
   });
 
   it('can tell a documented name from an undocumented one', () => {

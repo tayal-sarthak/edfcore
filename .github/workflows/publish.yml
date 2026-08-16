@@ -39,10 +39,11 @@ jobs:
 
       - run: npm run build
 
+      # The same script CI runs on every push, so a packaging regression is a red pull request
+      # rather than something found here — after the tag is pushed, where the only way forward is
+      # to fix it in the next version. Defined once in package.json so the two cannot drift.
       - name: Verify the published shape
-        run: |
-          npx --yes publint@latest --strict
-          npx --yes @arethetypeswrong/cli@latest --pack . --profile esm-only
+        run: npm run verify:package
 
       # --provenance lives here rather than in publishConfig on purpose. In publishConfig it
       # applies to every publish, including one run by hand, and a laptop has no OIDC token to

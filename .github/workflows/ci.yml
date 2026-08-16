@@ -27,6 +27,24 @@ jobs:
       - name: Lint, typecheck and test
         run: npm run check
 
+  # What `npm run check` cannot see: the shape of the tarball. publint reads the manifest against
+  # the files npm would actually pack, and @arethetypeswrong/cli resolves each subpath the way a
+  # consumer's TypeScript would. Both ran in publish.yml only, which is after the tag is pushed —
+  # the one window scripts/release.mjs cannot undo, so a packaging mistake found there could only
+  # be fixed by cutting another version. One job, one Node: the tarball does not vary by runtime.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # publint packs the package, so `dist` has to exist first.
+      - run: npm run build
+      - run: npm run verify:package
+
   site:
     runs-on: ubuntu-latest
     steps:
