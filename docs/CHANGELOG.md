@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.164
+
+- **Removed** the `resolveTimeWindow()` prefix from the probed-index refusal. Five entry points
+  reach that helper — `readWindow`, `readEnvelope`, `readEnvelopeAtResolution`, `streamRecords`
+  and `readTriggers` — so a caller of any of them was told about a function they never wrote. Same
+  rule as 0.3.132-0.4.x; this was the last shared helper still naming itself.
+
 ## 0.4.163
 
 - **Fixed** an ungrammatical sentence in the `DocsNav` docblock ("which the collection schema is
