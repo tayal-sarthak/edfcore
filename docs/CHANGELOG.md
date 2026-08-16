@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.228
+
+- **Added** a test that actually runs `require()` of the built package from CommonJS. That it
+  works is the claim the Node floor rests on, stated five times — the README's compatibility
+  list, `installation.md`, `design-decisions.md`, the docblock in `src/index.ts`, and the comment
+  pinning 22.12 in the CI matrix — and nothing ran it. Nothing else in the suite could: the whole
+  repository is ESM under vitest, where a top-level `await` is ordinary and the condition that
+  breaks `require()` is invisible from inside. A child process now requires each of `dist/`'s
+  three entry points from a CommonJS realm, which makes Node itself the oracle — a graph with a
+  top-level `await` anywhere in it throws `ERR_REQUIRE_ASYNC_MODULE`, with no heuristic to agree
+  with the same mistake a reader of the source would. A negative control in the same run proves
+  the harness can fail.
+
 ## 0.4.227
 
 - **Fixed** `npm run lint` not seeing any JavaScript in the repository. Biome's `files.includes`
