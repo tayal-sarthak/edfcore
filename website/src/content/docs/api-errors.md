@@ -77,6 +77,12 @@ Six kinds, seven classes: the two channel errors share `'channel'` because a cal
 
 Each carries the context for its own failure, so you never have to parse the message.
 
+An error that comes from a diagnostic **opens with its code in brackets** — `[SOURCE_TOO_SMALL]
+the header is 4 bytes, ...` — because the code is the first thing you want when the message is the
+only thing you have. `EdfDiagnostic.message` does **not**: `formatDiagnostics` renders the code
+from the field beside it. So prefixing `error.code` yourself when displaying one prints it twice,
+which is exactly what the inspector on this site did until 0.4.185.
+
 ### EdfFormatError
 
 | field | type | meaning |

@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.186
+
+- **Documented** which errors already carry their diagnostic code. A diagnostic-backed
+  `EdfFormatError` is written `[CODE] what happened`, while `EdfDiagnostic.message` is not —
+  `formatDiagnostics` renders the code from the field beside it. Nothing said so, which is how the
+  inspector on this site came to print `SOURCE_TOO_SMALL: [SOURCE_TOO_SMALL] ...` until 0.4.185.
+  Any caller prefixing `error.code` before displaying one would have hit the same thing.
+
 ## 0.4.185
 
 - **Fixed** the inspector printing a diagnostic code twice. Every diagnostic-backed error edfcore
