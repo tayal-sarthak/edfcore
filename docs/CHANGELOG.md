@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.221
+
+- **Corrected** the title of `docs-coverage.test.ts` now that 0.4.220 gave it a list of exceptions.
+  "Every exported symbol is documented somewhere" was true of what it checked before and is not
+  true of what it checks now — fourteen types are exempted by name. Leaving it would have been the
+  defect this file exists to catch, one level up: a claim of total coverage standing over a check
+  that does not have it.
+
+## 0.4.220
+
+- **Added** the missing half of `docs-coverage.test.ts`. Its title is "Every exported symbol is
+  documented somewhere", but it enumerates `Object.keys` of the barrels — runtime values only,
+  since a type has nothing to enumerate — and the comment where the other half should have been
+  claimed "types are documented under their own names too". Fourteen are not:
+  `EdfAnnotationWindow`, `EdfCodeCount`, `EdfDiagnosticSummary`, `EdfEnvelopeChunk`,
+  `EdfEnvelopeSignal`, `EdfPhysicalEnvelope`, `EdfStatusWord`, `EdfTriggerEvent`,
+  `EnvelopeSelection`, `FormatAnnotationsOptions`, `FormatHeaderOptions`, `FormatReportOptions`,
+  `StreamSelection` and `TriggerSelection` appear on no page. Type names now come from the
+  `export type { … }` blocks, the fourteen are recorded as named debt so a fifteenth fails, and
+  documenting one fails a second check until it is struck off — so the list shrinks rather than
+  outliving the gap. **Fixing the fourteen is a documentation job, not this release.**
+
 ## 0.4.219
 
 - **Added** the same check to `corpus-parity.test.ts`, and deliberately did not gate it on the
