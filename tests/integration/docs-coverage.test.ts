@@ -22,6 +22,7 @@
  * one vouch for the first — which is the exact class of gap this file exists to find.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as edfcore from '../../src/index.js';
 import * as edfcoreNode from '../../src/node.js';
@@ -35,8 +36,6 @@ interface RawModuleGlob {
     options: { query: string; import: string; eager: true },
   ): Record<string, string>;
 }
-
-const first = (modules: Record<string, string>): string => Object.values(modules)[0] ?? '';
 
 function mentioned(name: string): boolean {
   return new RegExp(`\\b${name}\\b`).test(ALL_DOCS);
@@ -106,19 +105,21 @@ describe('the documentation set is the one being checked', () => {
      * published and unswept. Comparing the two strings is what keeps the fix from being a one-off
      * — narrowing either side again fails here rather than in a year.
      */
-    const config = first(
-      (import.meta as unknown as RawModuleGlob).glob('../../website/src/content.config.ts', {
-        query: '?raw',
-        import: 'default',
-        eager: true,
-      }),
+    /*
+     * `readFileSync`, not `import.meta.glob`. A `?raw` glob still hands the path to vite's
+     * transform, which resolves the file's nearest tsconfig — and `website/tsconfig.json` extends
+     * `astro/tsconfigs/strict`, which lives in `website/node_modules`. The CI `check` job installs
+     * the root workspace only, so globbing this file passed on any machine with the site's
+     * dependencies present and failed with `[TSCONFIG_ERROR] Tsconfig not found` on one without.
+     * Reading bytes involves no transform and no tsconfig (fixed in 0.4.237).
+     */
+    const config = readFileSync(
+      new URL('../../website/src/content.config.ts', import.meta.url),
+      'utf8',
     );
-    const reader = first(
-      (import.meta as unknown as RawModuleGlob).glob('../../tests/support/docs-pages.ts', {
-        query: '?raw',
-        import: 'default',
-        eager: true,
-      }),
+    const reader = readFileSync(
+      new URL('../../tests/support/docs-pages.ts', import.meta.url),
+      'utf8',
     );
     const loaderPattern = /pattern:\s*'([^']+)'/.exec(config)?.[1];
     // The `glob(...)` CALL, not the file text: a pattern quoted in the reader's own docblock would

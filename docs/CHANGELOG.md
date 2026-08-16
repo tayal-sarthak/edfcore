@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.237
+
+- **Fixed** `npm run check` failing on any machine without the website's dependencies installed,
+  which is every CI runner. 0.4.231 added a check comparing the docs reader's glob pattern against
+  the collection loader's, and read `website/src/content.config.ts` through `import.meta.glob`
+  with `?raw`. A raw glob still hands the path to vite's transform, which resolves that file's
+  nearest tsconfig — `website/tsconfig.json`, which extends `astro/tsconfigs/strict` out of
+  `website/node_modules`. The CI `check` job installs the root workspace only, so the run died
+  with `[TSCONFIG_ERROR] Failed to load tsconfig 'astro/tsconfigs/strict'` while the same command
+  passed locally, where the site's dependencies happen to be present. Both files are read with
+  `readFileSync` now: bytes, no transform, no tsconfig.
+
+  **0.4.231 through 0.4.236 were never released.** Each was tagged and each publish run failed at
+  the check above, so six numbers are holes on npm the way 0.2.29, 0.2.36, 0.2.59 and 0.4.176 are.
+  Nothing is lost: every change they carried is in this release. The 0.4.200 revert cannot reach
+  this case — the checks passed on the machine cutting the tag, and it was the *runner's*
+  environment that differed, which is the gap 0.4.233 had just moved `publint` into CI to narrow
+  from the other side.
+
 ## 0.4.236
 
 - **Added** a check that every internal link on the site points at something that exists. The
