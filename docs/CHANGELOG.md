@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.184
+
+- **Added** the guard for 0.4.183: `header --limit 2` on a file with six defects must say how to
+  see the rest, and an uncapped run must not - a hint under a complete list reads as a missing page.
+
 ## 0.4.183
 
 - **Added** the missing next step to a truncated diagnostics block. `edfcore header` and

@@ -274,6 +274,32 @@ describe('events --list', () => {
     expect(out.split('\n').filter((line) => line.includes('\t'))).toHaveLength(2);
     expect(out).toContain('... 4 more');
   });
+
+  it('tells a truncated diagnostics reader how to see the rest', async () => {
+    /*
+     * `formatDiagnostics` ends a capped block with `... and N more`, which is right for a library
+     * caller — they raise `maxItems`. In a terminal that is a dead end, and `events --list` right
+     * above already says "raise --limit". The CLI adds the line only it can write (added 0.4.183).
+     */
+    const degenerate = buildEdf({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: Array.from({ length: 6 }, (_, i) => ({
+        label: `sig${i}`,
+        samplesPerRecord: 2,
+        digitalMinimum: 5,
+        digitalMaximum: 5,
+      })),
+    });
+
+    const capped = await invoke(['header', 'a.edf', '--limit', '2'], { 'a.edf': degenerate });
+    expect(capped.out).toContain('... and');
+    expect(capped.out).toContain('Raise --limit to see the rest.');
+
+    // And not when nothing was withheld: a hint under a complete list reads as a missing page.
+    const whole = await invoke(['header', 'a.edf'], { 'a.edf': degenerate });
+    expect(whole.out).not.toContain('Raise --limit');
+  });
 });
 
 describe('patient identification and the diagnostics that quote it', () => {
