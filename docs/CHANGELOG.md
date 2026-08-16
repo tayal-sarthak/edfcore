@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.221
+
+- **Corrected** the title of `docs-coverage.test.ts` now that 0.4.220 gave it a list of exceptions.
+  "Every exported symbol is documented somewhere" was true of what it checked before and is not
+  true of what it checks now — fourteen types are exempted by name. Leaving it would have been the
+  defect this file exists to catch, one level up: a claim of total coverage standing over a check
+  that does not have it.
+
 ## 0.4.220
 
 - **Added** the missing half of `docs-coverage.test.ts`. Its title is "Every exported symbol is

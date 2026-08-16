@@ -1,5 +1,9 @@
 /**
- * Every exported symbol is documented somewhere.
+ * Every exported symbol is documented somewhere, bar fourteen types that are written down.
+ *
+ * The exceptions are real and listed at `UNDOCUMENTED_TYPES`, not swept up in this sentence. An
+ * unqualified title here would be the same defect this file exists to catch, one level up: a claim
+ * of total coverage standing over a check that does not have it.
  *
  * 0.1.16 added the other half of this: an export nobody listed in `public-api.test.ts` is a
  * failure, so adding one is a deliberate act. That stopped exports from arriving unnoticed. It did
