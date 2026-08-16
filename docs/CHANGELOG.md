@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.187
+
+- **Corrected** the `FormatHeaderOptions` docblock, which opened "There is one, and it is opt-IN".
+  0.4.174 added a second option and left the sentence behind, so the interface listed two fields
+  directly under a summary that counted one — and `diagnosticsHint` is opt-OUT, the opposite of
+  what that summary promises about the options as a group.
+
 ## 0.4.186
 
 - **Documented** which errors already carry their diagnostic code. A diagnostic-backed
