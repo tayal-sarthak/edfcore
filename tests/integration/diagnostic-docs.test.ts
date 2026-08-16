@@ -119,7 +119,6 @@ function commentsOf(source: string): string {
 
 type Disposition = 'fatal' | 'deferred' | 'warning' | 'info';
 
-/** Every code and its disposition, read straight out of the `DISPOSITIONS` table. */
 /**
  * The disposition names, taken from the union that defines them.
  *
@@ -135,6 +134,15 @@ const DISPOSITION_NAMES: readonly string[] = (() => {
   return [...declaration.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string);
 })();
 
+/** The severity names, from the union that defines them. Same reasoning as `DISPOSITION_NAMES`. */
+const SEVERITY_NAMES: readonly string[] = (() => {
+  const start = CODES_SOURCE.indexOf('type EdfSeverity');
+  if (start === -1) throw new Error('codes.ts no longer declares EdfSeverity');
+  const declaration = CODES_SOURCE.slice(start, CODES_SOURCE.indexOf(';', start));
+  return [...declaration.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string);
+})();
+
+/** Every code and its disposition, read straight out of the `DISPOSITIONS` table. */
 function dispositions(): ReadonlyMap<string, Disposition> {
   const table = CODES_SOURCE.slice(CODES_SOURCE.indexOf('const DISPOSITIONS'));
   const row = new RegExp(`^\\s*([A-Z_0-9]+): '(${DISPOSITION_NAMES.join('|')})',`, 'gm');
@@ -171,9 +179,11 @@ const SECTIONS: ReadonlyArray<{ heading: string; disposition: Disposition }> = [
 const RESERVED = new Set(['SOURCE_SHORT_READ_RECOVERED', 'HTTP_RANGE_IGNORED']);
 
 describe('the disposition list this file works from', () => {
-  it('read the union out of codes.ts, so the row pattern is not vacuous', () => {
+  it('read both unions out of codes.ts, so the patterns are not vacuous', () => {
     expect(DISPOSITION_NAMES.length).toBeGreaterThanOrEqual(4);
     expect(DISPOSITION_NAMES).toContain('fatal');
+    expect(SEVERITY_NAMES.length).toBeGreaterThanOrEqual(3);
+    expect(SEVERITY_NAMES).toContain('error');
   });
 
   it('has a documented section for every disposition that exists', () => {
@@ -522,7 +532,9 @@ describe('no page prints a severity the formatter would not print', () => {
     };
     const wrong: string[] = [];
     for (const [path, text] of Object.entries(ALL_PAGES)) {
-      for (const match of text.matchAll(/^\/\/ (error|warning|info) ([A-Z_0-9]+)\b/gm)) {
+      for (const match of text.matchAll(
+        new RegExp(`^// (${SEVERITY_NAMES.join('|')}) ([A-Z_0-9]+)\\b`, 'gm'),
+      )) {
         const disposition = byCode.get(match[2] as string);
         if (disposition === undefined) continue;
         const expected = severityOf[disposition];
@@ -546,7 +558,9 @@ describe('no page prints a severity the formatter would not print', () => {
     };
     const wrong: string[] = [];
     for (const [path, text] of Object.entries(PAGES)) {
-      for (const match of text.matchAll(/^(error|warning|info) \[([A-Z_0-9]+)\]/gm)) {
+      for (const match of text.matchAll(
+        new RegExp(`^(${SEVERITY_NAMES.join('|')}) \\[([A-Z_0-9]+)\\]`, 'gm'),
+      )) {
         const disposition = byCode.get(match[2] as string);
         if (disposition === undefined) continue;
         const expected = severityOf[disposition];

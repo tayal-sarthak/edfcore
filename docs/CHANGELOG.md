@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.215
+
+- **Changed** the two severity patterns in `diagnostic-docs.test.ts` to come from the `EdfSeverity`
+  union rather than spelling out `error|warning|info`. They select the sample `formatDiagnostics`
+  lines in the pages that get checked against the code, so a fourth severity would have meant every
+  example using it was simply not looked at. Preventive rather than a fix: unlike the disposition
+  list in 0.4.214 there is no second inventory for severity to fall out of step with, so nothing is
+  wrong today and no canary demonstrates otherwise.
+
 ## 0.4.214
 
 - **Fixed** two hand-written copies of the disposition list in `diagnostic-docs.test.ts`. One was
