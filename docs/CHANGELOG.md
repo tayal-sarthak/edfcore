@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.201
+
+- **Fixed** the half of 0.4.200 it left out. The lockfile sync runs after the bump and before the
+  checks, so it sat outside the `try` that puts the version back — and it is the step most likely
+  to fail for a reason unrelated to the code, since it reaches the registry. A failed `npm install
+  --package-lock-only` would still have consumed the number.
+
 ## 0.4.200
 
 - **Fixed** `scripts/release.mjs` consuming a version number when its own checks fail. The bump is

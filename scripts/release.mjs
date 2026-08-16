@@ -140,9 +140,6 @@ manifest.version = next;
 writeFileSync(PACKAGE_JSON, `${JSON.stringify(manifest, null, 2)}\n`);
 writeFileSync(CONSTANTS, constantsBefore.replace(VERSION_LINE, `export const VERSION = '${next}';`));
 
-console.log('  Syncing the lockfile');
-run('npm', ['install', '--package-lock-only', '--silent']);
-
 // ---------------------------------------------------------------- prove it before shipping it
 //
 // The bump is already on disk here, and everything below can fail. A run that stops now without
@@ -150,12 +147,18 @@ run('npm', ['install', '--package-lock-only', '--silent']);
 // after it. That is how 0.2.29, 0.2.36, 0.2.59 and 0.4.176 were lost, and each cost an entry in
 // the changelog explaining a hole rather than a release. Undoing the bump costs one git checkout
 // and leaves the number available for the run that fixes whatever failed.
+//
+// The lockfile sync is inside this too. It reaches the registry, so it fails for reasons that have
+// nothing to do with the code — and it runs after the bump, which is the only thing that matters
+// for whether the number survives.
 
 // From HEAD, not from the index — the index would hand back the bump being undone.
 const restoreVersionFiles = () =>
   run('git', ['checkout', 'HEAD', '--', 'package.json', 'package-lock.json', 'src/constants.ts']);
 
 try {
+  console.log('  Syncing the lockfile');
+  run('npm', ['install', '--package-lock-only', '--silent']);
   console.log('  Running lint, typecheck and tests');
   run('npm', ['run', 'check']);
   console.log('  Building');
