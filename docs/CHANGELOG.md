@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.224
+
+- **Changed** the barrel type parser to live once, in `tests/support/barrel-types.ts`, instead of
+  twice. The second copy was written in 0.4.220 by reading the first, which is how it inherited a
+  blind spot that had been there since the first commit — and 0.4.222 and 0.4.223 then fixed the
+  same line in two files, three releases apart. Two copies of a rule are two chances to hold a
+  different one; the rule that a type is public because it leaves the barrel now has one home.
+
 ## 0.4.223
 
 - **Fixed** the same blind spot in the type parser added by 0.4.220. It read only

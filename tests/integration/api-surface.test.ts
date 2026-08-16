@@ -8,14 +8,15 @@
  * points, the codes by reading the disposition registry every known code must appear in, and the
  * commands by rendering the CLI's own `--help` — the text a user is told to run.
  *
- * The types are the one row that cannot be counted at runtime, since they are erased. They are
- * read from the `export type { … }` blocks of the three barrels instead, with comments stripped:
- * those blocks carry prose explaining individual re-exports, and a naive match counts the words
- * in it as type names.
+ * The types are the one row that cannot be counted at runtime, since they are erased. They are read
+ * out of the three barrels as text instead, by `tests/support/barrel-types.ts` — both the
+ * `export type { … }` blocks and the types a barrel declares and exports in place, which is the
+ * distinction that made this row wrong from the first commit until 0.4.222.
  */
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { exportedTypes } from '../support/barrel-types.js';
 import { type CliIo, parseArgs, runCli } from '../../src/cli-run.js';
 import { DIAGNOSTIC_DISPOSITIONS } from '../../src/diagnostics/codes.js';
 import * as universal from '../../src/index.js';
@@ -44,30 +45,6 @@ function claimed(label: string): number {
   const digits = /^(\d+)/.exec(cell as string);
   expect(digits, `"${label}" row does not begin with a number`).not.toBeNull();
   return Number((digits as RegExpExecArray)[1]);
-}
-
-/**
- * Type names exported by a barrel, with comments removed first.
- *
- * Two shapes, because a barrel uses both. Re-export blocks are the common one, but `node.ts`
- * DECLARES `FileHandleLike` and exports it in place — and counting only the blocks missed it, so
- * the README said 64 public types where there are 65 (fixed in 0.4.222). A type is public because
- * it leaves the barrel, not because of which syntax it left by.
- */
-function exportedTypes(source: string): ReadonlySet<string> {
-  const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-  const names = new Set<string>();
-  for (const block of stripped.matchAll(/export type \{([^}]*)\} from/g)) {
-    for (const entry of (block[1] as string).split(',')) {
-      const name = entry.trim().split(' as ').pop()?.trim() ?? '';
-      if (/^\w+$/.test(name)) names.add(name);
-    }
-  }
-  for (const declared of stripped.matchAll(/export (?:interface (\w+)|type (\w+)\s*[=<])/g)) {
-    const name = declared[1] ?? declared[2];
-    if (name !== undefined) names.add(name);
-  }
-  return names;
 }
 
 describe('the README API surface table', () => {
