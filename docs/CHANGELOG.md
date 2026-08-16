@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.206
+
+- **Added** a guard that `--help` offers exactly the commands the CLI will dispatch. `cli-run.ts`
+  writes the list twice — as prose in `USAGE`, and as the `COMMANDS` set that refuses a word before
+  the file is opened — and the two fail in opposite directions: one way a command works and is
+  undocumented, the other it is advertised and then rejected as unrecognised. `api-surface.test.ts`
+  compares the *number* of commands in `--help` to the README, so six of one and six of the other
+  passed while naming different things.
+
 ## 0.4.205
 
 - **Added** a guard that the four copies of the documentation section list agree. The `z.enum` in
