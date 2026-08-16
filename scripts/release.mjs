@@ -144,11 +144,30 @@ console.log('  Syncing the lockfile');
 run('npm', ['install', '--package-lock-only', '--silent']);
 
 // ---------------------------------------------------------------- prove it before shipping it
+//
+// The bump is already on disk here, and everything below can fail. A run that stops now without
+// putting it back CONSUMES the number: the next run reads the bumped version and produces the one
+// after it. That is how 0.2.29, 0.2.36, 0.2.59 and 0.4.176 were lost, and each cost an entry in
+// the changelog explaining a hole rather than a release. Undoing the bump costs one git checkout
+// and leaves the number available for the run that fixes whatever failed.
 
-console.log('  Running lint, typecheck and tests');
-run('npm', ['run', 'check']);
-console.log('  Building');
-run('npm', ['run', 'build']);
+// From HEAD, not from the index — the index would hand back the bump being undone.
+const restoreVersionFiles = () =>
+  run('git', ['checkout', 'HEAD', '--', 'package.json', 'package-lock.json', 'src/constants.ts']);
+
+try {
+  console.log('  Running lint, typecheck and tests');
+  run('npm', ['run', 'check']);
+  console.log('  Building');
+  run('npm', ['run', 'build']);
+} catch {
+  restoreVersionFiles();
+  die(
+    `The checks failed, so ${tag} was not cut and the bump has been undone.\n\n` +
+      `  ${current} is still the version on disk and ${next} is still free — fix what failed\n` +
+      '  above and run again to get it.',
+  );
+}
 
 // ---------------------------------------------------------------- commit, tag, release
 
@@ -169,8 +188,7 @@ run('gh', [
 
 if (dryRun) {
   console.log('\n  Dry run: reverting the local version bump.\n');
-  // From HEAD, not from the index — the index would hand back the bump we are undoing.
-  run('git', ['checkout', 'HEAD', '--', 'package.json', 'package-lock.json', 'src/constants.ts']);
+  restoreVersionFiles();
   process.exit(0);
 }
 
