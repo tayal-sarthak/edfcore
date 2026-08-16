@@ -498,8 +498,8 @@ describe('date handling through a whole file', () => {
   });
 
   it('is fatal under strict, where the first would-be diagnostic throws', () => {
-    // DESIGN.md section 2, "Modes": under strict every diagnostics array is empty because the
-    // first would-be diagnostic throws instead of being collected.
+    // Strict throws on the first would-be diagnostic whose severity is not `info`, and
+    // DATE_UNPARSEABLE is a warning, so it throws rather than being collected.
     const bytes = minimalEdf({ startDate: '31.02.99' });
     expect(() => parseHeader(bytes, bytes.byteLength, { strict: true })).toThrow();
   });

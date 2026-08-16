@@ -77,6 +77,18 @@ const ALL_SOURCE = (import.meta as unknown as RawModuleGlob).glob('../../src/**/
   import: 'default',
   eager: true,
 });
+/**
+ * The test suite too. A comment in a test is where a retired claim hides longest: it is read by
+ * whoever edits that behaviour next, and 0.3.108 swept the pages and `src/` but not here, so two
+ * copies of "every `diagnostics` array is empty by construction" survived four sweeps
+ * (0.4.157-0.4.158). This file is excluded because it quotes the retired wording deliberately —
+ * the trap 0.3.78 and 0.3.103 both fell into.
+ */
+const ALL_TESTS = (import.meta as unknown as RawModuleGlob).glob('../**/*.test.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
 
 /**
  * One line, no comment leaders, so a claim is matched however it happens to be wrapped.
@@ -90,6 +102,19 @@ function claimText(text: string): string {
     .replace(/^\s*\*\s?/gm, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * The COMMENTS of a TypeScript file, not the whole file.
+ *
+ * The claim being hunted is prose, and running the matcher over code finds pairs that are only
+ * adjacent by accident — a test named `collects nothing under strict on a conforming file`
+ * followed by a comment containing "empty" matched the `strict … empty` pattern across the
+ * boundary between them. Identifiers and string literals are not claims about behaviour; the
+ * comments around them are.
+ */
+function commentsOf(source: string): string {
+  return (source.match(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g) ?? []).join('\n');
 }
 
 type Disposition = 'fatal' | 'deferred' | 'warning' | 'info';
@@ -390,7 +415,14 @@ describe('diagnostics.md agrees with the same source', () => {
      */
     const empties = /empty[^.]{0,40}under \*?`?strict|under \*?`?strict`?[^.]{0,60}empty/i;
     const exemptsNothing = /exempts nothing|(?:of|at) \*?any\*? (?:disposition|severity)/i;
-    for (const [path, text] of [...Object.entries(ALL_PAGES), ...Object.entries(ALL_SOURCE)]) {
+    const swept: Array<[string, string]> = [
+      ...Object.entries(ALL_PAGES),
+      ...Object.entries(ALL_SOURCE).map(([p, t]) => [p, commentsOf(t)] as [string, string]),
+      ...Object.entries(ALL_TESTS)
+        .filter(([path]) => !path.endsWith('diagnostic-docs.test.ts'))
+        .map(([p, t]) => [p, commentsOf(t)] as [string, string]),
+    ];
+    for (const [path, text] of swept) {
       const where = path.split('/').pop();
       const claim = claimText(text);
       expect(claim, `${where} should not say strict empties the list`).not.toMatch(empties);

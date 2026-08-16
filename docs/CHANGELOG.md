@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.159
+
+- **Widened** the strict-mode guard to sweep the test suite, and corrected the third copy it found
+  (`tests/unit/header/dates.test.ts`). 0.3.108 swept the doc pages and `src/`, which is how two
+  copies survived in test comments until 0.4.157-0.4.158 — a comment in a test is read by whoever
+  edits that behaviour next, so it is where a retired claim does the most damage.
+- The TypeScript globs are matched on their COMMENTS rather than whole files. Running a prose
+  matcher over code found a test name and the comment beneath it as one phrase; identifiers are not
+  claims about behaviour.
+
 ## 0.4.158
 
 - **Corrected** the second surviving copy of the same claim, in `tests/unit/tal/annotations.test.ts`.
