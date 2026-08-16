@@ -261,7 +261,7 @@ describe('DiagnosticSink', () => {
     expect(sink.diagnostics.map((diagnostic) => diagnostic.message)).toEqual(['a', 'b', 'c']);
   });
 
-  /** DESIGN.md section 6: under strict every `diagnostics` array is empty by construction. */
+  /** Strict throws on the first would-be diagnostic whose severity is not `info`. */
   it('throws EdfFormatError on the FIRST would-be diagnostic when strict', () => {
     const sink = new DiagnosticSink({ strict: true });
 
