@@ -1,5 +1,5 @@
 ---
-title: API — helpers
+title: "API: helpers"
 description: Signal lookup, envelopes for plotting, chunk assembly, BioSemi triggers and the CLI — the helpers around the core read path.
 section: Reference
 order: 7

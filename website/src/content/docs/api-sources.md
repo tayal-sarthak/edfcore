@@ -1,5 +1,5 @@
 ---
-title: API — sources
+title: "API: sources"
 description: "Every way to get bytes in: memory, Blob, HTTP range requests, a block cache, and the Node file adapter — all behind one ByteSource interface."
 section: Reference
 order: 3

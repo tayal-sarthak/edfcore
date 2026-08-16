@@ -34,14 +34,17 @@ interface Props {
 
 const { title, description, wide = false, markdownPath, schema } = Astro.props;
 /*
- * The home page carries the query someone actually types — "read EDF files JavaScript" — since
- * "edfcore" alone is a title only people who already found it would search for. Every other
- * page keeps `Page — edfcore`, the specific half first.
+ * The home page carries the query someone actually types ("read EEG files JavaScript"), since
+ * "edfcore" alone is a title only people who already found it would search for. Every other page
+ * keeps `Page | edfcore`, the specific half first.
+ *
+ * A pipe rather than an em dash: the title is the one string that shows up truncated in a browser
+ * tab, a search result and a share preview, and a pipe reads as a separator at any width.
  */
 const fullTitle =
   title === 'edfcore'
-    ? 'edfcore — read EDF, EDF+ and BDF files in JavaScript and TypeScript'
-    : `${title} — edfcore`;
+    ? 'edfcore: read EEG and biosignal files in JavaScript and TypeScript'
+    : `${title} | edfcore`;
 
 // Astro.site comes from the deployment origin, so these are correct without configuration.
 const canonical = Astro.site
