@@ -179,7 +179,15 @@ import Base from '../layouts/Base.astro';
 
   function errorDetail(error: unknown): string {
     if (isEdfError(error)) {
-      return `${(error as { code?: string }).code ?? error.edfErrorKind}: ${error.message}`;
+      // The code, but only when the message does not already open with it. Every diagnostic-backed
+      // error edfcore throws is written `[CODE] what happened`, so prefixing unconditionally
+      // rendered `SOURCE_TOO_SMALL: [SOURCE_TOO_SMALL] the header is 4 bytes` — the code twice, in
+      // the first thing a visitor sees after opening a file that will not read.
+      const code = (error as { code?: string }).code;
+      if (code !== undefined) {
+        return error.message.startsWith(`[${code}]`) ? error.message : `${code}: ${error.message}`;
+      }
+      return `${error.edfErrorKind}: ${error.message}`;
     }
     return error instanceof Error ? error.message : String(error);
   }
