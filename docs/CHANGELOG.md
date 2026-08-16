@@ -6,6 +6,37 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.197
+
+- **Corrected** the consumed-version count in `scripts/release.mjs`, which had drifted in the file
+  written to stop exactly this. Its note said the failure "has happened twice" and named two; the
+  error message it prints named three. It has happened four times, and 0.4.176 was in neither list —
+  so the guidance handed to the next person to lose a number omitted the most recent one to be lost.
+
+## 0.4.196
+
+- **Added** the guard for 0.4.194: the changelog's version headings must descend without repeating
+  and skip no number, so a run that consumes one has to be written down rather than leaving a hole
+  a reader cannot interpret. Checked against the file alone, not `git tag` — CI checks out at depth
+  1 and fetches no tags, so a tag-based version would find none and pass while asserting nothing.
+  Removing the 0.2.29 entry fails it with `0.2.28 -> 0.2.30`.
+
+## 0.4.195
+
+- **Recorded** why `v0.1.1` has no tag, the last unexplained hole in the version history. It is not
+  a consumed number like 0.2.29: it shipped to npm and is installable. It predates
+  `scripts/release.mjs` by hours — the bump rode inside an ordinary commit, the publish was done by
+  hand, and 0.1.2 fifty minutes later was the first release the script cut. Every other version in
+  this file is either tagged or says it was never released.
+
+## 0.4.194
+
+- **Added** the missing `0.2.29` entry. Four numbers have been consumed by a release that failed
+  after bumping, and three say so in this file. 0.2.29 said nothing — while the 0.2.36 entry cites
+  it as the precedent for its own, and `scripts/release.mjs` tells the next person to record a skip
+  "the way 0.2.29, 0.2.36 and 0.2.59 are". Both pointed at the one that was not. Reconstructed from
+  7ea90ff, which carries the 0.2.28 → 0.2.29 bump alongside the lint fix that run died on.
+
 ## 0.4.193
 
 - **Added** the guard for 0.4.191 and 0.4.192: both corpus sizes in `tests/README.md` are now
@@ -4146,6 +4177,14 @@ against the published 0.2.27 tarball rather than assumed.
   refusal for a file whose records really do exist and really are too big, so the guard is still
   covered.
 
+## 0.2.29
+
+Never released. The release run failed `npm run check` on two unused imports in
+`tests/io/hardening.test.ts` after bumping the version, which consumed the number before a tag was
+cut; the scan-buffer fix it was carrying shipped as 0.2.30 instead. Written down in 0.4.194 — it was
+the only consumed number with no entry of its own, while `0.2.36` above and the guidance in
+`scripts/release.mjs` both name it as one of the recorded ones.
+
 ## 0.2.28
 
 - **Fixed** `readAnnotations` answering on the header's axis for any record range that does not
@@ -4573,6 +4612,11 @@ feature is a minor under semver, and nineteen patch bumps read as nineteen bug f
 - **Fixed** a false claim in the README: `strictNullChecks` does not catch an unguarded
   `toPhysical` call. The type stops you reading the gain; it does not gate the call.
 - **Fixed** three README links that 404ed on npmjs.com.
+
+Published by hand and never tagged, which is why `v0.1.1` is absent while every version around it
+has a tag. The bump rode inside a34ffd0 rather than a `Release v0.1.1` commit, and the package went
+to npm at 03:55 on 2026-08-03. `scripts/release.mjs` was added the same day, and 0.1.2 went out
+fifty minutes later as the first release it cut. This is the last version published without it.
 
 ## 0.1.0
 
