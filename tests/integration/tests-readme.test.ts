@@ -39,11 +39,25 @@ const NUMBER_WORDS: ReadonlyMap<string, number> = new Map([
   ['twelve', 12],
 ]);
 
-/** Directories under `tests/`, which is what the layout table has one row per. */
+/** Directories under `tests/` that exist right now. */
 const DIRECTORIES = readdirSync(new URL('../', import.meta.url), { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => `${entry.name}/`)
   .sort();
+
+/**
+ * Directories the table may document without them being on disk, read from `.gitignore`.
+ *
+ * `tests/scratch/` holds throwaway reproductions and is gitignored, so it exists on a machine
+ * that has chased a defect and on no fresh clone — which is every CI runner. The first version of
+ * this check compared the table against the filesystem alone and passed locally while failing on
+ * all three matrix jobs, the same local-only pass that cost six versions in 0.4.237. The table
+ * documents `scratch/` precisely BECAUSE it can appear, so the rule is: every directory present
+ * has a row, and every row names a directory that is present or deliberately ignored.
+ */
+const IGNORABLE = new Set(
+  [...read('../../.gitignore').matchAll(/^tests\/(\w+)\/$/gm)].map((match) => `${match[1]}/`),
+);
 
 /** The `| \`unit/\` | … |` rows of the layout table, first column only. */
 const TABLE_ROWS = [...TESTS_README.matchAll(/^\| `([a-z]+\/)` \| /gm)].map(
@@ -92,8 +106,18 @@ describe('the layout table has one row per directory', () => {
     expect(DIRECTORIES.length).toBeGreaterThan(4);
   });
 
-  it('names every directory and no directory that is gone', () => {
-    expect([...TABLE_ROWS].sort()).toEqual(DIRECTORIES);
+  it('found the gitignored ones, so the rule below is not just a wildcard', () => {
+    expect([...IGNORABLE]).toEqual(['scratch/']);
+  });
+
+  it('names every directory that is here', () => {
+    const undocumented = DIRECTORIES.filter((directory) => !TABLE_ROWS.includes(directory));
+    expect(undocumented, 'directories under tests/ with no row in the layout table').toEqual([]);
+  });
+
+  it('names no directory that is neither here nor deliberately ignored', () => {
+    const gone = TABLE_ROWS.filter((row) => !DIRECTORIES.includes(row) && !IGNORABLE.has(row));
+    expect(gone, 'rows in the layout table naming nothing').toEqual([]);
   });
 });
 

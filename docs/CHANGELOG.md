@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.243
+
+- **Fixed** the layout-table check added in 0.4.241, which compared `tests/README.md` against the
+  filesystem and so required `tests/scratch/` to exist. That directory is gitignored — it holds
+  throwaway reproductions, and committing one would pin whatever behaviour was current when it was
+  written — so it is present on a machine that has chased a defect and absent from every fresh
+  clone, which is every CI runner. The check passed locally and failed on all three matrix jobs.
+  The table documents `scratch/` precisely *because* it can appear, so the rule is now: every
+  directory present has a row, and every row names a directory that is present or listed as
+  ignored in `.gitignore` — read from that file rather than named here.
+
+  **0.4.241 and 0.4.242 were never released**, for the same reason and in the same way as
+  0.4.231 through 0.4.236: tagged, and the publish run stopped at the failing check. Everything
+  they carried is in this release. Both incidents share one cause — a check that passes on the
+  machine cutting the tag and cannot pass on a runner — and this release was verified against it
+  directly, with `tests/scratch/` and `website/node_modules` both moved aside first.
+
 ## 0.4.242
 
 - **Fixed** the link checker's own hand-written inventory, six releases after it was added to
