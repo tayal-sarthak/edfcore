@@ -397,7 +397,7 @@ exactly the invention this library refuses. JSR publication.
 
 The full documentation site lives in
 [`website/`](https://github.com/tayal-sarthak/edfcore/tree/main/website), an Astro build with
-twenty pages.
+22 pages.
 It includes a **local inspector** that opens an EDF file and shows its header, channels, events
 and waveforms in your browser, with nothing uploaded.
 
@@ -406,9 +406,10 @@ npm install --prefix website
 npm run dev --prefix website
 ```
 
-Start with **Concepts**, which is the mental model the rest of the API follows from. Then the guides (reading signals, physical values, annotations, discontinuous recordings,
-diagnostics, data sources, large files, validation), the API reference, and the background
-pages. Those include a standalone primer on the EDF format itself.
+Start with **Concepts**, which is the mental model the rest of the API follows from. Then the
+guides — one per task, from reading signals to validation — the API reference, and the background
+pages. Those include a standalone primer on the EDF format itself. There is no inventory of them
+here on purpose — the sidebar is generated from the pages themselves, so it is the list.
 
 ### Deploying the site
 

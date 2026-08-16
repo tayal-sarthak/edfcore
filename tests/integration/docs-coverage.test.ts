@@ -138,6 +138,39 @@ describe('the documentation set is the one being checked', () => {
   });
 });
 
+describe("the README's description of the documentation set", () => {
+  /**
+   * "an Astro build with 22 pages" — the one number the README states about the site.
+   *
+   * It said "twenty pages" while the collection held twenty-two, which is the same shape of
+   * defect as the API surface table two sections above it, and that one has been checked since
+   * 0.1.x. Written as digits on purpose: a number a test has to read should be written the way a
+   * test can read it, and this paragraph is not prose anyone reads for its rhythm.
+   *
+   * The sentence after it used to name the eight guides, and there are nine. It now says the
+   * sidebar is the list, because a hand-written inventory of pages in a file that is not the
+   * pages is the thing this repository keeps deleting.
+   */
+  const CLAIM = /an Astro build with\s+(\d+)\s+pages/.exec(
+    readFileSync(new URL('../../README.md', import.meta.url), 'utf8'),
+  );
+
+  it('states a page count', () => {
+    // Without this the assertion below would pass on a sentence that had been reworded away.
+    expect(CLAIM, 'no "an Astro build with N pages" in README.md').not.toBeNull();
+  });
+
+  it('counts the pages the collection holds', () => {
+    expect(Number(CLAIM?.[1])).toBe(DOCS.size);
+  });
+
+  it('no longer hand-lists the guides', () => {
+    // The parenthetical it replaced named eight of the nine, and nothing would have said so.
+    const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
+    expect(readme).toContain('There is no inventory of them');
+  });
+});
+
 describe('every exported type is mentioned in the docs', () => {
   it('read the type names out of the barrels, so a passing run is not a vacuous one', () => {
     expect(EXPORTED_TYPES.length).toBeGreaterThan(40);

@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.238
+
+- **Fixed** the README undercounting the documentation site. It said "an Astro build with twenty
+  pages" and the collection holds twenty-two — the same shape of defect as the API surface table
+  two sections above it, which has been checked since 0.1.x. The number is now written as digits
+  and read against the collection, because a number a test has to read should be written the way
+  a test can read it.
+- **Removed** the hand-written list of guides in the sentence after it, which named eight of the
+  nine. The sidebar is generated from the pages, so it is the list; a paragraph that restates it
+  is one more inventory to keep in step, and the site has now lost three of those in nine
+  releases.
+
 ## 0.4.237
 
 - **Fixed** `npm run check` failing on any machine without the website's dependencies installed,
