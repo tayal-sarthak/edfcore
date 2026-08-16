@@ -95,6 +95,7 @@ const ogImageAlt =
          and the escape is what keeps that from mattering if something ever does. */
       schema && (
         <script
+          is:inline
           type="application/ld+json"
           set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}
         />

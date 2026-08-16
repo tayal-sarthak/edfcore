@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.211
+
+- **Added** `is:inline` to the JSON-LD block in `Base.astro`, clearing the one hint `astro check`
+  has been printing. Without it the tag goes through Astro's script processing, which is for code
+  it is asked to bundle rather than for a literal payload that must reach the page exactly as
+  written — and this one is hand-escaped, so passing it through anything is the wrong default.
+  `astro check` now reports 0 errors, 0 warnings and 0 hints; the built `index.html` carries the
+  same graph it did before.
+
 ## 0.4.210
 
 - **Added** the guard for 0.4.208 and 0.4.209: `npm run lint` now passes `--error-on-warnings`, so
