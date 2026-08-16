@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.172
+
+- **Redrew** the share card, which listed three of the four formats the reader supports, and
+  updated its alt text to match. That image is the most-seen artifact the project has — every link
+  preview in a chat window renders it — and it was underselling BDF+.
+
 ## 0.4.171
 
 - **Added** BDF+ back to the landing page's opening sentence. The sentence was taken from the
