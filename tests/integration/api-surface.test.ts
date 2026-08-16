@@ -46,7 +46,14 @@ function claimed(label: string): number {
   return Number((digits as RegExpExecArray)[1]);
 }
 
-/** Type names exported by a barrel, with comments removed first. */
+/**
+ * Type names exported by a barrel, with comments removed first.
+ *
+ * Two shapes, because a barrel uses both. Re-export blocks are the common one, but `node.ts`
+ * DECLARES `FileHandleLike` and exports it in place — and counting only the blocks missed it, so
+ * the README said 64 public types where there are 65 (fixed in 0.4.222). A type is public because
+ * it leaves the barrel, not because of which syntax it left by.
+ */
 function exportedTypes(source: string): ReadonlySet<string> {
   const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   const names = new Set<string>();
@@ -55,6 +62,10 @@ function exportedTypes(source: string): ReadonlySet<string> {
       const name = entry.trim().split(' as ').pop()?.trim() ?? '';
       if (/^\w+$/.test(name)) names.add(name);
     }
+  }
+  for (const declared of stripped.matchAll(/export (?:interface (\w+)|type (\w+)\s*[=<])/g)) {
+    const name = declared[1] ?? declared[2];
+    if (name !== undefined) names.add(name);
   }
   return names;
 }

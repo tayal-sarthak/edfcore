@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.222
+
+- **Fixed** the README's public-type count, which said 64 and should say 65, and the guard that was
+  supposed to keep it honest. `api-surface.test.ts` read type names only out of `export type { … }
+  from` blocks, so it never saw `FileHandleLike` — `node.ts` declares that one and exports it in
+  place. It has been exported since 01132e1, the first commit, so the table has undercounted for
+  the life of the package while a test asserted it was right. The parser now counts a type because
+  it leaves the barrel, not because of which syntax it left by.
+
 ## 0.4.221
 
 - **Corrected** the title of `docs-coverage.test.ts` now that 0.4.220 gave it a list of exceptions.
