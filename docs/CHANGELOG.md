@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.180
+
+- **Corrected** the same `--limit` scope on `api-helpers.md`, the other half of 0.4.179, and said
+  outright that the counted `events` output is never capped.
+
+## 0.4.179
+
+- **Corrected** the `--limit` scope in `edfcore --help`. It said "(header, validate, events)", but
+  the counted `events` output ignores it entirely; only `events --list` is capped. 0.3.124 added the
+  scopes and this one was a command too broad.
+
 ## 0.4.178
 
 - **Fixed** `edfcore <command> <directory>` reporting a raw `EISDIR: illegal operation on a
