@@ -68,7 +68,7 @@
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:scratch": "vitest run --config config/vitest.scratch.config.ts",
     "lint": "biome check --error-on-warnings .",
-    "format": "biome format --write .",
+    "format": "biome check --write --linter-enabled=false .",
     "check": "npm run lint && npm run typecheck && npm run build && npm run test",
     "corpus:fetch": "node scripts/fetch-corpus.mjs",
     "release": "node scripts/release.mjs",

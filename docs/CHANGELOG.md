@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.225
+
+- **Fixed** `npm run format` being unable to produce a tree `npm run lint` accepts. `format` was
+  `biome format --write`, which reformats but does not run Biome's assists; `lint` is `biome check`,
+  which reports `organizeImports` as an error. So an unsorted import block was a failure that the
+  repository's own formatter reported nothing about and could not repair — running format, seeing
+  "no fixes applied", and then failing lint on the same file. It now runs the assists too, with the
+  linter disabled so that formatting stays formatting and lint findings are still fixed on purpose
+  rather than by a command named `format`.
+
 ## 0.4.224
 
 - **Changed** the barrel type parser to live once, in `tests/support/barrel-types.ts`, instead of
