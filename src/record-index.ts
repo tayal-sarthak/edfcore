@@ -20,8 +20,8 @@
  * - `buildRecordIndex()` is the only function here that touches every record, it is chunked so
  *   memory stays bounded whatever the file size, and it is never called implicitly.
  *
- * A probe reads a whole data record rather than just the annotation signal's region. That is
- * decision 7 of the design — the unit of I/O is the record range, never the channel range — and
+ * A probe reads a whole data record rather than just the annotation signal's region. That is the
+ * design's "unit of I/O" decision — the unit is the record range, never the channel range — and
  * it is also what lets `decodeAnnotations` own the timekeeping rule: it requires the record's
  * full bytes, and reading less would mean reimplementing that rule here.
  */

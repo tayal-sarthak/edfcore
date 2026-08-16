@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.156
+
+- **Removed** the other "(decision 7)" citation, in `types.ts`. Same retired numbering, and this one
+  ships in `dist/types.d.ts` as the hover text for `EdfRecordIndex.onsetTicks`. The sentence already
+  states the decision, so the reference added nothing a reader could follow.
+
+## 0.4.155
+
+- **Fixed** a docblock citing "decision 7 of the design". The numbered DESIGN.md it referred to no
+  longer exists; the decision record is the design-decisions page, whose sections are named rather
+  than numbered. It now cites the decision by name.
+
 ## 0.4.154
 
 - **Fixed** the README link still labelled "API — helpers", the last site of that rename. The
