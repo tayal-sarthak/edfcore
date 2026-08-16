@@ -17,10 +17,12 @@
  * the entries expresses, and each consumer is entitled to its own.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const read = (relative: string): string => readFileSync(new URL(relative, import.meta.url), 'utf8');
+
+const WEBSITE_SRC = new URL('../../website/src/', import.meta.url);
 
 /** The quoted names inside the first bracketed list following `marker`. */
 function names(source: string, marker: string): readonly string[] {
@@ -34,16 +36,31 @@ function names(source: string, marker: string): readonly string[] {
 
 const SCHEMA = names(read('../../website/src/content.config.ts'), 'section: z.enum(');
 
-const CONSUMERS = [
-  { file: 'DocsNav.astro', source: read('../../website/src/components/DocsNav.astro') },
-  { file: 'llms.txt.ts', source: read('../../website/src/pages/llms.txt.ts') },
-  { file: 'llms-full.txt.ts', source: read('../../website/src/pages/llms-full.txt.ts') },
-] as const;
+/**
+ * Found, not listed. Naming the three consumers here would make this guard the same shape as the
+ * defect it exists to catch: a fourth file writing the list out again would simply not be one of
+ * the three, and the run would stay green while the new copy drifted.
+ */
+const CONSUMERS = readdirSync(WEBSITE_SRC, { recursive: true, encoding: 'utf8' })
+  .filter((relative) => relative.endsWith('.ts') || relative.endsWith('.astro'))
+  .map((relative) => ({
+    file: relative,
+    source: readFileSync(new URL(relative, WEBSITE_SRC), 'utf8'),
+  }))
+  .filter(({ source }) => source.includes('const SECTIONS'));
 
 describe('the documentation section list', () => {
   it('read a real enum out of the schema, so a passing run is not a vacuous one', () => {
     expect(SCHEMA.length).toBeGreaterThanOrEqual(4);
     expect(SCHEMA).toContain('Start here');
+  });
+
+  it('found every copy that exists, so the search itself cannot go quiet', () => {
+    // A typo in the pattern, or a move out of website/src, would leave nothing to compare and
+    // every assertion below would pass by having nothing to say. A floor and one anchor rather
+    // than the exact three: a fourth consumer is welcome here and should need no edit.
+    expect(CONSUMERS.length).toBeGreaterThanOrEqual(3);
+    expect(CONSUMERS.map((consumer) => consumer.file)).toContain('components/DocsNav.astro');
   });
 
   it.each(CONSUMERS)('is the same set in $file as in the schema', ({ source }) => {
