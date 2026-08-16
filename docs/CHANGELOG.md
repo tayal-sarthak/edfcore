@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.212
+
+- **Added** the guard for 0.4.211, and the counterpart to 0.4.210 on the other side of the repo:
+  `npm --prefix website run check` now passes `--minimumFailingSeverity hint`, so the site's type
+  check fails on a hint instead of printing one and exiting 0. That is how the JSON-LD hint rode
+  along in CI for as long as it did. Both halves of the repository now fail on the quietest thing
+  their checkers can say.
+
 ## 0.4.211
 
 - **Added** `is:inline` to the JSON-LD block in `Base.astro`, clearing the one hint `astro check`
