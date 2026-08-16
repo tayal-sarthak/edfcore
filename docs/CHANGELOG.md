@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.232
+
+- **Fixed** the site's version sweep reading only `.astro` files. `website/src/pages/` also holds
+  seven `.ts` routes, and they emit prose exactly the way a component does: `llms.txt` is the map
+  an agent is handed, `[...slug].md.ts` is the markdown twin of every documentation page, and
+  `robots.txt` and `api.json` are served verbatim. A stale version in one of those reaches a
+  reader the same way the footer's "MIT licensed. Version 0.1.0." did for three minor series.
+  Widening it needed one more thing first: comments are now stripped before the scan, because
+  `api.json.ts` quotes that footer defect as the reason it counts the surface rather than stating
+  it, and a whole-file match finds the quotation rather than a claim. What a file emits is the
+  claim; what it says about the past is history. HTML comments are left in — those ship.
+
 ## 0.4.231
 
 - **Fixed** four documentation sweeps reading a narrower set of pages than the site publishes.
