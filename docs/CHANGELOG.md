@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.217
+
+- **Added** a check that `golden-values.test.ts` has a case for every committed golden that carries
+  samples. The list stays hand-written — each entry says why that file exists, which a directory
+  listing cannot — but it could fall behind `scripts/golden/generate.py`, and a golden generated
+  and committed with no entry is a pyEDFlib reference value nothing compares against. That is
+  indistinguishable from coverage until someone opens the directory.
+
 ## 0.4.216
 
 - **Changed** `diagnostic-docs.test.ts` to import `EdfDiagnosticDisposition` instead of declaring
