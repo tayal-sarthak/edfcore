@@ -19,11 +19,19 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { DOCS_PAGES } from '../support/docs-pages.js';
 
 const read = (relative: string): string => readFileSync(new URL(relative, import.meta.url), 'utf8');
 
 const README = read('../../README.md');
 const VERSION = (JSON.parse(read('../../package.json')) as { version: string }).version;
+
+/**
+ * Every documentation page, from the shared reader rather than from a `readdirSync` of `*.md`.
+ * The collection loads `**\/*.{md,mdx}`, and both sweeps below used to take the narrower set —
+ * see `tests/support/docs-pages.ts`.
+ */
+const PAGES = [...DOCS_PAGES].map(([name, text]) => ({ name, text }));
 
 /** The `**Status: X.Y.x, ...**` line. */
 const STATUS = /\*\*Status: (\d+)\.(\d+)\.x/.exec(README);
@@ -42,13 +50,6 @@ describe('the README status line', () => {
 });
 
 describe('the docs state no version this package is not at', () => {
-  const PAGES = readdirSync(new URL('../../website/src/content/docs/', import.meta.url))
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => ({
-      name,
-      text: read(`../../website/src/content/docs/${name}`),
-    }));
-
   it('finds the pages', () => {
     expect(PAGES.length).toBeGreaterThan(10);
   });
@@ -195,10 +196,6 @@ describe('nothing claims one file in the PACKAGE holds every node: import', () =
     walk(new URL('../../src/', import.meta.url), '');
     return found;
   })();
-
-  const PAGES = readdirSync(new URL('../../website/src/content/docs/', import.meta.url))
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => ({ name, text: read(`../../website/src/content/docs/${name}`) }));
 
   it('is a claim about more than one module, in the source', () => {
     // The premise. If a future refactor really did leave one importer, this test says so and the

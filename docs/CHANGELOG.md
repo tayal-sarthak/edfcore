@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.231
+
+- **Fixed** four documentation sweeps reading a narrower set of pages than the site publishes.
+  `docs-coverage.test.ts`, `diagnostic-docs.test.ts` and `readme-status.test.ts` — the last of
+  them twice — each wrote its own reader, three globbing `content/docs/*.md` and one calling
+  `readdirSync(...).filter(name => name.endsWith('.md'))`. The collection loads
+  `**/*.{md,mdx}` and `astro.config.mjs` registers the MDX integration, so a page in a
+  subdirectory or written as `.mdx` was published and unswept. It fails in the unhelpful
+  direction too: a name documented only on an unseen page reports as undocumented, and a type on
+  the recorded `UNDOCUMENTED_TYPES` list stays there after the page documenting it is written.
+  All four now read `tests/support/docs-pages.ts`, and a new check compares that reader's glob
+  call against the loader's pattern, so narrowing either side fails rather than going quiet.
+
 ## 0.4.230
 
 - **Added** a check on the three packaging promises in the README's compatibility list — zero

@@ -27,6 +27,7 @@ import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import { validateRecording } from '../../src/validate.js';
+import { DOCS_PAGES } from '../support/docs-pages.js';
 import { minimalEdf, minimalEdfPlus } from '../support/writer.js';
 
 interface RawModuleGlob {
@@ -63,10 +64,8 @@ const DIAGNOSTICS_PAGE = first(
     eager: true,
   }),
 );
-const ALL_PAGES = (import.meta as unknown as RawModuleGlob).glob(
-  '../../website/src/content/docs/*.md',
-  { query: '?raw', import: 'default', eager: true },
-);
+/** Every page the collection loads, from the one reader — see `tests/support/docs-pages.ts`. */
+const ALL_PAGES: Record<string, string> = Object.fromEntries(DOCS_PAGES);
 /**
  * Every source file, because `config/tsconfig.build.json` keeps comments: a claim in a `src/`
  * docblock is published verbatim in `dist/**\/*.d.ts` and is what an editor shows on hover.
