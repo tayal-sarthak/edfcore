@@ -482,7 +482,7 @@ export interface EdfRecordIndex {
    * One read of that WHOLE data record — `header.recordByteLength` bytes. Memoised.
    *
    * Not the annotation region alone, which this said until 0.3.71. The unit of I/O in edfcore is
-   * the record, never the channel (decision 7), and `decodeAnnotations` owns the timekeeping rule
+   * the record, never the channel, and `decodeAnnotations` owns the timekeeping rule
    * and needs the record's full bytes to apply it. On a 64-channel file the region is 32 bytes of
    * a 16,416-byte record, so "targeted" understated the read by 513x — and `locate()` issues
    * O(log recordCount) of them, which is exactly the number a caller planning HTTP range requests
