@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.196
+
+- **Added** the guard for 0.4.194: the changelog's version headings must descend without repeating
+  and skip no number, so a run that consumes one has to be written down rather than leaving a hole
+  a reader cannot interpret. Checked against the file alone, not `git tag` — CI checks out at depth
+  1 and fetches no tags, so a tag-based version would find none and pass while asserting nothing.
+  Removing the 0.2.29 entry fails it with `0.2.28 -> 0.2.30`.
+
 ## 0.4.195
 
 - **Recorded** why `v0.1.1` has no tag, the last unexplained hole in the version history. It is not
