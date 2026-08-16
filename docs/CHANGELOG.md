@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.226
+
+- **Added** a recovery message for the one release step the 0.4.200 revert cannot reach. By the
+  time `gh release create` runs, the bump is committed and the tag is pushed, so there is nothing
+  local to undo — and `publish.yml` triggers on a PUBLISHED release rather than on a tag, so a
+  failure there leaves a version that exists in git and never reaches npm. Nothing in the
+  repository would notice: `changelog-continuity.test.ts` checks this file against itself, and the
+  entry would be present and correct. The script now says how to finish the release, and warns that
+  re-running it would cut the next version and leave this one a hole.
+
 ## 0.4.225
 
 - **Fixed** `npm run format` being unable to produce a tree `npm run lint` accepts. `format` was
