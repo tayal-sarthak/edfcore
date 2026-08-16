@@ -36,8 +36,7 @@ function statedMb(pattern: RegExp): number {
 }
 
 /** Within 10% of each other. */
-const close = (stated: number, actual: number): boolean =>
-  Math.abs(stated - actual) / actual < 0.1;
+const close = (stated: number, actual: number): boolean => Math.abs(stated - actual) / actual < 0.1;
 
 describe('the corpus sizes in tests/README.md', () => {
   it('states the download size the manifest actually adds up to', () => {
@@ -52,9 +51,7 @@ describe('the corpus sizes in tests/README.md', () => {
 
   it('states the weight the committed goldens actually come to', () => {
     const names = readdirSync(GOLDEN_DIR);
-    const actual = mb(
-      names.reduce((sum, name) => sum + statSync(`${GOLDEN_DIR}/${name}`).size, 0),
-    );
+    const actual = mb(names.reduce((sum, name) => sum + statSync(`${GOLDEN_DIR}/${name}`).size, 0));
     const stated = statedMb(/about ([\d.]+) MB with their/);
     expect(names.length).toBeGreaterThan(0);
     expect(
