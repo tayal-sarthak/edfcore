@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.150
+
+- **Corrected** the `TalIssueKind` docblock. `TAL_MALFORMED` covers ten kinds, not nine, and three
+  of them keep the TAL rather than two: the unterminated last text was missing from the list.
+
 ## 0.4.149
 
 - **Added** a docblock to `Header.astro` naming why longest-prefix matching is there for two

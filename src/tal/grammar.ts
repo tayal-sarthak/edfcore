@@ -269,9 +269,10 @@ export function rawBytesText(bytes: Uint8Array, offset: number, length: number):
 /**
  * Which defect this is, within its code. A FIXED, closed set.
  *
- * `TAL_MALFORMED` covers nine structurally different defects, and their dispositions are
- * opposites: a 0x15 inside a text run and a missing onset sign KEEP the TAL, while a bad onset, an
- * over-long field, an out-of-range onset, a bad duration and an unterminated timestamp DISCARD it.
+ * `TAL_MALFORMED` covers ten structurally different defects, and their dispositions are
+ * opposites: a 0x15 inside a text run, an unterminated last text and a missing onset sign KEEP the
+ * TAL, while a bad onset, an over-long field, an out-of-range onset, a bad duration and an
+ * unterminated timestamp DISCARD it.
  * Collapsing on the code alone let the first one in a region win the `detail`, the offset and the
  * `raw`, so a region holding one of each reported "the text was kept verbatim" with occurrences 2
  * while an annotation had in fact been thrown away — and reversing the two TALs produced the
