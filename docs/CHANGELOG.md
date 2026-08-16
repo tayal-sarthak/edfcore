@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.201
+
+- **Fixed** the half of 0.4.200 it left out. The lockfile sync runs after the bump and before the
+  checks, so it sat outside the `try` that puts the version back — and it is the step most likely
+  to fail for a reason unrelated to the code, since it reaches the registry. A failed `npm install
+  --package-lock-only` would still have consumed the number.
+
+## 0.4.200
+
+- **Fixed** `scripts/release.mjs` consuming a version number when its own checks fail. The bump is
+  written before lint, typecheck, tests and build run, so a run that stopped there left the higher
+  version on disk and the next run produced the one after it. Four numbers have been lost that way
+  — 0.2.29, 0.2.36, 0.2.59 and 0.4.176 — and each cost an entry in this file explaining a hole
+  instead of a release. The checks now run inside a `try`, and a failure puts the three version
+  files back before exiting, so the number stays free for the run that fixes the problem.
+
 ## 0.4.199
 
 - **Corrected** the title of `documented-examples.test-d.ts`, which read "The documented examples
