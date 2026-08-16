@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.190
+
+- **Widened** the docs-coverage guard to derive what `./validate` and `./node` export instead of
+  hand-listing it. It named five symbols, so it covered those two subpaths as they stood the day it
+  was written and nothing added afterwards — while the universal barrel beside it has been read from
+  `Object.keys` all along. Checked by adding an undocumented export to `src/validate.ts`: the list
+  passed it, the derived set names it.
+
 ## 0.4.189
 
 - **Corrected** a pointer in `clock()` that sent the reader the wrong way. It cited "the paragraph
