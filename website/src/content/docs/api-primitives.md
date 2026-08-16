@@ -1,5 +1,5 @@
 ---
-title: API — primitives
+title: "API: primitives"
 description: "The low-level pieces: parseHeader, decodeDigital, toPhysical and the exact-tick time helpers that the readers are built from."
 section: Reference
 order: 2

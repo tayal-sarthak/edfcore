@@ -1,5 +1,5 @@
 ---
-title: API — reading
+title: "API: reading"
 description: "Reference for the async reading layer: openEdf, readRecords, readWindow, readAnnotations, inspectEdf, the record index, and every option field."
 section: Reference
 order: 1
