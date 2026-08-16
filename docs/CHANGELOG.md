@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.230
+
+- **Added** a check on the three packaging promises in the README's compatibility list — zero
+  runtime dependencies, three entry points with no environment conditions in the exports map, and
+  ESM only. What the package *contains* is well covered: `api-surface.test.ts` counts the exports
+  and `public-api.test.ts` walks the module graph. Nothing read the manifest that says how it is
+  shipped. Adding a dependency is one `npm install --save` away and the tree stays green — nothing
+  imports it, so no test fails, and "zero-dependency" stops being true in the one place a reader
+  looks before installing. An environment condition next to `default` is the same shape of edit.
+  Every export and `bin` target is also checked to exist in the build; `publint` and
+  `@arethetypeswrong/cli` cover a stronger version of that, but they run in `publish.yml` only —
+  after the tag is pushed, in the window 0.4.226 is about.
+
 ## 0.4.229
 
 - **Added** a check that the Node floor is one number. It is written down eleven times — the
