@@ -385,6 +385,6 @@ count, because a corrupt region can hold thousands of malformed TALs.
 - [Diagnostics and errors](/docs/diagnostics): the narrative version, `strict` mode, and the
   `inspectEdf` triage workflow.
 - [Types](/docs/api-types): `EdfDiagnostic` field by field, and every other public shape.
-- [API — reading](/docs/api-reading): which call throws which of these, and when.
+- [API: reading](/docs/api-reading): which call throws which of these, and when.
 - [edfcore/validate](/docs/api-validate): the four codes that only that module emits.
 - [Physical values](/docs/physical-values): what the deferred group means for `toPhysical`.

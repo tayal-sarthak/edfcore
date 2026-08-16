@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.151
+
+- **Fixed** a link on `api-errors.md` still labelled "API — reading". That page was renamed to
+  "API: reading", so the label named a title the site no longer has.
+
 ## 0.4.150
 
 - **Corrected** the `TalIssueKind` docblock. `TAL_MALFORMED` covers ten kinds, not nine, and three
