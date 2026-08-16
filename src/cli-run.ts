@@ -168,6 +168,18 @@ function redaction(args: Args): { redactFields?: readonly string[] } {
   return args.patient ? {} : { redactFields: ['patientId', 'recordingId'] };
 }
 
+/**
+ * The one thing `formatDiagnostics` cannot say.
+ *
+ * Its own notice is `... and N more`, which is right for a library caller: they would raise
+ * `maxItems`. In a terminal that line leaves the reader with no way forward, while
+ * `events --list` two commands over says "raise --limit to see them". Same CLI, same situation,
+ * one actionable answer and one dead end (fixed in 0.4.183).
+ */
+function truncationHint(total: number, limit: number): string {
+  return total > limit ? '\nRaise --limit to see the rest.\n' : '';
+}
+
 async function open(io: CliIo, file: string) {
   // Read whole rather than fileSource: a CLI invocation is one pass over one file, and holding
   // it in memory removes any question of a descriptor outliving the process.
@@ -229,12 +241,13 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(
         `${formatHeader(recording.header, { includePatientId: args.patient, diagnosticsHint: false })}\n`,
       );
+      const limit = args.limit ?? 20;
       if (recording.header.diagnostics.length > 0) {
         io.out(
           `\n${formatDiagnostics(recording.header.diagnostics, {
-            maxItems: args.limit ?? 20,
+            maxItems: limit,
             ...redaction(args),
-          })}\n`,
+          })}\n${truncationHint(recording.header.diagnostics.length, limit)}`,
         );
       }
       /*
@@ -251,9 +264,9 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       if (timelineDiagnostics.length > 0) {
         io.out(
           `\nFrom the record probes:\n${formatDiagnostics(timelineDiagnostics, {
-            maxItems: args.limit ?? 20,
+            maxItems: limit,
             ...redaction(args),
-          })}\n`,
+          })}\n${truncationHint(timelineDiagnostics.length, limit)}`,
         );
       }
       return 0;
@@ -267,7 +280,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
           header: recording.header,
           maxItems: args.limit ?? 20,
           ...redaction(args),
-        })}\n`,
+        })}\n${truncationHint(report.diagnostics.length, args.limit ?? 20)}`,
       );
       // Exit 1 on failure so a CI job can gate on it without parsing the output.
       return report.ok ? 0 : 1;
