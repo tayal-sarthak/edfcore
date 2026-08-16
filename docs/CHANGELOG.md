@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.195
+
+- **Recorded** why `v0.1.1` has no tag, the last unexplained hole in the version history. It is not
+  a consumed number like 0.2.29: it shipped to npm and is installable. It predates
+  `scripts/release.mjs` by hours — the bump rode inside an ordinary commit, the publish was done by
+  hand, and 0.1.2 fifty minutes later was the first release the script cut. Every other version in
+  this file is either tagged or says it was never released.
+
 ## 0.4.194
 
 - **Added** the missing `0.2.29` entry. Four numbers have been consumed by a release that failed
@@ -4589,6 +4597,11 @@ feature is a minor under semver, and nineteen patch bumps read as nineteen bug f
 - **Fixed** a false claim in the README: `strictNullChecks` does not catch an unguarded
   `toPhysical` call. The type stops you reading the gain; it does not gate the call.
 - **Fixed** three README links that 404ed on npmjs.com.
+
+Published by hand and never tagged, which is why `v0.1.1` is absent while every version around it
+has a tag. The bump rode inside a34ffd0 rather than a `Release v0.1.1` commit, and the package went
+to npm at 03:55 on 2026-08-03. `scripts/release.mjs` was added the same day, and 0.1.2 went out
+fifty minutes later as the first release it cut. This is the last version published without it.
 
 ## 0.1.0
 
