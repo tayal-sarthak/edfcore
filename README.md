@@ -428,8 +428,8 @@ like bugs and are not (the pinned scaling expression, `readWindow` always return
 *Background → Design decisions*.
 
 - [`tests/README.md`](https://github.com/tayal-sarthak/edfcore/blob/main/tests/README.md) covers
-  how the suite builds every fixture in memory,
-  and why no binaries are committed.
+  how the suite builds almost every fixture in memory, and why the six small EDF/BDF files under
+  `tests/corpus/golden/` are the deliberate exception.
 
 ## License
 

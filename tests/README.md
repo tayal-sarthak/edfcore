@@ -8,8 +8,8 @@ anyone else wrote is in this repository.
 
 ## How that works
 
-Every EDF, EDF+, BDF and BDF+ file the suite uses is built in memory by
-[`support/writer.ts`](support/writer.ts). Damage a well-formed builder cannot express —
+Every EDF, EDF+, BDF and BDF+ file the suite uses, apart from the six under `corpus/golden/`,
+is built in memory by [`support/writer.ts`](support/writer.ts). Damage a well-formed builder cannot express —
 truncation, byte flips, garbage tails — is applied by [`support/corrupt.ts`](support/corrupt.ts).
 
 `writer.ts` is deliberately written from the format specification and imports nothing from

@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.161
+
+- **Fixed** `tests/README.md` contradicting itself five lines apart: its opening says six fixtures
+  are committed on purpose, and the section below it said "every" file the suite uses is built in
+  memory.
+
+## 0.4.160
+
+- **Fixed** the README saying `tests/README.md` covers "why no binaries are committed". Six small
+  EDF/BDF files under `tests/corpus/golden/` are committed on purpose, and that page says so in its
+  third sentence, so the pointer contradicted the page it points at.
+
 ## 0.4.159
 
 - **Widened** the strict-mode guard to sweep the test suite, and corrected the third copy it found
