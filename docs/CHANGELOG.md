@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.194
+
+- **Added** the missing `0.2.29` entry. Four numbers have been consumed by a release that failed
+  after bumping, and three say so in this file. 0.2.29 said nothing — while the 0.2.36 entry cites
+  it as the precedent for its own, and `scripts/release.mjs` tells the next person to record a skip
+  "the way 0.2.29, 0.2.36 and 0.2.59 are". Both pointed at the one that was not. Reconstructed from
+  7ea90ff, which carries the 0.2.28 → 0.2.29 bump alongside the lint fix that run died on.
+
 ## 0.4.193
 
 - **Added** the guard for 0.4.191 and 0.4.192: both corpus sizes in `tests/README.md` are now
@@ -4145,6 +4153,14 @@ against the published 0.2.27 tarball rather than assumed.
   throwing, so the two tests that pinned the budget error now pin success. A new case pins the
   refusal for a file whose records really do exist and really are too big, so the guard is still
   covered.
+
+## 0.2.29
+
+Never released. The release run failed `npm run check` on two unused imports in
+`tests/io/hardening.test.ts` after bumping the version, which consumed the number before a tag was
+cut; the scan-buffer fix it was carrying shipped as 0.2.30 instead. Written down in 0.4.194 — it was
+the only consumed number with no entry of its own, while `0.2.36` above and the guidance in
+`scripts/release.mjs` both name it as one of the recorded ones.
 
 ## 0.2.28
 
