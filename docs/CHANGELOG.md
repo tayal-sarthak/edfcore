@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.154
+
+- **Fixed** the README link still labelled "API — helpers", the last site of that rename. The
+  README ships in the npm package, so it is the copy most consumers read.
+
 ## 0.4.153
 
 - **Fixed** the link on `api-validate.md` still labelled "API — helpers", after that page was
