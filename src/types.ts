@@ -664,6 +664,14 @@ export interface FormatReportOptions {
 export interface FormatHeaderOptions {
   /** Off by default: a header carries a name and a birth date, and a summary gets pasted around. */
   readonly includePatientId?: boolean;
+  /**
+   * Whether to append "Call formatDiagnostics(header.diagnostics) for the detail" under the
+   * diagnostic counts. On by default, which is right for a caller holding a header and no detail.
+   *
+   * `edfcore header` sets it off, because it prints that detail immediately below: a reader
+   * looking at the answer was being told to call a JavaScript function to get it.
+   */
+  readonly diagnosticsHint?: boolean;
 }
 
 /** Where a time lands on a signal's own sample grid. */

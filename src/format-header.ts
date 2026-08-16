@@ -173,7 +173,9 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
       .map(([count, severity]) => `${count} ${severity}`)
       .join(', ');
     lines.push(`${header.diagnostics.length} diagnostic(s): ${summary}`);
-    lines.push('Call formatDiagnostics(header.diagnostics) for the detail.');
+    if (options?.diagnosticsHint !== false) {
+      lines.push('Call formatDiagnostics(header.diagnostics) for the detail.');
+    }
   }
 
   return lines.join('\n');
