@@ -302,8 +302,13 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
           );
         }
         // Say what was withheld. A silently truncated listing reads as a complete one.
+        //
+        // The blank line separates the notice from the rows above it, so it belongs to those rows:
+        // `--limit 0` prints none, and emitting it anyway left two blank lines and a notice
+        // hanging under the count (fixed in 0.4.181).
         if (annotations.length > limit) {
-          io.out(`\n... ${annotations.length - limit} more (raise --limit to see them)\n`);
+          const gap = limit > 0 ? '\n' : '';
+          io.out(`${gap}... ${annotations.length - limit} more (raise --limit to see them)\n`);
         }
         return 0;
       }
