@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.167
+
+- **Extended** the message-names-its-caller guard to `readWindow`, and widened the pattern it
+  matches. It required a colon (`someFunction():`), so it passed for `resolveTimeWindow() cannot
+  ...` — the guard written for this class could not see the instance 0.4.164 fixed. It is now
+  anchored to the start of the message and accepts either punctuation. Mid-sentence mentions are
+  still allowed: naming the function a caller should reach for next is advice, not
+  self-identification.
+
 ## 0.4.166
 
 - **Updated** `concepts.md`, the second and last page quoting the old prefix. No copy of the
