@@ -1,15 +1,16 @@
 /**
  * The changelog accounts for every version number, including the ones that were never released.
  *
- * A release run that fails after bumping consumes a number: the version moves, the check stops it,
- * and the next run produces a different one. Four numbers have gone that way. The rule is that each
- * still gets an entry saying so, because a reader comparing `npm view` against this file otherwise
- * finds a hole and cannot tell a lost number from a missing note.
+ * A release run that failed after bumping used to consume a number: the version moved, a check
+ * stopped the run, and the next one produced a different version. Four numbers went that way before
+ * 0.4.200 began putting the bump back. Each still gets an entry saying so, because a reader
+ * comparing `npm view` against this file otherwise finds a hole and cannot tell a lost number from
+ * a missing note.
  *
- * 0.2.29 broke that rule for months (0.4.194). It was the first of the four, and the only one with
- * no entry — while the 0.2.36 entry cited it as the precedent for its own, and `scripts/release.mjs`
- * still tells the next person to record a skip "the way 0.2.29, 0.2.36 and 0.2.59 are". Two places
- * pointed at it as an example of the rule being followed, and it was the counter-example.
+ * 0.2.29 broke that rule for months (0.4.194). It was the first of the four and the only one with
+ * no entry — while the 0.2.36 entry cited it as the precedent for its own, and the guidance printed
+ * by `scripts/release.mjs` listed it among the numbers that had been recorded. Two places pointed
+ * at it as an example of the rule being followed, and it was the counter-example.
  *
  * This is checked against the file alone rather than against `git tag`, deliberately. CI checks out
  * at depth 1 and fetches no tags, so a tag-based version would find none and pass while asserting

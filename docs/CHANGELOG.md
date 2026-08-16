@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.204
+
+- **Corrected** the reason `publish.yml` pins npm. The step said trusted publishing needs
+  >= 11.5.1, which was true when f363feb added it on 2026-08-01 — but ed89f67 moved the workflow
+  to a granular access token two days later, and the note further down the same file now explains
+  that registering trusted publishing returns 400 for this package. One comment justified the step
+  by a mechanism another said was unavailable. The pin still earns its place; the reason is now
+  the one that applies.
+
+## 0.4.203
+
+- **Corrected** the docblock of `changelog-continuity.test.ts`, which had gone stale twice over. It
+  described a consumed number in the present tense, which 0.4.200 ended; and it quoted
+  `scripts/release.mjs` verbatim — "the way 0.2.29, 0.2.36 and 0.2.59 are" — a sentence 0.4.197
+  and 0.4.202 have both since rewritten. A quotation is the one kind of reference that cannot
+  survive edits to its source, so it is now a paraphrase that stays true.
+
+## 0.4.202
+
+- **Corrected** the two places in `scripts/release.mjs` that still describe a consumed number as
+  something that happens. 0.4.200 stopped it, and left its own file saying a failed run "consumes"
+  the number in the present tense — once in the note above the heading check and once in the error
+  that check prints. The note now says what that check still earns: a heading typed wrong by hand,
+  and a run that dies after the commit exists, neither of which the revert reaches.
+
 ## 0.4.201
 
 - **Fixed** the half of 0.4.200 it left out. The lockfile sync runs after the bump and before the

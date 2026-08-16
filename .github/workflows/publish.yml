@@ -25,8 +25,9 @@ jobs:
           # No dependency cache on a release build: the tarball that goes to the registry
           # should come from a clean resolve, not from whatever a previous run left behind.
 
-      # Trusted publishing needs npm >= 11.5.1, and the version bundled with Node is not
-      # guaranteed to be above that. Pinning to latest also picks up publish-side fixes.
+      # Pinned for publish-side fixes and a predictable npm, whatever the runner's Node bundled.
+      # This was originally here because trusted publishing needs npm >= 11.5.1; that is not how
+      # this workflow authenticates — see the note on the publish step.
       - run: npm install -g npm@latest
 
       - run: npm ci
