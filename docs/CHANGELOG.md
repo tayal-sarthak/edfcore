@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.161
+
+- **Fixed** `tests/README.md` contradicting itself five lines apart: its opening says six fixtures
+  are committed on purpose, and the section below it said "every" file the suite uses is built in
+  memory.
+
 ## 0.4.160
 
 - **Fixed** the README saying `tests/README.md` covers "why no binaries are committed". Six small
