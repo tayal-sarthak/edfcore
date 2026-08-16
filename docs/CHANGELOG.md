@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.174
+
+- **Added** `FormatHeaderOptions.diagnosticsHint`, and turned it off in `edfcore header`. That
+  command printed "Call formatDiagnostics(header.diagnostics) for the detail" and then printed the
+  detail two lines below it, so a reader looking at the answer was told to call a JavaScript
+  function to get it. Library callers, who hold a header and no detail, still get the hint.
+
 ## 0.4.173
 
 - **Added** `website/design/`, holding the share card's SVG source and the two commands that
