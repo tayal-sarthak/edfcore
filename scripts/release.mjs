@@ -103,9 +103,11 @@ console.log(`\n  edfcore ${current} -> ${next}${dryRun ? '  (dry run)' : ''}\n`)
 // ---------------------------------------------------------------- the changelog must agree
 //
 // The changelog entry is written by hand BEFORE the release runs, against the version the author
-// expects to get. When a release fails after bumping — a lint error, a flaky test, an agent's
-// scratch file in the tree — that number is consumed and the next run produces a different one,
-// while the heading still names the old one. Every entry after it then inherits the drift.
+// expects to get. A release that failed after bumping used to consume that number — the next run
+// produced a different one while the heading still named the old one, and every entry after it
+// inherited the drift. Since 0.4.200 the bump is put back when the checks fail, so this heading
+// check now guards the cases that revert cannot reach: a heading typed wrong by hand, and a run
+// that dies after the commit is already made.
 //
 // This has happened four times: 0.2.29, 0.2.36, 0.2.59 and 0.4.176 were all consumed that way. The
 // first two took every heading after them off by one until someone compared
@@ -122,9 +124,9 @@ if (!firstHeading) {
 if (firstHeading[1] !== next) {
   die(
     `docs/CHANGELOG.md's top entry is "## ${firstHeading[1]}" but this release is ${next}.\n\n` +
-      `  Fix the heading to "## ${next}" and run again. If a number was skipped — a release that\n` +
-      '  failed after bumping consumes one — record it as never released, the way 0.2.29, 0.2.36,\n' +
-      '  0.2.59 and 0.4.176 are.',
+      `  Fix the heading to "## ${next}" and run again. If a number really was skipped, record it\n` +
+      '  as never released, the way 0.2.29, 0.2.36, 0.2.59 and 0.4.176 are — though since 0.4.200\n' +
+      '  a failed check puts the bump back rather than consuming the number.',
   );
 }
 

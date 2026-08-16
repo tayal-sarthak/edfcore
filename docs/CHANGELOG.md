@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.202
+
+- **Corrected** the two places in `scripts/release.mjs` that still describe a consumed number as
+  something that happens. 0.4.200 stopped it, and left its own file saying a failed run "consumes"
+  the number in the present tense — once in the note above the heading check and once in the error
+  that check prints. The note now says what that check still earns: a heading typed wrong by hand,
+  and a run that dies after the commit exists, neither of which the revert reaches.
+
 ## 0.4.201
 
 - **Fixed** the half of 0.4.200 it left out. The lockfile sync runs after the bump and before the
