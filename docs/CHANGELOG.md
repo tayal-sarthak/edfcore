@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.170
+
+- **Corrected** the same attribution in the hero figure's caption, which is the text a screen
+  reader announces: "encoded and decoded the way edfcore reads them" became a statement about the
+  EDF format, which is what the canvas actually demonstrates.
+
 ## 0.4.169
 
 - **Corrected** the `TraceStrip` docblock, which said the hero trace is "the output of the thing
