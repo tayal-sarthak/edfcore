@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.188
+
+- **Corrected** the `readWindow` docblock, which told the reader the sentence above it "said could
+  not happen" about something that sentence no longer says. It did before 5f88404: the array
+  "always has one element" on a continuous file. That commit both fixed the sentence and added the
+  clause pointing back at it, so the accusation was false in the commit that shipped it. It now
+  gives the reason the qualifier is there instead.
+
 ## 0.4.187
 
 - **Corrected** the `FormatHeaderOptions` docblock, which opened "There is one, and it is opt-IN".
