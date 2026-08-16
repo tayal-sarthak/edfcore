@@ -16,12 +16,12 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { exportedTypes } from '../support/barrel-types.js';
 import { type CliIo, parseArgs, runCli } from '../../src/cli-run.js';
 import { DIAGNOSTIC_DISPOSITIONS } from '../../src/diagnostics/codes.js';
 import * as universal from '../../src/index.js';
 import * as nodeEntry from '../../src/node.js';
 import * as validateEntry from '../../src/validate.js';
+import { exportedTypes } from '../support/barrel-types.js';
 
 const read = (relative: string): string => readFileSync(new URL(relative, import.meta.url), 'utf8');
 

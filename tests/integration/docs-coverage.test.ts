@@ -23,10 +23,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { exportedTypes } from '../support/barrel-types.js';
 import * as edfcore from '../../src/index.js';
 import * as edfcoreNode from '../../src/node.js';
 import * as edfcoreValidate from '../../src/validate.js';
+import { exportedTypes } from '../support/barrel-types.js';
 
 interface RawModuleGlob {
   glob(
