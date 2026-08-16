@@ -20,7 +20,7 @@ function validateRecording(
 ```
 
 Three functions and three types — `formatValidationReport` renders a report as text, and is
-covered under [API — helpers](/docs/api-helpers). The three types are declared in the same file as every other public
+covered under [API: helpers](/docs/api-helpers). The three types are declared in the same file as every other public
 shape and re-exported here. You can name a `ValidationReport` without reaching into the universal
 entry point for it.
 

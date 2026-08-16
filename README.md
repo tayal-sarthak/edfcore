@@ -384,7 +384,7 @@ sign and invert the clinical reading of the trace.
 the header and the validation report. Chunk joining that refuses to concatenate across a gap
 (`mergeChunks`). Timeline lookup with no read (`segmentAt`, `gapAt`, `contiguityOf`). Signal
 lookup by pattern (`matchSignals`) and ordered physical bounds (`physicalRangeOf`). See
-[API — helpers](https://edfcore.vercel.app/docs/api-helpers) and
+[API: helpers](https://edfcore.vercel.app/docs/api-helpers) and
 [CHANGELOG.md](https://github.com/tayal-sarthak/edfcore/blob/main/docs/CHANGELOG.md).
 
 **Still later, additive.** The `edffloat` logarithmic inverse transform, opt-in — still detected
