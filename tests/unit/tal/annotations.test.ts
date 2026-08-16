@@ -769,7 +769,8 @@ describe('the caller contract', () => {
   });
 
   it('collects nothing under strict on a conforming file', () => {
-    // DESIGN section 6: under strict every diagnostics array is empty by construction.
+    // Empty because this file is conforming, not "by construction": strict exempts `info`, so a
+    // strict parse can still return diagnostics on a file that has any.
     const result = decode(fixture, allRecords(fixture), { strict: true });
     expect(result.diagnostics).toEqual([]);
     expect(Array.from(result.recordOnsetTicks)).toEqual([0n, 10000000n]);

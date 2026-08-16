@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.158
+
+- **Corrected** the second surviving copy of the same claim, in `tests/unit/tal/annotations.test.ts`.
+  The assertion was right and its stated reason was not: the array is empty because that fixture is
+  conforming, not because strict empties it.
+
 ## 0.4.157
 
 - **Corrected** the retired strict-mode claim where it had survived: a doc comment in
