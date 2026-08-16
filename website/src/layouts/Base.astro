@@ -89,9 +89,10 @@ const ogImageAlt =
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f2e8" />
     {
       /* Serialized here rather than in the pages so no page can forget the script type.
-         JSON.stringify never emits a bare `</script>` from our own string data — the one
-         character that could break out is escaped by the `<` never appearing unescaped in
-         schema values, all of which are titles and URLs this site already renders. */
+         Every `<` is escaped to its JSON unicode form, which a JSON-LD parser reads back as `<`:
+         a value containing the literal text that closes a script element would otherwise end this
+         one early and spill the rest onto the page as markup. Nothing feeds these values today,
+         and the escape is what keeps that from mattering if something ever does. */
       schema && (
         <script
           type="application/ld+json"
