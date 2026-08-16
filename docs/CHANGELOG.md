@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.192
+
+- **Corrected** the size of the committed parity fixtures, the other stale number in
+  `tests/README.md`. "About 1.4 MB with their goldens" was exact at aa476d6 — 1,467,462 bytes over
+  21 files — and two goldens added since put the directory at 2,168,993. The file count it sits
+  next to, six, is still right; only the weight moved.
+
 ## 0.4.191
 
 - **Corrected** the download size on `npm run corpus:fetch`. `tests/README.md` said ~59 MB, which

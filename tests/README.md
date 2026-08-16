@@ -77,7 +77,7 @@ Three tiers were planned, and all three are in use.
 - **Tier 1 — synthetic, in memory.** Almost everything. No binaries in git, no licence questions,
   no network.
 - **Tier 2 — a small number of committed files.** In use since 0.2.34, for the reference-parity
-  harness and nothing else: six EDF/BDF files under `corpus/golden/`, about 1.4 MB with their
+  harness and nothing else: six EDF/BDF files under `corpus/golden/`, about 2.1 MB with their
   goldens.
 
   These are **generated locally by pyEDFlib**, not downloaded from anyone. They have to be
