@@ -519,8 +519,8 @@ npx edfcore --version          # the installed version
 
 Flags: `--patient` includes patient identification (`header`, `validate`, `json`), `--list` makes
 `events` print one event per line instead of counting them by text, and `--limit <n>` caps the
-diagnostics or events printed (`header`, `validate`, `events`). Each is accepted and ignored by the
-commands it does not name.
+diagnostics or events printed (`header`, `validate`, `events --list`). Each is accepted and ignored
+by the commands it does not name, and the counted `events` output is never capped.
 
 ```bash
 npx edfcore events recording.edf --list --limit 100
