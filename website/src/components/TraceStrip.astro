@@ -2,10 +2,10 @@
 /**
  * The hero figure: a phosphor display with a signal sweeping across it.
  *
- * The samples are real. A signal is generated, encoded to little-endian 16-bit two's
- * complement exactly as EDF stores it, and decoded back out through the same arithmetic the
- * library uses — so the line on screen is the output of the thing being sold, not a drawing
- * of one.
+ * The samples go through a real EDF round-trip: generated, clamped, stored as little-endian
+ * 16-bit two's complement exactly as EDF does, and read back. That is written out here rather
+ * than imported, so this is the format's arithmetic and not the library's — edfcore does not run
+ * on this page. The inspector is where the library reads an actual file.
  *
  * The motion is one continuous gesture rather than a set of effects: a beam crosses the strip
  * and the trace behind it decays the way phosphor does, brightest at the head and dimming with
@@ -28,7 +28,7 @@ const { height = 260 } = Astro.props;
   <canvas id="trace-strip" aria-hidden="true"></canvas>
   <figcaption class="visually-hidden">
     An electroencephalogram trace sweeping across an instrument display, drawn from sample
-    values encoded and decoded the way edfcore reads them.
+    values stored and read back in the 16-bit form EDF uses.
   </figcaption>
 </figure>
 

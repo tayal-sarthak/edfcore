@@ -6,6 +6,38 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.173
+
+- **Added** `website/design/`, holding the share card's SVG source and the two commands that
+  regenerate the PNG. 0.4.172 committed a binary nobody could edit; the source now sits beside a
+  README whose commands were verified to reproduce the shipped file byte for byte. The directory is
+  not served, so the site still ships one image.
+
+## 0.4.172
+
+- **Redrew** the share card, which listed three of the four formats the reader supports, and
+  updated its alt text to match. That image is the most-seen artifact the project has — every link
+  preview in a chat window renders it — and it was underselling BDF+.
+
+## 0.4.171
+
+- **Added** BDF+ back to the landing page's opening sentence. The sentence was taken from the
+  repository's own one-line description, which lists three formats; the library reads four, and the
+  footer of the same page said so, so the page contradicted itself in two paragraphs.
+
+## 0.4.170
+
+- **Corrected** the same attribution in the hero figure's caption, which is the text a screen
+  reader announces: "encoded and decoded the way edfcore reads them" became a statement about the
+  EDF format, which is what the canvas actually demonstrates.
+
+## 0.4.169
+
+- **Corrected** the `TraceStrip` docblock, which said the hero trace is "the output of the thing
+  being sold, not a drawing of one". The EDF round-trip on that canvas is written out in the
+  component; edfcore is not imported and does not run on the landing page. The round-trip is real,
+  the attribution was not.
+
 ## 0.4.168
 
 - **Removed** the `secondsToTicks()` prefix from the non-finite-seconds refusal. That helper is

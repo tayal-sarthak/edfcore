@@ -1,0 +1,46 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="1200" fill="#14120e"/>
+<g transform="translate(0,285)">
+
+  <!-- ground: the instrument, dark ink with a faint vignette of the sunken tone -->
+  <rect width="1200" height="630" fill="#14120e"/>
+  <rect width="1200" height="630" fill="url(#vign)"/>
+  <defs>
+    <radialGradient id="vign" cx="0.5" cy="0.42" r="0.9">
+      <stop offset="0" stop-color="#1e1b15"/>
+      <stop offset="1" stop-color="#14120e"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8ccb6b" stop-opacity="0.12"/>
+      <stop offset="0.72" stop-color="#8ccb6b" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#a8de8a" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- faint ruled grid, like graph paper on the display -->
+  <g stroke="#26221a" stroke-width="1">
+    <path d="M0 105h1200M0 210h1200M0 315h1200M0 420h1200M0 525h1200"/>
+    <path d="M150 0v630M300 0v630M450 0v630M600 0v630M750 0v630M900 0v630M1050 0v630"/>
+  </g>
+
+  <!-- the trace: one sweep across the card, phosphor green, decaying behind the head -->
+  <path d="M0 315 H150 l30 -12 22 24 26 -90 34 168 40 -196 30 96 26 54 24 -66 30 22 H460 l26 -10 20 10 H560 l24 -150 30 262 28 -180 24 64 26 -22 22 22 H790 l28 -8 24 8 H900 l22 -46 26 82 24 -60 22 24 H1060 l24 -12 22 12 h94"
+        fill="none" stroke="url(#fade)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- beam head -->
+  <circle cx="1194" cy="315" r="7" fill="#a8de8a"/>
+  <circle cx="1194" cy="315" r="16" fill="#a8de8a" opacity="0.22"/>
+
+  <!-- event marker, rose, small and semantic -->
+  <g>
+    <path d="M642 210 v210" stroke="#de4a86" stroke-width="2.5" stroke-dasharray="2 6"/>
+    <text x="654" y="232" font-family="Menlo, monospace" font-size="21" fill="#de4a86">Sleep stage W</text>
+  </g>
+
+  <!-- wordmark and line, in the safe zone -->
+  <text x="96" y="486" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700"
+        font-size="104" letter-spacing="-3" fill="#ede6d6">edfcore</text>
+  <text x="99" y="540" font-family="Menlo, monospace" font-size="30" fill="#b3aa93">Read EDF, EDF+, BDF and BDF+ biosignal files in TypeScript</text>
+  <text x="99" y="586" font-family="Menlo, monospace" font-size="24" fill="#8c8471">zero dependencies · browser + Node · random access</text>
+
+</g>
+</svg>
