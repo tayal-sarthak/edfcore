@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.234
+
+- **Added** documentation for the three formatter options types, and took them off the recorded
+  list of undocumented ones. `FormatHeaderOptions`, `FormatAnnotationsOptions` and
+  `FormatReportOptions` are exported and every field of each was described somewhere in prose, but
+  none of the three was named on a page — so writing a wrapper that accepts one, or building an
+  options object ahead of the call, meant reading the `.d.ts`. `api-helpers.md` now gives each a
+  field table with its default, and says why `includePatientId` defaults off while
+  `diagnosticsHint` defaults on: the cost of forgetting the first is a person's name in an issue
+  tracker, and the cost of forgetting the second is one redundant line. `UNDOCUMENTED_TYPES` is
+  down from fourteen to eleven, which is the direction 0.4.220 built it to move in.
+
 ## 0.4.233
 
 - **Changed** the packaging checks to run on every push instead of only at publish time.
