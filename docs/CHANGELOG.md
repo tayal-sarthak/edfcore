@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.199
+
+- **Corrected** the title of `documented-examples.test-d.ts`, which read "The documented examples
+  in the docs compile". Three do. The three pages it covers carry 55 `ts` fences, and each covered
+  example needs a compiled twin written by hand, so the set is small on purpose — but a maintainer
+  reading the title would think a new snippet was already checked.
+
 ## 0.4.198
 
 - **Corrected** the list of budget readers in `src/options.ts`. It named six modules; eight read
