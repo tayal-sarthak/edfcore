@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.176
+
+- **Added** a test that runs the CLI as a process with its output piped into `head`. Every other
+  CLI test drives `runCli` through an injected `CliIo`, which is why they need no build - and why
+  nothing covered `cli.ts`, where the EPIPE crash 0.4.175 fixed actually lived. It skips when
+  `dist/cli.js` is absent rather than passing on a binary it never ran.
+
 ## 0.4.175
 
 - **Fixed** the CLI crashing when its output is piped into something that stops reading.
