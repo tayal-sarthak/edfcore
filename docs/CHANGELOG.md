@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.203
+
+- **Corrected** the docblock of `changelog-continuity.test.ts`, which had gone stale twice over. It
+  described a consumed number in the present tense, which 0.4.200 ended; and it quoted
+  `scripts/release.mjs` verbatim — "the way 0.2.29, 0.2.36 and 0.2.59 are" — a sentence 0.4.197
+  and 0.4.202 have both since rewritten. A quotation is the one kind of reference that cannot
+  survive edits to its source, so it is now a paraphrase that stays true.
+
 ## 0.4.202
 
 - **Corrected** the two places in `scripts/release.mjs` that still describe a consumed number as
