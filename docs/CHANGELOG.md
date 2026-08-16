@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.233
+
+- **Changed** the packaging checks to run on every push instead of only at publish time.
+  `publint --strict` and `@arethetypeswrong/cli` are the two things `npm run check` cannot do —
+  they read the manifest against the files npm would actually pack, and resolve each subpath the
+  way a consumer's TypeScript would — and they lived in `publish.yml`, which runs after the tag is
+  pushed. That is the one window `scripts/release.mjs` cannot undo, so a packaging mistake found
+  there could only be fixed by cutting another version. CI now has a `package` job, and both
+  workflows call the same `npm run verify:package` so the two cannot drift. It stays out of
+  `npm run check`: that one downloads nothing, and `git clone && npm test` being green offline is
+  a property worth keeping.
+
 ## 0.4.232
 
 - **Fixed** the site's version sweep reading only `.astro` files. `website/src/pages/` also holds
