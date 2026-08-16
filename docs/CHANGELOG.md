@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.218
+
+- **Added** the same check to `mne-parity.test.ts`: a case for every committed `.mne.json`. This
+  file is the only thing that reads them, so a golden `generate-mne.py` produced and no entry names
+  would be compared by nothing and noticed by nothing — the second-reader evidence the file exists
+  to provide, silently absent.
+
 ## 0.4.217
 
 - **Added** a check that `golden-values.test.ts` has a case for every committed golden that carries

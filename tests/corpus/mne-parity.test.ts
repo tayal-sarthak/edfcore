@@ -20,7 +20,7 @@
  *     .venv/bin/python scripts/golden/generate-mne.py
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
@@ -74,6 +74,22 @@ function load(name: (typeof CASES)[number]): { golden: MneGolden; bytes: Uint8Ar
  * the quantisation step of any real recording, so a genuine disagreement could not hide under it.
  */
 const MAX_RELATIVE_DIFFERENCE = 1e-12;
+
+describe('the case list covers what is on disk', () => {
+  it('has a case for every committed .mne.json golden', () => {
+    // Same reasoning as the pyEDFlib list in `golden-values.test.ts` (0.4.217): the entries stay
+    // written out, but a golden `scripts/golden/generate-mne.py` produced and nothing here names
+    // is a second-reader reference value that never gets compared. This file is the only thing
+    // that reads them, so nothing else would notice.
+    const directory = fileURLToPath(new URL('./golden/', import.meta.url));
+    const onDisk = readdirSync(directory)
+      .filter((entry) => entry.endsWith('.mne.json'))
+      .map((entry) => entry.slice(0, -'.mne.json'.length));
+
+    expect(onDisk.length).toBeGreaterThan(1);
+    expect([...onDisk].sort()).toEqual([...CASES].sort());
+  });
+});
 
 describe('the MNE goldens are MNE output', () => {
   it.each(CASES)('%s names its producer and carries samples', (name) => {
