@@ -4,8 +4,9 @@
  *
  * `SECTIONS` is written out rather than derived from the pages, because the order sections appear
  * in is an editorial decision — "Start here" before "Reference" — and no property of the entries
- * expresses it. A page whose `section` is not in this list therefore renders but never appears
- * here, which the collection schema is what prevents.
+ * expresses it. A page whose `section` is not in this list would render and never appear here,
+ * which is what the collection schema prevents: `section` is a `z.enum` over these same four, so
+ * a fifth one fails the build rather than going missing from the sidebar.
  */
 import { getCollection } from 'astro:content';
 
