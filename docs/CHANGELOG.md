@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.193
+
+- **Added** the guard for 0.4.191 and 0.4.192: both corpus sizes in `tests/README.md` are now
+  measured against the manifest and the `corpus/golden/` directory. Each had gone stale by more
+  than 30% because a file joined a set and the sentence describing it did not, and neither was
+  checkable by reading the sentence. The tolerance is 10%, so a hedged "~" survives a fixture
+  gaining bytes and fails when the set changes.
+
+## 0.4.192
+
+- **Corrected** the size of the committed parity fixtures, the other stale number in
+  `tests/README.md`. "About 1.4 MB with their goldens" was exact at aa476d6 — 1,467,462 bytes over
+  21 files — and two goldens added since put the directory at 2,168,993. The file count it sits
+  next to, six, is still right; only the weight moved.
+
+## 0.4.191
+
+- **Corrected** the download size on `npm run corpus:fetch`. `tests/README.md` said ~59 MB, which
+  was exact for the five files in the manifest when it was written on 2026-08-01. CHB-MIT arrived
+  six days later and nearly doubled it; the manifest now totals 101,665,332 bytes across seven
+  files. Someone deciding whether to run the fetch on a metered connection was off by 42 MB.
+
 ## 0.4.190
 
 - **Widened** the docs-coverage guard to derive what `./validate` and `./node` export instead of
