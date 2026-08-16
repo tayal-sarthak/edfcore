@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.223
+
+- **Fixed** the same blind spot in the type parser added by 0.4.220. It read only
+  `export type { … } from` blocks, so `FileHandleLike` was outside the documentation check as well
+  as outside the count 0.4.222 corrected. Nothing was actually undocumented — that type is
+  described on `api-sources.md` — but it was exempt by accident rather than by the recorded list,
+  which is the state the list exists to prevent. Both parsers now read both shapes and see 65.
+
 ## 0.4.222
 
 - **Fixed** the README's public-type count, which said 64 and should say 65, and the guard that was

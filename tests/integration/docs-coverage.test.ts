@@ -59,7 +59,14 @@ const BARREL_SOURCES = (import.meta as unknown as RawModuleGlob).glob('../../src
   eager: true,
 });
 
-/** Type names exported by the barrels, comments stripped first so a mention in prose is not one. */
+/**
+ * Type names exported by the barrels, comments stripped first so a mention in prose is not one.
+ *
+ * Both shapes, for the reason 0.4.222 found in the other parser: `node.ts` declares
+ * `FileHandleLike` and exports it in place rather than re-exporting it, and reading only the
+ * `export type { … } from` blocks left that type unchecked here too. It happens to be documented,
+ * so nothing was wrong — but it was exempt by accident rather than by the list below.
+ */
 const EXPORTED_TYPES: readonly string[] = (() => {
   const names = new Set<string>();
   for (const [path, source] of Object.entries(BARREL_SOURCES)) {
@@ -70,6 +77,10 @@ const EXPORTED_TYPES: readonly string[] = (() => {
         const name = entry.trim().split(' as ').pop()?.trim() ?? '';
         if (/^\w+$/.test(name)) names.add(name);
       }
+    }
+    for (const declared of stripped.matchAll(/export (?:interface (\w+)|type (\w+)\s*[=<])/g)) {
+      const name = declared[1] ?? declared[2];
+      if (name !== undefined) names.add(name);
     }
   }
   return [...names];
