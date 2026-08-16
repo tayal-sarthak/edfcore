@@ -599,9 +599,17 @@ describe('the usage banner scopes --patient to the commands it affects', () => {
     patientId: 'Haagse_Harry_all_one_token',
   });
 
-  const COMMANDS = ['header', 'validate', 'events', 'gaps', 'signals', 'json'] as const;
+  const SOURCE = readFileSync(new URL('../../src/cli-run.ts', import.meta.url), 'utf8');
+
+  // Derived as well, for the same reason. Written out here, a seventh command would never be
+  // probed — the banner could omit it and this would still pass, which is the "written down twice"
+  // the note above rejects, one level up.
+  const COMMANDS = [...SOURCE.matchAll(/^\s+npx edfcore (\w+) <file>/gm)].map(
+    (m) => m[1] as string,
+  );
 
   it('lists exactly the commands whose output the flag changes', async () => {
+    expect(COMMANDS.length).toBeGreaterThan(1);
     const affected: string[] = [];
     for (const command of COMMANDS) {
       const without = await invoke([command, 'f.edf'], { 'f.edf': NONCONFORMANT });
@@ -611,9 +619,8 @@ describe('the usage banner scopes --patient to the commands it affects', () => {
     // The premise: the flag really does change something, on more than one command.
     expect(affected.length).toBeGreaterThan(1);
 
-    const source = readFileSync(new URL('../../src/cli-run.ts', import.meta.url), 'utf8');
-    const line = source.split('\n').find((l) => l.includes('--patient')) ?? '';
-    const listed = [...line.matchAll(/\b(header|validate|events|gaps|signals|json)\b/g)].map(
+    const line = SOURCE.split('\n').find((l) => l.includes('--patient')) ?? '';
+    const listed = [...line.matchAll(new RegExp(`\\b(${COMMANDS.join('|')})\\b`, 'g'))].map(
       (m) => m[1] as string,
     );
     expect([...listed].sort()).toEqual([...affected].sort());

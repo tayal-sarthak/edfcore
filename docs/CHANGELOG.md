@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.208
+
+- **Fixed** the one lint warning the repository has been carrying: a non-null assertion on
+  `recordOnsetTicks[0]` in `annotation-timebase.test.ts`. `noUncheckedIndexedAccess` is on, so the
+  index really can be `undefined`, and `!` turned an empty result into arithmetic on `undefined`
+  rather than a failure naming itself. It now narrows and throws. `biome check` reports warnings
+  without failing, so this sat in every run — and a run that always prints a warning is a run where
+  the next one goes unread.
+
+## 0.4.207
+
+- **Changed** the `--patient` scope guard to derive the commands it probes. Its note says the scope
+  is "DERIVED from behaviour rather than written down twice", and the scope was — but the list of
+  commands to try it on was spelled out, and again as a regex alternation on the next line. A
+  seventh command would have been probed by neither, so the banner could omit it and the guard
+  would still pass. Both now come from the usage banner itself.
+
 ## 0.4.206
 
 - **Added** a guard that `--help` offers exactly the commands the CLI will dispatch. `cli-run.ts`
