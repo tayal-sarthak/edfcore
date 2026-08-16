@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.152
+
+- **Fixed** the two links on `api-types.md` still labelled "API — sources" and "API — reading",
+  after those pages were renamed.
+
 ## 0.4.151
 
 - **Fixed** a link on `api-errors.md` still labelled "API — reading". That page was renamed to

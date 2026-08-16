@@ -667,7 +667,7 @@ edfcore, not what it hands back.
 `signalIndices` is required on both selections, with no "all signals" default: a 256-channel file
 must never be read wholesale because an argument was omitted.
 
-[API — sources](/docs/api-sources) is the reference for `ByteSource` and its adapters, and
-[API — reading](/docs/api-reading) is the reference for the calls that consume these options.
+[API: sources](/docs/api-sources) is the reference for `ByteSource` and its adapters, and
+[API: reading](/docs/api-reading) is the reference for the calls that consume these options.
 [Data sources](/docs/data-sources), [large files](/docs/large-files) and
 [reading signals](/docs/reading-signals) are the guides behind them.
