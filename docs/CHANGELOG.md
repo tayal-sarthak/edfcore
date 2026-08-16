@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.181
+
+- **Fixed** `edfcore events --list --limit 0` printing two blank lines and a withheld-count notice
+  hanging under the total. The blank line separates the notice from the rows above it, so it now
+  appears only when there are rows.
+
 ## 0.4.180
 
 - **Corrected** the same `--limit` scope on `api-helpers.md`, the other half of 0.4.179, and said
