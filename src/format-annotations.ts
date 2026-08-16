@@ -45,8 +45,8 @@ function clock(ticks: bigint): string {
   // Floored toward -Infinity, not truncated toward zero. Taking the magnitude first and then
   // truncating moves a NEGATIVE onset LATER: `-1.5009 s` printed as `-00:00:01.500`, 0.9 ms after
   // the event. The positive twin `+1.5009` printed `00:00:01.500`, correctly before its event, so
-  // the guarantee held for exactly the half of the range that the paragraph below says is the
-  // unusual one. `-1.5009` now prints `-00:00:01.501` (fixed in 0.3.45).
+  // the guarantee held for exactly the half of the range that the note at the top of this file
+  // has to argue is legal at all. `-1.5009` now prints `-00:00:01.501` (fixed in 0.3.45).
   const flooredMilliseconds = floorDiv(ticks, TICKS_PER_MILLISECOND);
   const negative = flooredMilliseconds < 0n;
   const totalMilliseconds = negative ? -flooredMilliseconds : flooredMilliseconds;

@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.189
+
+- **Corrected** a pointer in `clock()` that sent the reader the wrong way. It cited "the paragraph
+  below" for why a negative onset is the unusual half of the range; that paragraph is the module
+  note at the top of the file, and nothing below the comment discusses it. It now names the note by
+  position instead of by direction, which is what rotted.
+
 ## 0.4.188
 
 - **Corrected** the `readWindow` docblock, which told the reader the sentence above it "said could
