@@ -142,7 +142,7 @@ export function resolveTimeWindow(
       : `its ${recordCount} records span ${timeline.spanSeconds} s but cover only ` +
         `${timeline.coveredSeconds} s, so it contains at least one gap`;
     throw new RangeError(
-      `resolveTimeWindow() cannot map seconds to records on this file: ${shape}, ` +
+      `this file cannot be mapped from seconds to records: ${shape}, ` +
         'and a probed index knows where neither the discontinuity nor the ' +
         'records after it start. ' +
         // The two seconds above can PRINT the same on a long recording, since that is exactly the
