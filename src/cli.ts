@@ -58,7 +58,24 @@ proc.stdout.on('error', (error) => {
 });
 
 const io: CliIo = {
-  readFile: (path) => fs.readFile(path),
+  /*
+   * A directory reaches `fs.readFile` and comes back as a raw `EISDIR: illegal operation on a
+   * directory, read` — an errno with no path in it and nothing to do next. `fileSource` was fixed
+   * for exactly this in 0.3.98, but the CLI reads the whole file itself rather than going through
+   * that adapter, so it never got the fix. `ENOENT` is left alone: Node's own text already names
+   * the path and says what is wrong (fixed in 0.4.178).
+   */
+  readFile: async (path) => {
+    try {
+      return await fs.readFile(path);
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code !== 'EISDIR') throw error;
+      throw new Error(
+        `${JSON.stringify(path)} is a directory, not a file. Next: name the .edf or .bdf ` +
+          'file inside it.',
+      );
+    }
+  },
   out: (text) => {
     proc.stdout.write(text);
   },

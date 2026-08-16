@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.178
+
+- **Fixed** `edfcore <command> <directory>` reporting a raw `EISDIR: illegal operation on a
+  directory, read` — an errno carrying no path and no next step. `fileSource` was fixed for this in
+  0.3.98, but the CLI reads the file itself rather than going through that adapter, so it never got
+  the fix. `ENOENT` is left as Node writes it, since that text already names the path.
+
 ## 0.4.177
 
 - **Added** a test that runs the CLI as a process with its output piped into `head`. Every other
