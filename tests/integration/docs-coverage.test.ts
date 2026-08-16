@@ -46,8 +46,55 @@ function mentioned(name: string): boolean {
   return new RegExp(`\\b${name}\\b`).test(ALL_DOCS);
 }
 
-/** Types are documented under their own names too, but only runtime exports are enumerable. */
 const RUNTIME_EXPORTS = Object.keys(edfcore).filter((name) => name !== 'default');
+
+/** The three barrels as text, because a type has no runtime value to enumerate. */
+const BARREL_SOURCES = (import.meta as unknown as RawModuleGlob).glob('../../src/*.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+/** Type names exported by the barrels, comments stripped first so a mention in prose is not one. */
+const EXPORTED_TYPES: readonly string[] = (() => {
+  const names = new Set<string>();
+  for (const [path, source] of Object.entries(BARREL_SOURCES)) {
+    if (!/\/(index|node|validate)\.ts$/.test(path)) continue;
+    const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    for (const block of stripped.matchAll(/export type \{([^}]*)\} from/g)) {
+      for (const entry of (block[1] as string).split(',')) {
+        const name = entry.trim().split(' as ').pop()?.trim() ?? '';
+        if (/^\w+$/.test(name)) names.add(name);
+      }
+    }
+  }
+  return [...names];
+})();
+
+/**
+ * Exported types that no page mentions today. Debt, written down.
+ *
+ * This half of the check did not exist before 0.4.220, and the comment where it should have been
+ * asserted the opposite — "types are documented under their own names too". Fourteen are not. They
+ * are listed rather than tolerated so that a fifteenth fails, and the second test below fails once
+ * one of these is documented, so the list shrinks as the gap closes instead of outliving it.
+ */
+const UNDOCUMENTED_TYPES = new Set([
+  'EdfAnnotationWindow',
+  'EdfCodeCount',
+  'EdfDiagnosticSummary',
+  'EdfEnvelopeChunk',
+  'EdfEnvelopeSignal',
+  'EdfPhysicalEnvelope',
+  'EdfStatusWord',
+  'EdfTriggerEvent',
+  'EnvelopeSelection',
+  'FormatAnnotationsOptions',
+  'FormatHeaderOptions',
+  'FormatReportOptions',
+  'StreamSelection',
+  'TriggerSelection',
+]);
 
 /** What `./validate` and `./node` publish that the universal barrel does not re-export. */
 const SUBPATH_EXPORTS = [...Object.keys(edfcoreValidate), ...Object.keys(edfcoreNode)].filter(
@@ -67,6 +114,27 @@ describe('the documentation set is the one being checked', () => {
     expect(mentioned('thisNameIsNotInTheDocs')).toBe(false);
     // The boundary is what makes the check honest: a prefix does not vouch for its extension.
     expect(mentioned('readEnvelopeAtResolutionXYZ')).toBe(false);
+  });
+});
+
+describe('every exported type is mentioned in the docs', () => {
+  it('read the type names out of the barrels, so a passing run is not a vacuous one', () => {
+    expect(EXPORTED_TYPES.length).toBeGreaterThan(40);
+    expect(EXPORTED_TYPES).toContain('EdfHeader');
+  });
+
+  it('leaves nothing undocumented but the recorded exceptions', () => {
+    const missing = EXPORTED_TYPES.filter(
+      (name) => !mentioned(name) && !UNDOCUMENTED_TYPES.has(name),
+    );
+    expect(missing, 'exported types no documentation page mentions').toEqual([]);
+  });
+
+  it('lists no exception that is in fact documented', () => {
+    // Without this the list would outlive the gap: a type documented later would stay on it, and
+    // the next undocumented type could be waved through by an entry that no longer means anything.
+    const stale = [...UNDOCUMENTED_TYPES].filter((name) => mentioned(name));
+    expect(stale, 'now documented — remove from UNDOCUMENTED_TYPES').toEqual([]);
   });
 });
 
