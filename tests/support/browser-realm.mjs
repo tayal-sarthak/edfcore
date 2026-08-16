@@ -89,8 +89,9 @@ async function step(name, body) {
 // --- the run ----------------------------------------------------------------
 
 const edfcore = await step('import edfcore', () => import(new URL('index.js', distHref).href));
-const validate = await step('import edfcore/validate', () =>
-  import(new URL('validate.js', distHref).href),
+const validate = await step(
+  'import edfcore/validate',
+  () => import(new URL('validate.js', distHref).href),
 );
 
 if (edfcore !== undefined && validate !== undefined) {

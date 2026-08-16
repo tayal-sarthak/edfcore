@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.227
+
+- **Fixed** `npm run lint` not seeing any JavaScript in the repository. Biome's `files.includes`
+  listed `**/*.ts`, `**/*.json` and `**/*.jsonc`, and `includes` is a filter rather than an
+  addition — so `scripts/release.mjs`, `scripts/fetch-corpus.mjs`, `tests/support/browser-realm.mjs`
+  and `website/astro.config.mjs` were excluded outright, and asking Biome to check one by name
+  answered "these paths were provided but ignored". Three of the four were in a state lint would
+  have rejected: `fetch-corpus.mjs` had an unsorted import block, which is the `organizeImports`
+  error 0.4.225 was about. The release script has been edited in three of the last thirty releases
+  with no formatter or linter over it at all.
+
 ## 0.4.226
 
 - **Added** a recovery message for the one release step the 0.4.200 revert cannot reach. By the

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Download the real-world EDF/BDF corpus described in tests/corpus/manifest.json.
  *
@@ -12,9 +13,9 @@
  * The corpus tests skip when the files are absent, so `git clone && npm test` stays offline.
  */
 
-import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -88,7 +89,10 @@ if (ok > 0) {
       'Provenance and licence for each file are in ../manifest.json.',
       'Regenerate with: npm run corpus:fetch',
       '',
-      readdirSync(dir).filter((f) => f !== 'README.txt').sort().join('\n'),
+      readdirSync(dir)
+        .filter((f) => f !== 'README.txt')
+        .sort()
+        .join('\n'),
       '',
     ].join('\n'),
   );

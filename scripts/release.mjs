@@ -135,12 +135,17 @@ if (firstHeading[1] !== next) {
 const constantsBefore = readFileSync(CONSTANTS, 'utf8');
 const VERSION_LINE = /^export const VERSION = '[^']*';$/m;
 if (!VERSION_LINE.test(constantsBefore)) {
-  die(`Could not find the VERSION line in src/constants.ts. Bump it by hand and check this script.`);
+  die(
+    `Could not find the VERSION line in src/constants.ts. Bump it by hand and check this script.`,
+  );
 }
 
 manifest.version = next;
 writeFileSync(PACKAGE_JSON, `${JSON.stringify(manifest, null, 2)}\n`);
-writeFileSync(CONSTANTS, constantsBefore.replace(VERSION_LINE, `export const VERSION = '${next}';`));
+writeFileSync(
+  CONSTANTS,
+  constantsBefore.replace(VERSION_LINE, `export const VERSION = '${next}';`),
+);
 
 // ---------------------------------------------------------------- prove it before shipping it
 //
