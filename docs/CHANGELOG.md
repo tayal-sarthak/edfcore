@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.241
+
+- **Added** checks on `tests/README.md`, which described this suite with nothing checking that it
+  still did. It is where the root README sends a contributor, and the fixture policy it states is
+  the only reason six binary files are committed to a repository that otherwise builds every
+  fixture in memory. Two of its claims were inventories — a table with one row per directory under
+  `tests/`, and a count of the files under `corpus/golden/` stated four times across the two
+  READMEs — and neither was derived, so a new directory would join the suite and not the table,
+  and the number justifying those committed binaries could drift the way the site's page count did
+  one release ago. Both are read from the tree now. The counts stay spelled out and are read
+  through a word list: `tests/README.md` is prose someone reads start to finish, unlike the
+  one-line parenthetical 0.4.238 turned into a numeral.
+
 ## 0.4.240
 
 - **Extended** the link check added in 0.4.236 to the links that point back at this project by
