@@ -1,6 +1,6 @@
 {
   "name": "edfcore",
-  "version": "0.4.224",
+  "version": "0.4.225",
   "description": "Modern, typed, zero-dependency reader for EDF, EDF+, BDF and BDF+ biosignal files. Works in browsers and Node with true random access.",
   "keywords": [
     "edf",
@@ -68,7 +68,7 @@
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:scratch": "vitest run --config config/vitest.scratch.config.ts",
     "lint": "biome check --error-on-warnings .",
-    "format": "biome format --write .",
+    "format": "biome check --write --linter-enabled=false .",
     "check": "npm run lint && npm run typecheck && npm run build && npm run test",
     "corpus:fetch": "node scripts/fetch-corpus.mjs",
     "release": "node scripts/release.mjs",
