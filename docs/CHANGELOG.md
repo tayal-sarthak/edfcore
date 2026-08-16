@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.235
+
+- **Added** documentation for the three selection types, taking the recorded undocumented list
+  from eleven to eight. `StreamSelection`, `EnvelopeSelection` and `TriggerSelection` are what
+  `streamRecords`, `readEnvelope` and `readTriggers` take, and every page showed an object literal
+  without ever naming the type — so a wrapper that accepts one had nothing to import.
+  `api-types.md` lists all three in the selections table and `api-helpers.md` names each in the
+  section that teaches its call, including the fact that the first two are a `WindowSelection`
+  plus one field.
+- **Fixed** the sentence under that table, which said `signalIndices` is required "on both
+  selections". There are five now, and `TriggerSelection` is the one with no channel field at all
+  — `readTriggers` finds the BioSemi Status signal itself, because a 24-bit EEG sample decoded as
+  a trigger word yields plausible events out of ordinary data.
+
 ## 0.4.234
 
 - **Added** documentation for the three formatter options types, and took them off the recorded

@@ -658,14 +658,20 @@ edfcore, not what it hands back.
 | `ByteSource` | the random-access reader everything is built over |
 | `RecordSelection` | `{ records, signalIndices }` for `readRecords` |
 | `WindowSelection` | `{ startSeconds, durationSeconds, signalIndices }` for `readWindow` |
+| `StreamSelection` | `WindowSelection` plus `chunkRecords`, for `streamRecords` |
+| `EnvelopeSelection` | `WindowSelection` plus `buckets`, for `readEnvelope` |
+| `TriggerSelection` | `{ startSeconds, durationSeconds }` for `readTriggers` |
 | `DecodeAnnotationsOptions` | `ParseOptions` plus `signalIndices` |
 | `BuildIndexOptions` | `ParseOptions & ReadOptions` plus `onProgress` |
 | `HttpSourceOptions` | `fetch`, `headers`, `byteLength`, `maxConcurrency`, `allowFullDownload` |
 | `CacheOptions` | `blockBytes` and `maxBytes` for `cachedSource` |
 | `AbortSignalLike`, `BlobLike`, `FetchLike`, `HttpResponseLike` | structural shims so the published types name neither the DOM nor `@types/node` |
 
-`signalIndices` is required on both selections, with no "all signals" default: a 256-channel file
-must never be read wholesale because an argument was omitted.
+`signalIndices` is required on `RecordSelection` and `WindowSelection`, and so on the two that
+extend the second, with no "all signals" default: a 256-channel file must never be read wholesale
+because an argument was omitted. `TriggerSelection` is the exception and names no channel at all —
+`readTriggers` finds the BioSemi Status signal itself, and decoding any other channel as a trigger
+word would turn ordinary samples into plausible events.
 
 [API: sources](/docs/api-sources) is the reference for `ByteSource` and its adapters, and
 [API: reading](/docs/api-reading) is the reference for the calls that consume these options.

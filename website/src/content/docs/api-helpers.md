@@ -109,6 +109,9 @@ over a whole recording costs the buckets plus one chunk.
 `buckets` is clamped to the sample count of the densest signal in the run — asking for more
 buckets than there are samples would leave holes that mean nothing.
 
+The argument's type is `EnvelopeSelection`: a `WindowSelection` plus `buckets`, so everything
+`readWindow` accepts is accepted here.
+
 ### Physical units
 
 Use `toPhysicalEnvelope`, not `toPhysical`.
@@ -204,7 +207,10 @@ for await (const chunk of streamRecords(recording, {
 
 `chunkRecords` is a count of records, not of bytes or seconds, because the record is the only unit
 every signal in an EDF file shares — channels sample at different rates, so "a second of data" is
-a different number of samples per channel.
+a different number of samples per channel. It defaults to 256.
+
+The argument's type is `StreamSelection`: a `WindowSelection` plus `chunkRecords`, which is the
+one field that decides peak memory — a chunk's worth of records rather than the whole window.
 
 `signalIndices` is validated before the window is resolved, so a non-existent index or the
 annotations channel is refused even when the window selects no records at all — the same
@@ -403,6 +409,11 @@ if (getStatusSignal(recording.header) !== undefined) {
 trigger is held for as long as the stimulus computer asserts it, so the transition is what carries
 the information. A return to `0` is reported too, because the release time is what gives a trigger
 its duration.
+
+The argument's type is `TriggerSelection`, and it is the one selection in the package with no
+`signalIndices`: `readTriggers` locates the Status channel itself. That is deliberate rather than
+a convenience — a 24-bit EEG sample decoded as a trigger word yields plausible-looking events out
+of ordinary data, so there is no way to point this call at the wrong channel.
 
 ### Times and the window
 
