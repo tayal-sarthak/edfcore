@@ -396,7 +396,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       const recording = await open(io, file);
       for (const signal of recording.header.signals) {
         io.out(
-          [
+          `${[
             signal.index,
             // A label is arbitrary bytes. In a format whose whole purpose is `cut -f2`, a tab in
             // one shifts every field after it for that row alone, so a script reading column 6
@@ -407,7 +407,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
             signal.sampleRateHz ?? '',
             printable(signal.physicalDimension.trim()),
             signal.samplesPerRecord,
-          ].join('\t') + '\n',
+          ].join('\t')}\n`,
         );
       }
       return 0;

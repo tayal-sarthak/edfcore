@@ -6,6 +6,38 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.212
+
+- **Added** the guard for 0.4.211, and the counterpart to 0.4.210 on the other side of the repo:
+  `npm --prefix website run check` now passes `--minimumFailingSeverity hint`, so the site's type
+  check fails on a hint instead of printing one and exiting 0. That is how the JSON-LD hint rode
+  along in CI for as long as it did. Both halves of the repository now fail on the quietest thing
+  their checkers can say.
+
+## 0.4.211
+
+- **Added** `is:inline` to the JSON-LD block in `Base.astro`, clearing the one hint `astro check`
+  has been printing. Without it the tag goes through Astro's script processing, which is for code
+  it is asked to bundle rather than for a literal payload that must reach the page exactly as
+  written — and this one is hand-escaped, so passing it through anything is the wrong default.
+  `astro check` now reports 0 errors, 0 warnings and 0 hints; the built `index.html` carries the
+  same graph it did before.
+
+## 0.4.210
+
+- **Added** the guard for 0.4.208 and 0.4.209: `npm run lint` now passes `--error-on-warnings`, so
+  a warning fails the run instead of printing under it. Both diagnostics cleared in those releases
+  had been reported by every `npm run check` and every CI job without failing either, which is why
+  they lasted. This only became possible once the output was empty, and it is what stops it filling
+  up again.
+
+## 0.4.209
+
+- **Changed** the `signals` row to a template literal, clearing the last standing lint diagnostic.
+  `biome check` now reports nothing at all, so the next warning this repository earns will be the
+  only thing in the output instead of the third line of it. The row is byte-for-byte what it was —
+  `hostile-text.test.ts` still pins six tab-separated fields.
+
 ## 0.4.208
 
 - **Fixed** the one lint warning the repository has been carrying: a non-null assertion on
