@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.169
+
+- **Corrected** the `TraceStrip` docblock, which said the hero trace is "the output of the thing
+  being sold, not a drawing of one". The EDF round-trip on that canvas is written out in the
+  component; edfcore is not imported and does not run on the landing page. The round-trip is real,
+  the attribution was not.
+
 ## 0.4.168
 
 - **Removed** the `secondsToTicks()` prefix from the non-finite-seconds refusal. That helper is
