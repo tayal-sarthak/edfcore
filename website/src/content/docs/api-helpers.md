@@ -1,6 +1,6 @@
 ---
 title: API — helpers
-description: "Reference for the helpers added after 0.1.6: signal lookup, envelope decimation, chunk joining, streaming iteration, annotation queries, the sample grid, the BioSemi Status channel, and the text formatters."
+description: Signal lookup, envelopes for plotting, chunk assembly, BioSemi triggers and the CLI — the helpers around the core read path.
 section: Reference
 order: 7
 lead: Everything that sits on top of the reading layer rather than inside it. Each is a convenience over primitives you already have, and each exists because the hand-rolled version is easy to get subtly wrong.

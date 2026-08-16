@@ -23,10 +23,25 @@ interface Props {
   wide?: boolean;
   /** Path to this page's raw-markdown twin, when it has one. */
   markdownPath?: string;
+  /**
+   * Schema.org JSON-LD for this page, already shaped. Pages own their structured data because
+   * only the page knows what it IS — the layout cannot guess a TechArticle from a title. The
+   * one rule: everything in it must restate what is visible on the page, never more. Structured
+   * data that contradicts the page ("schema drift") reads as spam to the crawlers it exists for.
+   */
+  schema?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const { title, description, wide = false, markdownPath } = Astro.props;
-const fullTitle = title === 'edfcore' ? title : `${title} — edfcore`;
+const { title, description, wide = false, markdownPath, schema } = Astro.props;
+/*
+ * The home page carries the query someone actually types — "read EDF files JavaScript" — since
+ * "edfcore" alone is a title only people who already found it would search for. Every other
+ * page keeps `Page — edfcore`, the specific half first.
+ */
+const fullTitle =
+  title === 'edfcore'
+    ? 'edfcore — read EDF, EDF+ and BDF files in JavaScript and TypeScript'
+    : `${title} — edfcore`;
 
 // Astro.site comes from the deployment origin, so these are correct without configuration.
 const canonical = Astro.site
@@ -34,6 +49,16 @@ const canonical = Astro.site
   : Astro.url.pathname;
 const markdownHref =
   markdownPath && Astro.site ? new URL(markdownPath, Astro.site).href : markdownPath;
+/*
+ * The share card. One static image for every page: per-page cards earn their keep on sites
+ * where pages are shared apart from the brand (a blog); a library's docs pages all share as
+ * "edfcore", and one hand-made card beats twenty generated ones. Absolute URL, because the
+ * scrapers that read og:image do not resolve relative ones.
+ */
+const ogImage = Astro.site ? new URL('/og.png', Astro.site).href : '/og.png';
+const ogImageAlt =
+  'edfcore — a phosphor-green signal trace with a labelled sleep-stage annotation, ' +
+  'over the line: read EDF, EDF+ and BDF biosignal files in TypeScript';
 ---
 
 <!doctype html>
@@ -49,7 +74,28 @@ const markdownHref =
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="edfcore" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14120e" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f2e8" />
+    {
+      /* Serialized here rather than in the pages so no page can forget the script type.
+         JSON.stringify never emits a bare `</script>` from our own string data — the one
+         character that could break out is escaped by the `<` never appearing unescaped in
+         schema values, all of which are titles and URLs this site already renders. */
+      schema && (
+        <script
+          type="application/ld+json"
+          set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}
+        />
+      )
+    }
     {
       /* Retrieval crawlers do not use HTTP content negotiation, but the ones that fetch
          markdown at all find it through a link like this. */

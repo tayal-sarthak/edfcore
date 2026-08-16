@@ -7,9 +7,52 @@
  * a reader might copy belongs on a docs page, where `tests/types` typechecks the documented
  * examples — this page shows shape, not recipes.
  */
+import { VERSION } from 'edfcore';
 import Base from '../layouts/Base.astro';
 import TraceStrip from '../components/TraceStrip.astro';
 import CodeBlock from '../components/CodeBlock.astro';
+
+const description =
+  'A typed, dependency-free TypeScript reader for EDF, EDF+, BDF and BDF+ biosignal files. ' +
+  'Real random access, exact event times, and errors that name the byte.';
+
+/*
+ * SoftwareSourceCode, deliberately not SoftwareApplication. Google's software-app rich result
+ * requires a rating or review, which this library does not have — inventing one to qualify is
+ * the exact "schema drift" that costs a site its credibility with the crawlers this block is
+ * for. A source-code entity needs nothing invented: every property below restates something
+ * already visible on this page or on the repo, and its job in 2026 is disambiguation — telling
+ * search and answer engines what "edfcore" IS — rather than winning a rich result.
+ */
+const site = Astro.site?.href ?? 'https://edfcore.vercel.app/';
+const schema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${site}#website`,
+      url: site,
+      name: 'edfcore',
+      description,
+    },
+    {
+      '@type': 'SoftwareSourceCode',
+      '@id': `${site}#software`,
+      name: 'edfcore',
+      description,
+      url: site,
+      codeRepository: 'https://github.com/tayal-sarthak/edfcore',
+      programmingLanguage: 'TypeScript',
+      runtimePlatform: ['Web browser', 'Node.js', 'Deno', 'Bun'],
+      license: 'https://opensource.org/license/mit',
+      version: VERSION,
+      author: { '@type': 'Person', name: 'Sarthak Tayal', url: 'https://github.com/tayal-sarthak' },
+      keywords:
+        'EDF, EDF+, BDF, BDF+, European Data Format, EEG, ECG, polysomnography, sleep study, biosignal',
+      sameAs: ['https://www.npmjs.com/package/edfcore'],
+    },
+  ],
+};
 
 const readExample = `import { openEdf, blobSource, getSignal, readWindow, toPhysical } from 'edfcore';
 
@@ -54,11 +97,7 @@ const gaps = [
 ];
 ---
 
-<Base
-  title="edfcore"
-  description="A typed, dependency-free TypeScript reader for EDF, EDF+, BDF and BDF+ biosignal files. Real random access, exact event times, and errors that name the byte."
-  wide
->
+<Base title="edfcore" description={description} schema={schema} wide>
   <section class="hero">
     <div class="page">
       <h1 class="reveal">Read EDF files<br />in JavaScript.</h1>
@@ -85,8 +124,8 @@ const gaps = [
   <section class="band">
     <div class="page split">
       <div>
-        <h2 class="reveal">Ten seconds out of twelve hours reads ten seconds of bytes.</h2>
-        <p class="reveal measure">
+        <h2>Ten seconds out of twelve hours reads ten seconds of bytes.</h2>
+        <p class="measure">
           An EDF file stores every channel interleaved inside fixed-size data records, so a
           time window maps to a contiguous run of records. edfcore reads exactly that run.
           Opening a file reads the header and nothing else. It doesn't scan.
@@ -98,12 +137,12 @@ const gaps = [
 
   <section class="band band-inset">
     <div class="page">
-      <h2 class="reveal">Python has the tooling for EDF. JavaScript didn't.</h2>
-      <p class="reveal measure lede-2">
+      <h2>Python has the tooling for EDF. JavaScript didn't.</h2>
+      <p class="measure lede-2">
         This is every EDF package on npm, surveyed in mid-2026:
       </p>
 
-      <div class="scroll-x reveal">
+      <div class="scroll-x">
         <table class="gaps">
           <thead>
             <tr><th scope="col">Capability</th><th scope="col">Before edfcore</th></tr>
@@ -121,7 +160,7 @@ const gaps = [
         </table>
       </div>
 
-      <p class="reveal measure aside">
+      <p class="measure aside">
         The strongest prior art is <a
           href="https://github.com/epicurrents/edf-reader"
           rel="noopener">@epicurrents/edf-reader</a
@@ -134,13 +173,13 @@ const gaps = [
   <section class="band">
     <div class="page split split-reverse">
       <div>
-        <h2 class="reveal">A bad file either throws or reports itself.</h2>
-        <p class="reveal measure">
+        <h2>A bad file either throws or reports itself.</h2>
+        <p class="measure">
           One rule decides which. If edfcore can't continue without inventing something, it
           throws. If it can continue on what the file says, it records a diagnostic on the
           result. There's no third option, and nothing is written to the console.
         </p>
-        <p class="reveal measure">
+        <p class="measure">
           A header that declares <code>digitalMinimum === digitalMaximum</code> defines no
           scale: the gain is a division by zero. edfcore sets <code>signal.scale</code> to
           <code>undefined</code>, so reading the gain without checking is a compile error and
@@ -159,13 +198,13 @@ const gaps = [
   <section class="band band-inset">
     <div class="page split">
       <div>
-        <h2 class="reveal">Discontinuous recordings.</h2>
-        <p class="reveal measure">
+        <h2>Discontinuous recordings.</h2>
+        <p class="measure">
           Sleep and long-term-monitoring studies are routinely discontinuous. Most readers
           either reject those files or decode them as though the gaps weren't there, producing
           a timeline that's wrong by hours.
         </p>
-        <p class="reveal measure">
+        <p class="measure">
           <code>readWindow</code> always returns an array of chunks, one per contiguous run,
           including for continuous files. A window inside a gap returns an empty array.
         </p>
@@ -176,12 +215,12 @@ const gaps = [
 
   <section class="band closing">
     <div class="page">
-      <h2 class="reveal">Try it on your own file.</h2>
-      <p class="reveal measure">
+      <h2>Try it on your own file.</h2>
+      <p class="measure">
         The inspector runs in your browser. Nothing is uploaded, because there's no server to
         upload to. That's the same reason edfcore suits clinical and research data.
       </p>
-      <div class="actions reveal">
+      <div class="actions">
         <a class="btn btn-primary" href="/demo">Open the inspector</a>
         <a class="btn" href="/docs/concepts">Read the concepts</a>
       </div>
@@ -189,53 +228,39 @@ const gaps = [
   </section>
 </Base>
 
-<script>
-  const targets = [...document.querySelectorAll<HTMLElement>('.reveal')];
 
-  /*
-   * One quiet gesture, used consistently: the hero strip carries the orchestrated moment and
-   * everything else only needs to arrive without jumping.
-   *
-   * This is a CSS transition toggled by a class rather than a scripted animation. Text that
-   * starts at opacity 0 must be guaranteed to reach opacity 1 — a Web Animation that never
-   * progresses (a throttled or backgrounded tab) holds the element on its first keyframe and
-   * outranks any inline style you try to rescue it with, which leaves the page blank. A
-   * transition cannot fail that way, and reduced-motion is already handled globally.
-   */
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        entry.target.classList.add('is-in');
-        observer.unobserve(entry.target);
-      }
-    },
-    { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
-  );
-
-  targets.forEach((element) => observer.observe(element));
-
-  // Last resort: if the observer never fires, the page must still be readable.
-  window.setTimeout(() => targets.forEach((el) => el.classList.add('is-in')), 2000);
-</script>
 
 <style>
-  .reveal {
-    opacity: 0;
-    transform: translateY(14px);
-    transition:
-      opacity 550ms cubic-bezier(0.22, 0.61, 0.24, 1),
-      transform 550ms cubic-bezier(0.22, 0.61, 0.24, 1);
+  /*
+   * One entrance, on the hero alone, in CSS alone. The previous version fade-slid every
+   * heading and paragraph on the page as it scrolled into view — the scroll-reveal-everything
+   * pattern that reads as templated precisely because every generated site ships it. Content
+   * below the fold now simply is there, which is what a reader scrolling for information
+   * wants from it. An animation cannot strand the page invisible when its script never runs,
+   * because there is no script; reduced-motion is already handled globally in tokens.css.
+   */
+  .hero .reveal {
+    animation: rise 600ms cubic-bezier(0.22, 0.61, 0.24, 1) both;
   }
 
-  .reveal.is-in {
-    opacity: 1;
-    transform: none;
+  .hero .reveal:nth-child(2) {
+    animation-delay: 70ms;
   }
 
-  /* If scripting is unavailable the observer never runs, so nothing may depend on it. */
-  @media (scripting: none) {
-    .reveal {
+  .hero .reveal:nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .hero .reveal:nth-child(4) {
+    animation-delay: 190ms;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
       opacity: 1;
       transform: none;
     }

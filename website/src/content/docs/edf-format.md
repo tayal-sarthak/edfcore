@@ -1,6 +1,6 @@
 ---
 title: The EDF format
-description: What EDF, EDF+, BDF and BDF+ actually store, from the header field by field to the record grid, the sample encoding, and the details that catch every implementer.
+description: "The EDF format from the bytes up: the 256-byte header, data records, TAL annotations, and where EDF+, BDF and BDF+ differ."
 section: Background
 order: 1
 lead: A byte-level primer on the format itself, independent of any library. If a colleague asks what EDF is, this is the page to send them.

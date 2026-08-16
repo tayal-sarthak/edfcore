@@ -1,6 +1,6 @@
 ---
 title: API — sources
-description: "Reference for ByteSource and its adapters: byteSource, blobSource, httpSource, cachedSource, the Node file adapters, and the structural shims that keep the published types platform-free."
+description: "Every way to get bytes in: memory, Blob, HTTP range requests, a block cache, and the Node file adapter — all behind one ByteSource interface."
 section: Reference
 order: 3
 lead: edfcore never opens a file itself. Everything it reads arrives through one three-member interface, which is why the same code path serves memory, disk, a dropped File and an HTTP URL.

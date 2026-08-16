@@ -1,0 +1,57 @@
+---
+/**
+ * The 404. A crawler that gets a real 404 status with a navigable page treats the URL as
+ * gone and moves on; a site with no 404 route serves whatever the host's default is, which
+ * on some setups is a soft-200 that search engines index as duplicate junk. Astro names the
+ * file 404 and Vercel serves it with the right status.
+ */
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Page not found"
+  description="This page does not exist. The edfcore documentation index, quick start and live inspector are one link away."
+>
+  <section class="page notfound">
+    <p class="eyebrow">404 — no signal on this channel</p>
+    <h1>There's no page here.</h1>
+    <p class="measure">
+      The address may have moved when the docs were reorganised, or it may never have existed.
+      Everything on this site is reachable from these three:
+    </p>
+    <ul>
+      <li><a href="/docs/quick-start">Quick start</a> — install, open a file, read a window</li>
+      <li><a href="/docs/api-reading">API reference</a> — every function, by task</li>
+      <li><a href="/demo">The inspector</a> — open one of your own files in the browser</li>
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .notfound {
+    padding-block: var(--s-9) var(--s-8);
+  }
+
+  h1 {
+    margin-top: var(--s-4);
+    font-size: clamp(2.4rem, 6vw, 4rem);
+  }
+
+  p {
+    margin-top: var(--s-4);
+    color: var(--text-dim);
+  }
+
+  ul {
+    margin-top: var(--s-5);
+    padding-left: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    color: var(--text-dim);
+  }
+
+  li::marker {
+    color: var(--text-muted);
+  }
+</style>

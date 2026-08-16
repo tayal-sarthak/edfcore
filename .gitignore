@@ -11,3 +11,6 @@ deleted/
 # Throwaway reproductions written by review agents. Never committed: they assert whatever
 # behaviour was current when they were written, so committing them pins defects.
 tests/scratch/
+
+# Local editor/agent tooling
+.claude/

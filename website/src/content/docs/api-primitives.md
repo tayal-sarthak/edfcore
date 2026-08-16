@@ -1,6 +1,6 @@
 ---
 title: API — primitives
-description: "Reference for the pure, synchronous, I/O-free layer: parseHeader, decodeDigital, toPhysical, decodeAnnotations, the time helpers, the lookups, and the exported constants."
+description: "The low-level pieces: parseHeader, decodeDigital, toPhysical and the exact-tick time helpers that the readers are built from."
 section: Reference
 order: 2
 lead: Every function here takes bytes or plain values and returns plain values. No promises, no source, no hidden state. Each one is testable from a Uint8Array literal with no mocks.
