@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.209
+
+- **Changed** the `signals` row to a template literal, clearing the last standing lint diagnostic.
+  `biome check` now reports nothing at all, so the next warning this repository earns will be the
+  only thing in the output instead of the third line of it. The row is byte-for-byte what it was —
+  `hostile-text.test.ts` still pins six tab-separated fields.
+
 ## 0.4.208
 
 - **Fixed** the one lint warning the repository has been carrying: a non-null assertion on
