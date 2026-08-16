@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.216
+
+- **Changed** `diagnostic-docs.test.ts` to import `EdfDiagnosticDisposition` instead of declaring
+  its own identical union. It was the fifth copy of those four names and the one the compiler
+  trusted: every `as Disposition` in the file would have gone on compiling against a union that no
+  longer matched `codes.ts`, which is the opposite of what a cast is for. `SECTIONS` is now checked
+  against the real union — a heading with a disposition that does not exist is a type error naming
+  it, rather than a cast that quietly succeeds.
+
 ## 0.4.215
 
 - **Changed** the two severity patterns in `diagnostic-docs.test.ts` to come from the `EdfSeverity`

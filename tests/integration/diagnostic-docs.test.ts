@@ -20,6 +20,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { EdfDiagnosticDisposition } from '../../src/diagnostics/codes.js';
 import { summarizeDiagnostics } from '../../src/diagnostics/summary.js';
 import { formatStartTimeNaive } from '../../src/header/dates.js';
 import { parseHeader } from '../../src/header/parse.js';
@@ -117,7 +118,12 @@ function commentsOf(source: string): string {
   return (source.match(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g) ?? []).join('\n');
 }
 
-type Disposition = 'fatal' | 'deferred' | 'warning' | 'info';
+/**
+ * Imported, not restated. Written out here it was a fifth copy of the same four names, and the one
+ * the compiler trusts: every `as Disposition` below would keep compiling against a union that no
+ * longer matched `codes.ts`, which is the opposite of what a cast is for.
+ */
+type Disposition = EdfDiagnosticDisposition;
 
 /**
  * The disposition names, taken from the union that defines them.
