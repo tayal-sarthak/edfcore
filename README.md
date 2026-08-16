@@ -298,7 +298,7 @@ the reason to trust the reader.
 |---|---|
 | Entry points | 3 — `edfcore`, `edfcore/node`, `edfcore/validate` |
 | Functions, classes and constants | 78 |
-| Public types | 64 |
+| Public types | 65 |
 | Diagnostic codes | 46 |
 | CLI commands | 6 |
 

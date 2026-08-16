@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 import * as edfcore from '../../src/index.js';
 import * as edfcoreNode from '../../src/node.js';
 import * as edfcoreValidate from '../../src/validate.js';
+import { exportedTypes } from '../support/barrel-types.js';
 
 interface RawModuleGlob {
   glob(
@@ -59,21 +60,18 @@ const BARREL_SOURCES = (import.meta as unknown as RawModuleGlob).glob('../../src
   eager: true,
 });
 
-/** Type names exported by the barrels, comments stripped first so a mention in prose is not one. */
-const EXPORTED_TYPES: readonly string[] = (() => {
-  const names = new Set<string>();
-  for (const [path, source] of Object.entries(BARREL_SOURCES)) {
-    if (!/\/(index|node|validate)\.ts$/.test(path)) continue;
-    const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-    for (const block of stripped.matchAll(/export type \{([^}]*)\} from/g)) {
-      for (const entry of (block[1] as string).split(',')) {
-        const name = entry.trim().split(' as ').pop()?.trim() ?? '';
-        if (/^\w+$/.test(name)) names.add(name);
-      }
-    }
-  }
-  return [...names];
-})();
+/**
+ * Type names exported by the barrels. Parsed by `tests/support/barrel-types.ts`, which is shared
+ * with `api-surface.test.ts` — this file's copy was written by reading that one and inherited its
+ * blind spot along with it (0.4.220, fixed in 0.4.223).
+ */
+const EXPORTED_TYPES: readonly string[] = [
+  ...new Set(
+    Object.entries(BARREL_SOURCES)
+      .filter(([path]) => /\/(index|node|validate)\.ts$/.test(path))
+      .flatMap(([, source]) => [...exportedTypes(source)]),
+  ),
+];
 
 /**
  * Exported types that no page mentions today. Debt, written down.

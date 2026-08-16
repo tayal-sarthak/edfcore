@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.224
+
+- **Changed** the barrel type parser to live once, in `tests/support/barrel-types.ts`, instead of
+  twice. The second copy was written in 0.4.220 by reading the first, which is how it inherited a
+  blind spot that had been there since the first commit — and 0.4.222 and 0.4.223 then fixed the
+  same line in two files, three releases apart. Two copies of a rule are two chances to hold a
+  different one; the rule that a type is public because it leaves the barrel now has one home.
+
+## 0.4.223
+
+- **Fixed** the same blind spot in the type parser added by 0.4.220. It read only
+  `export type { … } from` blocks, so `FileHandleLike` was outside the documentation check as well
+  as outside the count 0.4.222 corrected. Nothing was actually undocumented — that type is
+  described on `api-sources.md` — but it was exempt by accident rather than by the recorded list,
+  which is the state the list exists to prevent. Both parsers now read both shapes and see 65.
+
+## 0.4.222
+
+- **Fixed** the README's public-type count, which said 64 and should say 65, and the guard that was
+  supposed to keep it honest. `api-surface.test.ts` read type names only out of `export type { … }
+  from` blocks, so it never saw `FileHandleLike` — `node.ts` declares that one and exports it in
+  place. It has been exported since 01132e1, the first commit, so the table has undercounted for
+  the life of the package while a test asserted it was right. The parser now counts a type because
+  it leaves the barrel, not because of which syntax it left by.
+
 ## 0.4.221
 
 - **Corrected** the title of `docs-coverage.test.ts` now that 0.4.220 gave it a list of exceptions.
