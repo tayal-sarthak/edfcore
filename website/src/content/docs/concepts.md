@@ -185,7 +185,7 @@ recording.timeline.coveredSeconds;   //  6   — they differ, so there is a gap
 
 ```ts
 await readWindow(recording, { startSeconds: 0, durationSeconds: 20, signalIndices: [0] });
-// RangeError: resolveTimeWindow() cannot map seconds to records on this file: its 6 records
+// RangeError: this file cannot be mapped from seconds to records: its 6 records
 // span 16 s but cover only 6 s, so it contains at least one gap, and a probed index knows
 // where neither the gap nor the records after it start. Next: await buildRecordIndex(recording)
 // and pass the index it returns, or locate the window with index.locate(seconds).

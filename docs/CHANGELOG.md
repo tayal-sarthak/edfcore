@@ -6,6 +6,11 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.166
+
+- **Updated** `concepts.md`, the second and last page quoting the old prefix. No copy of the
+  retired wording is left in the repo.
+
 ## 0.4.165
 
 - **Updated** `discontinuous.md`, which quoted the probed-index refusal with the function-name
