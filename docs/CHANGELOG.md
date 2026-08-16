@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.239
+
+- **Added** the guard for what 0.4.237 fixed: no test may glob a TypeScript or `.astro` file out
+  of `website/`. `?raw` returns bytes, but the path still goes through vite's transform, and the
+  transform resolves that file's nearest tsconfig — which for anything under `website/` extends
+  `astro/tsconfigs/strict` out of `website/node_modules`, a directory the CI `check` job never
+  installs. That is a failure mode with no local symptom at all: the command passes on the machine
+  cutting the release and dies on every runner, which is exactly how six versions came to be
+  tagged and never published. Markdown stays allowed, because no JavaScript tooling reads a `.md`
+  file's tsconfig. The scanner uses `readFileSync` rather than a glob, on the same reasoning one
+  level up.
+
 ## 0.4.238
 
 - **Fixed** the README undercounting the documentation site. It said "an Astro build with twenty
