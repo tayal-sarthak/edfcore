@@ -182,14 +182,22 @@ run('git', ['tag', '-a', tag, '-m', tag]);
 run('git', ['push', 'origin', 'main']);
 run('git', ['push', 'origin', tag]);
 
-run('gh', [
-  'release',
-  'create',
-  tag,
-  '--title',
-  `edfcore ${next}`,
-  '--generate-notes',
-]);
+// The one step whose failure the revert above cannot reach. By here the bump is committed and the
+// tag is pushed, so there is nothing local left to undo — and publish.yml triggers on a PUBLISHED
+// release, not on a tag, so stopping here leaves a version that exists in git and never reaches
+// npm. That is a hole nothing else in this repository would notice: `changelog-continuity.test.ts`
+// checks this file against itself, and the entry would be present and correct.
+try {
+  run('gh', ['release', 'create', tag, '--title', `edfcore ${next}`, '--generate-notes']);
+} catch {
+  die(
+    `${tag} is committed, tagged and pushed, but creating the GitHub release failed.\n\n` +
+      '  Nothing has gone to npm: publish.yml runs on a published release. The bump cannot be\n' +
+      '  undone now that the tag is public, so finish the release rather than repeating it:\n\n' +
+      `      gh release create ${tag} --title "edfcore ${next}" --generate-notes\n\n` +
+      '  Re-running this script instead would cut the NEXT version and leave this one a hole.',
+  );
+}
 
 if (dryRun) {
   console.log('\n  Dry run: reverting the local version bump.\n');
