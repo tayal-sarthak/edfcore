@@ -6,6 +6,13 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.168
+
+- **Removed** the `secondsToTicks()` prefix from the non-finite-seconds refusal. That helper is
+  internal — it is not exported from any entry point, so no caller can have called it — and nine
+  modules reach it, including the `readWindow` and `readEnvelope` paths. Passing `NaN` as a window
+  bound reported a function name that appears nowhere in the public API.
+
 ## 0.4.167
 
 - **Extended** the message-names-its-caller guard to `readWindow`, and widened the pattern it

@@ -211,7 +211,7 @@ export function saturateToInt64(ticks: bigint): bigint {
 export function secondsToTicks(seconds: number): bigint {
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
-      `secondsToTicks(): expected a finite number of seconds, received ${seconds}. ` +
+      `expected a finite number of seconds, received ${seconds}. ` +
         'Next: check the window bound you passed in.',
     );
   }
