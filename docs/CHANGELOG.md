@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.240
+
+- **Extended** the link check added in 0.4.236 to the links that point back at this project by
+  absolute URL — nine of them, seven `github.com/.../blob/main/<path>` or `tree/main/<path>` and
+  two into `edfcore.vercel.app`. Those rot the same way a relative link does and are harder to
+  notice, because they look external and nobody thinks of them as the project's own. This
+  repository has already made the move that breaks them: the changelog was `CHANGELOG.md` until
+  v0.4.1 and `docs/CHANGELOG.md` after, which `scripts/release.mjs` still has to explain when it
+  tells you which spelling to use for which tag — and the README links to that file twice. A
+  `blob/main` path is now checked against the working tree, a `vercel.app` URL resolves as an
+  internal link, and the README's own `#roadmap` anchor is checked against its headings.
+
+## 0.4.239
+
+- **Added** the guard for what 0.4.237 fixed: no test may glob a TypeScript or `.astro` file out
+  of `website/`. `?raw` returns bytes, but the path still goes through vite's transform, and the
+  transform resolves that file's nearest tsconfig — which for anything under `website/` extends
+  `astro/tsconfigs/strict` out of `website/node_modules`, a directory the CI `check` job never
+  installs. That is a failure mode with no local symptom at all: the command passes on the machine
+  cutting the release and dies on every runner, which is exactly how six versions came to be
+  tagged and never published. Markdown stays allowed, because no JavaScript tooling reads a `.md`
+  file's tsconfig. The scanner uses `readFileSync` rather than a glob, on the same reasoning one
+  level up.
+
 ## 0.4.238
 
 - **Fixed** the README undercounting the documentation site. It said "an Astro build with twenty

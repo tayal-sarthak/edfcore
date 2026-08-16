@@ -21,7 +21,7 @@
  * uses; a heading needing more than that would be a heading worth simplifying.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DOCS_PAGES } from '../support/docs-pages.js';
 
@@ -106,6 +106,56 @@ function broken(link: Link): string | undefined {
     : `no heading #${anchor} on /docs/${target}`;
 }
 
+/**
+ * Absolute links back at this project: a file in this repository, or a page on this site.
+ *
+ * These rot exactly like a relative one and are harder to notice, because they look like external
+ * links and nobody thinks of them as the site's own. The repository has already made the move
+ * that breaks them: the changelog was `CHANGELOG.md` until v0.4.1 and is `docs/CHANGELOG.md`
+ * after it, and `scripts/release.mjs` still has to explain which spelling to use for which tag.
+ * The README links to that file twice.
+ */
+const SELF_HOST = /^https:\/\/(?:edfcore\.vercel\.app|github\.com\/tayal-sarthak\/edfcore)(\/.*)?$/;
+
+const README = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
+
+const README_HEADINGS = new Set(
+  [...README.matchAll(/^#{1,6} (.+)$/gm)].map((match) => slugify(match[1] as string)),
+);
+
+const SELF_LINKS: readonly Link[] = [
+  ...[...README.matchAll(/\]\((https:\/\/[^)\s]+|#[^)\s]+)\)/g)].map((match) => ({
+    from: 'README.md',
+    href: match[1] as string,
+  })),
+  ...[...DOCS_PAGES].flatMap(([name, text]) =>
+    [...text.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map((match) => ({
+      from: name,
+      href: match[1] as string,
+    })),
+  ),
+].filter(({ href }) => href.startsWith('#') || SELF_HOST.test(href));
+
+/** Undefined when the link resolves; a reason when it does not. Ignores anything external. */
+function brokenSelfLink(link: Link): string | undefined {
+  if (link.href.startsWith('#')) {
+    // README-internal only: the docs pages' own anchors go through `broken` above.
+    return README_HEADINGS.has(link.href.slice(1))
+      ? undefined
+      : `no heading ${link.href} in README.md`;
+  }
+
+  const url = new URL(link.href);
+  if (url.host === 'edfcore.vercel.app') return broken({ from: link.from, href: url.pathname });
+
+  // github.com/tayal-sarthak/edfcore/(blob|tree)/main/<path> — a path in this working tree.
+  const repoPath = /^\/tayal-sarthak\/edfcore\/(?:blob|tree)\/main\/(.+)$/.exec(url.pathname)?.[1];
+  if (repoPath === undefined) return undefined;
+  return existsSync(new URL(`../../${repoPath}`, import.meta.url))
+    ? undefined
+    : `no file ${repoPath} in the repository`;
+}
+
 describe('the links were found', () => {
   it('reads enough of them that a passing run is not a vacuous one', () => {
     expect(SLUGS.size).toBeGreaterThan(15);
@@ -134,6 +184,36 @@ describe('every internal link resolves', () => {
 
   it('from the components and routes', () => {
     const dead = ASTRO_LINKS.map((link) => ({ link, why: broken(link) }))
+      .filter(({ why }) => why !== undefined)
+      .map(({ link, why }) => `${link.from} -> ${link.href}: ${why}`);
+    expect(dead).toEqual([]);
+  });
+});
+
+describe('every link back at this project resolves', () => {
+  it('found them, so a passing run is not a vacuous one', () => {
+    expect(SELF_LINKS.length).toBeGreaterThanOrEqual(8);
+    expect(SELF_LINKS.some(({ href }) => href.includes('/blob/main/'))).toBe(true);
+    expect(SELF_LINKS.some(({ href }) => href.startsWith('#'))).toBe(true);
+  });
+
+  it('can tell a resolving one from a broken one', () => {
+    const repo = 'https://github.com/tayal-sarthak/edfcore/blob/main';
+    expect(
+      brokenSelfLink({ from: 'README.md', href: `${repo}/docs/CHANGELOG.md` }),
+    ).toBeUndefined();
+    // Where the changelog lived until v0.4.1, and where two README links would still point.
+    expect(brokenSelfLink({ from: 'README.md', href: `${repo}/CHANGELOG.md` })).toBeDefined();
+    expect(brokenSelfLink({ from: 'README.md', href: '#roadmap' })).toBeUndefined();
+    expect(brokenSelfLink({ from: 'README.md', href: '#no-such-section' })).toBeDefined();
+    // An external link is not this file's business.
+    expect(
+      brokenSelfLink({ from: 'README.md', href: 'https://example.invalid/nowhere' }),
+    ).toBeUndefined();
+  });
+
+  it('from the README and the documentation pages', () => {
+    const dead = SELF_LINKS.map((link) => ({ link, why: brokenSelfLink(link) }))
       .filter(({ why }) => why !== undefined)
       .map(({ link, why }) => `${link.from} -> ${link.href}: ${why}`);
     expect(dead).toEqual([]);
