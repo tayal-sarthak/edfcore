@@ -6,6 +6,12 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.157
+
+- **Corrected** the retired strict-mode claim where it had survived: a doc comment in
+  `tests/unit/diagnostics.test.ts` still said "under strict every `diagnostics` array is empty by
+  construction". `info` diagnostics are exempt from the strict throw and are still collected.
+
 ## 0.4.156
 
 - **Removed** the other "(decision 7)" citation, in `types.ts`. Same retired numbering, and this one
