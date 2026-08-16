@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.219
+
+- **Added** the same check to `corpus-parity.test.ts`, and deliberately did not gate it on the
+  corpus being present. Every other test in that file skips without `npm run corpus:fetch`, and CI
+  never fetches, so a gated version would have been the one check there that runs nowhere. The
+  goldens are committed, which is all it needs — and on a file whose normal state is "skipped", a
+  golden nothing compares against is especially hard to see.
+
 ## 0.4.218
 
 - **Added** the same check to `mne-parity.test.ts`: a case for every committed `.mne.json`. This

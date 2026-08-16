@@ -22,7 +22,7 @@
  *     .venv/bin/python scripts/golden/generate-corpus.py   # only to regenerate the goldens
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -137,6 +137,22 @@ async function samplesAt(
   const digital = (chunk.signals[0]?.digital ?? new Int32Array(0)).subarray(offset, offset + count);
   return { signal, digital, physical: toPhysical(signal, digital) };
 }
+
+describe('the case list covers the committed goldens', () => {
+  it('has a case for every corpus golden on disk', () => {
+    // Deliberately NOT gated on `available()`. Everything else in this file skips without
+    // `npm run corpus:fetch`, and CI never fetches — so a gated version of this check would be
+    // the one thing here that never runs anywhere. The goldens are committed, which is all this
+    // needs: a `corpus-*.json` with no entry in CASES is compared by nothing, on a run that
+    // reports skips rather than failures and so looks the same either way.
+    const onDisk = readdirSync(GOLDEN)
+      .filter((entry) => entry.startsWith('corpus-') && entry.endsWith('.json'))
+      .map((entry) => entry.slice('corpus-'.length, -'.json'.length));
+
+    expect(onDisk.length).toBeGreaterThan(1);
+    expect([...onDisk].sort()).toEqual([...CASES].sort());
+  });
+});
 
 describe.each(CASES)('%s', (name) => {
   const enabled = available(name);
