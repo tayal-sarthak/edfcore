@@ -120,10 +120,26 @@ function commentsOf(source: string): string {
 type Disposition = 'fatal' | 'deferred' | 'warning' | 'info';
 
 /** Every code and its disposition, read straight out of the `DISPOSITIONS` table. */
+/**
+ * The disposition names, taken from the union that defines them.
+ *
+ * Spelling them out here instead would decide which rows this file can see at all: a fifth
+ * disposition would match no row, its codes would never enter `byCode`, and the check that every
+ * code is documented would pass without having heard of them. That is worse than a check that
+ * fails — the codes would be invisible to the guard rather than merely undocumented.
+ */
+const DISPOSITION_NAMES: readonly string[] = (() => {
+  const start = CODES_SOURCE.indexOf('type EdfDiagnosticDisposition');
+  if (start === -1) throw new Error('codes.ts no longer declares EdfDiagnosticDisposition');
+  const declaration = CODES_SOURCE.slice(start, CODES_SOURCE.indexOf(';', start));
+  return [...declaration.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string);
+})();
+
 function dispositions(): ReadonlyMap<string, Disposition> {
   const table = CODES_SOURCE.slice(CODES_SOURCE.indexOf('const DISPOSITIONS'));
+  const row = new RegExp(`^\\s*([A-Z_0-9]+): '(${DISPOSITION_NAMES.join('|')})',`, 'gm');
   const found = new Map<string, Disposition>();
-  for (const match of table.matchAll(/^\s*([A-Z_0-9]+): '(fatal|deferred|warning|info)',/gm)) {
+  for (const match of table.matchAll(row)) {
     found.set(match[1] as string, match[2] as Disposition);
   }
   return found;
@@ -153,6 +169,19 @@ const SECTIONS: ReadonlyArray<{ heading: string; disposition: Disposition }> = [
  * grepping for them from an error message needs to land somewhere.
  */
 const RESERVED = new Set(['SOURCE_SHORT_READ_RECOVERED', 'HTTP_RANGE_IGNORED']);
+
+describe('the disposition list this file works from', () => {
+  it('read the union out of codes.ts, so the row pattern is not vacuous', () => {
+    expect(DISPOSITION_NAMES.length).toBeGreaterThanOrEqual(4);
+    expect(DISPOSITION_NAMES).toContain('fatal');
+  });
+
+  it('has a documented section for every disposition that exists', () => {
+    // `SECTIONS` drives the per-disposition checks below. A disposition with no heading here is a
+    // group of codes whose table nothing compares against.
+    expect([...SECTIONS.map((s) => s.disposition)].sort()).toEqual([...DISPOSITION_NAMES].sort());
+  });
+});
 
 describe('the diagnostic tables in api-errors.md', () => {
   const byCode = dispositions();

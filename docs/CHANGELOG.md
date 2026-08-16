@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.214
+
+- **Fixed** two hand-written copies of the disposition list in `diagnostic-docs.test.ts`. One was
+  the regex that decides which rows of `DISPOSITIONS` the file can see at all, so a fifth
+  disposition would have matched nothing, its codes would never have entered the map, and "every
+  code is documented" would have passed without having heard of them — invisible to the guard
+  rather than merely undocumented. The other was `SECTIONS`, which drives the per-disposition
+  checks. Both now come from the `EdfDiagnosticDisposition` union, and a new disposition without a
+  documented section is now a failure that names it.
+
 ## 0.4.213
 
 - **Fixed** the guard added in 0.4.205, which was the shape of the defect it catches. It compared
