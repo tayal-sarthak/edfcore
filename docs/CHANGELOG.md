@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.251
+
+- **Added** a CLI reference page. The command line had no page of its own: the six commands, the
+  flags, the tab-separated column order and the exit codes lived inside `api-helpers.md`, under a
+  heading two thirds of the way down a page about plotting envelopes and joining chunks. That put
+  the one part of edfcore you can use without writing any code where nothing pointed at it — no
+  sidebar entry, no `llms.txt` line for an agent, and no URL to send anyone. It is now
+  `/docs/cli`, and `api-helpers.md` keeps a pointer where the section was. Its own description no
+  longer claims the CLI either; it lists the text formatters instead, which is what it actually
+  covers.
+
 ## 0.4.250
 
 - **Documented the last one.** `EdfAnnotationWindow` is what `filterAnnotationsByTime` takes, and

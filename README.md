@@ -397,7 +397,7 @@ exactly the invention this library refuses. JSR publication.
 
 The full documentation site lives in
 [`website/`](https://github.com/tayal-sarthak/edfcore/tree/main/website), an Astro build with
-22 pages.
+23 pages.
 It includes a **local inspector** that opens an EDF file and shows its header, channels, events
 and waveforms in your browser, with nothing uploaded.
 
