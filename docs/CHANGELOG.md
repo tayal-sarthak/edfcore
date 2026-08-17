@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.256
+
+- **Corrected** `src/tal/ticks.ts` from layer 3 to layer 1, and started enforcing the direction
+  the layers imply. `AGENTS.md` has always said a module may only import from a lower layer, and
+  every module now declares its own — but nothing compared the two, and applying that comparison
+  for the first time found two upward runtime imports, both real and both the same mistake:
+  `header/parse.ts` and `header/lookup.ts` at layer 2 call `tal/ticks.ts`, which was labelled 3
+  because it lives in `tal/`. It imports `constants.ts` and nothing else. A module's layer is its
+  dependencies, not its folder, so the fix was the number and no code moved.
+- **Exempted** `import type`, which is the architecture rather than a loophole: `src/types.ts`
+  opens by saying it emits no runtime code so any layer may import it without creating a
+  dependency edge. Without the exemption the check would report `types.ts` importing
+  `diagnostics/codes.ts` — precisely the edge that does not exist. Level imports are allowed too;
+  there are 28 of them inside layers 2, 3 and 7, so "only from a lower layer" is shorthand for
+  "never from a higher one".
+
 ## 0.4.255
 
 - **Gave four modules the layer declaration every other one has.** `AGENTS.md` states this

@@ -80,3 +80,59 @@ describe('every module declares its layer', () => {
     expect(layerOf('node.ts')).toBe(7);
   });
 });
+
+/**
+ * And the imports respect them.
+ *
+ * A runtime import may go DOWN a layer or stay level; it may never go up. Level is ordinary —
+ * there are 28 sibling imports inside layers 2, 3 and 7 — so "only from a lower layer" in
+ * `AGENTS.md` is shorthand for "never from a higher one", which is the rule enforced here.
+ *
+ * `import type` is exempt, and that exemption is the architecture rather than a loophole:
+ * `src/types.ts` opens with "Types only — this module emits no runtime code, so any layer may
+ * import it without creating a dependency edge". Nothing is emitted, so nothing depends. Without
+ * the exemption this check would report `types.ts` importing `diagnostics/codes.ts` as a
+ * violation, which is exactly the edge that does not exist.
+ *
+ * Applied for the first time in 0.4.256 it found two, both real and both the same mistake:
+ * `header/parse.ts` and `header/lookup.ts` at layer 2 calling `tal/ticks.ts`, which was labelled
+ * layer 3 because it lives in `tal/`. It imports `constants.ts` and nothing else. A module's
+ * layer is its dependencies, not its folder, so the fix was the number.
+ */
+describe('imports go down, or level, never up', () => {
+  /** `from './x.js'` with the `type` keyword, or without it. */
+  const IMPORTS = /^import\s+(type\s+)?[^;]*?from '(\.[^']+)'/gm;
+
+  const EDGES = MODULES.flatMap(({ name, layer }) => {
+    const source = readFileSync(new URL(`../../src/${name}`, import.meta.url), 'utf8');
+    return [...source.matchAll(IMPORTS)].map((match) => {
+      // `./x.js` and `../tal/x.js` resolve against the importer's directory; the emitted `.js`
+      // specifier is the `.ts` file on disk.
+      const dir = name.includes('/') ? `${name.slice(0, name.lastIndexOf('/'))}/` : '';
+      const target = new URL(`${dir}${match[2] as string}`, 'file:///').pathname
+        .slice(1)
+        .replace(/\.js$/, '.ts');
+      return { from: name, to: target, typeOnly: match[1] !== undefined, layer };
+    });
+  });
+
+  const layerOf = (name: string) => MODULES.find((module) => module.name === name)?.layer;
+
+  it('resolved the graph, so a passing run is not a vacuous one', () => {
+    expect(EDGES.length).toBeGreaterThan(80);
+    // Every edge names a module that exists — a path this resolver got wrong would otherwise be
+    // skipped as "unknown layer" and quietly checked against nothing.
+    const unresolved = EDGES.filter((edge) => layerOf(edge.to) === undefined).map(
+      (edge) => `${edge.from} -> ${edge.to}`,
+    );
+    expect(unresolved).toEqual([]);
+    expect(EDGES.some((edge) => edge.typeOnly)).toBe(true);
+  });
+
+  it('has no runtime import from a higher layer', () => {
+    const upward = EDGES.filter(
+      (edge) => !edge.typeOnly && (layerOf(edge.to) as number) > (edge.layer as number),
+    ).map((edge) => `${edge.from} (L${edge.layer}) imports ${edge.to} (L${layerOf(edge.to)})`);
+    expect(upward).toEqual([]);
+  });
+});

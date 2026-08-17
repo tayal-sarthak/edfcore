@@ -1,10 +1,15 @@
 /**
  * Decimal text to exact 100 ns ticks.
  *
- * Layer 3. Sole owner of the string -> tick conversion, which is the whole reason event times
- * in edfcore compare exactly. `parseFloat`, `Number(text)` and float arithmetic appear nowhere
- * on that path: an onset written `+0.1` and one written `+0.3` are integers here, so equality,
- * ordering and subtraction are decided by the digits on disk rather than by float64 rounding.
+ * Layer 1, not 3 — this file sits in `tal/` but does not belong to it. It imports `constants.ts`
+ * and nothing else, and `header/parse.ts` and `header/lookup.ts` at layer 2 both call it, so
+ * labelling it 3 with the rest of the directory made the only two upward runtime imports in the
+ * package (corrected in 0.4.256). A module's layer is its dependencies, not its folder.
+ *
+ * Sole owner of the string -> tick conversion, which is the whole reason event times in edfcore
+ * compare exactly. `parseFloat`, `Number(text)` and float arithmetic appear nowhere on that path:
+ * an onset written `+0.1` and one written `+0.3` are integers here, so equality, ordering and
+ * subtraction are decided by the digits on disk rather than by float64 rounding.
  */
 
 import { TICKS_PER_SECOND } from '../constants.js';
