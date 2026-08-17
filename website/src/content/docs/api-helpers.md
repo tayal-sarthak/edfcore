@@ -329,6 +329,11 @@ nothing for a window inside a 30-second sleep epoch.
 zero-length window is a non-positive duration, which `filterAnnotationsByTime` refuses, so the
 obvious call returns nothing at every position.
 
+The window argument is an `EdfAnnotationWindow` — `startSeconds` and `durationSeconds`, and
+nothing else. It is a separate type from `WindowSelection` because there is no reading here and so
+no channel to name: these annotations are already in hand, and the call narrows an array. That is
+also why it is the one window type in the package that never touches a `ByteSource`.
+
 ### Which onset field to compare
 
 An annotation carries its onset four ways, and two of them are exact.

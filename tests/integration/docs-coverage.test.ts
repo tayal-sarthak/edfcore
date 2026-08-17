@@ -1,9 +1,11 @@
 /**
- * Every exported symbol is documented somewhere, bar one type that is written down.
+ * Every exported symbol is documented somewhere. No exceptions — the list is empty.
  *
- * The exceptions are real and listed at `UNDOCUMENTED_TYPES`, not swept up in this sentence. An
- * unqualified title here would be the same defect this file exists to catch, one level up: a claim
- * of total coverage standing over a check that does not have it.
+ * That sentence was qualified from 0.4.221 to 0.4.250, because it had to be: fourteen exported
+ * types were on the `UNDOCUMENTED_TYPES` list and an unqualified claim over a check that did not
+ * have it would have been the defect this file exists to catch, one level up. The list is empty
+ * now, so the claim is plain again — and the empty set stays, because it is what makes the next
+ * undocumented export a failure rather than a new entry.
  *
  * 0.1.16 added the other half of this: an export nobody listed in `public-api.test.ts` is a
  * failure, so adding one is a deliberate act. That stopped exports from arriving unnoticed. It did
@@ -64,17 +66,20 @@ const EXPORTED_TYPES: readonly string[] = [
 ];
 
 /**
- * Exported types that no page mentions today. Debt, written down.
+ * Exported types that no page mentions. Empty, and kept.
  *
  * This half of the check did not exist before 0.4.220, and the comment where it should have been
  * asserted the opposite — "types are documented under their own names too". Fourteen were not.
- * They are listed rather than tolerated so that a fifteenth fails, and the third test below fails
- * once one of these is documented, so the list shrinks as the gap closes instead of outliving it.
- * It has: 0.4.234 wrote the three formatter options types up, 0.4.235 the three selection types,
- * 0.4.247 the three envelope result types,
- * 0.4.248 the two BioSemi ones, and 0.4.249 the two summary ones, leaving one.
+ * They were listed rather than tolerated so that a fifteenth would fail, and the third test below
+ * fails once a listed one IS documented, so the list could only shrink. It did, over six
+ * releases: 0.4.234 took the three formatter options types, 0.4.235 the three selections, 0.4.247
+ * the three envelope results, 0.4.248 the two BioSemi ones, 0.4.249 the two summary ones, and
+ * 0.4.250 the last, `EdfAnnotationWindow`.
+ *
+ * The empty set is not dead code. It is the seam a future exception would go in, and while it
+ * holds nothing the check above it is unconditional — which is the state worth defending.
  */
-const UNDOCUMENTED_TYPES = new Set(['EdfAnnotationWindow']);
+const UNDOCUMENTED_TYPES = new Set<string>([]);
 
 /** What `./validate` and `./node` publish that the universal barrel does not re-export. */
 const SUBPATH_EXPORTS = [...Object.keys(edfcoreValidate), ...Object.keys(edfcoreNode)].filter(

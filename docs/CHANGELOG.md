@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.250
+
+- **Documented the last one.** `EdfAnnotationWindow` is what `filterAnnotationsByTime` takes, and
+  `api-helpers.md` showed the object literal without naming the type or saying why it is not
+  `WindowSelection`: there is no reading here and so no channel to name, which makes it the one
+  window type in the package that never touches a `ByteSource`.
+- **Emptied** `UNDOCUMENTED_TYPES`. It held fourteen exported types when 0.4.220 wrote it down,
+  and six releases took them off — three formatter options, three selections, three envelope
+  results, two BioSemi, two summary, and this one. The title of `docs-coverage.test.ts` has been
+  qualified since 0.4.221 because it had to be; it is plain again. The empty set stays rather than
+  being deleted: it is the seam a future exception would go in, and while it holds nothing the
+  check above it is unconditional.
+
 ## 0.4.249
 
 - **Added** documentation for the two diagnostic summary types, leaving one on the recorded
