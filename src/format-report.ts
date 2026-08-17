@@ -1,8 +1,10 @@
 /**
  * A validation report as text.
  *
- * Part of `edfcore/validate`. `validateRecording` returns a report a program can branch on; this
- * turns it into the thing a person reads at the end of a CI job or a conformance sweep.
+ * Layer 7, and pure. Part of `edfcore/validate`.
+ *
+ * `validateRecording` returns a report a program can branch on; this turns it into the thing a
+ * person reads at the end of a CI job or a conformance sweep.
  *
  * The one judgement it makes is what to lead with. A sweep over a damaged file can produce six
  * figures of diagnostics — `TIMEKEEPING_TAL_MISSING` is per record — and a wall of them buries

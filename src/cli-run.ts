@@ -1,10 +1,10 @@
 /**
  * What `npx edfcore` actually does, with the process factored out.
  *
- * `cli.ts` is a shell that supplies real `node:fs` and `node:process`; everything decidable lives
- * here, behind an injected `CliIo`. That is not ceremony — a CLI tested by spawning a subprocess
- * can only be tested once the package is built, so the tests either skip in CI or test a stale
- * binary. This way the exit codes and the output are ordinary unit tests.
+ * Layer 7. `cli.ts` is a shell that supplies real `node:fs` and `node:process`; everything
+ * decidable lives here, behind an injected `CliIo`. That is not ceremony — a CLI tested by
+ * spawning a subprocess can only be tested once the package is built, so the tests either skip in
+ * CI or test a stale binary. This way the exit codes and the output are ordinary unit tests.
  */
 
 import { countAnnotationsByText } from './annotations-query.js';

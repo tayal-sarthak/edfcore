@@ -1,6 +1,9 @@
 /**
  * Diagnostics, counted.
  *
+ * Layer 1. Imports one type module and nothing else, which is what lets any layer summarise a
+ * diagnostics array without taking on a dependency.
+ *
  * `formatDiagnostics` turns a list into text for a human. This turns the same list into numbers
  * for a program: the question "is anything wrong with this header, and how wrong" has no answer
  * on `EdfHeader` — `validateRecording` produces a `report.ok`, but that needs a full scan, and a

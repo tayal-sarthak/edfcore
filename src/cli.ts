@@ -2,8 +2,9 @@
 /**
  * `npx edfcore` — looking at a file without writing code.
  *
- * A separate entry point, never re-exported from the barrel, because it imports `node:fs` and
- * `node:process`. The universal entry must stay free of Node built-ins, and a test asserts it.
+ * Layer 7, and the package's `bin`. A separate entry point, never re-exported from the barrel,
+ * because it imports `node:fs` and `node:process`. The universal entry must stay free of Node
+ * built-ins, and a test asserts it.
  *
  * This file is only the wiring. The decisions live in `cli-run.ts`, so they can be tested without
  * spawning a process against a build that may not exist yet.

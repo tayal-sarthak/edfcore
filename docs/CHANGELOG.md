@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.255
+
+- **Gave four modules the layer declaration every other one has.** `AGENTS.md` states this
+  project's single architectural rule — `bytes`/`text` → `diagnostics` → `header`/`decode`/`tal` →
+  `time` → `io` → entry points, and a module may only import from a lower layer — and each file
+  repeats its own position on the first line of its docblock. Forty-eight of fifty-two did.
+  `cli.ts`, `cli-run.ts`, `diagnostics/summary.ts` and `format-report.ts` did not, so the one
+  invariant the codebase has was stated everywhere except where someone had skipped it, and
+  nothing noticed because nothing read the declarations. A missing one is now a failing test.
+  `removeComments: false` ships these docblocks in `dist/*.d.ts`, so a layer is also what an
+  editor shows on hover.
+
 ## 0.4.254
 
 - **Wrote down** that the `archive/pre-squash-2026-08-16` branch cannot be deleted, in the "things
