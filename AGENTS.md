@@ -54,6 +54,13 @@ Do not "fix" these. Each has a test pinning it and a comment explaining why.
 - **Never `|0`, `<<` or `>>>` on a file offset.** Offsets exceed 2^31 routinely. Bitwise ops on
   *sample values* are correct and required.
 - **`info`-severity diagnostics do not throw under `strict`.** They describe correct files.
+- **The `archive/pre-squash-2026-08-16` branch is load-bearing.** It looks like leftover cruft and
+  is the only thing keeping 94 commits reachable. Every version published on 2026-08-16 carries a
+  signed npm provenance attestation naming the commit it was built from; `main` was squashed from
+  193 commits to 43 that day, so those SHAs live nowhere else. Deleting the branch lets GitHub
+  collect them and turns every one of those "Source Commit" links on npm into a 404. The
+  attestations stay cryptographically valid either way — it is the link that breaks, permanently,
+  and no force-push can put it back.
 
 ## Using edfcore in generated code
 

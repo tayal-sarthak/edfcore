@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.254
+
+- **Wrote down** that the `archive/pre-squash-2026-08-16` branch cannot be deleted, in the "things
+  that look like bugs and are not" list where someone tidying branches would meet it. It looks
+  like leftover cruft. It is the only thing keeping 94 commits reachable: every version published
+  on 2026-08-16 carries a signed npm provenance attestation naming the commit it was built from,
+  `main` was squashed from 193 commits to 43 that day, and those SHAs live nowhere else. Deleting
+  the branch lets GitHub collect them and turns every one of those "Source Commit" links on npm
+  into a 404 — the attestations stay cryptographically valid, but the link breaks permanently and
+  no force-push can restore it.
+
 ## 0.4.253
 
 - **Fixed** three stale facts in `AGENTS.md`, which is the first file an agent working on this
