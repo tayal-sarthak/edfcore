@@ -1,5 +1,5 @@
 /**
- * Every exported symbol is documented somewhere, bar three types that are written down.
+ * Every exported symbol is documented somewhere, bar one type that is written down.
  *
  * The exceptions are real and listed at `UNDOCUMENTED_TYPES`, not swept up in this sentence. An
  * unqualified title here would be the same defect this file exists to catch, one level up: a claim
@@ -71,10 +71,10 @@ const EXPORTED_TYPES: readonly string[] = [
  * They are listed rather than tolerated so that a fifteenth fails, and the third test below fails
  * once one of these is documented, so the list shrinks as the gap closes instead of outliving it.
  * It has: 0.4.234 wrote the three formatter options types up, 0.4.235 the three selection types,
- * 0.4.247 the three envelope result types, and
- * 0.4.248 the two BioSemi ones, leaving three.
+ * 0.4.247 the three envelope result types,
+ * 0.4.248 the two BioSemi ones, and 0.4.249 the two summary ones, leaving one.
  */
-const UNDOCUMENTED_TYPES = new Set(['EdfAnnotationWindow', 'EdfCodeCount', 'EdfDiagnosticSummary']);
+const UNDOCUMENTED_TYPES = new Set(['EdfAnnotationWindow']);
 
 /** What `./validate` and `./node` publish that the universal barrel does not re-export. */
 const SUBPATH_EXPORTS = [...Object.keys(edfcoreValidate), ...Object.keys(edfcoreNode)].filter(

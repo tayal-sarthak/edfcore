@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.249
+
+- **Added** documentation for the two diagnostic summary types, leaving one on the recorded
+  undocumented list. `diagnostics.md` showed `summary.total`, `summary.worst` and `summary.byCode`
+  field by field without naming `EdfDiagnosticSummary` or `EdfCodeCount`, which is exactly
+  backwards for this call: its whole purpose is to be handed to a renderer, and writing that
+  renderer means naming its parameter. Both now have a field table, including why `EdfCodeCount`
+  carries a severity of its own — so ranking codes never has to reach back into the diagnostics
+  array to find out whether the most frequent one is also the most serious, which it usually
+  is not.
+
 ## 0.4.248
 
 - **Added** documentation for the two BioSemi types, taking the recorded undocumented list from

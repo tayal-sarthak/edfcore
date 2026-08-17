@@ -128,6 +128,24 @@ summary.worst;      // 'error' — or undefined when there are none at all
 summary.byCode;     // [{ code, severity, count }, ...] most frequent first
 ```
 
+The return type is `EdfDiagnosticSummary`, and `byCode` holds `EdfCodeCount`:
+
+| `EdfDiagnosticSummary` | type | what it is |
+|---|---|---|
+| `total` | `number` | diagnostics in the array |
+| `errors`, `warnings`, `infos` | `number` | the same array split by severity |
+| `worst` | `EdfSeverity \| undefined` | the highest severity present, `undefined` when there are none |
+| `byCode` | `EdfCodeCount[]` | distinct codes, most frequent first |
+
+| `EdfCodeCount` | type | what it is |
+|---|---|---|
+| `code` | `EdfDiagnosticCode` | which code |
+| `severity` | `EdfSeverity` | its severity, carried here so ranking codes never has to reach back into the array |
+| `count` | `number` | how many of them |
+
+Name them when you write the renderer: a function that takes an `EdfDiagnosticSummary` and returns
+a status line is the shape this call exists to serve.
+
 `worst` ranks `error` above `warning` above `info`, not by whichever arrived first, and it is
 `undefined` for an empty list rather than `'info'` — so `summary.worst !== undefined` is the
 spelling of "anything to report at all".
