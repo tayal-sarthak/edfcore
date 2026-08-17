@@ -6,11 +6,22 @@
  * the NPM_TOKEN repository secret, so no npm credential is needed on this machine. Trusted
  * publishing would be better and is not available here — see the note in that workflow.
  *
- *   node scripts/release.mjs patch          0.1.1 -> 0.1.2
- *   node scripts/release.mjs minor          0.1.1 -> 0.2.0
- *   node scripts/release.mjs major          0.1.1 -> 1.0.0
- *   node scripts/release.mjs 0.3.0-rc.1     an exact version
+ *   node scripts/release.mjs patch -m "What changed"    0.1.1 -> 0.1.2
+ *   node scripts/release.mjs minor -m "What changed"    0.1.1 -> 0.2.0
+ *   node scripts/release.mjs major -m "What changed"    0.1.1 -> 1.0.0
+ *   node scripts/release.mjs 0.3.0-rc.1 -m "…"          an exact version
  *   node scripts/release.mjs patch --dry-run
+ *
+ * A version is ONE commit. Leave your work uncommitted, write the changelog entry, and run this;
+ * it commits your changes and the version bump together under the message you pass. Until 0.4.246
+ * it refused a dirty tree, so every version cost two commits — the work, then a `Release vX` on
+ * top of it — and the day that produced 0.4.150 through 0.4.244 put 193 commits on `main` for 94
+ * versions. The precondition's stated reason was that a release must match a real commit, which
+ * is satisfied either way: the script makes the commit itself, and still refuses to run with
+ * anything already committed but unpushed.
+ *
+ * `-m` is required only when there is something to commit. A clean tree still releases, with the
+ * bump alone under `Release vX`, which is what a re-cut of an unchanged tree should say.
  *
  * The version lives in two places on purpose: `package.json`, and `VERSION` in
  * src/constants.ts so the built library can report its own version without importing JSON.
@@ -30,7 +41,12 @@ const CONSTANTS = join(ROOT, 'src/constants.ts');
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const bump = args.find((a) => !a.startsWith('--')) ?? 'patch';
+
+// `-m` takes the next argument, so that argument is not a candidate for the bump. Without the
+// index check, `release.mjs -m "Fix the thing"` would read the message as the version to cut.
+const messageAt = args.findIndex((arg) => arg === '-m' || arg === '--message');
+const commitMessage = messageAt === -1 ? undefined : args[messageAt + 1];
+const bump = args.find((arg, index) => !arg.startsWith('-') && index !== messageAt + 1) ?? 'patch';
 
 const run = (command, commandArgs, { capture = false } = {}) => {
   if (dryRun && command === 'git' && ['add', 'commit', 'tag', 'push'].includes(commandArgs[0])) {
@@ -61,8 +77,17 @@ const die = (message) => {
 const branch = capture('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
 if (branch !== 'main') die(`Releases are cut from main. You are on "${branch}".`);
 
-if (capture('git', ['status', '--porcelain'])) {
-  die('Working tree is dirty. Commit or stash first — a release must match a real commit.');
+// A dirty tree is the normal case now: the work being released is sitting in it. What is refused
+// is releasing work nobody described — the commit this script makes is the only record of what
+// the version contains, and `Release v0.4.246` is not a description of anything.
+const pending = capture('git', ['status', '--porcelain']);
+if (pending && commitMessage === undefined) {
+  die(
+    'There are uncommitted changes and no -m to describe them.\n\n' +
+      '  A release is one commit and this script makes it, so it needs the subject line:\n\n' +
+      '      npm run release -- patch -m "What changed"\n\n' +
+      '  Stash or commit first if these changes are not part of the release.',
+  );
 }
 
 run('git', ['fetch', 'origin', 'main', '--quiet']);
@@ -147,6 +172,21 @@ if (!VERSION_LINE.test(constantsBefore)) {
   );
 }
 
+// Captured BEFORE the bump, and in memory rather than restored with `git checkout HEAD --`. That
+// form was right while the tree had to be clean; now the tree holds the work being released, and
+// package.json is a file releases routinely change — 0.4.225 and 0.4.233 both edited its scripts.
+// Checking it out of HEAD would have thrown that work away on any failed check below, silently,
+// in the name of undoing a bump.
+const LOCKFILE = join(ROOT, 'package-lock.json');
+const beforeBump = new Map([
+  [PACKAGE_JSON, readFileSync(PACKAGE_JSON, 'utf8')],
+  [CONSTANTS, constantsBefore],
+  [LOCKFILE, readFileSync(LOCKFILE, 'utf8')],
+]);
+const restoreVersionFiles = () => {
+  for (const [file, text] of beforeBump) writeFileSync(file, text);
+};
+
 manifest.version = next;
 writeFileSync(PACKAGE_JSON, `${JSON.stringify(manifest, null, 2)}\n`);
 writeFileSync(
@@ -166,10 +206,6 @@ writeFileSync(
 // nothing to do with the code — and it runs after the bump, which is the only thing that matters
 // for whether the number survives.
 
-// From HEAD, not from the index — the index would hand back the bump being undone.
-const restoreVersionFiles = () =>
-  run('git', ['checkout', 'HEAD', '--', 'package.json', 'package-lock.json', 'src/constants.ts']);
-
 try {
   console.log('  Syncing the lockfile');
   run('npm', ['install', '--package-lock-only', '--silent']);
@@ -188,8 +224,25 @@ try {
 
 // ---------------------------------------------------------------- commit, tag, release
 
-run('git', ['add', 'package.json', 'package-lock.json', 'src/constants.ts']);
-run('git', ['commit', '-m', `Release ${tag}`]);
+// Everything, not the three version files: the work being released is in this tree too. `-A`
+// honours .gitignore, which is what keeps `dist/`, `node_modules/` and `tests/scratch/` out — the
+// last of those being 70-odd throwaway probes that would otherwise land in a published tag.
+run('git', ['add', '-A']);
+const staged = capture('git', ['diff', '--cached', '--name-only']);
+if (staged)
+  console.log(
+    staged
+      .split('\n')
+      .map((file) => `    ${file}`)
+      .join('\n'),
+  );
+run('git', [
+  'commit',
+  '-m',
+  // The subject describes the change; the body names the version, so `git log` answers "what
+  // shipped as 0.4.246" without a second lookup. Same shape as the squashed history above it.
+  `${commitMessage ?? `Release ${tag}`}\n\nReleased as ${next}.`,
+]);
 run('git', ['tag', '-a', tag, '-m', tag]);
 run('git', ['push', 'origin', 'main']);
 run('git', ['push', 'origin', tag]);

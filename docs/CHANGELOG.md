@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.246
+
+- **Changed** a release to be one commit instead of two. `scripts/release.mjs` refused a dirty
+  tree, so every version cost the work commit plus a `Release vX` on top of it — the day that
+  produced 0.4.150 through 0.4.244 put 193 commits on `main` for 94 versions. The precondition's
+  stated reason was that a release must match a real commit, and that holds either way, because
+  the script makes the commit itself; it still refuses to run with anything already committed but
+  unpushed. Leave the work uncommitted, write the changelog entry, and pass `-m` with the subject
+  line. A clean tree still releases the bump alone under `Release vX`.
+- **Fixed** the failure path that would have made this dangerous. On a failed check the script
+  restored the version files with `git checkout HEAD --`, which was right while the tree had to be
+  clean and is destructive now that it holds the release: `package.json` is a file releases
+  routinely change — 0.4.225 and 0.4.233 both edited its scripts — and checking it out of HEAD
+  would have discarded that work silently, in the name of undoing a bump. The three files are
+  captured in memory before the bump and written back from there.
+
 ## 0.4.245
 
 - **Corrected** the note in `scripts/release.mjs` that tells you how to audit changelog headings
