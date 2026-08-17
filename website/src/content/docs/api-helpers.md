@@ -458,6 +458,32 @@ The argument's type is `TriggerSelection`, and it is the one selection in the pa
 a convenience — a 24-bit EEG sample decoded as a trigger word yields plausible-looking events out
 of ordinary data, so there is no way to point this call at the wrong channel.
 
+### The two types
+
+`readTriggers` resolves to `EdfTriggerEvent[]`; `decodeStatusWord` returns one `EdfStatusWord`.
+
+| `EdfTriggerEvent` | type | what it is |
+|---|---|---|
+| `sampleIndex` | `number` | Status samples from the start of the file — a position, not a time |
+| `seconds`, `ticks` | `number`, `bigint` | elapsed recording time; compare with the ticks, never the float |
+| `trigger` | `number` | the code now in force, `0` on release |
+| `status` | `EdfStatusWord` | the whole word this event was decoded from |
+| `precededByGap` | `EdfGap \| undefined` | set on the event whose tick **is** a run's resume instant, and on no other |
+
+The `status` field is the one worth knowing about: every event carries its full word, so a rig
+that encodes something in the bits above the trigger field is readable without a second pass.
+
+| `EdfStatusWord` | type | what it is |
+|---|---|---|
+| `raw` | `number` | all 24 bits, unsigned |
+| `trigger` | `number` | the low 16 — the parallel input |
+| `newEpoch` | `boolean` | bit 16 |
+| `cmsInRange` | `boolean` | bit 20 |
+| `batteryLow` | `boolean` | bit 22 |
+
+The bit numbers are not decoration; the table further down says which bits are *not* these, and
+that distinction was wrong in shipped code until 0.3.54.
+
 ### Times and the window
 
 `seconds` and `ticks` are elapsed recording time on the same axis as everything else: `t = 0` is

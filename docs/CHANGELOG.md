@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.248
+
+- **Added** documentation for the two BioSemi types, taking the recorded undocumented list from
+  five to three. Every field of both was already explained on `api-helpers.md` — the bit table,
+  the tick-versus-float rule, `precededByGap` — but neither `EdfTriggerEvent` nor `EdfStatusWord`
+  was named, so the page taught the semantics and left you unable to write a function that takes
+  one. Both now have a field table. It also surfaces `event.status`, which the prose had never
+  mentioned: every trigger event carries the whole 24-bit word it was decoded from, so a rig that
+  encodes something above the trigger field is readable without a second pass.
+
 ## 0.4.247
 
 - **Added** documentation for the three envelope result types, taking the recorded undocumented
