@@ -188,6 +188,47 @@ function brokenSelfLink(link: Link): string | undefined {
     : `no file ${repoPath} in the repository`;
 }
 
+/**
+ * The repository's own markdown, and the relative links in it.
+ *
+ * `README.md`, `AGENTS.md`, `tests/README.md`, `scripts/golden/README.md` and the changelog are
+ * read on GitHub, not built by Astro, so nothing above sees them. They link at files with
+ * ordinary relative paths — `[support/writer.ts](support/writer.ts)` — which is the form that
+ * breaks when a file moves, and this repository has already moved one: the changelog was
+ * `CHANGELOG.md` until v0.4.1 and `docs/CHANGELOG.md` after.
+ *
+ * The file list is walked rather than named, so a new `.md` at the root is swept the day it lands.
+ */
+const REPO_MARKDOWN: ReadonlyArray<{ readonly name: string; readonly text: string }> =
+  (function walk(dir: URL, prefix: string, into: Array<{ name: string; text: string }>) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      // `website/` is the Astro build, swept above; the rest are directories no markdown lives in
+      // or that are not ours.
+      if (['node_modules', 'dist', '.git', 'website', '.astro'].includes(entry.name)) continue;
+      const child = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) walk(child, `${prefix}${entry.name}/`, into);
+      else if (entry.name.endsWith('.md')) {
+        into.push({ name: `${prefix}${entry.name}`, text: readFileSync(child, 'utf8') });
+      }
+    }
+    return into;
+  })(new URL('../../', import.meta.url), '', []);
+
+/** Relative link targets, as `<file that links> -> <path it names>`. */
+const RELATIVE_LINKS: readonly Link[] = REPO_MARKDOWN.flatMap(({ name, text }) =>
+  [...text.matchAll(/\]\(([^)\s]+)\)/g)]
+    .map((match) => ({ from: name, href: match[1] as string }))
+    // Absolute URLs, site paths and bare anchors are all somebody else's check.
+    .filter(({ href }) => !/^(https?:|mailto:|#|\/)/.test(href)),
+);
+
+/** Undefined when the target exists in the working tree; a reason when it does not. */
+function brokenRelativeLink(link: Link): string | undefined {
+  const from = new URL(link.from, new URL('../../', import.meta.url));
+  const target = new URL((link.href.split('#')[0] as string).replace(/\/$/, ''), from);
+  return existsSync(target) ? undefined : `no such path from ${link.from}`;
+}
+
 describe('the links were found', () => {
   it('reads enough of them that a passing run is not a vacuous one', () => {
     expect(SLUGS.size).toBeGreaterThan(15);
@@ -263,6 +304,33 @@ describe('every link back at this project resolves', () => {
 
   it('from the README and the documentation pages', () => {
     const dead = SELF_LINKS.map((link) => ({ link, why: brokenSelfLink(link) }))
+      .filter(({ why }) => why !== undefined)
+      .map(({ link, why }) => `${link.from} -> ${link.href}: ${why}`);
+    expect(dead).toEqual([]);
+  });
+});
+
+describe("the repository's own markdown links at files that exist", () => {
+  it('found the files and the links', () => {
+    const names = REPO_MARKDOWN.map(({ name }) => name);
+    expect(names).toContain('README.md');
+    expect(names).toContain('tests/README.md');
+    expect(names).toContain('docs/CHANGELOG.md');
+    expect(RELATIVE_LINKS.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('can tell a resolving path from a missing one', () => {
+    expect(
+      brokenRelativeLink({ from: 'tests/README.md', href: 'support/writer.ts' }),
+    ).toBeUndefined();
+    expect(brokenRelativeLink({ from: 'tests/README.md', href: 'support/gone.ts' })).toBeDefined();
+    // Where the changelog lived until v0.4.1.
+    expect(brokenRelativeLink({ from: 'README.md', href: 'docs/CHANGELOG.md' })).toBeUndefined();
+    expect(brokenRelativeLink({ from: 'README.md', href: 'CHANGELOG.md' })).toBeDefined();
+  });
+
+  it('names nothing that is not there', () => {
+    const dead = RELATIVE_LINKS.map((link) => ({ link, why: brokenRelativeLink(link) }))
       .filter(({ why }) => why !== undefined)
       .map(({ link, why }) => `${link.from} -> ${link.href}: ${why}`);
     expect(dead).toEqual([]);

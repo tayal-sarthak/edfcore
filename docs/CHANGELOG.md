@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.252
+
+- **Extended** the link check to the repository's own markdown. `README.md`, `AGENTS.md`,
+  `tests/README.md`, `scripts/golden/README.md` and the changelog are read on GitHub rather than
+  built by Astro, so the checks added in 0.4.236 and 0.4.240 never saw them — and they link at
+  source files with ordinary relative paths, which is the form that breaks when a file moves. This
+  repository has already moved one: the changelog was `CHANGELOG.md` until v0.4.1. Every relative
+  target is now resolved against the working tree, and the file list is walked rather than named,
+  so a new `.md` at the root is swept the day it lands. Nothing was broken today.
+
 ## 0.4.251
 
 - **Added** a CLI reference page. The command line had no page of its own: the six commands, the
