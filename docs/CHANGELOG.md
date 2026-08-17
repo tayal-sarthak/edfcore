@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.245
+
+- **Corrected** the note in `scripts/release.mjs` that tells you how to audit changelog headings
+  against the tags. It says to compare `git show <tag>:docs/CHANGELOG.md`, which is how the 0.2.29
+  and 0.2.36 drift was found, and that stopped being true for part of the history: 0.4.150 through
+  0.4.244 were squashed into 43 commits, so 51 of those tags now share a commit with a later
+  version and hand back that version's changelog. Tags before 0.4.150 are unaffected, and the
+  original commits are on the `archive/pre-squash-2026-08-16` branch. The note says so, and says
+  why the check itself is unaffected: it runs before the commit, so it never depended on the
+  history being reconstructible afterwards.
+
 ## 0.4.244
 
 - **Added** a wait for CI before the GitHub release is created, which is what stops a green local

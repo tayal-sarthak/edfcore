@@ -115,6 +115,13 @@ console.log(`\n  edfcore ${current} -> ${next}${dryRun ? '  (dry run)' : ''}\n`)
 // before v0.4.1, which is where the file moved. The later two were written down as never released
 // at the time. Catching it here costs one file read and turns a silent documentation defect into a
 // message before anything is committed.
+//
+// That by-hand comparison no longer works everywhere. 0.4.150 through 0.4.244 were squashed into
+// 43 commits, so 51 of those tags share a commit with a later version and `git show <tag>:` hands
+// back that version's changelog rather than their own. Every tag before 0.4.150 is unaffected, and
+// the originals are on the `archive/pre-squash-2026-08-16` branch — read the tag from there when
+// the range matters. Which is the argument for this check: a guard that runs before the commit
+// does not depend on the history being reconstructible afterwards.
 
 const changelog = readFileSync(CHANGELOG, 'utf8');
 const firstHeading = /^## (\d+\.\d+\.\d+.*)$/m.exec(changelog);
