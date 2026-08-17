@@ -1,5 +1,5 @@
 /**
- * Every exported symbol is documented somewhere, bar eight types that are written down.
+ * Every exported symbol is documented somewhere, bar five types that are written down.
  *
  * The exceptions are real and listed at `UNDOCUMENTED_TYPES`, not swept up in this sentence. An
  * unqualified title here would be the same defect this file exists to catch, one level up: a claim
@@ -70,16 +70,13 @@ const EXPORTED_TYPES: readonly string[] = [
  * asserted the opposite — "types are documented under their own names too". Fourteen were not.
  * They are listed rather than tolerated so that a fifteenth fails, and the third test below fails
  * once one of these is documented, so the list shrinks as the gap closes instead of outliving it.
- * It has: 0.4.234 wrote the three formatter options types up and 0.4.235 the three selection
- * types, leaving eight.
+ * It has: 0.4.234 wrote the three formatter options types up, 0.4.235 the three selection types,
+ * and 0.4.247 the three envelope result types, leaving five.
  */
 const UNDOCUMENTED_TYPES = new Set([
   'EdfAnnotationWindow',
   'EdfCodeCount',
   'EdfDiagnosticSummary',
-  'EdfEnvelopeChunk',
-  'EdfEnvelopeSignal',
-  'EdfPhysicalEnvelope',
   'EdfStatusWord',
   'EdfTriggerEvent',
 ]);

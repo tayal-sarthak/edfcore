@@ -112,6 +112,44 @@ buckets than there are samples would leave holes that mean nothing.
 The argument's type is `EnvelopeSelection`: a `WindowSelection` plus `buckets`, so everything
 `readWindow` accepts is accepted here.
 
+### What comes back
+
+`readEnvelope` resolves to `EdfEnvelopeChunk[]`, one per contiguous run.
+
+| field | type | what it is |
+|---|---|---|
+| `records` | `RecordRange` | the records this run covers |
+| `startSeconds`, `startTicks` | `number`, `bigint` | the run's start on the recording's axis; the ticks are exact |
+| `durationSeconds`, `durationTicks` | `number`, `bigint` | its span, on the same terms as `EdfChunk.durationTicks` |
+| `bucketCount` | `number` | buckets in the grid, **filled or not** |
+| `secondsPerBucket` | `number` | the grid's resolution |
+| `byteLength` | `number` | bytes read to produce it |
+| `signals` | `EdfEnvelopeSignal[]` | one per signal you asked for, in that order |
+| `precededByGap` | `EdfGap \| undefined` | the discontinuity before this run, if any |
+| `diagnostics` | `EdfDiagnostic[]` | anything the decode found |
+
+`bucketCount` is the field to read before indexing, and it is not always the `buckets` you asked
+for. `readEnvelope` clamps it to the densest signal's sample count, so a short run returns fewer.
+`readEnvelopeAtResolution` does not clamp: its count is `ceil(runTicks / bucketTicks)`, because
+reducing it would shorten the grid rather than coarsen it. A 4-second run of a 2 Hz signal at
+0.25 s per bucket reports 16 buckets with 8 of them filled.
+
+Each entry of `signals` is an `EdfEnvelopeSignal`:
+
+| field | type | what it is |
+|---|---|---|
+| `signalIndex` | `number` | which signal, by header index |
+| `min`, `max` | `Int32Array` | digital extremes per bucket — convert with `toPhysicalEnvelope`, never `toPhysical` |
+| `counts` | `Int32Array` | samples that landed in each bucket; `0` is an ordinary answer |
+| `sampleCount` | `number` | total reduced, i.e. the sum of `counts` |
+| `firstSampleIndex` | `number` | index of the first sample in the run, on this signal's own grid |
+| `startSeconds`, `startTicks` | `number`, `bigint` | where this signal's first sample sits |
+| `outOfDigitalRangeCount` | `number` | samples outside the header's declared digital range |
+
+`counts` is the authoritative answer to whether a bucket holds anything. `min` and `max` are
+`Int32Array`s, so an empty bucket carries a digital `0` there, which is a real sample value —
+the next section is about why that matters.
+
 ### Physical units
 
 Use `toPhysicalEnvelope`, not `toPhysical`.
@@ -119,6 +157,11 @@ Use `toPhysicalEnvelope`, not `toPhysical`.
 ```ts
 const { min, max } = toPhysicalEnvelope(eeg, chunk.signals[0]);
 ```
+
+It returns an `EdfPhysicalEnvelope` — two `Float64Array`s, `min` and `max`, and nothing else. It is
+a separate type from `EdfEnvelopeSignal` for the same reason `toPhysical` is a separate call from
+`decodeDigital`: the digital extremes are what the file holds, and the physical ones are a derived
+view that only exists once a signal has a scale.
 
 The affine transform is decreasing when `bitValue` is negative, which is a spec-sanctioned
 arrangement edfcore reports rather than rejects. A decreasing map sends the smallest digital value

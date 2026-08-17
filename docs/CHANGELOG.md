@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.247
+
+- **Added** documentation for the three envelope result types, taking the recorded undocumented
+  list from eight to five. `readEnvelope` resolves to `EdfEnvelopeChunk[]` and every page showed
+  `chunk.signals[0].min` without naming what `chunk` is, so anyone writing a plotting function
+  that takes one had to read the `.d.ts`. `api-helpers.md` now gives `EdfEnvelopeChunk` and
+  `EdfEnvelopeSignal` field tables, and says the thing that is easy to get wrong: `bucketCount` is
+  buckets in the grid whether filled or not, `readEnvelope` clamps it to the densest signal's
+  sample count and `readEnvelopeAtResolution` deliberately does not, and `counts` — not `min` and
+  `max` — is what answers whether a bucket holds anything. `EdfPhysicalEnvelope` is named under
+  physical units, with why it is a type of its own.
+
 ## 0.4.246
 
 - **Changed** a release to be one commit instead of two. `scripts/release.mjs` refused a dirty
