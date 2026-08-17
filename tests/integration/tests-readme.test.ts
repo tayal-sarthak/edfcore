@@ -23,6 +23,7 @@ const read = (relative: string): string => readFileSync(new URL(relative, import
 
 const TESTS_README = read('../README.md');
 const ROOT_README = read('../../README.md');
+const AGENTS = read('../../AGENTS.md');
 
 const NUMBER_WORDS: ReadonlyMap<string, number> = new Map([
   ['one', 1],
@@ -73,6 +74,9 @@ const GOLDEN_FIXTURES = readdirSync(new URL('../corpus/golden/', import.meta.url
 const CLAIMED_COUNTS: ReadonlyArray<{ readonly where: string; readonly count: number }> = [
   { name: 'tests/README.md', text: TESTS_README },
   { name: 'README.md', text: ROOT_README },
+  // AGENTS.md states it too, and was outside this check until 0.4.253 — the file an agent reads
+  // first was the one nothing verified.
+  { name: 'AGENTS.md', text: AGENTS },
 ].flatMap(({ name, text }) => {
   // Whitespace-flattened first: every one of these claims wraps across two lines in the source.
   // Anchored on the mention and read BACKWARDS to the nearest number word, rather than forwards
@@ -124,8 +128,8 @@ describe('the layout table has one row per directory', () => {
 describe('the committed fixture count', () => {
   it('found the fixtures and the claims', () => {
     expect(GOLDEN_FIXTURES.length).toBeGreaterThan(0);
-    // Stated three times in tests/README.md and once in the root README.
-    expect(CLAIMED_COUNTS.length).toBeGreaterThanOrEqual(4);
+    // Three times in tests/README.md, once in the root README, once in AGENTS.md.
+    expect(CLAIMED_COUNTS.length).toBeGreaterThanOrEqual(5);
   });
 
   it('is what is actually committed', () => {

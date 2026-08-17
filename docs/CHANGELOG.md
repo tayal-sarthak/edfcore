@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.253
+
+- **Fixed** three stale facts in `AGENTS.md`, which is the first file an agent working on this
+  repository reads and the one nothing verified. It said the suite has "1906 tests" — it has
+  2006, and a count in a file that is not the suite is a number with nothing keeping it honest, so
+  it is gone rather than corrected. It described `npm run check` as "lint + typecheck + tests"
+  when that script has run `build` between them since it was written, which matters because the
+  build is what produces the `dist/` two tests load. And the `scripts/` row now says a release is
+  one commit and needs `-m`, which changed in 0.4.246.
+- **Extended** the committed-fixture check to `AGENTS.md`. It states the "six EDF/BDF files under
+  `corpus/golden/`" claim that 0.4.241 started checking in the two READMEs, and was outside it.
+
 ## 0.4.252
 
 - **Extended** the link check to the repository's own markdown. `README.md`, `AGENTS.md`,

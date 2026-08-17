@@ -13,17 +13,17 @@ runtime dependencies and that is a permanent constraint, not a current state.
 | Path | What it is |
 |---|---|
 | `src/` | The library. Layered strictly: `bytes`/`text` → `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import from a lower layer. |
-| `tests/` | 1906 tests. Almost every fixture is built in memory by `tests/support/writer.ts`. The exception is six EDF/BDF files under `corpus/golden/`, committed since 0.2.34 because the parity harness has to compare against bytes another implementation wrote. |
+| `tests/` | Almost every fixture is built in memory by `tests/support/writer.ts`. The exception is six EDF/BDF files under `corpus/golden/`, committed since 0.2.34 because the parity harness has to compare against bytes another implementation wrote. See `tests/README.md`. |
 | `config/` | `tsconfig.build.json` and the two vitest configs. Every path inside them is relative to `config/`, and every `npm` script names them explicitly — nothing here is found by a tool's default lookup. |
 | `docs/CHANGELOG.md` | The release record. `scripts/release.mjs` refuses to tag unless its top `## <version>` heading matches. |
-| `scripts/` | `release.mjs` cuts a release; `golden/*.py` regenerate the pyEDFlib and MNE reference values in a venv. Neither runs in `npm run check`. |
+| `scripts/` | `release.mjs` cuts a release — one commit, so leave the work uncommitted and pass `-m`; `golden/*.py` regenerate the pyEDFlib and MNE reference values in a venv. Neither runs in `npm run check`. |
 | `website/src/content/docs/design-decisions.md` | Why the API is shaped as it is. **Read it before proposing an architectural change** — most obvious improvements were considered and rejected for a stated reason. |
 | `website/` | The Astro documentation site and the browser-based inspector. |
 
 ## Commands
 
 ```bash
-npm run check       # lint + typecheck (both configs) + tests — run this before finishing
+npm run check       # lint + typecheck (both configs) + build + tests — run this before finishing
 npm test            # vitest, ~10s
 npm run build       # tsc to dist/
 npm run corpus:fetch # ~59 MB, gitignored — without it the corpus tests skip rather than fail
