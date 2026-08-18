@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.280
+
+- **Added** a check that the exit-code table on the CLI page is the code the CLI returns.
+  `edfcore validate` exiting non-zero is the documented way to gate a CI job on file conformance,
+  so those three numbers are an interface a script branches on without parsing a word of output.
+  The page stated them and `cli.test.ts` asserted them against literals it holds itself — two
+  statements of one contract, kept in step by hand, which is the shape 0.4.267 found in the
+  `signals` column table.
+- Each code is produced through both halves of the CLI, because `runCli` returns 0 and 2 and never
+  1: an unreadable file throws, and `src/cli.ts` is what turns that into `error instanceof
+  CliUsageError ? 2 : 1`. A check that drove only `runCli` would have quietly never exercised the
+  row a CI gate depends on most. The row for 2 is also read for the four cases it lists — unknown
+  command, missing file, extra files, bad flag value — and all four are produced.
+
 ## 0.4.279
 
 - **Added** a check on which Node built-ins the package imports, read from the README's own
