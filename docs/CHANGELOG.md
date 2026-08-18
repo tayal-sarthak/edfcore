@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.276
+
+- **Added** the check for the other ban `AGENTS.md` lists: "No `Date` anywhere. EDF stores local
+  time with no zone." An EDF header gives a wall-clock date and time and names no zone, because
+  the machine that wrote it was in a sleep lab and the field is whatever the clock on the wall
+  said. A `Date` cannot hold that — constructing one applies the running machine's zone, so a
+  recording started at 23:14 in Leiden becomes a different instant on a laptop in California and
+  every derived time moves with it. `EdfCalendarDate` is three numbers precisely so there is
+  nothing to interpret.
+- Two halves, and only one existed. `dates.test.ts` asserted a parsed HEADER holds no `Date`;
+  this adds the source, where `Date.now()` would also make output non-deterministic, and a deep
+  sweep of a whole read — recording, timeline, index, annotations, validation report — for any
+  `Date` instance at all.
+- **Extracted** the comment-and-string stripper both bans need into
+  `tests/support/code-only.ts`. It was written for 0.4.275 a release ago, and a second copy is how
+  the barrel type parser ended up with two that disagreed (0.4.224). Stripping strings is the part
+  that matters: this codebase discusses dates constantly, and a file explaining why it avoids
+  `Date` must not read as a file that uses one.
+
 ## 0.4.275
 
 - **Added** the check for a ban `AGENTS.md` lists under things that look like bugs and are not:

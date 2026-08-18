@@ -75,37 +75,61 @@ function edf(options: {
   return out;
 }
 
+/**
+ * Generous on purpose — see the note below. It exists to fail an infinite loop, not a slow
+ * machine.
+ */
+const HANG_DETECTOR_MS = 300_000;
+
 describe('a diagnostic per record does not blow the call stack', () => {
   // TIMEKEEPING_TAL_MISSING is deliberately per-record, so a long recording with a zeroed
   // annotation section reaches six figures honestly. push(...array) passes each element as a
   // call argument and V8 gives up at roughly 125,000 of them.
-  // The trailing 30 s is not slack for a slow machine. Sweeping 200,000 records and collecting a
-  // diagnostic for each is the point of the test, and it lands within a few hundred milliseconds
-  // of vitest's 5 s default on its own — so it tipped over whenever the rest of the suite ran
-  // beside it, and the failure read as a regression in code it does not touch.
+  // The trailing timeout is a HANG DETECTOR, not a performance budget, and the difference is the
+  // whole reason it has been wrong twice. What these cases assert is that a diagnostic per record
+  // does not blow the call stack; how long the sweep takes is not the property. A number chosen
+  // to sit just above the observed duration therefore measures the machine rather than the code,
+  // and reports a red build in something the test does not touch.
+  //
+  // It began at vitest's 5 s default, which the 200,000-record sweep landed a few hundred
+  // milliseconds under on its own, so it tipped over whenever the rest of the suite ran beside
+  // it. Raising it to 30 s fixed that and repeated the mistake at a larger number: the suite kept
+  // growing — 2,074 tests now, one of which spawns a TypeScript compiler over 102 files — and on
+  // a machine already busy with unrelated work this took 72 s and failed again (0.4.276).
+  //
+  // Five minutes is deliberately far above anything a working implementation can take. An
+  // infinite loop still fails; a loaded laptop does not.
   for (const records of [130_000, 200_000]) {
-    it(`validateRecording reports all ${records} diagnostics instead of throwing`, async () => {
-      const recording = await openEdf(
-        byteSource(edf({ records, recordDuration: '1', plus: true })),
-      );
+    it(
+      `validateRecording reports all ${records} diagnostics instead of throwing`,
+      async () => {
+        const recording = await openEdf(
+          byteSource(edf({ records, recordDuration: '1', plus: true })),
+        );
 
-      const report = await validateRecording(recording);
-      expect(report.diagnostics.length).toBeGreaterThanOrEqual(records);
-    }, 30_000);
+        const report = await validateRecording(recording);
+        expect(report.diagnostics.length).toBeGreaterThanOrEqual(records);
+      },
+      HANG_DETECTOR_MS,
+    );
   }
 
-  it('readAnnotations already handled it, and still does', async () => {
-    // The same array is built through DiagnosticSink.report with no spread, which is why only
-    // the sweep that exists for untrusted files crashed.
-    const recording = await openEdf(
-      byteSource(edf({ records: 130_000, recordDuration: '1', plus: true })),
-    );
-    const result = await readAnnotations(recording, {
-      start: 0,
-      count: recording.header.recordCount,
-    });
-    expect(result.diagnostics).toHaveLength(130_000);
-  }, 30_000);
+  it(
+    'readAnnotations already handled it, and still does',
+    async () => {
+      // The same array is built through DiagnosticSink.report with no spread, which is why only
+      // the sweep that exists for untrusted files crashed.
+      const recording = await openEdf(
+        byteSource(edf({ records: 130_000, recordDuration: '1', plus: true })),
+      );
+      const result = await readAnnotations(recording, {
+        start: 0,
+        count: recording.header.recordCount,
+      });
+      expect(result.diagnostics).toHaveLength(130_000);
+    },
+    HANG_DETECTOR_MS,
+  );
 });
 
 describe('a declared span past the representable tick range is refused', () => {
