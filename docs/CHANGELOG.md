@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.271
+
+- **Added** the check the whole suite rests on: nothing in `tests/support/` takes a runtime import
+  from `src/`. `tests/README.md` states it twice — "a reader and a writer that share a
+  misunderstanding agree with each other and are wrong together" — and nothing enforced it.
+  Ninety test files build their fixtures with that writer. Had it taken `EDF_HEADER_BLOCK_BYTES`
+  from `src/constants.ts`, which looks exactly like sensible de-duplication and is one line, a
+  wrong constant would have produced fixtures shaped to match the wrong reader and two thousand
+  tests would have passed on a broken package, proving only that edfcore agrees with itself. That
+  is the one failure a suite cannot see from the inside.
+- Walked transitively, because independence one import deep is not independence — a helper
+  importing both the writer and a `src/` constant would launder precisely what this forbids, and
+  the check was verified against that shape as well as the direct one. `import type` is exempt on
+  the same reasoning 0.4.256 used: `spy-source.ts` has to name the `ByteSource` it wraps, and
+  naming a shape is not sharing an understanding of the bytes.
+
 ## 0.4.270
 
 - **Added** a check that every file this repository names in a comment is a file that is there.
