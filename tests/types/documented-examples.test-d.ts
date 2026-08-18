@@ -1,9 +1,16 @@
 /**
  * The documented examples that a reader copies whole, compiled.
  *
- * Five, not all of them. Those pages carry 55 `ts` fences between them and most are signatures and
- * one-liners; these are the ones a reader copies out and extends, and each needs a compiled twin
- * written by hand, so the set is deliberately small rather than derived.
+ * Five, and since 0.4.263 that is no longer the coverage. `doc-snippets-compile.test.ts` extracts
+ * every fenced block on the site that imports from `edfcore` and compiles all 102 in one pass, so
+ * the broad sweep lives there and this file is not the net.
+ *
+ * What it still does that the sweep cannot: a fence the sweep can only skip. The sweep judges a
+ * block by compiling it alone, so a block that is a function BODY shown without its signature
+ * reports `TS1108` and is set aside — the `edfErrorKind` switch on `api-errors.md` is exactly
+ * that, and a hand-written twin is the only way to compile it. The other four here are covered by
+ * the sweep as well, and are kept because a twin also proves the page and the compiled code are
+ * the same text, which is a different claim from "it compiles".
  *
  * `api-sources.md`, `api-primitives.md` and `api-errors.md` are the pages that tell a reader to go
  * and write their own code: a custom `FetchLike` adapter, a handler for a duplicate channel label,
@@ -207,6 +214,22 @@ describe('the documented extension-point examples', () => {
     const mine = SELF.split('\n').map(flatten).join('\n');
     const unchecked = snippet(text, marker).filter((line) => !mine.includes(flatten(line)));
     expect(unchecked).toEqual([]);
+  });
+
+  it('still covers the one fence the broad sweep can only skip', () => {
+    /*
+     * `doc-snippets-compile.test.ts` compiles every self-contained fence, and sets aside any that
+     * reports `TS1108` — a bare `return`, meaning the block is a function body shown without its
+     * signature. The `edfErrorKind` switch is written that way, so the sweep cannot judge it and
+     * the hand-written twin above is its only compilation.
+     *
+     * If that snippet is ever rewritten as a whole function the sweep will cover it, this will
+     * fail, and the division of labour in the docblock above will need rereading — which is the
+     * point of asserting it rather than describing it.
+     */
+    const handler = snippet(API_ERRORS, 'error.edfErrorKind');
+    expect(handler.some((line) => /^\s*return /.test(line))).toBe(true);
+    expect(handler.some((line) => /^\s*(export )?(async )?function /.test(line))).toBe(false);
   });
 
   it('keeps the narrowing the README quick start needs to compile', () => {

@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.269
+
+- **Corrected** what `documented-examples.test-d.ts` claims to be. It opened by saying its five
+  hand-written twins are the documented examples that get compiled, "deliberately small rather
+  than derived" — true when it was written and not since 0.4.263, which compiles all 102 fenced
+  blocks on the site in one pass. Leaving that sentence would be the defect this repository keeps
+  finding: a file describing itself as the coverage after something else became the coverage.
+- It still earns its place, for one fence and a reason worth stating. The sweep judges a block by
+  compiling it alone, so a block that is a function body shown without its signature reports
+  `TS1108` and gets set aside — the `edfErrorKind` switch on `api-errors.md` is written that way,
+  and the hand-written twin is its only compilation. That is now asserted rather than described:
+  the snippet must contain a bare `return` and no function signature, so rewriting it as a whole
+  function fails here and prompts a reread of the division of labour instead of silently making
+  half this file redundant.
+
 ## 0.4.268
 
 - **Added** a check that every `npm run …` in the documentation is a script that exists.
