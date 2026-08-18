@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.275
+
+- **Added** the check for a ban `AGENTS.md` lists under things that look like bugs and are not:
+  `TextDecoder` belongs in `src/tal/` and nowhere else. Verified on Node v24.4.0, every `latin1`
+  label it accepts reports `windows-1252` and decodes byte `0x80` as `U+0080`, while the WHATWG
+  standard mandates `U+20AC` — so a `TextDecoder` on the header path would make the same file
+  produce different strings in Node and in a browser, from a library whose claim is that it reads
+  the same bytes the same way everywhere. `src/tal/` is exempt because annotation text really is
+  UTF-8, the one encoding every runtime agrees on.
+- The stripper removes string literals as well as comments, and that is not tidiness:
+  `header/fields.ts` contains the word `TextDecoder` inside a diagnostic message explaining this
+  rule to a user, so a comments-only sweep reads the file that documents the ban as the file that
+  breaks it. It looked like a live violation until the line was read.
+- A second test asserts the consequence rather than the rule — `0x80` in a real signal label,
+  read back through `openEdf`, comes out `U+0080` and not a euro sign. `latin1.test.ts` pins the
+  decoder in isolation; this is the path a header actually takes.
+
 ## 0.4.274
 
 - **Added** the check that edfcore never writes to the console. The README says it twice, and the
