@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.278
+
+- **Corrected** a sentence in `tests/README.md` that contradicted the rest of the page and the
+  repository. It opened with "No file anyone else wrote is in this repository", and the six
+  committed binaries under `corpus/golden/` were written by pyEDFlib's own `EdfWriter` —
+  `scripts/golden/README.md` says so in its second line, "nothing in `tests/corpus/golden/` is
+  produced by edfcore", and `AGENTS.md` explains they exist "because the parity harness has to
+  compare against bytes another implementation wrote". The page's own later section is headed
+  "Checking against files we did not write".
+- The true claim is narrower and worth stating properly: nobody else's *recording* is committed —
+  the downloaded corpus is gitignored under `tests/corpus/files/` — and those six were generated
+  locally from data this repository specifies. That another implementation wrote them is not an
+  exception to the policy, it is the entire reason they are kept: regenerating them with
+  `support/writer.ts` would make the comparison circular and prove nothing.
+
 ## 0.4.277
 
 - **Fixed** a test budget that has now been wrong twice, by making it a different kind of number.

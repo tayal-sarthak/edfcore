@@ -3,8 +3,12 @@
 `git clone && npm test` is green and offline.
 
 Almost every fixture is built in memory. The exception is six small EDF/BDF files under
-`corpus/golden/`, which are committed on purpose — see [Fixture policy](#fixture-policy). No file
-anyone else wrote is in this repository.
+`corpus/golden/`, which are committed on purpose — see [Fixture policy](#fixture-policy). Nobody
+else's *recording* is committed here: the downloaded corpus is gitignored, and those six were
+generated locally by pyEDFlib's writer from data this repository specifies. That they were written
+by another implementation is the whole reason they are worth keeping, and the section on
+[checking against files we did not write](#checking-against-files-we-did-not-write) is about
+exactly that.
 
 ## How that works
 
