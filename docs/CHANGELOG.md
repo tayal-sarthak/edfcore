@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.267
+
+- **Added** a check that the column table on the CLI page is the order `edfcore signals` emits.
+  That command exists to be piped into `awk`, so its columns are a positional contract, and two
+  places stated it: the table on `cli.md`, and `cli.test.ts`, which pinned it against a hard-coded
+  array. Neither knew about the other, so a column inserted rather than appended could be made to
+  pass by editing the test while the page went on describing the old layout to everyone parsing
+  it. Not hypothetical: column 6 was appended in 0.2.42 precisely so nothing reading the first
+  five by position would move, and before that the page claimed the command emitted samples per
+  record where it emitted `kind`, with the authoritative field in no column at all.
+- The expectation is read from the page, and the fixture gives every column a distinct value — a
+  two-second record of fifty samples, so the rate is 25 and the count is 50 — because two columns
+  holding the same number would let a transposition through.
+
 ## 0.4.266
 
 - **Added** a check that every `npx edfcore …` written in the documentation is one the CLI
