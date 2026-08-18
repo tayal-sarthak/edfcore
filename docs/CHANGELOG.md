@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.258
+
+- **Added** a check on the `Next:` convention, which `AGENTS.md` states as an absolute — "every
+  thrown message ends with a `Next:` clause naming what the caller should do" — and nothing
+  enforced. All 151 messages keep it today; what was missing is that the 152nd would not have
+  had to. The clause is the part that survives contact with a real user: "byte range [0, 512) is
+  outside the 256-byte buffer" says what happened, and "Next: check that the header and these
+  bytes came from the same file" says what it means.
+- Both halves are covered, which took two passes. `EdfFormatError` is never thrown with `new` — it
+  is built from a diagnostic by `fatalError`, `sink.fatal`, `scalingError` and `toFormatError` — so
+  reading only `throw new` sees 90 messages and misses the 61 that carry the larger share of the
+  contract. And finding where a `throw` ends cannot be done by balancing parentheses:
+  `[${offset}, ${offset + length})` closes one, and the first version of this check reported the
+  two messages using that interval notation as violations of a rule they keep.
+
 ## 0.4.257
 
 - **Fixed** `AGENTS.md`'s description of the layering, which had been wrong about nearly every
