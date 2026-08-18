@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.259
+
+- **Fixed** the snippet in `AGENTS.md` that does not compile. Its "Using edfcore in generated
+  code" section exists to be copied verbatim into somebody's project, which makes it the
+  highest-leverage code in the repository — and it ended `chunks[0].signals[0].digital`, which
+  under `noUncheckedIndexedAccess` is two `error TS2532`s, because both index reads are
+  `T | undefined`. That flag is on in this repo and in every strict TypeScript project, so the
+  file agents are told to copy from was teaching a line the compiler rejects. It narrows now,
+  which is what 0.4.208 settled on for this codebase over a `!`, and the two guards double as the
+  lesson the list right below it already gives: `readWindow` returns an array, and an empty one is
+  an ordinary answer.
+- **Added** the compiled twin. `documented-examples.test-d.ts` has done this for three website
+  snippets since 0.3.46 found two of them rejected the same way; the snippet an agent is likeliest
+  to paste had no such guard. It runs both directions — the copy is real code `npm run typecheck`
+  compiles, and the test reads the fenced block back out of `AGENTS.md` and fails if a line of it
+  is missing here.
+
 ## 0.4.258
 
 - **Added** a check on the `Next:` convention, which `AGENTS.md` states as an absolute — "every

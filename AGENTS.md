@@ -88,13 +88,21 @@ import { openEdf, blobSource, getSignal, readWindow, toPhysical } from 'edfcore'
 
 const recording = await openEdf(blobSource(file));      // or fileSource() from 'edfcore/node'
 const signal = getSignal(recording.header, 'Fp1');
-const chunks = await readWindow(recording, {
+const [chunk] = await readWindow(recording, {
   signalIndices: [signal.index],
   startSeconds: 30,
   durationSeconds: 10,
 });
-const microvolts = toPhysical(signal, chunks[0].signals[0].digital);
+// One chunk per contiguous run, and none at all for a window that selects nothing.
+if (chunk === undefined) throw new Error('no records cover that window');
+const [series] = chunk.signals;
+if (series === undefined) throw new Error('no signal in that chunk');
+const microvolts = toPhysical(signal, series.digital);
 ```
+
+Both guards are load-bearing under `noUncheckedIndexedAccess`, which is on in this repo and in
+every strict TypeScript project. Until 0.4.259 this snippet ended `chunks[0].signals[0].digital`
+and did not compile — the file agents are told to copy from taught a line the compiler rejects.
 
 The mistakes to avoid, in order of how often they happen:
 
