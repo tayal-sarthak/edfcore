@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.266
+
+- **Added** a check that every `npx edfcore …` written in the documentation is one the CLI
+  accepts. The commands were checked two ways already and neither covered it: `api-surface.md`'s
+  count is compared with `--help`, and `cli-command-list.test.ts` asserts `--help` offers exactly
+  what the dispatch switch handles. Both compare the CLI with itself. The sixteen invocations
+  spread across the README, the CLI page and the guides — the lines a reader actually copies into
+  a terminal — were checked by nobody, and renaming a command is exactly the change that would
+  leave both existing checks green while every page still named the old one.
+- Driven through `runCli` rather than `parseArgs`, because an unknown command is not a parse
+  error: `parseArgs` puts any non-flag word in the command slot quite happily, so checking the
+  parser would have passed on `edfcore summary`. Exit code 2 is the documented contract for bad
+  usage, and that is what this asserts against.
+
 ## 0.4.265
 
 - **Added** the unit test `printable` never had. It is the smallest module in the package and its
