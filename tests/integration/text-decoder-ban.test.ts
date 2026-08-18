@@ -16,6 +16,8 @@
  * `TextDecoder` inside a diagnostic message that explains this very rule to a user. Stripping
  * comments is not enough — string literals have to go too, or the file that documents the ban
  * reads as the file that breaks it. It looked exactly like a violation until the line was read.
+ * That stripper is `tests/support/code-only.ts`, shared with the `Date` ban, which has the same
+ * shape and the same trap.
  *
  * The second check is the consequence rather than the rule. `latin1.test.ts` pins
  * `decodeHeaderLatin1` in isolation; this puts `0x80` in a real header field and reads it back
@@ -27,24 +29,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
+import { codeOnly } from '../support/code-only.js';
 import { minimalEdfPlus } from '../support/writer.js';
 
 const SRC = new URL('../../src/', import.meta.url);
-
-/**
- * Comments AND string literals removed, so only executable references remain.
- *
- * `//` is spared when preceded by `:` so a URL survives; the string forms handle escapes, which
- * is all this codebase needs — there is no nesting to worry about in a single-quoted literal.
- */
-function codeOnly(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
-    .replace(/`(?:[^`\\]|\\.)*`/g, "''")
-    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
-    .replace(/"(?:[^"\\\n]|\\.)*"/g, "''");
-}
 
 const MODULES: ReadonlyArray<{ readonly name: string; readonly code: string }> = (function walk(
   dir: URL,

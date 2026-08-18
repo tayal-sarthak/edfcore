@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.277
+
+- **Fixed** a test budget that has now been wrong twice, by making it a different kind of number.
+  `extreme-geometry.test.ts` asserts that a diagnostic per record does not blow the call stack —
+  `TIMEKEEPING_TAL_MISSING` is per record, and `push(...array)` gives up around 125,000 arguments
+  — and it carried a 30 second timeout. How long the sweep takes is not the property. A timeout
+  set just above the observed duration measures the machine instead of the code, and reports a red
+  build in something the test does not touch.
+- It started at vitest's 5 second default, which the 200,000-record sweep landed a few hundred
+  milliseconds under on its own, so it tipped over whenever the rest of the suite ran beside it.
+  Thirty seconds fixed that and repeated the mistake one size up: the suite kept growing — 2,074
+  tests now, one of which spawns a TypeScript compiler over 102 files — and on a machine already
+  busy with unrelated work the sweep took 72 seconds and failed again. It is five minutes now, and
+  named for what it is: an infinite loop still fails, a loaded laptop does not.
+
 ## 0.4.276
 
 - **Added** the check for the other ban `AGENTS.md` lists: "No `Date` anywhere. EDF stores local
