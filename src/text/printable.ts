@@ -21,6 +21,15 @@
  * Only C0 and DEL are replaced. Latin-1 letters above 0x7f are ordinary characters in an
  * electrode label written on a European system, and 0x80-0x9f are left alone because edfcore
  * decodes headers as ISO-8859-1, where that range is not control characters.
+ *
+ * That argument covers header text, which is Latin-1 and therefore stops at U+00FF. It is not the
+ * only thing printed through here: ANNOTATION text is UTF-8, so `U+2028 LINE SEPARATOR` and
+ * anything else above U+00FF can arrive from a file — `cli-run.ts` prints it for `events` and
+ * `format-annotations.ts` for the hypnogram. Those pass through unchanged, deliberately. No
+ * terminal and no HTML renderer breaks a line on U+2028, so it is not structure in any output
+ * edfcore produces, and replacing it would be replacing a character an annotation legitimately
+ * contains. The rule is about what the OUTPUT treats as structure, not about what a language
+ * specification calls a line terminator.
  */
 
 /** Every C0 control character and DEL becomes `.`; everything else is returned unchanged. */

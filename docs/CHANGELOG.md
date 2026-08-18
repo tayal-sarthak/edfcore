@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.265
+
+- **Added** the unit test `printable` never had. It is the smallest module in the package and its
+  whole content is one rule — replace the C0 controls and DEL, leave everything else — and four
+  test files mentioned it while testing something else. Nothing pinned which code points it acts
+  on, in either direction: replacing too little lets a tab invent a column in the CLI's
+  tab-separated output, and replacing too much mangles an electrode label written on a European
+  system, where `0xB5` for micro is ordinary text.
+- **Completed** the module's own argument for that rule. It justified leaving `0x80`-`0xFF` alone
+  by pointing at ISO-8859-1 header decoding, which stops at `U+00FF` — and header text is not the
+  only thing printed through it. Annotation text is UTF-8, so `U+2028 LINE SEPARATOR` really can
+  arrive from a file and reach `edfcore events`. It passes through, which is right and now says
+  why: no terminal and no HTML renderer breaks a line on it, so it is not structure in any output
+  edfcore produces. The rule is about what the output treats as structure, not about what a
+  language specification calls a line terminator.
+
 ## 0.4.264
 
 - **Widened** the guard added in 0.4.239, which enforced the narrower half of its own rule. It
