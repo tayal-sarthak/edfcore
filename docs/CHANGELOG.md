@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.264
+
+- **Widened** the guard added in 0.4.239, which enforced the narrower half of its own rule. It
+  forbade a test globbing a TypeScript file out of `website/` and said nothing about importing
+  one, which reaches the same vite transform by the more obvious route — and the transform is what
+  resolves `website/tsconfig.json` and its `astro/tsconfigs/strict`, which the CI `check` job
+  never installs. Confirmed rather than assumed: `import { buildSampleEdf } from
+  '../../website/src/scripts/sample-edf.js'` passes locally and dies with the same
+  `[TSCONFIG_ERROR]` with `website/node_modules` moved aside, which is exactly how six versions
+  were lost in 0.4.237. Static imports, re-exports and `import()` are all covered now, and the
+  file is named for the boundary rather than for globs.
+- Comments are stripped before the scan, the rule 0.4.232 arrived at for the same reason: this
+  file's own docblock quotes the offending import to explain it, and the first run of the widened
+  check reported itself.
+
 ## 0.4.263
 
 - **Added** a sweep that compiles every self-contained example in the documentation, instead of
