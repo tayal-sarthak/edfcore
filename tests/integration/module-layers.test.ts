@@ -1,10 +1,9 @@
 /**
  * Every module in `src/` says which layer it is in.
  *
- * `AGENTS.md` states the architecture as one rule — "layered strictly: `bytes`/`text` →
- * `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import
- * from a lower layer" — and each file repeats its own position in the first line of its docblock,
- * `Layer 0` through `Layer 7`. Forty-eight of the fifty-two did. Four did not: `cli.ts`,
+ * `AGENTS.md` states the architecture as one rule — a module may only import from a lower layer —
+ * and each file repeats its own position in the first line of its docblock, `Layer 0` through
+ * `Layer 7`. Forty-eight of the fifty-two did. Four did not: `cli.ts`,
  * `cli-run.ts`, `diagnostics/summary.ts` and `format-report.ts` had no layer at all, so the one
  * architectural invariant this project has was stated everywhere except where it was inconvenient,
  * and nothing noticed because nothing read the declarations (0.4.255).
@@ -134,5 +133,52 @@ describe('imports go down, or level, never up', () => {
       (edge) => !edge.typeOnly && (layerOf(edge.to) as number) > (edge.layer as number),
     ).map((edge) => `${edge.from} (L${edge.layer}) imports ${edge.to} (L${layerOf(edge.to)})`);
     expect(upward).toEqual([]);
+  });
+});
+
+/**
+ * And `AGENTS.md`'s summary of them names the layers that exist.
+ *
+ * That file used to sketch the architecture as six tiers — "`bytes`/`text` → `diagnostics` →
+ * `header`/`decode`/`tal` → `time` → `io` → entry points" — while the declarations used eight, and
+ * the sketch was wrong about the members of nearly every one: `bytes` is layer 0 and `text` is
+ * layer 1, `header`, `decode` and `tal` are three different layers rather than one, and `io` spans
+ * two. 0.4.256 reasoned from that sentence to correct a module's layer, which is a good argument
+ * for the sentence being right.
+ *
+ * Only the layer NUMBERS are compared. Membership is prose, and prose that lists members is the
+ * inventory problem this project keeps deleting — the declarations are the source of truth and
+ * `AGENTS.md` now says so. What a summary can still get wrong without anyone noticing is the
+ * shape: a tier added or removed and only written down in one of the two places.
+ */
+describe("AGENTS.md's summary of the layers", () => {
+  const AGENTS = readFileSync(new URL('../../AGENTS.md', import.meta.url), 'utf8');
+
+  /** The leading cell of each row of the `### The layers` table. */
+  const SUMMARISED = (() => {
+    const section = AGENTS.slice(AGENTS.indexOf('### The layers'));
+    const table = section.slice(0, section.indexOf('\n\n', section.indexOf('|')));
+    return new Set([...table.matchAll(/^\| (\d+) \| /gm)].map((row) => Number(row[1])));
+  })();
+
+  const DECLARED = new Set(
+    MODULES.map((module) => module.layer).filter((layer): layer is number => layer !== undefined),
+  );
+
+  it('found the table, so a passing run is not a vacuous one', () => {
+    expect(SUMMARISED.size).toBeGreaterThan(4);
+    expect(DECLARED.size).toBeGreaterThan(4);
+  });
+
+  it('names every layer the source declares, and no layer it does not', () => {
+    expect([...SUMMARISED].sort((a, b) => a - b)).toEqual([...DECLARED].sort((a, b) => a - b));
+  });
+
+  it('says how many, in the sentence above it', () => {
+    // "in eight layers" — a number in prose, so it gets the same treatment as every other one.
+    const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const claimed = /The library, in (\w+) layers/.exec(AGENTS)?.[1];
+    expect(claimed, 'no "in N layers" in AGENTS.md').toBeDefined();
+    expect(words.indexOf(claimed as string)).toBe(DECLARED.size);
   });
 });

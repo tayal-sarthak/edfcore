@@ -12,13 +12,30 @@ runtime dependencies and that is a permanent constraint, not a current state.
 
 | Path | What it is |
 |---|---|
-| `src/` | The library. Layered strictly: `bytes`/`text` → `diagnostics` → `header`/`decode`/`tal` → `time` → `io` → entry points. A module may only import from a lower layer. |
+| `src/` | The library, in eight layers. Every module opens its docblock with `Layer N`, and that declaration is the source of truth — the table below is a summary of it, not a second definition. A runtime import may go down a layer or stay level, never up; `tests/integration/module-layers.test.ts` enforces both halves. `import type` is exempt, because a type-only import emits nothing and so creates no edge. |
 | `tests/` | Almost every fixture is built in memory by `tests/support/writer.ts`. The exception is six EDF/BDF files under `corpus/golden/`, committed since 0.2.34 because the parity harness has to compare against bytes another implementation wrote. See `tests/README.md`. |
 | `config/` | `tsconfig.build.json` and the two vitest configs. Every path inside them is relative to `config/`, and every `npm` script names them explicitly — nothing here is found by a tool's default lookup. |
 | `docs/CHANGELOG.md` | The release record. `scripts/release.mjs` refuses to tag unless its top `## <version>` heading matches. |
 | `scripts/` | `release.mjs` cuts a release — one commit, so leave the work uncommitted and pass `-m`; `golden/*.py` regenerate the pyEDFlib and MNE reference values in a venv. Neither runs in `npm run check`. |
 | `website/src/content/docs/design-decisions.md` | Why the API is shaped as it is. **Read it before proposing an architectural change** — most obvious improvements were considered and rejected for a stated reason. |
 | `website/` | The Astro documentation site and the browser-based inspector. |
+
+### The layers
+
+| Layer | What is in it |
+|---|---|
+| 0 | `constants.ts`, `types.ts`, `bytes/` — no imports at all, or types only |
+| 1 | `text/`, `diagnostics/`, `errors.ts`, `options.ts`, `tal/ticks.ts` |
+| 2 | `header/` |
+| 3 | `decode/`, `tal/grammar.ts`, `tal/annotations.ts` |
+| 4 | `time/` |
+| 5 | `io/` — the `ByteSource` adapters |
+| 6 | `io/read.ts`, `recording.ts`, `record-index.ts`, `inspect.ts` — the read strategy |
+| 7 | entry points, and the pure helpers over them |
+
+`tal/ticks.ts` sits at layer 1 rather than with the rest of `tal/`, and that is the point of the
+rule: it imports `constants.ts` and nothing else, and `header/` at layer 2 calls it. A module's
+layer is its dependencies, not its folder (0.4.256).
 
 ## Commands
 

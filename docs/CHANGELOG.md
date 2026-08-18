@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.257
+
+- **Fixed** `AGENTS.md`'s description of the layering, which had been wrong about nearly every
+  tier. It sketched six — "`bytes`/`text` → `diagnostics` → `header`/`decode`/`tal` → `time` →
+  `io` → entry points" — where the declarations use eight, and grouped modules that are not
+  together: `bytes` is layer 0 and `text` is layer 1, `header`, `decode` and `tal` are three
+  different layers rather than one, and `io` spans two. 0.4.256 reasoned from that sentence to
+  correct a module's layer, which is a good argument for the sentence being right. It is now a
+  table of the eight, and says plainly that each module's own declaration is the source of truth
+  rather than a second definition.
+- **Added** a check that the summary names the layers that exist, and that the count in the
+  sentence above it matches. Only the numbers are compared — a prose list of members is the
+  inventory problem this project keeps deleting, and the declarations already answer membership.
+  What a summary can still get wrong unnoticed is the shape: a tier added or removed in one place
+  and not the other.
+
 ## 0.4.256
 
 - **Corrected** `src/tal/ticks.ts` from layer 3 to layer 1, and started enforcing the direction
