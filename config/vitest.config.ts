@@ -18,6 +18,16 @@ export default defineConfig({
      */
     exclude: [...configDefaults.exclude, 'tests/scratch/**'],
     environment: 'node',
+    /*
+     * Arms the network trap once per test file, before anything in it runs. `tests/README.md`
+     * claims the suite is offline; `tests/support/offline.ts` is what makes that a property
+     * rather than a description, and `tests/integration/offline.test.ts` proves it is loaded.
+     *
+     * Not applied to `vitest.scratch.config.ts`: a throwaway probe reproducing a defect against
+     * a real server is a legitimate thing to write, and that config exists for exactly the runs
+     * this suite's rules do not govern.
+     */
+    setupFiles: ['tests/support/offline.ts'],
     typecheck: {
       enabled: false,
     },

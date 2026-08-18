@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.272
+
+- **Executed** the offline claim instead of stating it. `tests/README.md` opens with
+  "`git clone && npm test` is green and offline", which is a property of the suite and was
+  enforced by nothing. `globalThis.fetch` is now replaced for the whole run, through
+  `setupFiles`, with something that refuses and says to inject a `fetch` the way the `httpSource`
+  tests do.
+- That fallback is the route a test reaches the network by accident rather than on purpose:
+  `httpSource()` uses `globalThis.fetch` when none is passed, which is right for a consumer in a
+  browser, so forgetting the option used to send a real request and pass. It fails loudly now, at
+  construction, where the length is resolved.
+- The trap rejects rather than throwing synchronously, because a real `fetch` does not throw when
+  a host is unreachable and a trap that behaved differently would send `httpSource` down an error
+  path production never takes. `offline.test.ts` calls it and asserts it bites, since a setup file
+  that failed to load would leave every test passing with nothing to show anything was guarded.
+
 ## 0.4.271
 
 - **Added** the check the whole suite rests on: nothing in `tests/support/` takes a runtime import
