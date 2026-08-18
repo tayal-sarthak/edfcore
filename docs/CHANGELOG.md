@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.281
+
+- **Checked** that `sideEffects: false` is honest, rather than merely present. 0.4.230 read the
+  flag out of the manifest; this imports the three entry points in a fresh child realm and watches
+  what happens. A bundler reads that flag and feels free to drop any import whose bindings go
+  unused, so a module that did something at load — patched a global, started a timer, registered a
+  handler — would have licensed the bundler to delete behaviour a consumer depends on, with
+  nothing about the failure pointing back here.
+- A child process because the question is about a fresh realm: by the time any test runs, the
+  parent has imported `src/` a hundred times over. Three things are watched — a new property on
+  `globalThis`, a timer, a `process` listener — which is not exhaustive and is what a load-time
+  side effect looks like in practice, each of them silent from the outside. Verified by adding one
+  of each to the barrel and watching both fail.
+
 ## 0.4.280
 
 - **Added** a check that the exit-code table on the CLI page is the code the CLI returns.
