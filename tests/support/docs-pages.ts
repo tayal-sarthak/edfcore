@@ -37,7 +37,7 @@ const PREFIX = '../../website/src/content/docs/';
 
 /**
  * Keyed by path relative to `content/docs/`, which is the page's slug plus its extension —
- * `api-helpers.md`, and `guides/whatever.md` if one is ever nested.
+ * `api-helpers.md`, and a nested one would keep its directory in the key.
  */
 export const DOCS_PAGES: ReadonlyMap<string, string> = new Map(
   Object.entries(SOURCES).map(([path, source]) => [

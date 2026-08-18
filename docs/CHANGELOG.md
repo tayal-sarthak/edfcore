@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.270
+
+- **Added** a check that every file this repository names in a comment is a file that is there.
+  Docblocks here point at each other constantly — `header/parse.ts` owns validation order,
+  `tal/ticks.ts` owns the tick conversion — and 324 of those references are written as backticked
+  paths that nothing reads. The `src/` half matters most: `removeComments: false` copies those
+  docblocks into `dist/*.d.ts`, so a path that stopped existing ships to every consumer as hover
+  text. Not hypothetical — `CHANGELOG.md` became `docs/CHANGELOG.md` at v0.4.1, and 0.4.264
+  renamed a test file when its rule outgrew its name.
+- **Reworded** two comments that named things which were never files: a hypothetical
+  `guides/whatever.md` and the served route `api.json`, where the file is `api.json.ts`. Both
+  would have needed an exemption, and an exemption for "paths that are not paths" is how a check
+  stops meaning anything. `dist/` is the one that remains, because the build output is described
+  in several places and committed in none.
+
 ## 0.4.269
 
 - **Corrected** what `documented-examples.test-d.ts` claims to be. It opened by saying its five

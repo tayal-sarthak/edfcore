@@ -226,8 +226,8 @@ describe('nothing claims one file in the PACKAGE holds every node: import', () =
  *
  * `.astro` was too narrow for that sentence. `website/src/pages/` also holds seven `.ts` routes,
  * and they emit prose the same way a component does: `llms.txt` is the map an agent is handed,
- * `[...slug].md.ts` is the markdown twin of every page, `robots.txt` and `api.json` are served
- * verbatim. A stale version in one of those reaches a reader exactly as the footer did.
+ * `[...slug].md.ts` is the markdown twin of every page, `robots.txt.ts` and `api.json.ts` are
+ * served verbatim. A stale version in one of those reaches a reader exactly as the footer did.
  *
  * Comments are excluded, and that is the whole reason this could not simply be widened.
  * `api.json.ts` quotes the footer defect — "the site footer that said 'Version 0.1.0' through
