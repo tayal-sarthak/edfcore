@@ -1,7 +1,7 @@
 /**
  * The documented examples that a reader copies whole, compiled.
  *
- * Four, not all of them. Those pages carry 55 `ts` fences between them and most are signatures and
+ * Five, not all of them. Those pages carry 55 `ts` fences between them and most are signatures and
  * one-liners; these are the ones a reader copies out and extends, and each needs a compiled twin
  * written by hand, so the set is deliberately small rather than derived.
  *
@@ -39,6 +39,7 @@ import {
   toPhysical,
   type WindowSelection,
 } from '../../src/index.js';
+import { fileSource } from '../../src/node.js';
 
 // --- api-sources.md, "If you write your own FetchLike" ---------------------
 
@@ -113,6 +114,7 @@ const API_SOURCES = read('../../website/src/content/docs/api-sources.md');
 const API_PRIMITIVES = read('../../website/src/content/docs/api-primitives.md');
 const API_ERRORS = read('../../website/src/content/docs/api-errors.md');
 const README = read('../../README.md');
+const READING_SIGNALS = read('../../website/src/content/docs/reading-signals.md');
 const SELF = read('./documented-examples.test-d.ts');
 
 /** The fenced `ts` block containing `marker`, minus its import lines and blank lines. */
@@ -151,6 +153,28 @@ export async function quickStart(): Promise<Float64Array> {
   return microvolts;
 }
 
+// --- reading-signals.md, the guide's opening example -------------------------
+//
+// The same shape as the README quick start and broken the same way until 0.4.261. `fileSource`
+// makes this one the Node twin: it is the first complete program on the page a reader lands on
+// from "how do I read a signal".
+
+export async function readingSignals(): Promise<Float64Array> {
+  const recording = await openEdf(await fileSource('./overnight.edf'));
+  const fp1 = getSignal(recording.header, 'Fp1');
+
+  const [chunk] = await readWindow(recording, {
+    startSeconds: 30,
+    durationSeconds: 10,
+    signalIndices: [fp1.index],
+  });
+  // One chunk per contiguous run; a window that selects nothing returns none.
+  if (chunk?.signals[0] === undefined) throw new Error('no data in that window');
+
+  const microvolts = toPhysical(fp1, chunk.signals[0].digital);
+  return microvolts;
+}
+
 describe('the documented extension-point examples', () => {
   it('finds both snippets and this file', () => {
     // Without this, a marker that matched nothing would make every assertion below vacuous.
@@ -159,6 +183,7 @@ describe('the documented extension-point examples', () => {
     expect(snippet(API_PRIMITIVES, 'function resolve(').length).toBeGreaterThan(3);
     expect(snippet(API_ERRORS, 'error.edfErrorKind').length).toBeGreaterThan(3);
     expect(snippet(README, 'const microvolts').length).toBeGreaterThan(3);
+    expect(snippet(READING_SIGNALS, 'fileSource').length).toBeGreaterThan(3);
   });
 
   it.each([
@@ -166,6 +191,7 @@ describe('the documented extension-point examples', () => {
     { page: 'api-primitives.md', text: API_PRIMITIVES, marker: 'function resolve(' },
     { page: 'api-errors.md', text: API_ERRORS, marker: 'error.edfErrorKind' },
     { page: 'README.md', text: README, marker: 'const microvolts' },
+    { page: 'reading-signals.md', text: READING_SIGNALS, marker: 'fileSource' },
   ])('matches the compiled copy of the $page snippet line for line', ({ text, marker }) => {
     // The copies above are compiled by `npm run typecheck`. Anything the page says that they do
     // not say is a line nothing has checked.
@@ -193,8 +219,12 @@ describe('the documented extension-point examples', () => {
      * snippet is `TS18048` and `TS2532` under `noUncheckedIndexedAccess`, exactly as it was until
      * 0.4.260, and the compiled copy cannot notice because it keeps its own guard.
      */
-    const quickStart = snippet(README, 'const microvolts').join('\n');
-    expect(quickStart).toContain('=== undefined');
-    expect(quickStart).not.toMatch(/!\./);
+    for (const page of [
+      snippet(README, 'const microvolts').join('\n'),
+      snippet(READING_SIGNALS, 'fileSource').join('\n'),
+    ]) {
+      expect(page).toContain('=== undefined');
+      expect(page).not.toMatch(/!\./);
+    }
   });
 });

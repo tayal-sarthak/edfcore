@@ -20,9 +20,16 @@ const [chunk] = await readWindow(recording, {
   durationSeconds: 10,
   signalIndices: [fp1.index],
 });
+// One chunk per contiguous run; a window that selects nothing returns none.
+if (chunk?.signals[0] === undefined) throw new Error('no data in that window');
 
 const microvolts = toPhysical(fp1, chunk.signals[0].digital);
 ```
+
+That guard is not ceremony. `readWindow` returns an array and `chunk.signals` is indexed, so under
+`noUncheckedIndexedAccess` both reads are `T | undefined` and the last line does not compile
+without it — which is the same shape as the array itself being the answer: a window inside an
+EDF+D gap really does select nothing.
 
 `openEdf` reads the header and nothing else. It never scans the file, so opening a twelve-hour
 recording costs the same as opening a twelve-second one. It returns an `EdfRecording`: a plain

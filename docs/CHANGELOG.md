@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.261
+
+- **Fixed** the opening example of `reading-signals.md`, which did not compile. It is the first
+  complete program on the page a reader lands on from "how do I read a signal", and it had the
+  same defect the README quick start had one release ago: `const [chunk] = await readWindow(...)`
+  followed by `chunk.signals[0].digital`, which under `noUncheckedIndexedAccess` is `TS18048` and
+  `TS2532`. Found by extracting every fenced example on the site that imports from `edfcore` and
+  compiling all 102 of them; two were complete programs failing on nothing but this, and this was
+  one. It also now says why the guard is there, because the reason is the same fact the page
+  teaches: a window inside an EDF+D gap really does select nothing.
+- Compiled it in `documented-examples.test-d.ts` alongside the other four, with the same
+  narrowing check the README quick start got.
+
 ## 0.4.260
 
 - **Fixed** the README's quick start, which did not compile. It is the first code most people run
