@@ -338,8 +338,10 @@ for (const chunk of chunks) {
   if (chunk.precededByGap !== undefined) {
     console.log(`${chunk.precededByGap.durationSeconds} s gap before this chunk`);
   }
+  const [series] = chunk.signals;
+  if (series === undefined) continue;
   // Chunks are record-aligned and usually wider than the window; narrow them exactly.
-  const exact = trimToWindow(header, chunk.signals[0], 2, 12);
+  const exact = trimToWindow(header, series, 2, 12);
   console.log(`${exact.sampleCount} samples from ${exact.startSeconds} s`);
 }
 // 256 samples from 2 s

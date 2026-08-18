@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.263
+
+- **Added** a sweep that compiles every self-contained example in the documentation, instead of
+  the five somebody remembered to write a twin for. `documented-examples.test-d.ts` keeps a
+  hand-written compiled copy per snippet, which is thorough and does not scale; the site has 102
+  fenced blocks that import from `edfcore`. All of them are now extracted, pointed at `src/`, and
+  compiled in one `tsc` under the flags this repository builds with. It costs about 1.5 seconds.
+- **Fixed** the example it found on `discontinuous.md`, which passed `chunk.signals[0]` to
+  `trimToWindow` — `EdfChunkSignal | undefined` under `noUncheckedIndexedAccess`, so
+  `TS2345`. That is the fourth page with this defect and the last one; 0.4.260 through 0.4.262
+  fixed the README, `reading-signals.md` and `annotations.md`.
+- Fences that cannot stand alone are skipped, on two markers that both mean "part of something
+  larger" rather than "wrong": `TS2304 Cannot find name`, for a block using a `recording` an
+  earlier block declared, and `TS1108`, for a block that is a function body shown without its
+  signature — which is how `api-errors.md` and `diagnostics.md` teach a handler. The number left
+  standing alone is asserted to stay above twenty, so the exemption cannot quietly grow to cover
+  everything.
+
 ## 0.4.262
 
 - **Fixed** the worked example on `annotations.md` — read the sample under each sleep-stage event
