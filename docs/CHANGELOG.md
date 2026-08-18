@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.268
+
+- **Added** a check that every `npm run …` in the documentation is a script that exists.
+  `AGENTS.md` opens with a Commands block, the README explains how to build the site, and
+  `tests/README.md` covers `test:scratch` — none of it verified, and scripts here do move:
+  `format` was rewritten in 0.4.225, `verify:package` added in 0.4.233, `lint` reshaped in
+  0.4.210. A stale one is a bad first minute for a contributor, because `npm run` on a missing
+  script prints an error and a list, which reads as a broken checkout rather than a stale page.
+- `--prefix website` is followed rather than ignored. The two manifests have different scripts and
+  `npm run build` means a different thing in each, so the prefix genuinely changes the answer —
+  `dev` exists only in the site's.
+
 ## 0.4.267
 
 - **Added** a check that the column table on the CLI page is the order `edfcore signals` emits.
