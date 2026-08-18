@@ -41,6 +41,8 @@ const [chunk] = await readWindow(recording, {
   startSeconds: 30,
   durationSeconds: 10,
 });
+// One chunk per contiguous run; a window that selects nothing returns none.
+if (chunk?.signals[0] === undefined) throw new Error('no data in that window');
 
 const microvolts = toPhysical(fp1, chunk.signals[0].digital);   // Float64Array
 ```

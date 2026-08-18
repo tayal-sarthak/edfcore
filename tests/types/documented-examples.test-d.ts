@@ -1,7 +1,7 @@
 /**
- * The three extension-point examples in the docs compile.
+ * The documented examples that a reader copies whole, compiled.
  *
- * Three, not all of them. Those pages carry 55 `ts` fences between them and most are signatures and
+ * Four, not all of them. Those pages carry 55 `ts` fences between them and most are signatures and
  * one-liners; these are the ones a reader copies out and extends, and each needs a compiled twin
  * written by hand, so the set is deliberately small rather than derived.
  *
@@ -24,6 +24,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  type BlobLike,
+  blobSource,
   EdfAmbiguousChannelError,
   type EdfHeader,
   type EdfRecording,
@@ -31,8 +33,10 @@ import {
   type FetchLike,
   getSignal,
   isEdfError,
+  openEdf,
   type RecordRange,
   readWindow,
+  toPhysical,
   type WindowSelection,
 } from '../../src/index.js';
 
@@ -108,6 +112,7 @@ const read = (relative: string): string => readFileSync(new URL(relative, import
 const API_SOURCES = read('../../website/src/content/docs/api-sources.md');
 const API_PRIMITIVES = read('../../website/src/content/docs/api-primitives.md');
 const API_ERRORS = read('../../website/src/content/docs/api-errors.md');
+const README = read('../../README.md');
 const SELF = read('./documented-examples.test-d.ts');
 
 /** The fenced `ts` block containing `marker`, minus its import lines and blank lines. */
@@ -120,6 +125,32 @@ function snippet(page: string, marker: string): readonly string[] {
   throw new Error(`no \`\`\`ts block containing ${JSON.stringify(marker)}`);
 }
 
+// --- README.md, the quick start under "How do I read an EDF file in JavaScript?" ---
+//
+// The first code most people run, on the npm front page, and it did not compile until 0.4.260.
+// `chunk` is `EdfChunk | undefined` from the destructure and `chunk.signals[0]` is undefined-able
+// under `noUncheckedIndexedAccess`, so the last line was `TS18048` and `TS2532`. One guard fixes
+// both, and it is the guard the reader needs anyway: a window that selects nothing returns no
+// chunks, which is an ordinary answer rather than an error.
+
+declare const file: BlobLike;
+
+export async function quickStart(): Promise<Float64Array> {
+  const recording = await openEdf(blobSource(file));
+  const fp1 = getSignal(recording.header, 'Fp1');
+
+  const [chunk] = await readWindow(recording, {
+    signalIndices: [fp1.index],
+    startSeconds: 30,
+    durationSeconds: 10,
+  });
+  // One chunk per contiguous run; a window that selects nothing returns none.
+  if (chunk?.signals[0] === undefined) throw new Error('no data in that window');
+
+  const microvolts = toPhysical(fp1, chunk.signals[0].digital); // Float64Array
+  return microvolts;
+}
+
 describe('the documented extension-point examples', () => {
   it('finds both snippets and this file', () => {
     // Without this, a marker that matched nothing would make every assertion below vacuous.
@@ -127,12 +158,14 @@ describe('the documented extension-point examples', () => {
     expect(snippet(API_SOURCES, 'const instrumented').length).toBeGreaterThan(3);
     expect(snippet(API_PRIMITIVES, 'function resolve(').length).toBeGreaterThan(3);
     expect(snippet(API_ERRORS, 'error.edfErrorKind').length).toBeGreaterThan(3);
+    expect(snippet(README, 'const microvolts').length).toBeGreaterThan(3);
   });
 
   it.each([
     { page: 'api-sources.md', text: API_SOURCES, marker: 'const instrumented' },
     { page: 'api-primitives.md', text: API_PRIMITIVES, marker: 'function resolve(' },
     { page: 'api-errors.md', text: API_ERRORS, marker: 'error.edfErrorKind' },
+    { page: 'README.md', text: README, marker: 'const microvolts' },
   ])('matches the compiled copy of the $page snippet line for line', ({ text, marker }) => {
     // The copies above are compiled by `npm run typecheck`. Anything the page says that they do
     // not say is a line nothing has checked.
@@ -141,10 +174,27 @@ describe('the documented extension-point examples', () => {
     // inside a function to be compiled at all, so the indentation legitimately differs. The
     // CONTENT of every line must still be present.
     // Substring rather than exact-line, so a copy may carry an `export ` the page has no use for.
-    const mine = SELF.split('\n')
-      .map((line) => line.trim())
-      .join('\n');
-    const unchecked = snippet(text, marker).filter((line) => !mine.includes(line.trim()));
+    // Runs of spaces are collapsed on both sides. A page aligns a trailing `// Float64Array`
+    // comment by eye; Biome puts exactly one space before it here, and that difference is
+    // formatting rather than a line the compiler has not seen.
+    const flatten = (line: string) => line.trim().replace(/ {2,}/g, ' ');
+    const mine = SELF.split('\n').map(flatten).join('\n');
+    const unchecked = snippet(text, marker).filter((line) => !mine.includes(flatten(line)));
     expect(unchecked).toEqual([]);
+  });
+
+  it('keeps the narrowing the README quick start needs to compile', () => {
+    /*
+     * The comparison above runs one way: every line the page has must exist here. That catches a
+     * page gaining a line nothing compiles, and not a page LOSING one — delete the guard from the
+     * README and the remaining lines are all still present in the copy, so it passes.
+     *
+     * Which is the regression that matters here. Without `chunk?.signals[0] === undefined` the
+     * snippet is `TS18048` and `TS2532` under `noUncheckedIndexedAccess`, exactly as it was until
+     * 0.4.260, and the compiled copy cannot notice because it keeps its own guard.
+     */
+    const quickStart = snippet(README, 'const microvolts').join('\n');
+    expect(quickStart).toContain('=== undefined');
+    expect(quickStart).not.toMatch(/!\./);
   });
 });

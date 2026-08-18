@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.260
+
+- **Fixed** the README's quick start, which did not compile. It is the first code most people run
+  and it sits on the npm front page, and it ended `chunk.signals[0].digital` after destructuring
+  `const [chunk] = await readWindow(...)`. Under `noUncheckedIndexedAccess` — on in this repo and
+  in every strict TypeScript project — `chunk` is `EdfChunk | undefined` and so is `signals[0]`,
+  so the last line was `TS18048` and `TS2532`. One guard fixes both, and it is the guard the
+  reader needs anyway: a window that selects nothing returns no chunks, which is an ordinary
+  answer rather than an error.
+- **Added** it to `documented-examples.test-d.ts`, which has compiled three website snippets since
+  0.3.46 and never the README's. That comparison runs one way — every line a page has must exist
+  in the compiled copy — which catches a page gaining a line nothing compiles but not a page
+  losing one, since the copy keeps its own guard either way. So the quick start also gets a direct
+  check that the narrowing is still there, and the widening that lets the two texts be compared at
+  all: runs of spaces collapse, because a page aligns a trailing `// Float64Array` by eye and
+  Biome puts exactly one space before it.
+
 ## 0.4.259
 
 - **Fixed** the snippet in `AGENTS.md` that does not compile. Its "Using edfcore in generated
