@@ -6,16 +6,22 @@
  *
  * Everything in this file is one instance of that sentence. The generators differ — flipped bits
  * in a valid file, uniformly random bytes, EDF-shaped noise, every truncation of a real file,
- * hostile numeric field text — but the assertion is always the same three clauses:
+ * hostile numeric field text — but the assertion is always the same four clauses:
  *
  * 1. THROWS OR PARSES. Every call below passes arguments that are valid by construction, so the
  *    caller-error paths (`parseHeader`'s `sourceByteLength` guard, `decodeDigital`'s `out` sizing,
  *    an annotation index that is not an annotation signal) are unreachable. Anything thrown that
  *    is not an `EdfError` is therefore a leak: a bare `TypeError`, an "undefined is not a
  *    function", or a `RangeError` out of an allocation are all failures, not tolerated outcomes.
- * 2. BOUNDED. Each case runs under a wall-clock budget, so pathological slowness fails the test
- *    instead of stalling CI.
- * 3. NO BELIEVABLE GARBAGE. When a parse SUCCEEDS, no number edfcore computed may be NaN or
+ * 2. BOUNDED IN TIME. Each case runs under a wall-clock budget, so pathological slowness fails
+ *    the test instead of stalling CI.
+ * 3. BOUNDED IN MEMORY. Every read runs under `maxMaterializeBytes`, and a parse that succeeds
+ *    must have stayed inside it. "Never allocates unboundedly" is in the safety property as
+ *    `tests/README.md` states it, and this file asserted three clauses and called them the whole
+ *    sentence until 0.4.273 — the wall-clock budget catches slowness, which is a different
+ *    failure. A corrupt header declaring an enormous record is exactly how a reader is talked
+ *    into an allocation it cannot afford, and `EdfBudgetError` is the refusal that belongs there.
+ * 4. NO BELIEVABLE GARBAGE. When a parse SUCCEEDS, no number edfcore computed may be NaN or
  *    infinite, and no decoded sample or physical value may be either. This is the clause the
  *    library exists for: a wrong number that looks like a number is worse than a refusal.
  *
@@ -62,6 +68,17 @@ const CASE_BUDGET_MS = 500;
 
 /** Enough records to exercise de-interleaving without letting a fuzzed geometry set the cost. */
 const MAX_FUZZ_RECORDS = 64;
+
+/**
+ * Clause 3's ceiling, in bytes of materialised samples.
+ *
+ * Generous against every fixture here — the largest is a few kilobytes, and 64 records of a
+ * well-formed one decode to far less than this — and small enough that a header claiming
+ * millions of samples per record hits it rather than the machine's memory. A read that exceeds it
+ * throws `EdfBudgetError`, which clause 1 already accepts; what this adds is the other half, that
+ * a read which SUCCEEDS returned no more than it was allowed to.
+ */
+const CASE_BUDGET_BYTES = 4 * 1024 * 1024;
 
 // ---------------------------------------------------------------------------
 // Reporting: a violation has to be pasteable as a regression fixture
@@ -308,7 +325,23 @@ async function fuzzOpenEdf(bytes: Uint8Array, what: string): Promise<void> {
       const count = Math.min(recording.header.recordCount, MAX_FUZZ_RECORDS);
       const signalIndices = recording.header.dataSignalIndices;
       if (count === 0 || signalIndices.length === 0) return;
-      const chunk = await readRecords(recording, { records: { start: 0, count }, signalIndices });
+      const chunk = await readRecords(
+        recording,
+        { records: { start: 0, count }, signalIndices },
+        { maxMaterializeBytes: CASE_BUDGET_BYTES },
+      );
+      // Clause 3. Reaching here means the budget did not refuse, so the result has to be inside
+      // it — a decoder that allocated past the ceiling and handed the array back anyway would
+      // satisfy every other clause in this file.
+      const materialised = chunk.signals.reduce((total, one) => total + one.digital.byteLength, 0);
+      if (materialised > CASE_BUDGET_BYTES) {
+        throw violation(
+          what,
+          bytes,
+          `the read succeeded under a ${CASE_BUDGET_BYTES}-byte budget and returned ` +
+            `${materialised} bytes of samples`,
+        );
+      }
       for (const chunkSignal of chunk.signals) {
         for (let i = 0; i < chunkSignal.digital.length; i += 1) {
           const value = chunkSignal.digital[i];

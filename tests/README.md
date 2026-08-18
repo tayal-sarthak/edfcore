@@ -32,7 +32,8 @@ together; keeping them independent is what makes the round-trip and property tes
 ## The safety invariant
 
 `property/fuzz.test.ts` states it in one line, and it is the property the whole library exists
-to uphold:
+to uphold. Its four clauses are four assertions in that file — throws-or-parses, bounded in time,
+bounded in memory, and no believable garbage:
 
 > For any byte sequence, edfcore either parses it or throws an `EdfError`. It never hangs, never
 > allocates unboundedly, never returns `NaN`, and never returns believable garbage.

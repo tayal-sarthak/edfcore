@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.273
+
+- **Made** the fuzz suite assert the clause it was missing. `tests/README.md` states the safety
+  property in four parts — "it never hangs, never allocates unboundedly, never returns NaN, and
+  never returns believable garbage" — and attributes all four to `property/fuzz.test.ts`, which
+  opened by saying it asserts three and listed them. The gap was "never allocates unboundedly":
+  its bounded clause was a wall-clock budget, which catches slowness, and slowness is a different
+  failure from a corrupt header talking a reader into an allocation it cannot afford.
+- Every fuzz read now runs under `maxMaterializeBytes`, and a read that succeeds must have stayed
+  inside it. Exceeding it throws `EdfBudgetError`, which clause 1 already accepted as a legitimate
+  refusal; the new half is that a decoder which allocated past the ceiling and handed the array
+  back anyway would have satisfied every other clause in the file. Verified by lowering the
+  ceiling below what the fixtures decode to and watching the violation report the byte count.
+
 ## 0.4.272
 
 - **Executed** the offline claim instead of stating it. `tests/README.md` opens with
