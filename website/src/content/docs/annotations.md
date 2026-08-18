@@ -418,7 +418,10 @@ for (const event of annotations) {
     records: { start: recordIndex, count: 1 },
     signalIndices: [signal.index],
   });
-  const microvolts = toPhysical(signal, chunk.signals[0].digital);
+  // 5. One signal was asked for, so there is one here — but the index has to be narrowed.
+  const [series] = chunk.signals;
+  if (series === undefined) continue;
+  const microvolts = toPhysical(signal, series.digital);
 
   console.log(event.text, sampleIndex, microvolts[offsetInRecord]);
 }

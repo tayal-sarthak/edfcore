@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.262
+
+- **Fixed** the worked example on `annotations.md` — read the sample under each sleep-stage event
+  — which was the other complete program that failed to compile on nothing but an unnarrowed
+  index. It ended `toPhysical(signal, chunk.signals[0].digital)`, and `chunk.signals[0]` is
+  `T | undefined` under `noUncheckedIndexedAccess` even though the call asked for exactly one
+  signal. It narrows with a `continue` now, which is the shape the loop around it already uses
+  twice, and the numbered comment says the thing worth knowing: asking for one signal does not
+  tell the compiler you got one.
+
+  That closes both of the complete-but-unsound examples the 102-fence sweep in 0.4.261 turned up.
+  The rest of the site's failures are fragments referencing a `recording` or a `header` declared
+  in an earlier block on the same page, which is what a reference page is for.
+
 ## 0.4.261
 
 - **Fixed** the opening example of `reading-signals.md`, which did not compile. It is the first
