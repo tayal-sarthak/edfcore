@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.274
+
+- **Added** the check that edfcore never writes to the console. The README says it twice, and the
+  survey table explaining why this library exists lists what the alternatives do instead —
+  "`console.warn` and `null`, or bare thrown strings". Diagnostics are values on the result
+  precisely so that reporting them is the caller's decision; a library that logs takes that
+  decision away, breaks anything parsing the consumer's stdout, and on a header diagnostic puts a
+  patient's name into whatever collects the logs. One `console.warn` left in during debugging
+  would have shipped, and the only way to find it was to be the person whose output it landed in.
+- Both halves, because neither is enough on its own. A static sweep of `src/` with comments
+  stripped catches a call on a path no test happens to take — the survey table is quoted in
+  comments, so stripping is load-bearing. Running the library with every console method trapped
+  catches one the sweep cannot see, and that was verified rather than assumed: a call written as
+  `globalThis['con' + 'sole'].warn` leaves no literal `console` in the file, passes the sweep, and
+  is caught by the trap.
+
 ## 0.4.273
 
 - **Made** the fuzz suite assert the clause it was missing. `tests/README.md` states the safety
