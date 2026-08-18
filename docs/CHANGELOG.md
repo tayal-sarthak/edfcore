@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.279
+
+- **Added** a check on which Node built-ins the package imports, read from the README's own
+  sentence: "Zero runtime dependencies, permanently. `edfcore/node` imports `node:fs/promises` and
+  nothing else." Every built-in in the graph is something a bundler has to shim, a serverless
+  runtime has to provide and an Electron or Deno target has to allow — one is a footnote, three is
+  a compatibility matrix. The neighbouring claims were checked and this one was not:
+  `public-api.test.ts` proves the universal entry reaches no `node:` at all and
+  `readme-status.test.ts` proves exactly two modules import one, but neither says which, so adding
+  `node:path` to the Node adapters would have left both green and the README wrong.
+- Comments are stripped and string literals deliberately are not, which is the reverse of what
+  0.4.275 and 0.4.277 needed. An import specifier is a string literal, so the shared `codeOnly`
+  removes the thing being counted — the first version of this file used it and reported every
+  module as importing nothing. The match is anchored to an import statement instead, so a built-in
+  named inside a diagnostic message is not mistaken for a dependency.
+
 ## 0.4.278
 
 - **Corrected** a sentence in `tests/README.md` that contradicted the rest of the page and the
