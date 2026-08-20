@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.337
+
+- **Added** an execution of the annotation listing on `quick-start.md`. The page's own format
+  string is transcribed and applied to what `readAnnotations` returns, and it has to reproduce all
+  three printed lines exactly — which catches a `durationSeconds` arriving as `0` instead of
+  `undefined`, since that would print `(+0 s)` on an event with no duration, a different claim
+  about the recording.
+- The docblock states what the check does NOT claim. The fixture is built from the page's own
+  lines, so the onset values vouch for themselves and a page edit changes both sides. Two things
+  are independent of that and are checked as such: the formatting between the numbers, and that
+  every decimal onset survives the round trip as a whole number of ticks, whatever the decimal is.
+- Also pinned: the record range `readAnnotations` requires, which the page says has no default
+  because scanning a whole file for annotations is expensive.
+
 ## 0.4.336
 
 - **Fixed** wrong advice on `quick-start.md`. It said an annotation carries its onset "three ways"

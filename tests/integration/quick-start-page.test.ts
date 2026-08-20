@@ -240,3 +240,121 @@ describe('the two onset axes', () => {
     expect(found?.onsetTicks).toBe(found?.onsetTicksFromFirstRecord);
   });
 });
+
+/**
+ * The listing block, with one thing it deliberately does NOT claim.
+ *
+ * The fixture is built from the page's own lines, so the onset values vouch for themselves: editing
+ * `95.500` on the page edits both the file and the expectation, and this passes. That is the price
+ * of keeping the fixture in step with the page, and it is worth stating rather than implying.
+ *
+ * What is not circular is everything between the two: the page's format string applied to the
+ * fields edfcore returns has to reproduce the page's lines exactly. That catches a `durationSeconds`
+ * that starts arriving as `0` instead of `undefined` — which would print `(+0 s)` on an event with
+ * no duration, a different claim about the recording — and it catches a rebasing change in
+ * `onsetSecondsFromFirstRecord`. The exactness check below is independent too: a decimal onset has
+ * to survive the round trip as a whole number of ticks, whatever the page says the decimal is.
+ */
+describe('the annotation listing the page prints', () => {
+  /**
+   * `30.000 s (+30 s)  Sleep stage W` and `95.500 s  Arousal`.
+   *
+   * The ` {2}` before the text is the page's own separator, written by the snippet's
+   * `` `  ${annotation.text}` ``, so it is spelled with a count rather than as two literal spaces.
+   */
+  const LINES = [...PAGE.matchAll(/^(\d+\.\d{3}) s(?: \(\+(\d+) s\))? {2}(.+)$/gm)].map(
+    ([, onset = '', duration, text = '']) => ({
+      onset: Number(onset),
+      durationSeconds: duration === undefined ? undefined : Number(duration),
+      text,
+    }),
+  );
+
+  /** The page's own formatter, transcribed from the snippet above the block. */
+  const format = (annotation: {
+    onsetSecondsFromFirstRecord: number;
+    durationSeconds: number | undefined;
+    text: string;
+  }): string => {
+    const duration = annotation.durationSeconds;
+    return (
+      `${annotation.onsetSecondsFromFirstRecord.toFixed(3)} s` +
+      (duration === undefined ? '' : ` (+${duration} s)`) +
+      `  ${annotation.text}`
+    );
+  };
+
+  const BYTES_EVENTS = minimalEdfPlus({
+    recordCount: 100,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+    annotationSignals: [
+      {
+        samplesPerRecord: 60,
+        tals: (record) =>
+          LINES.filter((line) => Math.floor(line.onset) === record).map((line) =>
+            line.durationSeconds === undefined
+              ? { onset: line.onset, texts: [line.text] }
+              : { onset: line.onset, duration: line.durationSeconds, texts: [line.text] },
+          ),
+      },
+    ],
+  });
+
+  it('prints three events, one of them instantaneous', () => {
+    expect(LINES).toHaveLength(3);
+    expect(LINES.filter((line) => line.durationSeconds === undefined)).toHaveLength(1);
+  });
+
+  it('reproduces every line, through the page’s own format string', async () => {
+    const recording = await openEdf(byteSource(BYTES_EVENTS));
+    const { annotations } = await readAnnotations(recording, {
+      start: 0,
+      count: recording.header.recordCount,
+    });
+    const printed = annotations.filter((entry) => entry.text !== '').map((entry) => format(entry));
+    expect(printed).toEqual(
+      LINES.map((line) => format({ ...line, onsetSecondsFromFirstRecord: line.onset })),
+    );
+  });
+
+  it('leaves durationSeconds undefined for the instantaneous one, rather than zero', async () => {
+    // The page's formatter branches on `undefined`, so a zero would print `(+0 s)` on an event
+    // that has no duration at all — which is a different claim about the recording.
+    const recording = await openEdf(byteSource(BYTES_EVENTS));
+    const { annotations } = await readAnnotations(recording, {
+      start: 0,
+      count: recording.header.recordCount,
+    });
+    const instantaneous = LINES.find((line) => line.durationSeconds === undefined);
+    const found = annotations.find((entry) => entry.text === instantaneous?.text);
+    expect(found?.durationSeconds).toBeUndefined();
+  });
+
+  it('carries every printed onset back as an exact number of ticks', async () => {
+    // Independent of what the page prints: whatever the decimals are, a TAL onset is decimal text
+    // and parsing it digit by digit is exact, so nothing may arrive as a fraction of a tick.
+    const recording = await openEdf(byteSource(BYTES_EVENTS));
+    const { annotations } = await readAnnotations(recording, {
+      start: 0,
+      count: recording.header.recordCount,
+    });
+    for (const line of LINES) {
+      const found = annotations.find((entry) => entry.text === line.text);
+      expect(found?.onsetTicksFromFirstRecord, line.text).toBe(
+        BigInt(Math.round(line.onset * 1e7)),
+      );
+    }
+  });
+
+  it('needs the record range the page says has no default', async () => {
+    // "The record range is required and has no default. Scanning a whole file for annotations is
+    //  expensive, so `{ start: 0, count: recording.header.recordCount }` has to appear in your
+    //  source."
+    expect(PAGE.replace(/\s+/g, ' ')).toContain('The record range is required and has no default');
+    const recording = await openEdf(byteSource(BYTES_EVENTS));
+    await expect(
+      (readAnnotations as unknown as (r: unknown) => Promise<unknown>)(recording),
+    ).rejects.toThrow();
+  });
+});
