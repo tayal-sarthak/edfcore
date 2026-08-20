@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.305
+
+- **Pinned** the budget refusal `large-files.md` prints — `requiredBytes` 442,368,000,
+  `budgetBytes` 268,435,456, `optionName` `'maxMaterializeBytes'`. The middle one is the 256 MiB
+  default; the first is every record of the eight-hour file measured in RECORD bytes, not the
+  Int32Array one channel would decode into. Those two differ by an order of magnitude here and the
+  smaller would have looked just as plausible on the page, which is the sort of number a reader
+  copies into a capacity estimate.
+- `optionName` is checked by triggering a real refusal rather than by reading the type: the field
+  exists so a message can point at an argument the caller can actually change, and a message
+  naming an option that had been renamed would be worse than none.
+
 ## 0.4.304
 
 - **Executed** the costing on `large-files.md`. Its whole argument is numeric: an eight-hour,

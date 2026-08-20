@@ -17,8 +17,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_MAX_MATERIALIZE_BYTES } from '../../src/constants.js';
+import type { EdfBudgetError } from '../../src/errors.js';
+import { isEdfError } from '../../src/errors.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { parseHeader } from '../../src/header/parse.js';
+import { byteSource } from '../../src/io/bytes.js';
+import { openEdf, readRecords } from '../../src/recording.js';
 import { buildEdf } from '../support/writer.js';
 
 /** The page's recording: 30 channels at 256 Hz, one-second records. */
@@ -85,5 +90,50 @@ describe('the ten-second window the page costs out', () => {
     expect((WINDOW_RECORDS * HEADER.recordByteLength) / (samples * 2)).toBe(30);
     // And the ratio is the record over the signal's block, which is where 30 comes from.
     expect(HEADER.recordByteLength / one.recordByteLength).toBe(30);
+  });
+});
+
+describe('the budget refusal the page prints', () => {
+  it('reports the default the page names, in bytes', () => {
+    // "error.budgetBytes; // 268,435,456" — 256 MiB, and the page says the refusal comes before
+    // anything is allocated rather than part-way through.
+    expect(DEFAULT_MAX_MATERIALIZE_BYTES).toBe(268_435_456);
+    expect(DEFAULT_MAX_MATERIALIZE_BYTES).toBe(256 * 1024 * 1024);
+  });
+
+  it('asks for the whole recording in record bytes, which is what the page prints', () => {
+    // "error.requiredBytes; // 442,368,000" — every record of the eight-hour file, not the
+    // Int32Array one channel would decode into. Worth pinning because the two differ by an order
+    // of magnitude and the smaller one would look just as plausible on the page.
+    expect(RECORDS * HEADER.recordByteLength).toBe(442_368_000);
+  });
+
+  it('names the option to raise, and it is the one that exists', async () => {
+    // "error.optionName; // 'maxMaterializeBytes'" — the field exists so the message can point at
+    // an argument the caller can actually change.
+    const signals = Array.from({ length: 30 }, (_, index) => ({
+      label: `EEG ${index}`,
+      samplesPerRecord: 256,
+    }));
+    const small = buildEdf({ recordCount: 40, recordDurationSeconds: 1, signals });
+    const recording = await openEdf(byteSource(small));
+
+    let thrown: unknown;
+    try {
+      await readRecords(
+        recording,
+        { records: { start: 0, count: 40 }, signalIndices: [0] },
+        { maxMaterializeBytes: 1000 },
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(isEdfError(thrown) && thrown.edfErrorKind).toBe('budget');
+    const budget = thrown as EdfBudgetError;
+    expect(budget.optionName).toBe('maxMaterializeBytes');
+    expect(budget.budgetBytes).toBe(1000);
+    // Record bytes, matching the page's figure by the same rule at a smaller size.
+    expect(budget.requiredBytes).toBe(40 * recording.header.recordByteLength);
   });
 });
