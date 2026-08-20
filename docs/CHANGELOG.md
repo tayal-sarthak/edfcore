@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.294
+
+- **Added** the last wait the release was missing: whether the version actually reached npm. The
+  CI wait from 0.4.244 asks about the commit; `publish.yml` is a different workflow, triggered by
+  the release that was just created, and it runs its own `npm run check` afterwards — so it can
+  fail on something the commit's checks passed, and the script had always exited 0 before it
+  started. That gap cost 0.4.287 through 0.4.292: six versions tagged, six green CI runs, six
+  GitHub releases, and nothing on npm, found only by looking.
+- npm is polled rather than the workflow's status, because the question is whether the version is
+  installable. On timeout it says the tag, release and commit are all correct and the publish is
+  what did not happen, gives the two commands to see why, and warns that re-running the script
+  would cut the next version and leave this one a hole — which is exactly how the six were lost.
+
 ## 0.4.293
 
 - **Moved** the tarball check out of the test suite, which is the only place it could not live.

@@ -293,6 +293,8 @@ try {
 // fix, then `gh release create` — rather than a version that exists in git and nowhere else.
 
 const CI_POLL_SECONDS = 15;
+const PUBLISH_POLL_SECONDS = 20;
+const PUBLISH_TIMEOUT_MINUTES = 15;
 const CI_TIMEOUT_MINUTES = 20;
 
 /** Synchronous, and no subprocess: the script is a straight line and has nothing else to do. */
@@ -366,6 +368,47 @@ try {
       `      gh release create ${tag} --title "edfcore ${next}" --generate-notes\n\n` +
       '  Re-running this script instead would cut the NEXT version and leave this one a hole.',
   );
+}
+
+// ---------------------------------------------------------------- and did it reach npm
+//
+// The CI wait above asks about the COMMIT. `publish.yml` is a different workflow, triggered by the
+// release that was just created, and it runs its own `npm run check` afterwards — so it can fail
+// on something the commit's own checks passed, and the script has always exited 0 before it
+// started. That gap cost 0.4.287 through 0.4.292: six versions tagged, six green CI runs, six
+// releases created, and nothing on npm, discovered only by looking.
+//
+// npm is the ground truth rather than the workflow's status, because what matters is whether the
+// version is installable.
+if (!dryRun) {
+  console.log(`  Waiting for ${next} to appear on npm`);
+  const deadline = PUBLISH_TIMEOUT_MINUTES * 60;
+  let waited = 0;
+  for (;;) {
+    let onRegistry = '';
+    try {
+      onRegistry = capture('npm', ['view', `edfcore@${next}`, 'version']);
+    } catch {
+      // Not published yet: `npm view` exits non-zero for a version that does not exist.
+    }
+    if (onRegistry === next) break;
+    if (waited >= deadline) {
+      die(
+        `${tag} is released on GitHub, but ${next} has not reached npm after ` +
+          `${PUBLISH_TIMEOUT_MINUTES} minutes.\n\n` +
+          '  The tag, the release and the commit are all public and correct; what has not\n' +
+          '  happened is the publish. Look at why:\n\n' +
+          '      gh run list --workflow "Publish to npm" --limit 1\n' +
+          `      gh run view --log-failed\n\n` +
+          '  Fix what failed, then re-run that workflow. Re-running THIS script would cut the\n' +
+          `  next version and leave ${next} a hole, which is how six were lost before this wait\n` +
+          '  existed.',
+      );
+    }
+    sleepSeconds(PUBLISH_POLL_SECONDS);
+    waited += PUBLISH_POLL_SECONDS;
+  }
+  console.log(`  ${next} is on npm`);
 }
 
 if (dryRun) {
