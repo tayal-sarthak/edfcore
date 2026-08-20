@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.339
+
+- **Added** the three refusals `quick-start.md` promises, each of which is a single clause on the
+  page and a real guard in the library: passing the annotations index to `readWindow` throws rather
+  than plotting timestamped text as a waveform, a label differing only in case is refused because
+  matching is exact and case-sensitive, and a duplicated label is refused rather than resolved to
+  the first.
+- The detail the page attaches to each is checked too, not just that something throws. The
+  not-found error has to list every label in the file — all three, not only the near miss — and the
+  ambiguous one has to name the indices that carry the label, which is what makes either message
+  actionable rather than a report that the call did not work.
+
 ## 0.4.338
 
 - **Added** a check that the three published copies of `ByteSource` agree. It is the one type a

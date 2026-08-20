@@ -20,6 +20,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
+import { isEdfError } from '../../src/errors.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
@@ -356,5 +357,65 @@ describe('the annotation listing the page prints', () => {
     await expect(
       (readAnnotations as unknown as (r: unknown) => Promise<unknown>)(recording),
     ).rejects.toThrow();
+  });
+});
+
+describe('the three refusals the page promises', () => {
+  it('throws when the annotations index is passed to readWindow', async () => {
+    // "Passing its index to `readWindow` throws." The page says it in one clause, and it is the
+    // clause that stops a reader from plotting timestamped text as a waveform.
+    expect(PAGE.replace(/\s+/g, ' ')).toContain('Passing its index to `readWindow` throws');
+    const recording = await openEdf(byteSource(BYTES));
+    const annotations = CHANNELS.find((channel) => channel.kind === 'annotations');
+    await expect(
+      readWindow(recording, {
+        startSeconds: 0,
+        durationSeconds: 1,
+        signalIndices: [annotations?.index ?? -1],
+      }),
+    ).rejects.toThrow(/annotations channel/);
+  });
+
+  it('refuses a label that differs only in case, and lists the ones that exist', async () => {
+    // "`getSignal` matches the trimmed label exactly and case-sensitively. When nothing matches it
+    //  throws `EdfChannelNotFoundError`, listing every label in the file."
+    const { header } = await openEdf(byteSource(BYTES));
+    const wanted = CHANNELS[0]?.label ?? '';
+    let thrown: unknown;
+    try {
+      getSignal(header, wanted.toLowerCase());
+    } catch (error) {
+      thrown = error;
+    }
+    expect(isEdfError(thrown)).toBe(true);
+    expect((thrown as Error).name).toBe('EdfChannelNotFoundError');
+    // "listing every label in the file" — all three, not just the near miss.
+    for (const channel of CHANNELS) {
+      expect((thrown as Error).message, channel.label).toContain(channel.label);
+    }
+    // And the exact label still resolves, so the refusal is about the case and nothing else.
+    expect(getSignal(header, wanted).label).toBe(wanted);
+  });
+
+  it('refuses a duplicated label, and lists the indices that carry it', async () => {
+    // "When two channels share the label, which real files do, it throws
+    //  `EdfAmbiguousChannelError`, listing the indices."
+    const bytes = buildEdf({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: [
+        { label: 'Fp1', samplesPerRecord: 4 },
+        { label: 'Fp1', samplesPerRecord: 4 },
+      ],
+    });
+    const { header } = await openEdf(byteSource(bytes));
+    let thrown: unknown;
+    try {
+      getSignal(header, 'Fp1');
+    } catch (error) {
+      thrown = error;
+    }
+    expect((thrown as Error).name).toBe('EdfAmbiguousChannelError');
+    expect((thrown as Error).message).toContain('indices 0, 1');
   });
 });
