@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.293
+
+- **Moved** the tarball check out of the test suite, which is the only place it could not live.
+  Packing this package runs `prepublishOnly` — `npm run check && npm run build` — so a test that
+  packs runs the suite containing itself, and `npm pack --json` printed the whole run before its
+  JSON. 0.4.292 tried to parse around that with `--ignore-scripts` and a located JSON array; the
+  publish runner's npm ran the lifecycle anyway, and the extra output then broke the parser a
+  second way. It is `npm run verify:tarball` now, in CI's `package` job beside `verify:package`,
+  where nothing recurses.
+
+  **0.4.287 through 0.4.292 were never released** — six versions, all tagged, all with green CI,
+  none reaching npm, because `publish.yml` runs its own `npm run check` after the release exists.
+  Everything they carried is in this one. The release script waits for CI on the commit, and the
+  publish is a separate workflow that starts later, so the wait added in 0.4.244 cannot see it.
+
 ## 0.4.292
 
 - **Fixed** the tarball check added in 0.4.287, which broke the publish it was written to protect.

@@ -44,6 +44,9 @@ jobs:
       # publint packs the package, so `dist` has to exist first.
       - run: npm run build
       - run: npm run verify:package
+      # Membership, which publint does not answer. Outside the suite on purpose: packing this
+      # package runs `prepublishOnly`, so a test that packs runs itself.
+      - run: npm run verify:tarball
 
   site:
     runs-on: ubuntu-latest
