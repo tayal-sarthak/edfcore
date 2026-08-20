@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.334
+
+- **Added** a check over the `validateHeader` table on `api-validate.md`, which was one of the four
+  pages no test named. The table lists ten codes; the sentence under it does the real work, saying
+  four of them "exist nowhere else in edfcore" and that "the other six are also emitted by the
+  parser, so a report stands on its own instead of only making sense next to
+  `header.diagnostics`."
+- That claim rots silently in both directions. Moving one of the four into the parser makes a
+  validation report redundant for that code while the page still calls it exclusive; moving one of
+  the six out breaks the sentence the other way. Both halves are now settled by asking which
+  modules under `src/` name each code. Also checked: none of the ten is fatal, since a fatal code
+  here would let `validateHeader` condemn a file the parser opened without complaint, and the
+  fourteen label types the page spells out are read out of `STANDARD_LABEL_TYPES` in order.
+- `diagnostic-docs.test.ts` covers how severe a code is across every page. This is the narrower
+  question it does not ask: who is entitled to emit one.
+
 ## 0.4.333
 
 - **Added** the rest of `migrating-to-0-3.md`: the difference the page calls structural. `sampleAt`
