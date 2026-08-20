@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.312
+
+- **Added** a cross-check of the sample decoders printed on `edf-format.md` against edfcore's own.
+  The page's `decodeEdfSample` and `decodeBdfSample` are three lines each and derived straight
+  from the specification; `decode/digital.ts` de-interleaves whole records through a plan and a
+  typed-array fast path. Every one of the 65,536 EDF encodings now goes through both, along with
+  the BDF boundaries where sign extension from bit 23 is decided.
+- The results the page prints beside each call are parsed out of it rather than restated, so
+  `decodeBdfSample(0xff, 0xff, 0x7f)` has to keep printing what those bytes actually hold.
+
 ## 0.4.311
 
 - **Added** an execution of the worked address on `edf-format.md`. The page prints a hand-written
