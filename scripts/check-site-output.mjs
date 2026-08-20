@@ -92,6 +92,41 @@ if (api?.version !== JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')
   fail(`the badge endpoint reports version ${api?.version}, not the package's`);
 }
 
+// --- every page carries the head the layout promises ----------------------
+//
+// `Base.astro` builds the head once for every page, which is exactly why a page that misses it
+// misses it silently: nothing renders differently. The `rel="alternate"` link is the one with a
+// stated purpose — `[...slug].md.ts` records that no AI crawler uses content negotiation and the
+// ones that found markdown found it through that tag, so a docs page without it has a markdown
+// twin nothing can discover.
+//
+// The redirect stub Astro generates for `/docs` is exempt, and correctly so: it carries
+// `robots: noindex` and exists to be followed rather than read.
+
+const htmlPages = [];
+(function walk(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) walk(path);
+    else if (entry.name.endsWith('.html')) htmlPages.push(path);
+  }
+})(DIST);
+
+if (htmlPages.length < slugs.length) fail(`only ${htmlPages.length} HTML pages were built`);
+
+for (const path of htmlPages) {
+  const html = readFileSync(path, 'utf8');
+  const where = path.slice(DIST.length + 1);
+  if (html.includes('name="robots" content="noindex"')) continue;
+
+  for (const tag of ['<title>', 'name="description"', 'rel="canonical"', 'og:title', 'og:image']) {
+    if (!html.includes(tag)) fail(`${where} has no ${tag} in its head`);
+  }
+  if (where.startsWith('docs/') && !html.includes('type="text/markdown"')) {
+    fail(`${where} has no rel="alternate" markdown link, so its .md twin is undiscoverable`);
+  }
+}
+
 // --- report ----------------------------------------------------------------
 
 if (failures.length > 0) {
@@ -101,4 +136,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`  Site output checked: ${slugs.length} pages, their markdown twins, and 4 endpoints.`);
+console.log(
+  `  Site output checked: ${slugs.length} pages, their markdown twins, ` +
+    `${htmlPages.length} rendered heads, and 4 endpoints.`,
+);

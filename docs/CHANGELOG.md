@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.291
+
+- **Extended** `verify:site` to the rendered head of every built page. `Base.astro` builds it once
+  for all of them, which is exactly why a page that misses it misses it silently — nothing renders
+  differently. Title, description, canonical and the two Open Graph tags are now required on all 27
+  pages, and every documentation page must carry the `rel="alternate"` markdown link.
+- That last one has a stated purpose rather than being SEO housekeeping. `[...slug].md.ts` records
+  what was measured: no AI crawler uses content negotiation, and the ones that found markdown found
+  it through an explicit `<link rel="alternate">` in the HTML. A docs page without it has a
+  markdown twin nothing can discover, which is the whole feature quietly not working.
+- The `/docs` redirect stub Astro generates is exempt, and correctly: it carries `robots: noindex`
+  and exists to be followed rather than read.
+
 ## 0.4.290
 
 - **Added** `npm run verify:site`, which checks what the site build produced rather than that it
