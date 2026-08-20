@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.300
+
+- **Executed** the claim the error API is shaped around. `src/errors.ts` says class identity is
+  false across a realm boundary, `api-errors.md` repeats it, and `public-api.test.ts` files
+  `isEdfError` under a heading calling it the cross-realm discriminator — none of them showed it
+  happening. An API built entirely around a property nobody demonstrated is an API built around a
+  belief.
+- Two copies of the module rather than a `vm` realm, because two copies is the case that reaches
+  people: one dependency tree resolving edfcore twice, which npm does whenever two packages want
+  incompatible ranges. `instanceof` fails across them, `isEdfError` does not, and the
+  discriminator survives — while `instanceof` keeps working inside one copy, which is what makes
+  the failure invisible to every test a consumer writes against their own.
+- Writing it corrected my reading of `isEdfError`: it is a duck type, and a plain object with a
+  string `edfErrorKind` passes. That is the design rather than a hole — tightening it to
+  `instanceof Error` would reintroduce the problem, since `Error` identity is per-realm too, so
+  the check would fail on exactly the foreign errors it exists to recognise. The test says so.
+
 ## 0.4.299
 
 - **Extended** `verify:site` to check the generated markdown carries the page, not just its head.
