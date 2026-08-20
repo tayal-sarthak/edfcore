@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.303
+
+- **Executed** the request budget on `api-sources.md`: one `HEAD` for the length, `bytes=0-255`,
+  one more range for the rest of the header, and one whole record at each end for the timekeeping
+  probes — five in total, with the caller's headers on all five. That is the paragraph a reader
+  consults before pointing this at S3, and every clause is a cost they are budgeting.
+- The count was pinned elsewhere against a literal; the composition was prose, and so was the
+  promise about headers — the clause with a security shape, since one request quietly going out
+  without the configured `Authorization` 403s in production and nowhere else. All of it is now
+  driven through an injected `fetch`, which the suite requires of anything touching the network
+  and which is also how the page tells a reader to test their own adapter.
+
 ## 0.4.302
 
 - **Made** `api-reading.md`'s read counts the expectation rather than a second statement of it.
