@@ -18,11 +18,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { physicalRangeOf, toPhysical } from '../../src/decode/physical.js';
+import { clampToDigitalRange, physicalRangeOf, toPhysical } from '../../src/decode/physical.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { signalFieldOffset } from '../../src/header/signals.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf } from '../../src/recording.js';
+import { openEdf, readWindow } from '../../src/recording.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
 import { buildEdf } from '../support/writer.js';
 
@@ -327,5 +327,101 @@ describe('the negative gain the page works through', () => {
     expect(
       header.diagnostics.find((entry) => entry.code === 'INVERTED_PHYSICAL_RANGE')?.byteOffset,
     ).toBe(offset);
+  });
+});
+
+describe('the out-of-range window the page shows', () => {
+  /** `// A signal declaring -100..100 digital, holding samples at -500 and +500.` */
+  const SAMPLES = [-500, -50, 50, 500] as const;
+
+  const NARROW_BYTES = buildEdf({
+    recordCount: 1,
+    recordDurationSeconds: 1,
+    signals: [
+      {
+        label: 'Narrow',
+        samplesPerRecord: SAMPLES.length,
+        digitalMinimum: -100,
+        digitalMaximum: 100,
+        physicalMinimum: -100,
+        physicalMaximum: 100,
+        sample: (_record, index) => SAMPLES[index] ?? 0,
+      },
+    ],
+  });
+
+  /** The printed array from a `// Int32Array [ … ]` comment. */
+  function printedArray(after: string): readonly number[] {
+    const at = PAGE.indexOf(after);
+    if (at === -1) throw new Error(`no ${JSON.stringify(after)} on physical-values.md`);
+    const match = /\/\/ Int32Array \[ ([-\d, ]+) \]/.exec(PAGE.slice(at));
+    if (match === null) throw new Error(`no printed array after ${JSON.stringify(after)}`);
+    return (match[1] ?? '').split(',').map((text) => Number(text.trim()));
+  }
+
+  async function window() {
+    const recording = await openEdf(byteSource(NARROW_BYTES));
+    const narrow = getSignal(recording.header, 'Narrow');
+    const [chunk] = await readWindow(recording, {
+      startSeconds: 0,
+      durationSeconds: 1,
+      signalIndices: [narrow.index],
+    });
+    return { narrow, signal: chunk?.signals[0] };
+  }
+
+  it('returns the samples the page prints, unclamped', async () => {
+    // `chunk.signals[0].digital;                 // Int32Array [ -500, -50, 50, 500 ]`
+    const { signal } = await window();
+    expect([...(signal?.digital ?? [])]).toEqual(printedArray('chunk.signals[0].digital;'));
+    // "It never clamps on read" — the samples are what the amplifier wrote.
+    expect([...(signal?.digital ?? [])]).toEqual([...SAMPLES]);
+  });
+
+  it('counts the two the page counts', async () => {
+    // `chunk.signals[0].outOfDigitalRangeCount;  // 2`
+    const printed = Number(/outOfDigitalRangeCount;\s*\/\/ (\d+)/.exec(PAGE)?.[1]);
+    const { signal } = await window();
+    expect(signal?.outOfDigitalRangeCount).toBe(printed);
+  });
+
+  it('clamps to the bounds the page prints', async () => {
+    // `clamped;                       // Int32Array [ -100, -50, 50, 100 ]`
+    const { narrow, signal } = await window();
+    const clamped = clampToDigitalRange(narrow, signal?.digital ?? new Int32Array());
+    expect([...clamped]).toEqual(printedArray('const clamped = clampToDigitalRange('));
+  });
+
+  it('orders the bounds before comparing, so an inverted range is not all out of range', async () => {
+    // "The comparison uses `min` and `max` of the two declared bounds rather than the pair as
+    //  written. A file with an inverted digital range therefore does not report every sample as
+    //  out of range." The same rule is why `clampToDigitalRange` does not collapse the channel:
+    //  "the naive bounds are an empty interval that collapses every sample onto a single value."
+    const bytes = buildEdf({
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      signals: [
+        {
+          label: 'Backwards',
+          samplesPerRecord: SAMPLES.length,
+          // Declared the wrong way round, which is not sanctioned but does occur.
+          raw: { digitalMinimum: '100     ', digitalMaximum: '-100    ' },
+          sample: (_record, index) => SAMPLES[index] ?? 0,
+        },
+      ],
+    });
+    const recording = await openEdf(byteSource(bytes));
+    const backwards = getSignal(recording.header, 'Backwards');
+    const [chunk] = await readWindow(recording, {
+      startSeconds: 0,
+      durationSeconds: 1,
+      signalIndices: [backwards.index],
+    });
+
+    // Two out of range, not four: the same two that are outside -100..100 either way round.
+    expect(chunk?.signals[0]?.outOfDigitalRangeCount).toBe(2);
+    // And the clamp keeps four distinct values rather than folding them onto one.
+    const clamped = clampToDigitalRange(backwards, chunk?.signals[0]?.digital ?? new Int32Array());
+    expect([...clamped]).toEqual([-100, -50, 50, 100]);
   });
 });

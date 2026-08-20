@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.317
+
+- **Added** an execution of the out-of-range section of `physical-values.md` — the four samples the
+  window returns unclamped, the count of two beside them, and the four values
+  `clampToDigitalRange` produces — all read out of the printed comments rather than restated.
+- Also checked is the sentence those two features turn on: both order the declared bounds before
+  using them. A file whose digital minimum and maximum are the wrong way round still reports two
+  samples out of range rather than every one of them, and still clamps to four distinct values
+  rather than folding the channel onto a single one, which is what the pair as written would do.
+
 ## 0.4.316
 
 - **Added** an execution of the negative-gain section of `physical-values.md`: the scale it prints,
