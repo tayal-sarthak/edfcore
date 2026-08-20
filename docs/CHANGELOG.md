@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.287
+
+- **Added** a check on what `npm publish` would actually send. `publint` runs in CI and checks the
+  manifest is well formed; it says nothing about membership, and membership is where the claims
+  are — `tests/README.md` promises "nothing under `tests/` ever ships", and the fixture policy
+  says the six committed binaries are excluded from the published package.
+- Wrong in either direction is quiet. A stray `tests/` ships 2.1 MB of other people's EDF files to
+  every consumer, with the licence questions that policy exists to avoid; a missing `dist/` ships
+  a package that installs and cannot be imported. Neither surfaces until someone downloads it, and
+  by then the version is immutable. Asked through `npm pack --dry-run`, which is the code path a
+  publish takes, rather than by reimplementing npm's ignore rules — which is the whole difficulty
+  of the question. Every exports and `bin` target is checked to be present, and `docs/` is checked
+  to contain the changelog and nothing else.
+
 ## 0.4.286
 
 - **Guarded** the two `git push` calls, which were the last unguarded network steps in the release.
