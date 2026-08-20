@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.307
+
+- **Marked** the fourteen changelog entries for versions that were never released. Each of them —
+  0.4.231 through 0.4.236, 0.4.241, 0.4.242, and 0.4.287 through 0.4.292 — was written before its
+  release failed, so the entry reads exactly like one that shipped. The correction lived in a
+  different entry further up, which a reader at `## 0.4.288` never sees: they get a normal-looking
+  changelog entry for a version `npm install edfcore@0.4.288` cannot fetch.
+- The older holes already did this right. 0.2.29, 0.2.36, 0.2.59 and 0.4.176 each open by saying
+  "Never released" and naming the version that carried the work, which is the convention
+  `scripts/release.mjs` points at when it tells you to record a consumed number. These fourteen
+  now do the same, and say which version carried them.
+
 ## 0.4.306
 
 - **Built** the file `discontinuous.md` draws and read it. The page opens with a diagram — six
@@ -185,6 +197,8 @@ defect; those are called out below.
 
 ## 0.4.292
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.293`.
+
 - **Fixed** the tarball check added in 0.4.287, which broke the publish it was written to protect.
   It ran `npm pack --dry-run --json` without `--ignore-scripts`, so `npm pack` ran the pack
   lifecycle — and this package's `prepublishOnly` is `npm run check && npm run build`. The pack
@@ -201,6 +215,8 @@ defect; those are called out below.
 
 ## 0.4.291
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.293`.
+
 - **Extended** `verify:site` to the rendered head of every built page. `Base.astro` builds it once
   for all of them, which is exactly why a page that misses it misses it silently — nothing renders
   differently. Title, description, canonical and the two Open Graph tags are now required on all 27
@@ -213,6 +229,8 @@ defect; those are called out below.
   and exists to be followed rather than read.
 
 ## 0.4.290
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.293`.
 
 - **Added** `npm run verify:site`, which checks what the site build produced rather than that it
   produced something. `llms.txt`, `llms-full.txt`, the markdown twin of every page, `robots.txt`
@@ -227,6 +245,8 @@ defect; those are called out below.
 
 ## 0.4.289
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.293`.
+
 - **Tested** `header/fields.ts` directly, the last source module no test imported. It is the sole
   owner of where each of the ten fixed fields lives and which diagnostic a field that fails its
   grammar deserves, and every function in it ran only as a step inside `parseHeader` — covered by
@@ -240,6 +260,8 @@ defect; those are called out below.
   two have to agree because both describe a format neither of them defines.
 
 ## 0.4.288
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.293`.
 
 - **Tested** `options.ts` directly for the first time. It is 66 lines of Layer 1 whose whole job is
   refusing bad input, and no test imported it — every path through it ran only as a side effect of
@@ -256,6 +278,8 @@ defect; those are called out below.
   true.
 
 ## 0.4.287
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.293`.
 
 - **Added** a check on what `npm publish` would actually send. `publint` runs in CI and checks the
   manifest is well formed; it says nothing about membership, and membership is where the claims
@@ -902,6 +926,8 @@ defect; those are called out below.
 
 ## 0.4.242
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.243`.
+
 - **Fixed** the link checker's own hand-written inventory, six releases after it was added to
   catch exactly that. 0.4.236 listed the site's standalone routes — `/`, `/demo`, `/llms.txt` and
   the rest — as a literal set, so deleting a route would have left the list vouching for it, and
@@ -913,6 +939,8 @@ defect; those are called out below.
   derivation has to get right.
 
 ## 0.4.241
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.243`.
 
 - **Added** checks on `tests/README.md`, which described this suite with nothing checking that it
   still did. It is where the root README sends a contributor, and the fixture policy it states is
@@ -982,6 +1010,8 @@ defect; those are called out below.
 
 ## 0.4.236
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.237`.
+
 - **Added** a check that every internal link on the site points at something that exists. The
   documentation pages carry over a hundred `/docs/...` and `#anchor` links between them and
   nothing checked one: `astro check` validates types and content collections, not hrefs, and a
@@ -995,6 +1025,8 @@ defect; those are called out below.
   landing page's four are the ones a reader hits first. Nothing was broken today.
 
 ## 0.4.235
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.237`.
 
 - **Added** documentation for the three selection types, taking the recorded undocumented list
   from eleven to eight. `StreamSelection`, `EnvelopeSelection` and `TriggerSelection` are what
@@ -1010,6 +1042,8 @@ defect; those are called out below.
 
 ## 0.4.234
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.237`.
+
 - **Added** documentation for the three formatter options types, and took them off the recorded
   list of undocumented ones. `FormatHeaderOptions`, `FormatAnnotationsOptions` and
   `FormatReportOptions` are exported and every field of each was described somewhere in prose, but
@@ -1021,6 +1055,8 @@ defect; those are called out below.
   down from fourteen to eleven, which is the direction 0.4.220 built it to move in.
 
 ## 0.4.233
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.237`.
 
 - **Changed** the packaging checks to run on every push instead of only at publish time.
   `publint --strict` and `@arethetypeswrong/cli` are the two things `npm run check` cannot do —
@@ -1034,6 +1070,8 @@ defect; those are called out below.
 
 ## 0.4.232
 
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.237`.
+
 - **Fixed** the site's version sweep reading only `.astro` files. `website/src/pages/` also holds
   seven `.ts` routes, and they emit prose exactly the way a component does: `llms.txt` is the map
   an agent is handed, `[...slug].md.ts` is the markdown twin of every documentation page, and
@@ -1045,6 +1083,8 @@ defect; those are called out below.
   claim; what it says about the past is history. HTML comments are left in — those ship.
 
 ## 0.4.231
+
+> **Never released.** This version was tagged and its publish run failed, so it is not on npm. Everything below shipped in `0.4.237`.
 
 - **Fixed** four documentation sweeps reading a narrower set of pages than the site publishes.
   `docs-coverage.test.ts`, `diagnostic-docs.test.ts` and `readme-status.test.ts` — the last of
