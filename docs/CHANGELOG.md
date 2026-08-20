@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.311
+
+- **Added** an execution of the worked address on `edf-format.md`. The page prints a hand-written
+  `byteOfSample` and one result — byte 1832 for sample 20 of a 16-samples-per-record channel,
+  "record 1, sample 4" — as the fastest way to understand the layout. The index and the address
+  are parsed out of the page, the arithmetic is run against a file built to the snippet's
+  description, and the two bytes at that address are decoded and compared with the sample edfcore
+  returns for the same index.
+- The page says "edfcore does that arithmetic for you", and that sentence is the one worth
+  holding: the value of the printed byte is that it is the byte the library reads, so the check
+  is against a real read rather than against the formula restated.
+
 ## 0.4.310
 
 - **Added** the second half of 0.4.309: the per-signal address table on `edf-format.md`, ten rows

@@ -22,8 +22,12 @@ import {
   SIGNAL_FIELD_BLOCK_OFFSETS,
   SIGNAL_FIELD_WIDTHS,
 } from '../../src/constants.js';
+import { getSignal } from '../../src/header/lookup.js';
 import { signalFieldOffset } from '../../src/header/signals.js';
+import { byteSource } from '../../src/io/bytes.js';
+import { openEdf, readWindow } from '../../src/recording.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
+import { buildEdf } from '../support/writer.js';
 
 const PAGE = DOCS_PAGES.get('edf-format.md') ?? '';
 
@@ -129,5 +133,86 @@ describe('the per-signal address table', () => {
         });
       }
     }
+  });
+});
+
+/**
+ * The page's own `byteOfSample`, transcribed. It is printed as something to read once rather
+ * than to use — "edfcore does that arithmetic for you" — so what matters is that the address it
+ * produces is the address edfcore reads from, not that a caller ever runs it.
+ */
+function byteOfSample(
+  header: { headerByteLength: number; recordByteLength: number; bytesPerSample: number },
+  signal: { samplesPerRecord: number; recordByteOffset: number },
+  sampleIndex: number,
+): number {
+  const record = Math.floor(sampleIndex / signal.samplesPerRecord);
+  const withinRecord = sampleIndex % signal.samplesPerRecord;
+  return (
+    header.headerByteLength +
+    record * header.recordByteLength +
+    signal.recordByteOffset +
+    withinRecord * header.bytesPerSample
+  );
+}
+
+describe('the address the page works out by hand', () => {
+  /** The file the snippet opens: `'Resp', 16 samples per record` as signal 1. */
+  const BYTES = buildEdf({
+    recordCount: 30,
+    recordDurationSeconds: 1,
+    signals: [
+      { label: 'EEG Fpz-Cz', samplesPerRecord: 256 },
+      // Every sample distinct across the whole channel, so a value identifies its own address.
+      {
+        label: 'Resp',
+        samplesPerRecord: 16,
+        sample: (record, within) => record * 16 + within - 240,
+      },
+    ],
+  });
+
+  /** `byteOfSample(recording.header, signal, 20);  // 1832 — record 1, sample 4 of that signal` */
+  const printed =
+    /byteOfSample\(recording\.header, signal, (\d+)\);\s*\/\/ (\d+) — record (\d+), sample (\d+)/.exec(
+      PAGE,
+    );
+
+  it('prints a worked example the page can be read for', () => {
+    expect(printed).not.toBeNull();
+  });
+
+  it('computes the byte the page prints', async () => {
+    const [, index = '', address = '', record = '', within = ''] = printed ?? [];
+    const { header } = await openEdf(byteSource(BYTES));
+    const resp = getSignal(header, 'Resp');
+    expect(resp.samplesPerRecord).toBe(16);
+    expect(byteOfSample(header, resp, Number(index))).toBe(Number(address));
+    // The two halves of the division, which the comment states as the reason for the number.
+    expect(Math.floor(Number(index) / resp.samplesPerRecord)).toBe(Number(record));
+    expect(Number(index) % resp.samplesPerRecord).toBe(Number(within));
+  });
+
+  it('is the byte edfcore reads that sample from', async () => {
+    const [, index = '', address = ''] = printed ?? [];
+    const recording = await openEdf(byteSource(BYTES));
+    const resp = getSignal(recording.header, 'Resp');
+    const sampleIndex = Number(index);
+
+    // Read the one record holding it and pick the sample out on the signal's own grid.
+    const [chunk] = await readWindow(recording, {
+      startSeconds: sampleIndex / resp.samplesPerRecord,
+      durationSeconds: 1,
+      signalIndices: [resp.index],
+    });
+    const within = sampleIndex % resp.samplesPerRecord;
+    const value = chunk?.signals[0]?.digital[within];
+
+    // Decode the two bytes at the printed address straight out of the file, little-endian two's
+    // complement, the way the page's own `decodeEdfSample` does.
+    const b0 = BYTES[Number(address)] ?? 0;
+    const b1 = BYTES[Number(address) + 1] ?? 0;
+    const raw = b0 | (b1 << 8);
+    expect(value).toBe(raw & 0x8000 ? raw - 0x10000 : raw);
   });
 });
