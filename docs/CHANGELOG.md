@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.313
+
+- **Added** an execution of the conversion table on `physical-values.md`: four rows of exact
+  float64 literals showing where EDFlib's expression and the textbook one part company. The
+  literals are parsed from the page, edfcore's column is produced by `toPhysical` and the other by
+  the rejected form, and both are compared with `Object.is` — the comparison the golden-value
+  harness uses, and the only one that can see the digit the table exists to show.
+- The table is the argument for the package's one deliberate numerical choice, so its numbers
+  being right mattered more than most. They were, and nothing held them there. The scale the page
+  prints beside it and the claim that the two forms agree only at the endpoints are checked from
+  the same rows.
+
 ## 0.4.312
 
 - **Added** a cross-check of the sample decoders printed on `edf-format.md` against edfcore's own.
