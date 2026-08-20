@@ -29,6 +29,7 @@ import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readWindow } from '../../src/recording.js';
+import { DOCS_PAGES } from '../support/docs-pages.js';
 
 interface GoldenSignal {
   readonly index: number;
@@ -205,6 +206,51 @@ describe('the parity is a real constraint, not an accident of these fixtures', (
 
     // Not "some": a specific, large fraction, so a change that quietly makes them agree is visible.
     expect(differing).toBeGreaterThan(expected.sampleCount / 4);
+  });
+
+  it('disagrees on exactly the count physical-values.md publishes, with the value it prints', () => {
+    // The page justifies the whole pinning with one measurement: "Substituting the numerically
+    // better textbook expression fails it on 140 of 256 samples of the symmetric fixture — for
+    // example `-492.15686274509807` where pyEDFlib says `-492.156862745098`."
+    //
+    // The bound above says "more than a quarter", which is the right shape for an argument that
+    // the fixtures can tell the two forms apart. It is the wrong shape for a sentence quoting an
+    // exact count and an exact pair of values, and that sentence is the page's entire evidence.
+    // So the numbers are read out of the page and reproduced from the committed pyEDFlib output.
+    // Read with the page's line wrapping collapsed: the sentence wraps mid-claim, and rewrapping
+    // a paragraph must not be able to switch this check off.
+    const page = (DOCS_PAGES.get('physical-values.md') ?? '').replace(/\s+/g, ' ');
+    const claim =
+      /fails it on (\d+) of (\d+) samples of the symmetric fixture [^`]*`(-?[\d.]+)` where pyEDFlib says `(-?[\d.]+)`/.exec(
+        page,
+      );
+    expect(claim).not.toBeNull();
+
+    const { golden } = load('edf-symmetric');
+    const expected = golden.signals[0];
+    if (expected === undefined) throw new Error('fixture missing');
+
+    const gain =
+      (expected.physicalMaximum - expected.physicalMinimum) /
+      (expected.digitalMaximum - expected.digitalMinimum);
+
+    let differing = 0;
+    let firstPair: readonly [number, number] | undefined;
+    for (let i = 0; i < expected.sampleCount; i += 1) {
+      const textbook =
+        expected.physicalMinimum +
+        ((expected.digital[i] as number) - expected.digitalMinimum) * gain;
+      const pyedflib = fromBits(expected.physicalBits[i] as string);
+      if (Object.is(textbook, pyedflib)) continue;
+      differing += 1;
+      firstPair ??= [textbook, pyedflib];
+    }
+
+    expect(expected.sampleCount).toBe(Number(claim?.[2]));
+    expect(differing).toBe(Number(claim?.[1]));
+    // Printed as decimals rather than bits, so compared as the shortest round-trip of each.
+    expect(String(firstPair?.[0])).toBe(claim?.[3]);
+    expect(String(firstPair?.[1])).toBe(claim?.[4]);
   });
 });
 

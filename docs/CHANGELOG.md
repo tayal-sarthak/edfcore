@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.318
+
+- **Strengthened** the check that the golden fixtures can tell the two scaling forms apart.
+  `physical-values.md` justifies pinning EDFlib's expression with one measurement — the textbook
+  form "fails it on 140 of 256 samples of the symmetric fixture", with an example pair of values —
+  and the existing assertion was that more than a quarter of the asymmetric file's samples differ.
+- That bound is the right shape for "the fixtures are not vacuous" and the wrong shape for a
+  sentence quoting an exact count and an exact pair of decimals. Both numbers and both values are
+  now read out of the page and reproduced from the committed pyEDFlib output, so the page's
+  evidence is measured rather than remembered. The looser bound stays; it says something different.
+
 ## 0.4.317
 
 - **Added** an execution of the out-of-range section of `physical-values.md` — the four samples the
