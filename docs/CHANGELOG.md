@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.328
+
+- **Added** a guard for the release model 0.4.327 introduced. Three files describe it and none of
+  them enforced it, and the dangerous edit is small and looks like a revert: putting `release:
+  types: [published]` back on `publish.yml` leaves every test green, every workflow valid, and
+  `scripts/release.mjs` pushing tags that trigger nothing.
+- That is not hypothetical. It is exactly how 0.4.287 through 0.4.292 were lost — six versions
+  tagged, six green CI runs, nothing on npm, found only by looking at the registry. So the trigger
+  is asserted from the outside, along with the two orderings the gate depends on: that `ci.yml`
+  still runs on a push to main, since the release polls for check runs that would otherwise never
+  register, and that `release.mjs` pushes main before it tags rather than after.
+
 ## 0.4.327
 
 - **Changed** how publishing is triggered: `publish.yml` now runs on a pushed **tag** rather than
