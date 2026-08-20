@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.325
+
+- **Added** a check for the claim `edf-format.md` closes with: "Every diagnostic edfcore emits
+  names the clause it comes from." That is the promise that makes a warning adjudicable — `EDF+
+  additional specification 5` can be checked against a document — and nothing held it.
+  `specReference` is optional on `DiagnosticInit`, so leaving it out is neither a type error nor a
+  lint error, and most emission sites pass it positionally through a helper, which is why a static
+  scan of the object literals answers the wrong question.
+- So the diagnostics are asked instead: nine targeted files for the header defects that need a
+  particular pair of fields, plus a bit-flip sweep over the first 900 bytes of a well-formed EDF+
+  file. Between them they produce twenty-four of the forty-six codes, every one of which names a
+  document rather than a feeling. The reach is asserted rather than assumed, and the docblock says
+  plainly that this demonstrates the claim over half the table rather than proving it over all of
+  it — the other twenty-two need conditions one fixture cannot reach.
+
 ## 0.4.324
 
 - **Added** an execution of the TAL grammar `edf-format.md` prints as ABNF. Two of its five lines
