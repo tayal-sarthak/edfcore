@@ -19,7 +19,13 @@
 
 import { describe, expect, it } from 'vitest';
 import * as edfcore from '../../src/index.js';
+import { byteSource } from '../../src/io/bytes.js';
+import { buildRecordIndex } from '../../src/record-index.js';
+import { openEdf } from '../../src/recording.js';
+import { gridSampleStartSeconds } from '../../src/sample-grid.js';
+import { sampleStartSecondsOf } from '../../src/sample-locate.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
+import { minimalEdfPlus } from '../support/writer.js';
 
 const PAGE = DOCS_PAGES.get('migrating-to-0-3.md') ?? '';
 const EXPORTS = new Set(Object.keys(edfcore));
@@ -107,5 +113,98 @@ describe('the find-and-replace the page hands you', () => {
     );
     expect(naive).toContain('gridSampleStartTicksOf');
     expect(EXPORTS.has('gridSampleStartTicksOf')).toBe(false);
+  });
+});
+
+describe('the two numbers the page puts side by side', () => {
+  /**
+   * "a file with a seven-second hole after record 2", read out of the prose.
+   *
+   * The gap is spelled rather than written as a numeral, so it goes through a word list — the
+   * same way `tests-readme.test.ts` reads counts that are written for a person rather than for a
+   * parser. Numerals are accepted too, in case the sentence is ever rewritten.
+   */
+  const NUMBER_WORDS: ReadonlyMap<string, number> = new Map([
+    ['one', 1],
+    ['two', 2],
+    ['three', 3],
+    ['four', 4],
+    ['five', 5],
+    ['six', 6],
+    ['seven', 7],
+    ['eight', 8],
+    ['nine', 9],
+    ['ten', 10],
+  ]);
+  const holeWord = /a ([a-z]+|\d+)-second hole after record \d+/.exec(PAGE)?.[1] ?? '';
+  const HOLE_SECONDS = NUMBER_WORDS.get(holeWord) ?? Number(holeWord);
+  const AFTER_RECORD = Number(/-second hole after record (\d+)/.exec(PAGE)?.[1]);
+
+  /** `gridSampleStartSeconds(signal, 12, d);   // 3` */
+  const GRID = /gridSampleStartSeconds\(signal, (\d+), d\);\s*\/\/ (\d+)/.exec(PAGE);
+  /** `// record 3 truly begins at 10 s` */
+  const TRUE = /\/\/ record (\d+) truly begins at (\d+) s/.exec(PAGE);
+
+  const SAMPLES_PER_RECORD = 4;
+
+  /** The file the page describes: contiguous to `AFTER_RECORD`, then a hole. */
+  const BYTES = minimalEdfPlus({
+    plus: 'D',
+    recordCount: 6,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD }],
+    annotationSignals: [{ samplesPerRecord: 40 }],
+    recordOnsetSeconds: (record) => (record <= AFTER_RECORD ? record : record + HOLE_SECONDS),
+  });
+
+  it('states both numbers, so the fixture below is the page’s file', () => {
+    expect(Number.isInteger(HOLE_SECONDS)).toBe(true);
+    expect(HOLE_SECONDS).toBeGreaterThan(0);
+    expect(GRID).not.toBeNull();
+    expect(TRUE).not.toBeNull();
+    // The sample the page picks is the first of the record it then talks about.
+    expect(Number(GRID?.[1]) / SAMPLES_PER_RECORD).toBe(Number(TRUE?.[1]));
+  });
+
+  it('puts the twelfth sample on the grid where the page puts it', async () => {
+    const { header } = await openEdf(byteSource(BYTES));
+    const signal = header.signals[0];
+    if (signal === undefined) throw new Error('fixture missing');
+    // The grid form takes a signal and a record duration and nothing else, which is exactly why
+    // it cannot know about the hole.
+    expect(gridSampleStartSeconds(signal, Number(GRID?.[1]), header.recordDurationTicks)).toBe(
+      Number(GRID?.[2]),
+    );
+  });
+
+  it('puts the same sample in real time where the page puts it', async () => {
+    const opened = await openEdf(byteSource(BYTES));
+    // "Both refuse a probed index on a file with gaps rather than guessing." A scanned index is
+    // what turns the question into an answer.
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    expect(sampleStartSecondsOf(recording, 0, Number(GRID?.[1]))).toBe(Number(TRUE?.[2]));
+  });
+
+  it('makes the gap the whole difference between the two', async () => {
+    const opened = await openEdf(byteSource(BYTES));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    const grid = Number(GRID?.[2]);
+    const real = sampleStartSecondsOf(recording, 0, Number(GRID?.[1]));
+    // "Both numbers are correct about different things."
+    expect(real - grid).toBe(HOLE_SECONDS);
+  });
+
+  it('has them agree before the hole, which is why the difference was easy to miss', async () => {
+    // "On a contiguous recording that is also elapsed recording time, and the two ideas are the
+    //  same number — which is exactly why the difference was easy to miss."
+    const opened = await openEdf(byteSource(BYTES));
+    const recording = { ...opened, index: await buildRecordIndex(opened) };
+    const signal = opened.header.signals[0];
+    if (signal === undefined) throw new Error('fixture missing');
+    for (let sample = 0; sample < (AFTER_RECORD + 1) * SAMPLES_PER_RECORD; sample += 1) {
+      expect(gridSampleStartSeconds(signal, sample, opened.header.recordDurationTicks)).toBe(
+        sampleStartSecondsOf(recording, 0, sample),
+      );
+    }
   });
 });

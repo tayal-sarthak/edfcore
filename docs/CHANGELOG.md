@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.331
+
+- **Added** an execution of the example `migrating-to-0-3.md` builds its whole argument on: on a
+  file with a seven-second hole after record 2, the grid form puts sample 12 at 3 seconds and the
+  recording-aware form puts it at 10. Both numbers, the size of the hole and the record it follows
+  are read out of the page, and the fixture is built from them.
+- The sentence the rename exists for is checked too, from the other side: before the hole the two
+  forms return the same number for every sample, which is exactly why the difference was easy to
+  miss. And the gap accounts for the whole of the difference after it — the page says both numbers
+  are correct about different things, and this is the arithmetic that makes that true.
+
 ## 0.4.330
 
 - **Added** a check over `migrating-to-0-3.md`, which was one of four documentation pages no test
