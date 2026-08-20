@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.329
+
+- **Added** `--through` to `npm run announce`, which closes a batch at a version that is not the
+  newest tag. A batch is what was asked for rather than what happens to be tagged, so two of them
+  can be in flight at once — and without this the only expressible range ended at the newest tag,
+  so announcing an older batch would have swallowed the newer one.
+- It refuses a version that has no tag rather than announcing an empty or a wrong range, and the
+  default is unchanged: everything since the last release.
+
 ## 0.4.328
 
 - **Added** a guard for the release model 0.4.327 introduced. Three files describe it and none of

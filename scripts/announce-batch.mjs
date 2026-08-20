@@ -13,8 +13,13 @@
  * is picked up by the next run. The notes are the changelog entries for those versions, verbatim,
  * because they are already written for a reader who wants to know whether they were affected.
  *
- *     npm run announce               # everything since the last release
- *     npm run announce -- --dry-run  # print what it would cut
+ * `--through` closes a batch early, at a version that is not the newest tag. Batches are defined
+ * by what was asked for, not by what happens to be tagged, so two of them can be in flight at once
+ * — which is exactly how 0.4.328 came to sit above a range that ended at 0.4.327.
+ *
+ *     npm run announce                          # everything since the last release
+ *     npm run announce -- --through 0.4.327     # …up to and including that version
+ *     npm run announce -- --dry-run             # print what it would cut
  */
 
 import { execFileSync } from 'node:child_process';
@@ -23,6 +28,18 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = new URL('../', import.meta.url);
 const dryRun = process.argv.includes('--dry-run');
+
+/** `--through 0.4.327`, the last version of the batch. Defaults to the newest tag. */
+const through = (() => {
+  const at = process.argv.indexOf('--through');
+  if (at === -1) return undefined;
+  const value = process.argv[at + 1];
+  if (value === undefined || !/^\d+\.\d+\.\d+$/.test(value)) {
+    console.error('\n  --through needs a version, as in `--through 0.4.327`.\n');
+    process.exit(1);
+  }
+  return value;
+})();
 
 const die = (message) => {
   console.error(`\n  ${message}\n`);
@@ -71,14 +88,19 @@ const lastAnnounced = (() => {
   return tags.filter((version) => released.has(version)).at(-1);
 })();
 
+if (through !== undefined && !tags.includes(through)) {
+  die(`--through ${through}, but there is no v${through} tag here. Nothing was announced.`);
+}
+
 const batch = tags.filter(
-  (version) => lastAnnounced === undefined || compare(version, lastAnnounced) > 0,
+  (version) =>
+    (lastAnnounced === undefined || compare(version, lastAnnounced) > 0) &&
+    (through === undefined || compare(version, through) <= 0),
 );
 
 if (batch.length === 0) {
-  console.log(
-    `\n  Nothing to announce: ${tags.at(-1)} is the newest tag and it already has one.\n`,
-  );
+  const newest = through ?? tags.at(-1);
+  console.log(`\n  Nothing to announce up to ${newest}: it already carries a release.\n`);
   process.exit(0);
 }
 

@@ -110,6 +110,17 @@ describe('a GitHub release is not part of shipping a version', () => {
   it('refuses to announce a tag that has no changelog entry', () => {
     expect(ANNOUNCE).toContain('have no changelog entry');
   });
+
+  it('can close a batch at a version that is not the newest tag', () => {
+    // A batch is what was asked for, not what happens to be tagged, so two can be in flight at
+    // once — which is how 0.4.328 came to sit above a range that ended at 0.4.327. Without
+    // `--through` the only expressible range ends at the newest tag, so the older batch could
+    // not be announced without swallowing the newer one.
+    expect(ANNOUNCE).toContain("indexOf('--through')");
+    expect(ANNOUNCE).toContain('compare(version, through) <= 0');
+    // And it refuses a version with no tag rather than announcing an empty or wrong range.
+    expect(ANNOUNCE).toMatch(/there is no v\$\{through\} tag here/);
+  });
 });
 
 describe('the model AGENTS.md states', () => {
