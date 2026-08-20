@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.302
+
+- **Made** `api-reading.md`'s read counts the expectation rather than a second statement of it.
+  "On a plain EDF or BDF it costs two reads. On a file that carries an annotations signal it costs
+  four. A single-record file is probed once, for three reads total" is the random-access claim in
+  miniature, and the number a reader budgets an HTTP round trip against.
+  `read-pattern.test.ts` already pins those counts — against literals it holds itself, so the page
+  and the suite each stated the contract and nothing compared them.
+- The numbers are parsed out of the sentence and each case driven through the counting source,
+  including the one the page states without a number: a file with no data records is not probed at
+  all, so it costs the plain count. Spelled-out numbers are read through a word list, the same
+  treatment the fixture counts get, because prose is the right place for them to be words.
+
 ## 0.4.301
 
 - **Executed** the worked example on `concepts.md`, the page the site opens with and the README
