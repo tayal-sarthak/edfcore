@@ -20,7 +20,7 @@
       "sha256": "61daed34698fbd7f8750957ffc5cc1ea3315caf6f84a46807b49a2243e1b76c5",
       "source": "teuniz.net EDF/BDF test files",
       "licence": "No licence stated. Synthetic generator output, not patient data. Downloaded on demand and never redistributed.",
-      "exercises": "Plain EDF. 16 signals at four different sample rates (25/50/100/200 Hz), several physical dimensions (uV, mV, V, %, BPM, DegC), and constant DC channels."
+      "purpose": "Plain EDF. 16 signals at four different sample rates (25/50/100/200 Hz), several physical dimensions (uV, mV, V, %, BPM, DegC), and constant DC channels."
     },
     {
       "name": "test_generator_2.edf",
@@ -30,7 +30,7 @@
       "sha256": "27d95e43830300d0e20385bbc61243eaaee9fa5429865da5240a9272293de7f5",
       "source": "teuniz.net EDF/BDF test files",
       "licence": "No licence stated. Synthetic generator output, not patient data.",
-      "exercises": "EDF+C with annotations. Channels are LABELLED WITH THEIR OWN EXPECTED CONTENT ('sine 8.5 Hz', 'squarewave', 'ramp'), which is what makes numeric verification possible rather than just checking it parses."
+      "purpose": "EDF+C with annotations. Channels are LABELLED WITH THEIR OWN EXPECTED CONTENT ('sine 8.5 Hz', 'squarewave', 'ramp'), which is what makes numeric verification possible rather than just checking it parses."
     },
     {
       "name": "test_generator_2.bdf",
@@ -40,7 +40,7 @@
       "sha256": "0562b76c3d3e49ca332b9f62a2827e3df39fa5c9273c80c9778c1836d688ba04",
       "source": "teuniz.net EDF/BDF test files",
       "licence": "No licence stated. Synthetic generator output, not patient data.",
-      "exercises": "BDF+C, 24-bit samples. Same signals as the EDF+ file above, so the 3-byte sign-extension path can be checked against the 2-byte one on identical content."
+      "purpose": "BDF+C, 24-bit samples. Same signals as the EDF+ file above, so the 3-byte sign-extension path can be checked against the 2-byte one on identical content."
     },
     {
       "name": "SC4001EC-Hypnogram.edf",
@@ -49,7 +49,7 @@
       "sha256": "a4cf67694ade1b52a0ddd06d5817fd45d2d3e8bac5302f640f3e9cfbbf12a996",
       "source": "PhysioNet Sleep-EDF Database Expanded (sleep-edfx) 1.0.0",
       "licence": "Open Data Commons Attribution License v1.0 (ODC-By). De-identified.",
-      "exercises": "A real EDF+ scoring file with recordDuration = 0 and no ordinary signals \u2014 legal, and the case that breaks readers which divide by the record duration. 154 sleep-stage annotations."
+      "purpose": "A real EDF+ scoring file with recordDuration = 0 and no ordinary signals \u2014 legal, and the case that breaks readers which divide by the record duration. 154 sleep-stage annotations."
     },
     {
       "name": "SC4001E0-PSG.edf",
@@ -58,7 +58,7 @@
       "sha256": "2b40a18adf76af69a42d6db1f30f31d26b369f6d27ca0050ef30147ef892b131",
       "source": "PhysioNet Sleep-EDF Database Expanded (sleep-edfx) 1.0.0",
       "licence": "Open Data Commons Attribution License v1.0 (ODC-By). De-identified.",
-      "exercises": "A real 22-hour polysomnography recording, 48 MB, 7 signals mixing 100 Hz and 1 Hz, 30-second data records. The random-access claim is measured against this file. Includes a rectal temperature channel in degrees Celsius, whose physical values are independently checkable against human body temperature."
+      "purpose": "A real 22-hour polysomnography recording, 48 MB, 7 signals mixing 100 Hz and 1 Hz, 30-second data records. The random-access claim is measured against this file. Includes a rectal temperature channel in degrees Celsius, whose physical values are independently checkable against human body temperature."
     },
     {
       "name": "chb01_01.edf",

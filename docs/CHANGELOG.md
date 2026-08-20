@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.282
+
+- **Fixed** the corpus manifest calling one field two names. Five of the seven entries recorded
+  what a file is for under `exercises` and two under `purpose`, and `tests/README.md` names only
+  the second: the manifest "records the URL, byte size, SHA-256, licence and purpose of each
+  file". Nothing read either — that field exists to be read by a person deciding whether a 48 MB
+  download is worth it — so the split had no symptom until something asked all seven entries the
+  same question.
+- **Added** the check that asked. The manifest is the provenance record on which this repository
+  is willing to pull 59 MB of other people's recordings onto a contributor's machine: the hash is
+  what makes the download reproducible, the licence is where permission is written down, and three
+  of these entries record "no licence stated" together with why that is acceptable. Every field the
+  README names is now required, digests are checked for shape — 64 lowercase hex — because
+  checking the value needs the file, which is the thing this suite refuses to require, and a URL
+  has to be one the fetcher could resolve.
+
 ## 0.4.281
 
 - **Checked** that `sideEffects: false` is honest, rather than merely present. 0.4.230 read the
