@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.315
+
+- **Added** a measurement of the float32 cost `physical-values.md` cites as the reason `toPhysical`
+  has no `Float32` option. Every one of the 2^24 BDF samples on a -500..500 uV channel is converted
+  through the scale edfcore publishes and rounded to float32, and the worst error is compared with
+  the 0.26 of a quantisation step the page prints.
+- The sentence the number supports is checked too: float32 carries 24 significand bits and a BDF
+  sample is a 24-bit integer, so the digital values themselves survive the round trip exactly and
+  there is nothing left for the scaling. Run as a scalar loop — 2^24 float64 samples is 134 MB, and
+  the point is the worst case, not the array.
+
 ## 0.4.314
 
 - **Added** the census underneath the table 0.4.313 pinned: the two conversion forms are run over

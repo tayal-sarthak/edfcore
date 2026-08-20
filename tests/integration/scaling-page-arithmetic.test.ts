@@ -171,3 +171,66 @@ describe('the census the page takes of the whole range', () => {
     expect(Math.round(-Math.log10(inSteps))).toBe(11);
   });
 });
+
+describe('the float32 cost the page refuses to pay', () => {
+  /** The 24-bit range the page names, at the same ±500 µV envelope. */
+  const BDF_RANGE = {
+    physicalMinimum: -500,
+    physicalMaximum: 500,
+    digitalMinimum: -8388608,
+    digitalMaximum: 8388607,
+  } as const;
+
+  const BDF_BYTES = buildEdf({
+    format: 'BDF',
+    recordCount: 1,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'A1', samplesPerRecord: 1, physicalDimension: 'uV', ...BDF_RANGE }],
+  });
+
+  it('is stated on the page in the units the page states it in', () => {
+    expect(FLAT).toContain('the float32 rounding error reaches **0.26 of a quantisation step**');
+  });
+
+  it('reaches that error somewhere in the range', async () => {
+    const { header } = await openEdf(byteSource(BDF_BYTES));
+    const scale = getSignal(header, 'A1').scale;
+    const bitValue = scale?.bitValue ?? Number.NaN;
+    const offset = scale?.offset ?? Number.NaN;
+
+    // Every 24-bit sample, converted the way `toPhysical` converts it and then rounded to
+    // float32. Held as a scalar loop rather than a Float64Array: 2^24 samples is 134 MB.
+    let worst = 0;
+    for (
+      let digital = BDF_RANGE.digitalMinimum;
+      digital <= BDF_RANGE.digitalMaximum;
+      digital += 1
+    ) {
+      const exact = bitValue * (offset + digital);
+      worst = Math.max(worst, Math.abs(Math.fround(exact) - exact) / bitValue);
+    }
+    expect(worst.toFixed(2)).toBe('0.26');
+    // "a quarter of the smallest difference the amplifier can express" — and not half of one,
+    // which is what an error of a whole step would mean.
+    expect(worst).toBeGreaterThan(0.25);
+    expect(worst).toBeLessThan(0.5);
+  });
+
+  it('holds because a 24-bit sample fills the float32 significand exactly', () => {
+    // "Float32 carries 24 significand bits and a BDF sample is a 24-bit integer, so a scaled BDF
+    //  sample doesn't fit."
+    expect(FLAT).toContain('Float32 carries 24 significand bits and a BDF sample is a 24-bit');
+    // The integers themselves survive to the last one the significand can hold, and no further.
+    expect(Math.fround(2 ** 24)).toBe(2 ** 24);
+    expect(Math.fround(2 ** 24 + 1)).not.toBe(2 ** 24 + 1);
+    // So the digital values do fit, and there is nothing left over for the scaling.
+    expect(Math.fround(BDF_RANGE.digitalMinimum)).toBe(BDF_RANGE.digitalMinimum);
+    expect(Math.fround(BDF_RANGE.digitalMaximum)).toBe(BDF_RANGE.digitalMaximum);
+  });
+
+  it('never returns anything but a Float64Array', async () => {
+    // "The output is a `Float64Array`, and there's no `Float32` option."
+    const { header } = await openEdf(byteSource(BDF_BYTES));
+    expect(toPhysical(getSignal(header, 'A1'), [0, 1])).toBeInstanceOf(Float64Array);
+  });
+});
