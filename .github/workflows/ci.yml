@@ -59,3 +59,8 @@ jobs:
       - run: npm --prefix website ci
       - run: npm --prefix website run check
       - run: npm --prefix website run build
+      # What the build produced, rather than that it produced something. `llms.txt`, the markdown
+      # twins and the three endpoints are generated from the collection and are the half of the
+      # site `npm run check` cannot reach — their generators live under `website/`, where an
+      # import drags in a tsconfig the root install does not have.
+      - run: npm run verify:site

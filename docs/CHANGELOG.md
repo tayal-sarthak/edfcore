@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.290
+
+- **Added** `npm run verify:site`, which checks what the site build produced rather than that it
+  produced something. `llms.txt`, `llms-full.txt`, the markdown twin of every page, `robots.txt`
+  and `api.json` are generated from the collection and nothing looked at the output — and each
+  fails silently. A page missing from `llms.txt` is a page an agent never learns about; a `.md`
+  twin that did not render leaves a documented URL 404ing while the HTML page beside it is fine;
+  a `Sitemap:` line naming a file the build did not emit tells a crawler to fetch nothing.
+- It runs in CI's `site` job, after the build, rather than in `npm run check`. These generators
+  live under `website/`, where an import pulls in a tsconfig the root install does not have —
+  the boundary 0.4.264 guards — so the artifact is the only place the question can be asked.
+  Verified by narrowing `llms.txt`'s section list and watching three pages disappear from the map.
+
 ## 0.4.289
 
 - **Tested** `header/fields.ts` directly, the last source module no test imported. It is the sole
