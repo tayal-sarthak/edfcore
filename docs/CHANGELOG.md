@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.289
+
+- **Tested** `header/fields.ts` directly, the last source module no test imported. It is the sole
+  owner of where each of the ten fixed fields lives and which diagnostic a field that fails its
+  grammar deserves, and every function in it ran only as a step inside `parseHeader` — covered by
+  whichever inputs some larger fixture happened to produce.
+- The offsets are the part a whole-file parse cannot check at all: a field read from the wrong
+  offset still parses, it just parses the neighbouring field's bytes. So the table is checked
+  against a header whose every field is filled with a distinct letter, which makes a misread
+  visible rather than plausible, and against the property that the ten fields tile all 256 bytes
+  with no gap and no overlap. The spec's offsets are written out from the specification rather
+  than imported from `constants.ts` — importing them would compare the table with itself, and the
+  two have to agree because both describe a format neither of them defines.
+
 ## 0.4.288
 
 - **Tested** `options.ts` directly for the first time. It is 66 lines of Layer 1 whose whole job is
