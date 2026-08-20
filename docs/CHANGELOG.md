@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.310
+
+- **Added** the second half of 0.4.309: the per-signal address table on `edf-format.md`, ten rows
+  of `256 + ns*K + i*W`. Each row's `K` and `W` are checked against `SIGNAL_FIELD_BLOCK_OFFSETS`
+  and `SIGNAL_FIELD_WIDTHS`, each address is resolved for several signal counts and compared with
+  `signalFieldOffset`, and the two claims the page makes about the table's own shape — that every
+  `K` is the sum of the widths before it, and that the widths total 256 — are computed from it.
+- This is the table the page calls "the layout detail that produces the most wrong parsers", and
+  the reason is in the check: at `ns = 1` the field-major and struct-per-signal layouts are
+  identical, so a one-signal fixture cannot tell them apart. The addresses are resolved at 1, 2 and
+  30 for that reason.
+
 ## 0.4.309
 
 - **Added** a check over the fixed header table on `edf-format.md`: ten rows giving the offset and

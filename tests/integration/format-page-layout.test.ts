@@ -16,7 +16,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { HEADER_FIELDS } from '../../src/constants.js';
+import {
+  EDF_HEADER_BLOCK_BYTES,
+  HEADER_FIELDS,
+  SIGNAL_FIELD_BLOCK_OFFSETS,
+  SIGNAL_FIELD_WIDTHS,
+} from '../../src/constants.js';
+import { signalFieldOffset } from '../../src/header/signals.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
 
 const PAGE = DOCS_PAGES.get('edf-format.md') ?? '';
@@ -64,5 +70,64 @@ describe('the fixed header table', () => {
       next += Number(cells[1]);
     }
     expect(next).toBe(256);
+  });
+});
+
+describe('the per-signal address table', () => {
+  const rows = tableUnder('## The per-signal header is field-major');
+
+  /** `` `256 + ns*96 + i*8` `` as the three numbers in it. */
+  function address(cell: string): { base: number; perSignalCount: number; perIndex: number } {
+    const match = /^`(\d+) \+ ns\*(\d+) \+ i\*(\d+)`$/.exec(cell);
+    if (match === null) throw new Error(`unreadable address cell ${JSON.stringify(cell)}`);
+    return {
+      base: Number(match[1]),
+      perSignalCount: Number(match[2]),
+      perIndex: Number(match[3]),
+    };
+  }
+
+  it('lists every per-signal field, in the order the bytes run', () => {
+    expect(rows).toHaveLength(Object.keys(SIGNAL_FIELD_WIDTHS).length);
+    const published = rows.map((cells) => address(cells[2] ?? '').perSignalCount);
+    expect(published).toEqual(Object.values(SIGNAL_FIELD_BLOCK_OFFSETS));
+  });
+
+  it('gives each field the width the parser reads, in both columns', () => {
+    const widths = Object.values(SIGNAL_FIELD_WIDTHS);
+    expect(rows.map((cells) => Number(cells[1]))).toEqual(widths);
+    // The same width again inside the address, where it multiplies the signal index.
+    expect(rows.map((cells) => address(cells[2] ?? '').perIndex)).toEqual(widths);
+  });
+
+  it('starts every address at the end of the first 256-byte block', () => {
+    for (const cells of rows) expect(address(cells[2] ?? '').base).toBe(EDF_HEADER_BLOCK_BYTES);
+  });
+
+  it('makes each ns multiplier the sum of the widths before it, as the page says', () => {
+    // "The multiplier on `ns` in each row is the sum of the widths of every field before it."
+    let before = 0;
+    for (const cells of rows) {
+      expect(address(cells[2] ?? '').perSignalCount).toBe(before);
+      before += Number(cells[1]);
+    }
+    // "The widths sum to 256, which is why the per-signal section is `ns * 256` bytes."
+    expect(before).toBe(EDF_HEADER_BLOCK_BYTES);
+  });
+
+  it('resolves to the address the parser actually reads', () => {
+    // ns = 1 is the case the page warns about: there the field-major and struct-per-signal
+    // layouts are identical, so it is the one signal count that cannot tell them apart.
+    for (const signalCount of [1, 2, 30]) {
+      for (let index = 0; index < signalCount; index += 1) {
+        const names = Object.keys(SIGNAL_FIELD_WIDTHS) as (keyof typeof SIGNAL_FIELD_WIDTHS)[];
+        names.forEach((field, row) => {
+          const { base, perSignalCount, perIndex } = address(rows[row]?.[2] ?? '');
+          expect(base + signalCount * perSignalCount + index * perIndex).toBe(
+            signalFieldOffset(field, signalCount, index),
+          );
+        });
+      }
+    }
   });
 });
