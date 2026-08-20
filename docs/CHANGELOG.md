@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.301
+
+- **Executed** the worked example on `concepts.md`, the page the site opens with and the README
+  calls "the mental model the rest of the API follows from". It is built almost entirely out of
+  arithmetic on one described file — a 768-byte header, thirty 544-byte records, 17,088 bytes
+  total, and a ten-record read of the narrow channel costing 5,440 bytes for 160 samples — and
+  every number was prose. A reader who works through it and gets a different answer from their own
+  file has no way to tell which of the two is wrong.
+- All of them are correct. What was missing is anything keeping them so: they follow from
+  `headerByteLength = 256 * (signals + 1)` and the record layout, and a change to either would
+  leave the page teaching the old ones. The fixture is built to the page's description with the
+  suite's own writer, which imports nothing from `src/`, so the numbers are checked against a file
+  assembled from the specification rather than against edfcore's idea of one.
+
 ## 0.4.300
 
 - **Executed** the claim the error API is shaped around. `src/errors.ts` says class identity is
