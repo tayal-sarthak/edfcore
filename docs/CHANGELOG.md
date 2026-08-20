@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.316
+
+- **Added** an execution of the negative-gain section of `physical-values.md`: the scale it prints,
+  the three samples it converts, the envelope `physicalRangeOf` reports in size order rather than
+  field order, and the whole `INVERTED_PHYSICAL_RANGE` message it quotes for a one-signal file,
+  compared word for word against the one the package emits.
+- Only the page's hard wraps are undone for that comparison. A run of spaces inside a line is not
+  wrapping — it is the eight-byte physical minimum field quoted as the file holds it, padding
+  included — so collapsing every space would have compared against a message edfcore does not
+  emit. The byte offset in the quote is resolved through `signalFieldOffset`, which is the same
+  `256 + ns*104 + i*8` the address table on `edf-format.md` gives.
+
 ## 0.4.315
 
 - **Added** a measurement of the float32 cost `physical-values.md` cites as the reason `toPhysical`

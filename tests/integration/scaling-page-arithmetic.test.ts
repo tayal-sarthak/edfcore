@@ -18,8 +18,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { toPhysical } from '../../src/decode/physical.js';
+import { physicalRangeOf, toPhysical } from '../../src/decode/physical.js';
 import { getSignal } from '../../src/header/lookup.js';
+import { signalFieldOffset } from '../../src/header/signals.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
@@ -232,5 +233,99 @@ describe('the float32 cost the page refuses to pay', () => {
     // "The output is a `Float64Array`, and there's no `Float32` option."
     const { header } = await openEdf(byteSource(BDF_BYTES));
     expect(toPhysical(getSignal(header, 'A1'), [0, 1])).toBeInstanceOf(Float64Array);
+  });
+});
+
+describe('the negative gain the page works through', () => {
+  /** `// physicalMinimum 500, physicalMaximum -500, over -32768..32767` */
+  const INVERTED_BYTES = buildEdf({
+    recordCount: 1,
+    recordDurationSeconds: 1,
+    signals: [
+      {
+        label: 'Inv',
+        samplesPerRecord: 1,
+        physicalMinimum: 500,
+        physicalMaximum: -500,
+        digitalMinimum: -32768,
+        digitalMaximum: 32767,
+      },
+    ],
+  });
+
+  const inverted = async () => getSignal((await openEdf(byteSource(INVERTED_BYTES))).header, 'Inv');
+
+  it('publishes the negative scale the page prints', async () => {
+    // `inverted.scale;  // { bitValue: -0.015259021896696421, offset: 0.5 }`
+    const printed = /inverted\.scale;\s*\/\/ \{ bitValue: (-[\d.]+), offset: ([\d.]+) \}/.exec(
+      PAGE,
+    );
+    expect(printed).not.toBeNull();
+    const scale = (await inverted()).scale;
+    expect(Object.is(scale?.bitValue, Number(printed?.[1]))).toBe(true);
+    expect(Object.is(scale?.offset, Number(printed?.[2]))).toBe(true);
+  });
+
+  it('converts the three samples to the three values the page prints', async () => {
+    // `toPhysical(inverted, new Int32Array([-32768, 0, 32767]));`
+    // `// Float64Array [ 500, -0.007629510948348211, -500 ]`
+    const printed =
+      /toPhysical\(inverted, new Int32Array\(\[([-\d, ]+)\]\)\);\s*\/\/ Float64Array \[ ([-\d.e, ]+) \]/.exec(
+        PAGE,
+      );
+    expect(printed).not.toBeNull();
+    const digital = (printed?.[1] ?? '').split(',').map((text) => Number(text.trim()));
+    const expected = (printed?.[2] ?? '').split(',').map((text) => Number(text.trim()));
+    const produced = toPhysical(await inverted(), Int32Array.from(digital));
+    expected.forEach((value, index) => {
+      expect(Object.is(produced[index], value)).toBe(true);
+    });
+    // "physical values must fall as digital values rise" — the whole point of the sign.
+    expect(produced[0]).toBeGreaterThan(produced[expected.length - 1] ?? 0);
+  });
+
+  it('reports the declared envelope in size order, not field order', async () => {
+    // `physicalRangeOf(inverted);   // { low: -500, high: 500 }`
+    const printed = /physicalRangeOf\(inverted\);\s*\/\/ \{ low: (-?\d+), high: (-?\d+) \}/.exec(
+      PAGE,
+    );
+    expect(printed).not.toBeNull();
+    const signal = await inverted();
+    expect(physicalRangeOf(signal)).toEqual({
+      low: Number(printed?.[1]),
+      high: Number(printed?.[2]),
+    });
+    // The fields themselves stay as the file wrote them; only the envelope is ordered.
+    expect(signal.physicalMinimum).toBe(500);
+    expect(signal.physicalMaximum).toBe(-500);
+  });
+
+  it('emits the diagnostic the page quotes, word for word', async () => {
+    // The page prints the whole message for a one-signal file. Only the page's HARD WRAPS are
+    // undone — a run of spaces inside a line is not wrapping, it is the eight-byte physical
+    // minimum field quoted as written, and collapsing that would compare a message the package
+    // does not emit.
+    const quoted = /On a one-signal file it reads:\s*```\n([\s\S]*?)```/.exec(PAGE)?.[1] ?? '';
+    expect(quoted).not.toBe('');
+    const { header } = await openEdf(byteSource(INVERTED_BYTES));
+    const diagnostic = header.diagnostics.find((entry) => entry.code === 'INVERTED_PHYSICAL_RANGE');
+    expect(diagnostic?.message).toBe(quoted.replace(/\n\s*/g, ' ').trim());
+    // The padding is load-bearing: the message quotes the field as the file holds it.
+    expect(diagnostic?.message).toContain('"500     "');
+    expect(diagnostic?.raw).toBe('500     ');
+    // "at `info` severity naming the signal, the raw bytes, the byte offset, and the spec clause"
+    expect(diagnostic?.severity).toBe('info');
+    expect(diagnostic?.signalIndex).toBe(0);
+  });
+
+  it('quotes a byte offset the layout actually puts the field at', async () => {
+    // `at byte offset 360` — signal 0's physicalMinimum in a one-signal file, which is the same
+    // `256 + ns*104 + i*8` the address table on `edf-format.md` gives.
+    const offset = Number(/at byte offset (\d+)/.exec(FLAT)?.[1]);
+    expect(offset).toBe(signalFieldOffset('physicalMinimum', 1, 0));
+    const { header } = await openEdf(byteSource(INVERTED_BYTES));
+    expect(
+      header.diagnostics.find((entry) => entry.code === 'INVERTED_PHYSICAL_RANGE')?.byteOffset,
+    ).toBe(offset);
   });
 });
