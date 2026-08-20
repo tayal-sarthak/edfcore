@@ -62,3 +62,48 @@ describe('the changelog version sequence', () => {
     expect(holes).toEqual([]);
   });
 });
+
+/**
+ * A version another entry calls a hole says so in its own entry.
+ *
+ * Fourteen entries were written before their release failed, so each read exactly like one that
+ * shipped while the correction lived further up the file — a reader at `## 0.4.288` got a
+ * normal-looking entry for a version `npm install` cannot fetch (0.4.307). The older holes had
+ * always done this right, which is what made the gap easy to miss.
+ *
+ * The list is derived rather than kept: an entry that says "0.4.287 through 0.4.292 were never
+ * released" declares six holes, and each of those six has to carry the note itself. Nothing here
+ * knows what npm holds — the suite is offline — so the changelog is checked against itself, which
+ * is the strongest form available and catches the failure that actually happened.
+ */
+describe('the versions the changelog says were never released', () => {
+  const RANGE = /(\d+\.\d+\.\d+) (?:through|and) (\d+\.\d+\.\d+) were never released/g;
+
+  /** Every version declared a hole by some entry, expanded from the ranges. */
+  const DECLARED: readonly string[] = [
+    ...new Set(
+      [...CHANGELOG.matchAll(RANGE)].flatMap((match) => {
+        const [, from, to] = match as unknown as [string, string, string];
+        const [major, minor, first] = from.split('.').map(Number) as [number, number, number];
+        const last = Number(to.split('.')[2]);
+        return Array.from({ length: last - first + 1 }, (_, i) => `${major}.${minor}.${first + i}`);
+      }),
+    ),
+  ];
+
+  it('found some, so a passing run is not a vacuous one', () => {
+    expect(DECLARED.length).toBeGreaterThan(10);
+    expect(DECLARED).toContain('0.4.288');
+  });
+
+  it('each say so in their own entry', () => {
+    const silent = DECLARED.filter((version) => {
+      const heading = `## ${version}\n`;
+      const at = CHANGELOG.indexOf(heading);
+      if (at === -1) return true;
+      const body = CHANGELOG.slice(at + heading.length, at + heading.length + 400);
+      return !/never released/i.test(body);
+    });
+    expect(silent, 'entries for versions that are not on npm and do not say so').toEqual([]);
+  });
+});

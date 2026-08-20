@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.308
+
+- **Added** the guard for what 0.4.307 fixed: a version another entry calls a hole has to say so in
+  its own entry. The list is derived rather than kept — an entry saying "0.4.287 through 0.4.292
+  were never released" declares six, and each of those six must carry the note itself.
+- Nothing here knows what npm holds, because the suite is offline. Checking the changelog against
+  itself is the strongest form available, and it is the failure that actually happened: fourteen
+  entries written before their release failed, each reading like one that shipped, with the
+  correction sitting in a different entry the reader never reaches.
+
 ## 0.4.307
 
 - **Marked** the fourteen changelog entries for versions that were never released. Each of them —
