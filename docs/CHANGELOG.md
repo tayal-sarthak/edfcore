@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.322
+
+- **Fixed** a wrong claim on `edf-format.md`. It named `|0`, `<<` and `>>>` together as operators
+  that "wrap it negative without warning" past 2^31. `>>>` is the unsigned shift and never returns
+  a negative number: it truncates to 32 bits and keeps handing back a plausible offset until 2^32,
+  then a wrong one. Grouping it with the other two described the safer failure and hid the more
+  dangerous one — a negative offset is caught by the first bounds check it meets, and a positive
+  wrong one is not.
+- Found while writing 0.4.321, whose demonstration would not assert what the sentence said. The
+  corrected wording is now pinned by that test, and both behaviours are shown at the sizes where
+  they actually occur.
+
 ## 0.4.321
 
 - **Added** a guard for the offset rule `edf-format.md` states: offsets stay in plain floats, which

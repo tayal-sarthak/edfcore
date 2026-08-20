@@ -100,7 +100,7 @@ const signal = recording.header.signals[1]!;      // 'Resp', 16 samples per reco
 byteOfSample(recording.header, signal, 20);       // 1832 — record 1, sample 4 of that signal
 ```
 
-edfcore does that arithmetic for you. The function is here because seeing it once is the fastest way to understand the layout. If you do write it yourself, keep every offset in plain floating-point numbers, which are exact to 2^53. A data offset in a multi-gigabyte BDF routinely exceeds 2^31, where JavaScript's bitwise operators (`|0`, `<<`, `>>>`) wrap it negative without warning.
+edfcore does that arithmetic for you. The function is here because seeing it once is the fastest way to understand the layout. If you do write it yourself, keep every offset in plain floating-point numbers, which are exact to 2^53. A data offset in a multi-gigabyte BDF routinely exceeds 2^31, and every bitwise operator in JavaScript truncates its operand to 32 bits first. Past that point `|0` and `<<` wrap the offset negative without warning. `>>>` is unsigned, so it does not go negative — it keeps returning a plausible offset until 2^32 and a wrong one after that, which is the harder of the two to notice.
 
 Note what the interleave costs. The samples for one channel over ten records are ten small pieces separated by everything the other channels contributed, so there's no cheap single-channel read in this format. Any reader either issues one request per record or reads whole records and de-interleaves them in memory.
 

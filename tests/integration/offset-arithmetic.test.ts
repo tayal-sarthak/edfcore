@@ -97,6 +97,10 @@ describe('the offset rule', () => {
     const page = (DOCS_PAGES.get('edf-format.md') ?? '').replace(/\s+/g, ' ');
     expect(page).toContain('exact to 2^53');
     expect(page).toContain("They're only dangerous on offsets");
+    // The page separates the two behaviours rather than lumping them together, because they fail
+    // at different sizes and only one of them looks like a failure (corrected in 0.4.322).
+    expect(page).toContain('`|0` and `<<` wrap the offset negative');
+    expect(page).toContain('`>>>` is unsigned, so it does not go negative');
   });
 
   it('found operators to check, so a passing run is not a vacuous one', () => {
@@ -139,8 +143,9 @@ describe('the hazard the rule exists for', () => {
     expect(offset | 0).toBeLessThan(0);
     expect(offset >> 0).toBeLessThan(0);
     // `>>>` is unsigned, so it survives this offset and fails later instead — at 2^32, which the
-    // same recording reaches in about eighteen hours. Worth stating rather than implying: an
-    // offset that comes back positive is the one most likely to be believed.
+    // same recording reaches in about eighteen hours. The page said all three "wrap it negative"
+    // until 0.4.322; this is the assertion that would not write, and an offset that comes back
+    // positive is the one most likely to be believed.
     expect(offset >>> 0).toBe(offset);
     expect((2 ** 32 + offset) >>> 0).not.toBe(2 ** 32 + offset);
   });
