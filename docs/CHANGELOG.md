@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.326
+
+- **Added** the last unchecked section of `physical-values.md`: the four conditions that leave a
+  signal with no scale. Each row's code is produced by building the signal the row describes and
+  catching what `toPhysical` refuses it with, and the table's introduction — "checked in this
+  order" — is exercised against signals that trip two conditions at once, because the order is
+  what decides which code such a signal reports.
+- The page's second verbatim message block is pinned the way 0.4.316 pinned the first: only the
+  hard wraps are undone, since the runs of spaces inside it are the raw eight-byte fields quoted as
+  the file holds them. Also checked is the asymmetry the section turns on — an inverted physical
+  range keeps its scale, because a negative amplifier gain has a documented meaning, and an
+  inverted digital range does not and is refused.
+- With this, `edf-format.md` and `physical-values.md` are no longer the two pages nothing in the
+  suite reads.
+
 ## 0.4.325
 
 - **Added** a check for the claim `edf-format.md` closes with: "Every diagnostic edfcore emits

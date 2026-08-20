@@ -19,6 +19,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { clampToDigitalRange, physicalRangeOf, toPhysical } from '../../src/decode/physical.js';
+import { isEdfError } from '../../src/errors.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { signalFieldOffset } from '../../src/header/signals.js';
 import { byteSource } from '../../src/io/bytes.js';
@@ -423,5 +424,154 @@ describe('the out-of-range window the page shows', () => {
     // And the clamp keeps four distinct values rather than folding them onto one.
     const clamped = clampToDigitalRange(backwards, chunk?.signals[0]?.digital ?? new Int32Array());
     expect([...clamped]).toEqual([-100, -50, 50, 100]);
+  });
+});
+
+describe('the four conditions that leave a signal with no scale', () => {
+  /** The rows of the table the page introduces with "checked in this order". */
+  const ROWS = (() => {
+    const at = PAGE.indexOf('Four conditions produce it, checked in this order:');
+    if (at === -1) throw new Error('physical-values.md no longer lists the refusal conditions');
+    const rows: string[][] = [];
+    for (const line of PAGE.slice(at).split('\n')) {
+      if (!line.startsWith('|')) {
+        if (rows.length > 0) break;
+        continue;
+      }
+      rows.push(
+        line
+          .slice(1, -1)
+          .split('|')
+          .map((cell) => cell.trim()),
+      );
+    }
+    return rows.slice(2);
+  })();
+
+  /** One signal with `overrides` applied, and the code `toPhysical` refuses it with. */
+  async function refusalFor(overrides: Record<string, unknown>): Promise<string> {
+    const bytes = buildEdf({
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      signals: [
+        {
+          label: 'D',
+          samplesPerRecord: 1,
+          digitalMinimum: -32768,
+          digitalMaximum: 32767,
+          physicalMinimum: -500,
+          physicalMaximum: 500,
+          physicalDimension: 'uV',
+          ...overrides,
+        },
+      ],
+    });
+    const { header } = await openEdf(byteSource(bytes));
+    const signal = getSignal(header, 'D');
+    expect(signal.scale).toBeUndefined();
+    try {
+      toPhysical(signal, new Int32Array([0]));
+    } catch (error) {
+      if (isEdfError(error) && error.edfErrorKind === 'scaling') return error.code;
+      throw error;
+    }
+    throw new Error('toPhysical did not refuse');
+  }
+
+  it('lists the four the page says it lists', () => {
+    expect(ROWS.map((cells) => (cells[0] ?? '').replaceAll('`', ''))).toEqual([
+      'DEGENERATE_DIGITAL_RANGE',
+      'DEGENERATE_PHYSICAL_RANGE',
+      'INVERTED_DIGITAL_RANGE',
+      'LOG_TRANSFORMED_CHANNEL',
+    ]);
+  });
+
+  it('refuses each condition with the code beside it', async () => {
+    const conditions: readonly Record<string, unknown>[] = [
+      { digitalMinimum: 0, digitalMaximum: 0 },
+      { physicalMinimum: 0, physicalMaximum: 0 },
+      { digitalMinimum: 2047, digitalMaximum: -2048 },
+      { physicalDimension: 'Filtered' },
+    ];
+    for (const [index, overrides] of conditions.entries()) {
+      expect(await refusalFor(overrides)).toBe((ROWS[index]?.[0] ?? '').replaceAll('`', ''));
+    }
+  });
+
+  it('checks them in the page’s order, which decides what a doubly broken signal reports', async () => {
+    // "checked in this order" is behaviour, not detail: a signal that trips two of them reports
+    // the earlier one, and under `strict` the first would-be diagnostic is the one that throws.
+    expect(
+      await refusalFor({ digitalMinimum: 0, digitalMaximum: 0, physicalDimension: 'Filtered' }),
+    ).toBe('DEGENERATE_DIGITAL_RANGE');
+    expect(
+      await refusalFor({
+        digitalMinimum: 0,
+        digitalMaximum: 0,
+        physicalMinimum: 0,
+        physicalMaximum: 0,
+      }),
+    ).toBe('DEGENERATE_DIGITAL_RANGE');
+    expect(
+      await refusalFor({ physicalMinimum: 0, physicalMaximum: 0, physicalDimension: 'Filtered' }),
+    ).toBe('DEGENERATE_PHYSICAL_RANGE');
+    expect(
+      await refusalFor({
+        digitalMinimum: 2047,
+        digitalMaximum: -2048,
+        physicalDimension: 'Filtered',
+      }),
+    ).toBe('INVERTED_DIGITAL_RANGE');
+  });
+
+  it('accepts an inverted PHYSICAL range while refusing an inverted digital one', async () => {
+    // "`INVERTED_DIGITAL_RANGE` throws where `INVERTED_PHYSICAL_RANGE` is accepted. An inverted
+    //  physical range has a documented meaning; an inverted digital range does not."
+    expect(await refusalFor({ digitalMinimum: 2047, digitalMaximum: -2048 })).toBe(
+      'INVERTED_DIGITAL_RANGE',
+    );
+    const bytes = buildEdf({
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      signals: [
+        {
+          label: 'D',
+          samplesPerRecord: 1,
+          physicalMinimum: 500,
+          physicalMaximum: -500,
+          digitalMinimum: -32768,
+          digitalMaximum: 32767,
+        },
+      ],
+    });
+    const { header } = await openEdf(byteSource(bytes));
+    expect(getSignal(header, 'D').scale).toBeDefined();
+  });
+
+  it('throws the message the page quotes, word for word', async () => {
+    // The second verbatim block on this page; 0.4.316 pinned the first. Same rule about wrapping:
+    // the runs of spaces inside it are the raw eight-byte fields, quoted as the file holds them.
+    const quoted = /```\n(\[DEGENERATE_DIGITAL_RANGE\][\s\S]*?)```/.exec(PAGE)?.[1] ?? '';
+    expect(quoted).not.toBe('');
+    const bytes = buildEdf({
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      signals: [
+        {
+          label: 'D',
+          samplesPerRecord: 1,
+          digitalMinimum: 0,
+          digitalMaximum: 0,
+          physicalMinimum: -500,
+          physicalMaximum: 500,
+          physicalDimension: 'uV',
+        },
+      ],
+    });
+    const { header } = await openEdf(byteSource(bytes));
+    expect(() => toPhysical(getSignal(header, 'D'), new Int32Array([0]))).toThrowError(
+      quoted.replace(/\n\s*/g, ' ').trim(),
+    );
   });
 });
