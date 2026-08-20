@@ -30,16 +30,41 @@ const MANIFEST = JSON.parse(readFileSync(new URL('package.json', ROOT), 'utf8'))
   bin: Record<string, string>;
 };
 
-/** Every path npm would put in the tarball. */
+/**
+ * Every path npm would put in the tarball.
+ *
+ * `--ignore-scripts` is load-bearing. Without it `npm pack` runs the pack lifecycle, and this
+ * package's `prepublishOnly` is `npm run check && npm run build` — so the pack that this test
+ * performs runs the suite that contains this test, prints the whole thing to stdout, and leaves
+ * `JSON.parse` reading `npm notice run biome check` as JSON. It only bites where a lifecycle
+ * actually fires, which is why it passed here and failed in `publish.yml` for five versions
+ * (0.4.287 through 0.4.291), all of them tagged and none published.
+ *
+ * The JSON is also located rather than assumed to start at byte zero, so a notice npm decides to
+ * print alongside it is skipped instead of swallowing the result.
+ */
 const PACKED: readonly string[] = (() => {
-  const out = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+  const out = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], {
     cwd: fileURLToPath(ROOT),
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
-  return (JSON.parse(out) as Array<{ files: Array<{ path: string }> }>)[0]?.files.map(
-    (file) => file.path,
-  ) as string[];
+  const start = out.indexOf('[');
+  const end = out.lastIndexOf(']');
+  if (start === -1 || end === -1) {
+    throw new Error(`npm pack printed no JSON array. Next: read what it did print:\n${out}`);
+  }
+  const packed = JSON.parse(out.slice(start, end + 1)) as Array<{
+    files?: Array<{ path: string }>;
+  }>;
+  const files = packed[0]?.files;
+  if (files === undefined) {
+    throw new Error(
+      `npm pack --json produced no file list. Next: run it by hand and look at the shape — ` +
+        `this is npm's output format changing, not a packaging problem.`,
+    );
+  }
+  return files.map((file) => file.path);
 })();
 
 const under = (prefix: string): readonly string[] =>

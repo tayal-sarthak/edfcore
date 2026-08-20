@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.292
+
+- **Fixed** the tarball check added in 0.4.287, which broke the publish it was written to protect.
+  It ran `npm pack --dry-run --json` without `--ignore-scripts`, so `npm pack` ran the pack
+  lifecycle — and this package's `prepublishOnly` is `npm run check && npm run build`. The pack
+  performed by the test therefore ran the suite containing the test, printed all of it to stdout,
+  and left `JSON.parse` reading `npm notice run biome check` as JSON. It bites only where a
+  lifecycle actually fires, which is why it passed on this machine and failed in `publish.yml`.
+  The JSON is now located in the output rather than assumed to start at byte zero, and a missing
+  file list says so instead of throwing `Cannot read properties of undefined`.
+
+  **0.4.287 through 0.4.291 were never released.** All five were tagged, all five had green CI —
+  the failure is in `publish.yml`, which runs after — and none reached npm. Everything they
+  carried is in this release. That is five more numbers on the list with 0.2.29, 0.2.36, 0.2.59,
+  0.4.176, 0.4.231-0.4.236 and 0.4.241-0.4.242.
+
 ## 0.4.291
 
 - **Extended** `verify:site` to the rendered head of every built page. `Base.astro` builds it once
