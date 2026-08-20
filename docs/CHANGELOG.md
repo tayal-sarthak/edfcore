@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.333
+
+- **Added** the rest of `migrating-to-0-3.md`: the difference the page calls structural. `sampleAt`
+  returns `undefined` for each of the three reasons the page gives — the instant falls in a gap,
+  before the recording, or after it — and returns a location either side of the hole, so that
+  `undefined` is a statement about the file rather than the function's usual answer.
+- The other half is that the grid form has no way to say it. Given only a signal and a record
+  duration it returns an index at every instant, including one past the end of the file, which is
+  checked against the record count. And both refuse a probed index on a file with gaps: the same
+  fixture throws before `buildRecordIndex` and answers after it, with `contiguityOf` reporting
+  `'unknown'` in between.
+
 ## 0.4.332
 
 - **Fixed** a test of mine that could time out. The UTF-8 sweep added in 0.4.324 encoded each of

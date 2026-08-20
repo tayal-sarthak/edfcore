@@ -20,10 +20,10 @@
 import { describe, expect, it } from 'vitest';
 import * as edfcore from '../../src/index.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { buildRecordIndex } from '../../src/record-index.js';
+import { buildRecordIndex, contiguityOf } from '../../src/record-index.js';
 import { openEdf } from '../../src/recording.js';
-import { gridSampleStartSeconds } from '../../src/sample-grid.js';
-import { sampleStartSecondsOf } from '../../src/sample-locate.js';
+import { gridSampleIndexAt, gridSampleStartSeconds } from '../../src/sample-grid.js';
+import { sampleAt, sampleStartSecondsOf } from '../../src/sample-locate.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
 import { minimalEdfPlus } from '../support/writer.js';
 
@@ -206,5 +206,76 @@ describe('the two numbers the page puts side by side', () => {
         sampleStartSecondsOf(recording, 0, sample),
       );
     }
+  });
+});
+
+describe('the difference the page says is structural', () => {
+  const SAMPLES_PER_RECORD = 4;
+  const HOLE = 7;
+
+  /** Six one-second records with a seven-second hole after record 2, as above. */
+  const BYTES = minimalEdfPlus({
+    plus: 'D',
+    recordCount: 6,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: SAMPLES_PER_RECORD }],
+    annotationSignals: [{ samplesPerRecord: 40 }],
+    recordOnsetSeconds: (record) => (record <= 2 ? record : record + HOLE),
+  });
+
+  const scanned = async () => {
+    const opened = await openEdf(byteSource(BYTES));
+    return { ...opened, index: await buildRecordIndex(opened) };
+  };
+
+  it('states the difference in the words checked below', () => {
+    const flat = PAGE.replace(/\s+/g, ' ');
+    expect(flat).toContain(
+      '`sampleAt` can return **`undefined`**, which the grid form structurally cannot',
+    );
+    expect(flat).toContain(
+      '`gridSampleIndexAt` always returns an index — including one past the end of the file',
+    );
+  });
+
+  it('returns undefined for each of the three reasons the page gives', async () => {
+    const recording = await scanned();
+    // "it falls in a gap, before the recording, or after it"
+    expect(sampleAt(recording, 0, 6)).toBeUndefined(); // inside the hole, 3 s to 10 s
+    expect(sampleAt(recording, 0, -1)).toBeUndefined(); // before
+    expect(sampleAt(recording, 0, 1_000)).toBeUndefined(); // after
+  });
+
+  it('returns a location wherever data actually is', async () => {
+    const recording = await scanned();
+    // Either side of the hole, so `undefined` is a statement about the file and not the default.
+    expect(sampleAt(recording, 0, 2.5)?.sampleIndex).toBe(10);
+    expect(sampleAt(recording, 0, 10)?.sampleIndex).toBe(12);
+  });
+
+  it('gives the grid form no way to say undefined, at any of those instants', async () => {
+    const { header } = await openEdf(byteSource(BYTES));
+    const signal = header.signals[0];
+    if (signal === undefined) throw new Error('fixture missing');
+    for (const seconds of [6, 1_000]) {
+      const index = gridSampleIndexAt(signal, seconds, header.recordDurationTicks).sampleIndex;
+      expect(Number.isInteger(index)).toBe(true);
+    }
+    // "including one past the end of the file" — 1000 s of a 6-record file is not a sample there.
+    const past = gridSampleIndexAt(signal, 1_000, header.recordDurationTicks).sampleIndex;
+    expect(past).toBeGreaterThan(header.recordCount * SAMPLES_PER_RECORD);
+  });
+
+  it('refuses a probed index on a file with gaps rather than guessing', async () => {
+    // "Both refuse a probed index on a file with gaps rather than guessing. `contiguityOf(index)`
+    //  tells you which regime you are in; `await buildRecordIndex(recording)` is what turns
+    //  `'unknown'` into an answer."
+    const probed = await openEdf(byteSource(BYTES));
+    expect(contiguityOf(probed.index)).toBe('unknown');
+    expect(() => sampleAt(probed, 0, 10)).toThrow();
+
+    const recording = await scanned();
+    expect(contiguityOf(recording.index)).not.toBe('unknown');
+    expect(sampleAt(recording, 0, 10)).toBeDefined();
   });
 });
