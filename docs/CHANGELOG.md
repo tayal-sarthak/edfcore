@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.297
+
+- **Exercised** the inspector's sample recording, which nothing had. `sample-edf.ts` writes an
+  EDF+C file in the browser so the demo has something to decode without asking a visitor for a
+  patient recording — three hundred lines of EDF writing that the test suite cannot reach, because
+  anything imported from `website/` drags in a tsconfig the root install does not have. `verify:site`
+  runs in the job that installed the site's dependencies, so it can.
+- A round trip rather than a snapshot: the generator is a writer, edfcore is a reader, and the
+  page's headline numbers are what the reader has to find — EDF+C, five signals, 120 seconds, and
+  no error-severity diagnostic. If those agree, both agree about the format. Verified by deleting a
+  channel and watching it report four.
+
 ## 0.4.296
 
 - **Documented** the commands that existed and no page mentioned. 0.4.268 checks that every

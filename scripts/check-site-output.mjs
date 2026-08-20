@@ -127,6 +127,39 @@ for (const path of htmlPages) {
   }
 }
 
+// --- the inspector's sample recording is a file edfcore can read ----------
+//
+// `website/src/scripts/sample-edf.ts` writes an EDF+C file in the browser so the demo has
+// something to decode without asking a visitor for a patient recording. Three hundred lines of
+// EDF writing that nothing exercises: the test suite cannot import it, because anything under
+// `website/` drags in a tsconfig the root install does not have. Here it can — this runs in the
+// job that installed the site's dependencies.
+//
+// A round trip rather than a snapshot. The generator is a writer and edfcore is a reader; if the
+// demo's headline numbers are what the reader finds, both agree about the format.
+
+const { buildSampleEdf } = await import(join(ROOT, 'website', 'src', 'scripts', 'sample-edf.ts'));
+const { openEdf } = await import(join(ROOT, 'dist', 'index.js'));
+const { byteSource } = await import(join(ROOT, 'dist', 'io', 'bytes.js'));
+
+const sample = buildSampleEdf();
+if (!(sample instanceof Uint8Array) || sample.byteLength < 1024) {
+  fail(`the demo sample is ${sample?.byteLength} bytes, which is not a recording`);
+} else {
+  const recording = await openEdf(byteSource(sample));
+  const { header, timeline } = recording;
+  if (header.variant !== 'EDF+C') fail(`the demo sample opens as ${header.variant}, not EDF+C`);
+  if (header.signals.length !== 5)
+    fail(`the demo sample has ${header.signals.length} signals, not 5`);
+  if (Math.round(timeline.spanSeconds) !== 120) {
+    fail(`the demo sample spans ${timeline.spanSeconds} s, not the 120 the page shows`);
+  }
+  const fatal = header.diagnostics.filter((one) => one.severity === 'error');
+  if (fatal.length > 0) {
+    fail(`the demo sample reports ${fatal.length} error diagnostic(s): ${fatal[0].code}`);
+  }
+}
+
 // --- report ----------------------------------------------------------------
 
 if (failures.length > 0) {
@@ -138,5 +171,5 @@ if (failures.length > 0) {
 
 console.log(
   `  Site output checked: ${slugs.length} pages, their markdown twins, ` +
-    `${htmlPages.length} rendered heads, and 4 endpoints.`,
+    `${htmlPages.length} rendered heads, 4 endpoints, and the inspector's sample recording.`,
 );
