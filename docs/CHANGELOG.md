@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.285
+
+- **Added** a check that every diagnostic code edfcore emits is registered, or is one of six that
+  deliberately are not. `EdfDiagnosticCode` is an open union on purpose — `validate.ts` emits four
+  recommendations from EDF+ additional specification 9, and `inspect.ts` needs a name for "the
+  header did not fail its grammar, some other rule refused it" without borrowing a wrong one. The
+  cost is that a typo is also a valid code: `code: 'TRUNCATED_FIL'` compiles, `dispositionOf` ends
+  `?? 'warning'`, and a misspelled fatal code becomes a warning on a file that should have thrown.
+  The six intentional ones and a seventh nobody meant were indistinguishable at runtime.
+- **Corrected** the accounting while listing them. `validate.ts` says "four codes here are not in
+  the core vocabulary", which is true of its own four and reads as the whole set; `inspect.ts`
+  adds two more and no single place said so. It now says "four HERE" and points at the list.
+
 ## 0.4.284
 
 - **Added** a check that the README's first badge and `/api.json` are the same contract. The badge

@@ -16,6 +16,10 @@
  * `PREFILTERING_NONCONFORMANT`, `TRANSDUCER_TYPE_BLANK` and `DATE_IMPLAUSIBLE`. `EdfDiagnosticCode`
  * is an open union for exactly this: they are recommendations from EDF+ additional specification
  * 9, they can never be fatal, and a consumer's `switch` keeps its `default` branch.
+ *
+ * Four HERE. `inspect.ts` emits two more of its own, and the six together are listed in
+ * `tests/integration/open-union-codes.test.ts` — which is what stops a seventh appearing by
+ * typo, since an unregistered code takes `dispositionOf`'s `?? 'warning'` and looks deliberate.
  */
 
 import { trimEdfField } from './bytes/latin1.js';
