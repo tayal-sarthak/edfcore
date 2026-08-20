@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.286
+
+- **Guarded** the two `git push` calls, which were the last unguarded network steps in the release.
+  Both reach the network, so both fail for reasons unrelated to the code, and each leaves a
+  different half-done state that re-running the script cannot repair — the commit and the tag
+  already exist locally, so a second run refuses the tag rather than retrying.
+- Found by living it. Cutting 0.4.285 the tag push timed out with `Recv failure`: main was public,
+  the tag was not, nothing triggered a release, and the script exited without a word. The recovery
+  0.4.226 added covers the step after these two and never fired, so the only evidence was a version
+  on `main` with no release behind it. Each push now says which half is done and gives the exact
+  commands to finish, rather than the one that would cut the next version.
+
 ## 0.4.285
 
 - **Added** a check that every diagnostic code edfcore emits is registered, or is one of six that

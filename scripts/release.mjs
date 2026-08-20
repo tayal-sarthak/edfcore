@@ -244,8 +244,38 @@ run('git', [
   `${commitMessage ?? `Release ${tag}`}\n\nReleased as ${next}.`,
 ]);
 run('git', ['tag', '-a', tag, '-m', tag]);
-run('git', ['push', 'origin', 'main']);
-run('git', ['push', 'origin', tag]);
+
+// Both pushes reach the network, so both fail for reasons that have nothing to do with the code —
+// and each leaves a DIFFERENT half-done state that re-running this script cannot repair, because
+// the commit and the tag already exist locally.
+//
+// This is not theoretical. Cutting 0.4.285 the tag push timed out with `Recv failure`; main was
+// public, the tag was not, and the script exited without saying so. The recovery 0.4.226 added
+// covers the step after these two and did not fire, so the only evidence was a version on `main`
+// with no release behind it.
+try {
+  run('git', ['push', 'origin', 'main']);
+} catch {
+  die(
+    `${tag} is committed and tagged here, and pushing main failed.\n\n` +
+      '  Nothing is public and nothing has gone to npm. Both exist locally, so re-running this\n' +
+      '  script would refuse the tag rather than retry — push them by hand instead:\n\n' +
+      `      git push origin main && git push origin ${tag}\n` +
+      `      gh release create ${tag} --title "edfcore ${next}" --generate-notes`,
+  );
+}
+
+try {
+  run('git', ['push', 'origin', tag]);
+} catch {
+  die(
+    `${tag} is committed and main is pushed, but pushing the tag failed.\n\n` +
+      '  The commit is public and the tag is not, so nothing triggers a release and nothing has\n' +
+      '  gone to npm. Finish it rather than repeating it:\n\n' +
+      `      git push origin ${tag}\n` +
+      `      gh release create ${tag} --title "edfcore ${next}" --generate-notes`,
+  );
+}
 
 // ---------------------------------------------------------------- CI, on this exact commit
 //
