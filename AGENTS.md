@@ -46,8 +46,13 @@ npm run build       # tsc to dist/
 npm run format      # biome, formatting and import order; `lint` reports the same as errors
 npm run corpus:fetch # ~59 MB, gitignored — without it the corpus tests skip rather than fail
 npm run dev --prefix website
-npm run release -- patch -m "What changed"   # one commit, waits for CI and for npm
+npm run release -- patch -m "What changed"   # one commit, one tag, waits for CI and for npm
+npm run announce     # ONE GitHub release for every tag since the last one
 ```
+
+A version is one commit, one tag and one npm publish. `publish.yml` triggers on the pushed tag,
+so a GitHub release is not part of shipping one — `npm run announce` cuts a single release for a
+whole batch afterwards, which is the only thing a release is for here.
 
 Three checks are deliberately outside `npm run check`, because each needs the network or an
 artifact that check does not build. CI runs all three; run them by hand when you touch what they

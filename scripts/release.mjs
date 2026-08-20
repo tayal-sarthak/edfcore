@@ -222,7 +222,7 @@ try {
   );
 }
 
-// ---------------------------------------------------------------- commit, tag, release
+// ---------------------------------------------------------------- commit, push, wait, tag
 
 // Everything, not the three version files: the work being released is in this tree too. `-A`
 // honours .gitignore, which is what keeps `dist/`, `node_modules/` and `tests/scratch/` out — the
@@ -243,37 +243,22 @@ run('git', [
   // shipped as 0.4.246" without a second lookup. Same shape as the squashed history above it.
   `${commitMessage ?? `Release ${tag}`}\n\nReleased as ${next}.`,
 ]);
-run('git', ['tag', '-a', tag, '-m', tag]);
 
-// Both pushes reach the network, so both fail for reasons that have nothing to do with the code —
-// and each leaves a DIFFERENT half-done state that re-running this script cannot repair, because
-// the commit and the tag already exist locally.
+// The tag is created AFTER CI, further down, because pushing it is what publishes. Since 0.4.326
+// `publish.yml` triggers on a pushed tag rather than on a published GitHub release, so the tag is
+// the door to npm and nothing may open it before the runners have agreed with the commit.
 //
-// This is not theoretical. Cutting 0.4.285 the tag push timed out with `Recv failure`; main was
-// public, the tag was not, and the script exited without saying so. The recovery 0.4.226 added
-// covers the step after these two and did not fire, so the only evidence was a version on `main`
-// with no release behind it.
+// Pushing main is its own failure. Cutting 0.4.285 the tag push timed out with `Recv failure`;
+// main was public, the tag was not, and the script exited without saying so.
 try {
   run('git', ['push', 'origin', 'main']);
 } catch {
   die(
-    `${tag} is committed and tagged here, and pushing main failed.\n\n` +
-      '  Nothing is public and nothing has gone to npm. Both exist locally, so re-running this\n' +
-      '  script would refuse the tag rather than retry — push them by hand instead:\n\n' +
-      `      git push origin main && git push origin ${tag}\n` +
-      `      gh release create ${tag} --title "edfcore ${next}" --generate-notes`,
-  );
-}
-
-try {
-  run('git', ['push', 'origin', tag]);
-} catch {
-  die(
-    `${tag} is committed and main is pushed, but pushing the tag failed.\n\n` +
-      '  The commit is public and the tag is not, so nothing triggers a release and nothing has\n' +
-      '  gone to npm. Finish it rather than repeating it:\n\n' +
-      `      git push origin ${tag}\n` +
-      `      gh release create ${tag} --title "edfcore ${next}" --generate-notes`,
+    `${next} is committed here, and pushing main failed.\n\n` +
+      '  Nothing is public, nothing is tagged and nothing has gone to npm. The commit exists\n' +
+      '  locally only, so this is safe to retry once the network is back:\n\n' +
+      '      git push origin main\n' +
+      `      npm run release -- -m "…"   # or finish by hand: git tag -a ${tag} -m ${tag}`,
   );
 }
 
@@ -287,10 +272,14 @@ try {
 // numbers, each of which the publish run refused for the same reason, silently, because
 // publish.yml fails long after this script has exited 0.
 //
-// So the release waits for the runners before it opens the door to npm. CI runs on the push
-// above; this polls the check runs for that commit and refuses to create the GitHub release if
-// any of them fails. A failure now leaves the tag pushed and no release, which is recoverable —
-// fix, then `gh release create` — rather than a version that exists in git and nowhere else.
+// So the release waits for the runners before it opens the door to npm. CI runs on the push of
+// main above; this polls the check runs for that commit and refuses to TAG if any of them fails.
+//
+// Before 0.4.326 the tag was already public by this point and the gate was the GitHub release,
+// which meant a red commit spent the version number: the tag could not be moved and the fix had
+// to become the next version. Now a failure here leaves the number free. The commit is on main
+// and the version files say `next`, so the repair is an ordinary commit on top and another run,
+// and the changelog entry that is already written stays true.
 
 const CI_POLL_SECONDS = 15;
 const PUBLISH_POLL_SECONDS = 20;
@@ -329,22 +318,20 @@ if (!dryRun) {
     const status = checkRuns(releaseSha);
     if (status !== undefined && status.failed.length > 0) {
       die(
-        `${tag} is tagged and pushed, but CI failed on this commit: ${status.failed.join(', ')}.\n\n` +
-          '  No GitHub release was created, so nothing has gone to npm. The tag is public and\n' +
-          '  cannot be undone; fix what failed, push the fix, and finish this version by hand:\n\n' +
-          `      gh release create ${tag} --title "edfcore ${next}" --generate-notes\n\n` +
-          '  Re-running this script instead would cut the NEXT version and leave this one a hole,\n' +
-          '  which is how eight numbers were lost before this check existed.',
+        `${next} is committed and pushed, but CI failed on it: ${status.failed.join(', ')}.\n\n` +
+          `  Nothing is tagged and nothing has gone to npm, so ${next} is still free. Fix what\n` +
+          '  failed, commit on top, and run this again — the changelog entry already written for\n' +
+          `  ${next} stays true, because this run never spent the number.`,
       );
     }
     // `total: 0` means the runners have not registered yet, which is not the same as green.
     if (status !== undefined && status.total > 0 && status.pending === 0) break;
     if (waited >= deadline) {
       die(
-        `${tag} is tagged and pushed, but CI has not finished after ${CI_TIMEOUT_MINUTES} minutes.\n\n` +
-          '  No GitHub release was created and nothing has gone to npm. Watch it with\n' +
-          '  `gh run watch`, and once it is green finish this version by hand:\n\n' +
-          `      gh release create ${tag} --title "edfcore ${next}" --generate-notes`,
+        `${next} is committed and pushed, but CI has not finished after ${CI_TIMEOUT_MINUTES} minutes.\n\n` +
+          `  Nothing is tagged and nothing has gone to npm, so ${next} is still free. Watch it\n` +
+          '  with `gh run watch`, and once it is green open the door by hand:\n\n' +
+          `      git tag -a ${tag} -m ${tag} && git push origin ${tag}`,
       );
     }
     sleepSeconds(CI_POLL_SECONDS);
@@ -353,19 +340,23 @@ if (!dryRun) {
   console.log('  CI is green');
 }
 
-// The one step whose failure the revert above cannot reach. By here the bump is committed and the
-// tag is pushed, so there is nothing local left to undo — and publish.yml triggers on a PUBLISHED
-// release, not on a tag, so stopping here leaves a version that exists in git and never reaches
-// npm. That is a hole nothing else in this repository would notice: `changelog-continuity.test.ts`
-// checks this file against itself, and the entry would be present and correct.
+// ---------------------------------------------------------------- the tag, which publishes
+//
+// CI is green on this commit, so the door can be opened. `publish.yml` triggers on `push: tags`,
+// and GitHub reads the workflow file from the ref being pushed — which is this commit — so the
+// tag both starts the publish and decides which workflow definition runs it.
+//
+// No GitHub release is created here, and that is the point: a release is an announcement for a
+// batch, cut afterwards by `npm run announce`, not a mandatory step in shipping a patch version.
+run('git', ['tag', '-a', tag, '-m', tag]);
 try {
-  run('gh', ['release', 'create', tag, '--title', `edfcore ${next}`, '--generate-notes']);
+  run('git', ['push', 'origin', tag]);
 } catch {
   die(
-    `${tag} is committed, tagged and pushed, but creating the GitHub release failed.\n\n` +
-      '  Nothing has gone to npm: publish.yml runs on a published release. The bump cannot be\n' +
-      '  undone now that the tag is public, so finish the release rather than repeating it:\n\n' +
-      `      gh release create ${tag} --title "edfcore ${next}" --generate-notes\n\n` +
+    `${next} is committed, pushed and green, and the tag exists here but did not reach the\n` +
+      '  remote. Nothing has gone to npm, because the push of the tag is what publishes.\n\n' +
+      '  The commit is public and the tag is not, so this is safe to retry:\n\n' +
+      `      git push origin ${tag}\n\n` +
       '  Re-running this script instead would cut the NEXT version and leave this one a hole.',
   );
 }
@@ -373,10 +364,10 @@ try {
 // ---------------------------------------------------------------- and did it reach npm
 //
 // The CI wait above asks about the COMMIT. `publish.yml` is a different workflow, triggered by the
-// release that was just created, and it runs its own `npm run check` afterwards — so it can fail
-// on something the commit's own checks passed, and the script has always exited 0 before it
-// started. That gap cost 0.4.287 through 0.4.292: six versions tagged, six green CI runs, six
-// releases created, and nothing on npm, discovered only by looking.
+// tag that was just pushed, and it runs its own `npm run check` afterwards — so it can fail on
+// something the commit's own checks passed, and the script has always exited 0 before it started.
+// That gap cost 0.4.287 through 0.4.292: six versions tagged, six green CI runs, and nothing on
+// npm, discovered only by looking.
 //
 // npm is the ground truth rather than the workflow's status, because what matters is whether the
 // version is installable.
@@ -394,15 +385,16 @@ if (!dryRun) {
     if (onRegistry === next) break;
     if (waited >= deadline) {
       die(
-        `${tag} is released on GitHub, but ${next} has not reached npm after ` +
+        `${tag} is pushed, but ${next} has not reached npm after ` +
           `${PUBLISH_TIMEOUT_MINUTES} minutes.\n\n` +
-          '  The tag, the release and the commit are all public and correct; what has not\n' +
-          '  happened is the publish. Look at why:\n\n' +
+          '  The tag and the commit are both public and correct; what has not happened is the\n' +
+          '  publish. Look at why:\n\n' +
           '      gh run list --workflow "Publish to npm" --limit 1\n' +
-          `      gh run view --log-failed\n\n` +
-          '  Fix what failed, then re-run that workflow. Re-running THIS script would cut the\n' +
-          `  next version and leave ${next} a hole, which is how six were lost before this wait\n` +
-          '  existed.',
+          '      gh run view --log-failed\n\n' +
+          '  Fix what failed, then re-run that workflow against this tag:\n\n' +
+          `      gh workflow run publish.yml --ref ${tag}\n\n` +
+          '  Re-running THIS script instead would cut the next version and leave ' +
+          `${next} a hole,\n  which is how six were lost before this wait existed.`,
       );
     }
     sleepSeconds(PUBLISH_POLL_SECONDS);
@@ -418,8 +410,12 @@ if (dryRun) {
 }
 
 console.log(`
-  Released ${tag}, and ${next} is on npm with a provenance attestation.
+  Tagged ${tag}, and ${next} is on npm with a provenance attestation.
 
   Install it with:  npm install edfcore@${next}
-  The release:      https://github.com/tayal-sarthak/edfcore/releases/tag/${tag}
+  The tag:          https://github.com/tayal-sarthak/edfcore/releases/tag/${tag}
+
+  No GitHub release was cut. When the batch is done, announce all of it at once:
+
+      npm run announce
 `);

@@ -1,8 +1,23 @@
 name: Publish to npm
 
+# A pushed TAG publishes, not a published GitHub release.
+#
+# Those were the same thing until 0.4.326, and coupling them made a GitHub Release a mandatory step
+# in shipping a patch version rather than an announcement: every version needed one, so a hundred
+# of them accumulated for changes of two or three lines each. A tag is the per-version record and
+# `scripts/announce-batch.mjs` cuts one Release for a whole batch afterwards, which is what a
+# Release is for.
+#
+# The gate did not move with it. `scripts/release.mjs` pushes main, waits for CI to go green on
+# that exact commit, and only then pushes the tag — so nothing reaches this workflow that the
+# runners have not already agreed with. That ordering is stricter than the old one: a red commit
+# now leaves the tag unpushed and the version number still free, where before the tag was already
+# public and the number was spent.
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
+  # Re-runnable against a tag that is already public, which is the only recovery there is once a
+  # version number has been spent: `gh workflow run publish.yml --ref v0.4.326`.
   workflow_dispatch:
 
 permissions:

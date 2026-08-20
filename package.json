@@ -1,6 +1,6 @@
 {
   "name": "edfcore",
-  "version": "0.4.326",
+  "version": "0.4.327",
   "description": "Modern, typed, zero-dependency reader for EDF, EDF+, BDF and BDF+ biosignal files. Works in browsers and Node with true random access.",
   "keywords": [
     "edf",
@@ -75,6 +75,7 @@
     "verify:site": "node scripts/check-site-output.mjs",
     "corpus:fetch": "node scripts/fetch-corpus.mjs",
     "release": "node scripts/release.mjs",
+    "announce": "node scripts/announce-batch.mjs",
     "prepublishOnly": "npm run check && npm run build"
   },
   "publishConfig": {

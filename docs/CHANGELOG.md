@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.327
+
+- **Changed** how publishing is triggered: `publish.yml` now runs on a pushed **tag** rather than
+  on a published GitHub release. The two had been the same thing, which made a GitHub release a
+  mandatory step in shipping a patch version rather than an announcement — a hundred of them for
+  changes of two or three lines each, burying anything worth reading. The tag was already the
+  per-version record; now it is also the door to npm.
+- **Added** `npm run announce`, which cuts ONE release for a whole batch. Its range runs from the
+  newest tag that already has a release to the newest tag, so running it twice is a no-op and an
+  interrupted batch is picked up by the next run. The notes are the changelog entries for those
+  versions verbatim, and a tag in the range with no entry stops it rather than being announced
+  past.
+- **Reordered** `scripts/release.mjs` so the gate got stricter rather than weaker. It now pushes
+  main, waits for CI to go green on that exact commit, and only then creates and pushes the tag.
+  Before, the tag was already public while CI ran, so a red commit spent the version number and
+  the fix had to become the next one. Now a failure leaves the number free: the repair is an
+  ordinary commit on top and another run, and the changelog entry already written stays true.
+- Nothing about the per-version contract moved. One commit, one tag, one npm publish, and the
+  script still refuses to exit until the version is installable.
+
 ## 0.4.326
 
 - **Added** the last unchecked section of `physical-values.md`: the four conditions that leave a
