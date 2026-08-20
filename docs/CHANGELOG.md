@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.304
+
+- **Executed** the costing on `large-files.md`. Its whole argument is numeric: an eight-hour,
+  30-channel, 256 Hz EDF — 28,800 one-second records of 15,360 bytes — where a ten-second window
+  is one read of 153,600 bytes out of 442,375,936, or 0.035 % of the file, opening it costs 7,936
+  bytes, and asking for one channel out of thirty costs byte-for-byte the same. That is the
+  random-access claim stated as money, and every figure was prose.
+- They are the numbers a reader checks their own instinct against. Someone who expects
+  `signalIndices: [0]` to be thirty times cheaper needs the page to be right about it, because the
+  advice to name every channel in one call rests on that. The header is built at full width and
+  the arithmetic checked against what edfcore reports for it — record size, the byte offset the
+  window lands at, the last byte the read touches, and the overread factor of 30, which is the
+  record over one signal's block.
+
 ## 0.4.303
 
 - **Executed** the request budget on `api-sources.md`: one `HEAD` for the length, `bytes=0-255`,
