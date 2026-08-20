@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.306
+
+- **Built** the file `discontinuous.md` draws and read it. The page opens with a diagram — six
+  one-second records with a ten-second gap between record 2 and record 3 — and everything after is
+  arithmetic on that picture: which chunk starts where, which carries the gap, that a two-record
+  read either side spans twelve seconds for two seconds of data, and that `locate(13.5)` answers
+  record 3 at 13 s plus half a second.
+- Those figures are the page's argument. "Reading such a file as if it were contiguous puts record
+  3 at t = 3 s when it truly starts at t = 13 s. Nothing throws, the waveform looks fine, and every
+  event you align against it is ten seconds out." `discontinuous.test.ts` covers EDF+D thoroughly
+  against a different fixture — hour-long intervals in a sleep latency test — so this builds the
+  page's own file, and the numbers a reader copies are the ones a run produces.
+
 ## 0.4.305
 
 - **Pinned** the budget refusal `large-files.md` prints — `requiredBytes` 442,368,000,
