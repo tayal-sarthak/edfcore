@@ -66,7 +66,9 @@ structural shims in `src/types.ts` instead.
 
 ## Things that look like bugs and are not
 
-Do not "fix" these. Each has a test pinning it and a comment explaining why.
+Do not "fix" these. Each of the code rules has a test pinning it and a comment explaining why;
+the last is a fact about the repository rather than about the code, and the offline suite has no
+way to check a branch on a remote.
 
 - **The scaling expression is `bitValue * (offset + digital)`.** It is numerically worse than
   the obvious rearrangement, and it is EDFlib's exact form, kept so output can be compared with

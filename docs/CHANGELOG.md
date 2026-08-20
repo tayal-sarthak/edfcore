@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.298
+
+- **Corrected** the promise over the "things that look like bugs and are not" list, which 0.4.254
+  made untrue. It says "each has a test pinning it and a comment explaining why", and that held for
+  the seven code rules — the scaling expression, the `TextDecoder` ban, `readWindow` returning an
+  array, `scale` being `undefined`, no `Date`, no bitwise on an offset, `info` under `strict` — and
+  then an eighth entry was added about the `archive/pre-squash-2026-08-16` branch being
+  load-bearing. That one is a fact about the repository rather than about the code, and an offline
+  suite has no way to check a branch on a remote. An unqualified "each" over a list where one has
+  no test is the shape this project keeps correcting elsewhere.
+
 ## 0.4.297
 
 - **Exercised** the inspector's sample recording, which nothing had. `sample-edf.ts` writes an
