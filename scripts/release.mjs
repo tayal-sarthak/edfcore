@@ -418,9 +418,8 @@ if (dryRun) {
 }
 
 console.log(`
-  Released ${tag}.
+  Released ${tag}, and ${next} is on npm with a provenance attestation.
 
-  publish.yml is now running and will publish to npm with a provenance attestation.
-  Watch it with:   gh run watch
-  Confirm with:    npm view edfcore version
+  Install it with:  npm install edfcore@${next}
+  The release:      https://github.com/tayal-sarthak/edfcore/releases/tag/${tag}
 `);

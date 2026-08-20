@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.295
+
+- **Corrected** the release script's closing message, which 0.4.294 made false one release ago. It
+  said "publish.yml is now running and will publish to npm" and offered `npm view edfcore version`
+  to confirm — advice from when the script exited before the publish began. It now waits for that
+  publish, so by the time those lines print the version is already installable. It says so, and
+  gives the install command and the release URL instead of two ways to check something already
+  known.
+
 ## 0.4.294
 
 - **Added** the last wait the release was missing: whether the version actually reached npm. The
