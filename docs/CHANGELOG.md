@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.283
+
+- **Added** a check that the sidebar order is a total order. `content.config.ts` requires `section`
+  and `order` on every page so "a new page cannot silently land at the bottom of the wrong group",
+  and it cannot require the thing that makes the order deterministic: that no two pages in a
+  section share a number. `DocsNav.astro` sorts by it and `Array.prototype.sort` is stable, so a
+  tie falls back to whatever order the collection loader returned — a filesystem detail. Two pages
+  would swap places between machines and nobody would call it a bug, because nothing said what the
+  right order was.
+- The same numbers are the reading order `llms.txt` and `llms-full.txt` hand an agent, which is
+  where a tie stops being cosmetic: "the guides, in order" is the only structure those files have.
+  Titles and descriptions are checked for uniqueness for the same reason — both are addresses
+  rather than prose, and two pages sharing either are two pages a reader cannot tell apart from
+  outside. Contiguous numbering is checked as well, which is a judgement rather than a rule: a gap
+  breaks nothing, and it is what a deleted page leaves behind.
+
 ## 0.4.282
 
 - **Fixed** the corpus manifest calling one field two names. Five of the seven entries recorded
