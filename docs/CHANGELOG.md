@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.296
+
+- **Documented** the commands that existed and no page mentioned. 0.4.268 checks that every
+  documented script is real; nothing checked the other direction, and `format`, `release` and the
+  three `verify:*` scripts had accumulated unmentioned. A contributor-facing script nobody
+  documents is a script nobody runs — `verify:tarball` and `verify:site` were both added this week
+  and would have been found only by reading `package.json`.
+- The three `verify:*` get their own block with the reason they are not in `npm run check`: each
+  needs the network or an artifact `check` does not build, and `check` staying offline is a
+  property `tests/README.md` opens with.
+
 ## 0.4.295
 
 - **Corrected** the release script's closing message, which 0.4.294 made false one release ago. It

@@ -43,8 +43,20 @@ layer is its dependencies, not its folder (0.4.256).
 npm run check       # lint + typecheck (both configs) + build + tests — run this before finishing
 npm test            # vitest, ~10s
 npm run build       # tsc to dist/
+npm run format      # biome, formatting and import order; `lint` reports the same as errors
 npm run corpus:fetch # ~59 MB, gitignored — without it the corpus tests skip rather than fail
 npm run dev --prefix website
+npm run release -- patch -m "What changed"   # one commit, waits for CI and for npm
+```
+
+Three checks are deliberately outside `npm run check`, because each needs the network or an
+artifact that check does not build. CI runs all three; run them by hand when you touch what they
+cover.
+
+```bash
+npm run verify:package   # publint + @arethetypeswrong/cli against the packed tarball
+npm run verify:tarball   # what npm would actually ship, and what it must not
+npm run verify:site      # needs `npm --prefix website run build` first
 ```
 
 `npm run typecheck` runs **two** configs on purpose: `config/tsconfig.build.json` compiles `src/` with
