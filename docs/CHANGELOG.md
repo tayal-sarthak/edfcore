@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.335
+
+- **Added** a check over the console output `quick-start.md` prints. Between two `text` blocks the
+  page pins the whole shape of a read — variant, record geometry, three channels with their kinds
+  and sample counts, and `2560 samples, 6040 bytes read` — and the fixture is now built from the
+  block's own description of the file rather than from a fixture that happens to resemble it.
+- The byte count is the number worth holding. The page stops to explain that 6040 "is more than
+  the 5120 bytes those 2560 samples occupy", because a record is the smallest readable unit and
+  every channel is interleaved into it — so the overhead a reader budgets from this page follows
+  from the annotation channel's width, three lines further up the same block. That subtraction is
+  checked, not just the total.
+- The individual sample values are deliberately not checked. They come from a recording nobody
+  here has, and a fixture reproducing them would be asserting against its own generator.
+
 ## 0.4.334
 
 - **Added** a check over the `validateHeader` table on `api-validate.md`, which was one of the four
