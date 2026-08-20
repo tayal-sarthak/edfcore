@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.324
+
+- **Added** an execution of the TAL grammar `edf-format.md` prints as ABNF. Two of its five lines
+  carry a rule the rest of the page argues from: `Onset` requires its sign and `Duration` forbids
+  one, and `tal/ticks.ts` refuses a signed duration outright because a signed duration means the
+  field layout is not the one being read. Both are now checked against the page's own text.
+- The claim underneath the block is proved rather than quoted. "Every byte of a multi-byte UTF-8
+  sequence is at least `0x80` and can never collide with one of them" is why the region may be
+  split on the structural bytes BEFORE decoding, and it is checked over every code point above
+  U+007F rather than sampled — about three million bytes. The other order, which the page says
+  corrupts any non-ASCII annotation, is exercised end to end through a file carrying one.
+
 ## 0.4.323
 
 - **Added** an execution of the four-line record arithmetic on `edf-format.md` — the sample width
