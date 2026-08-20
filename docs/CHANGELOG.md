@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.330
+
+- **Added** a check over `migrating-to-0-3.md`, which was one of four documentation pages no test
+  named. It is a rename table and a `sed` recipe, and both can go stale in a way a reader cannot
+  detect: the table's three new names now have to be exports, and its three old names have to be
+  absent, because a barrel still carrying `sampleIndexAt` would let an unmigrated call site keep
+  working and make the whole page fiction.
+- The recipe is lifted out of the page's own fence and run. The page warns in the next paragraph
+  that `sampleStartTicks` is a prefix of `sampleStartTicksOf` and that a substring replace would
+  damage the second, so the `\b` anchors are load-bearing — and that is checked both ways: the
+  recipe leaves the longer name alone, and the same recipe without the anchors turns it into
+  `gridSampleStartTicksOf`, which is not a name this package has. Run as regexes rather than by
+  shelling out, since `sed -i` takes an argument on BSD and not on GNU.
+
 ## 0.4.329
 
 - **Added** `--through` to `npm run announce`, which closes a batch at a version that is not the
