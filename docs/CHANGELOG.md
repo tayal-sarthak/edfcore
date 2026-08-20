@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.309
+
+- **Added** a check over the fixed header table on `edf-format.md`: ten rows giving the offset and
+  width of every field in the first 256 bytes. The rows are parsed out of the page and compared
+  with `HEADER_FIELDS`, and they also have to tile the block — no gap, no overlap, ending exactly
+  at 256.
+- That page and `physical-values.md` were the only two documentation pages no test named at all.
+  The page is a hand-typed copy of the same table the parser reads, and its whole value is being
+  independent of the library, so an offset corrected in `constants.ts` alone would leave it
+  teaching a byte address that no longer exists.
+
 ## 0.4.308
 
 - **Added** the guard for what 0.4.307 fixed: a version another entry calls a hole has to say so in
