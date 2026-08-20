@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.288
+
+- **Tested** `options.ts` directly for the first time. It is 66 lines of Layer 1 whose whole job is
+  refusing bad input, and no test imported it — every path through it ran only as a side effect of
+  some larger read. Its own docblock records two misdiagnoses that reached users from a `NaN`
+  budget: an `EdfBudgetError` advising "read fewer records per call", which no record count
+  satisfies, and an `EdfRangeError` about `count: NaN` telling the caller to clamp a range the
+  function does not take. The distinction it exists for — `undefined` means "use the default",
+  `NaN` means a caller computed something and got nothing — is now pinned from both sides, along
+  with the ordering that makes the message right: `NaN >= 0` is false, so a sign check written
+  first would call `NaN` negative.
+- **Pinned** the inventory the module states: six modules resolve the budget and two hand it on.
+  That sentence is the argument the guard is worth anything — "a guard that only one of the eight
+  applies is not a guard" — and a seventh consumer reading the option raw is how it stops being
+  true.
+
 ## 0.4.287
 
 - **Added** a check on what `npm publish` would actually send. `publint` runs in CI and checks the
