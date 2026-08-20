@@ -16,7 +16,7 @@
  * absence of a tolerance rather than the presence of one: `Object.is` and `toBe`, no `toBeCloseTo`.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { codeOnly } from '../support/code-only.js';
@@ -99,5 +99,86 @@ describe('the harness strength table', () => {
     // fixture: it does not survive the trip through volts, so MNE cannot be matched bit for bit.
     const microvolts = -492.15686274509807;
     expect((microvolts / 1e6) * 1e6).not.toBe(microvolts);
+  });
+});
+
+/**
+ * The same table again, in `scripts/golden/README.md`, which `tests/README.md` sends the reader to
+ * for "what each harness claims and how strong that claim is".
+ *
+ * It is the complete one: four rows rather than three, because it includes `corpus-parity.test.ts`
+ * — the only harness whose inputs nobody here chose, and the one the README calls the strongest.
+ * The documentation page omits it legitimately, since that page is about scaling and this row is
+ * about real recordings, so the two tables are checked separately and only against the harnesses.
+ *
+ * This copy names each harness by FILE, which is the stronger form: a row cannot outlive the test
+ * it describes.
+ */
+describe('the same table in scripts/golden/README.md', () => {
+  const README = readFileSync(
+    fileURLToPath(new URL('../../scripts/golden/README.md', import.meta.url)),
+    'utf8',
+  );
+
+  const ROWS_README: readonly (readonly string[])[] = (() => {
+    const at = README.indexOf('## What each claim is worth');
+    if (at === -1) throw new Error('scripts/golden/README.md no longer tabulates the harnesses');
+    const rows: string[][] = [];
+    for (const line of README.slice(at).split('\n')) {
+      if (!line.startsWith('|')) {
+        if (rows.length > 0) break;
+        continue;
+      }
+      rows.push(
+        line
+          .slice(1, -1)
+          .split('|')
+          .map((cell) => cell.trim()),
+      );
+    }
+    return rows.slice(2);
+  })();
+
+  it('names four harnesses, each of which is a file that is there', () => {
+    const named = ROWS_README.map((cells) => (cells[0] ?? '').replaceAll('`', ''));
+    expect(named).toEqual([
+      'golden-values.test.ts',
+      'corpus-parity.test.ts',
+      'annotation-parity.test.ts',
+      'mne-parity.test.ts',
+    ]);
+    for (const name of named) {
+      expect(existsSync(fileURLToPath(new URL(name, import.meta.url))), name).toBe(true);
+    }
+  });
+
+  it('quotes the MNE bound the harness applies, the same one the page quotes', () => {
+    const published = /([\d.e-]+) relative/.exec(ROWS_README[3]?.[3] ?? '')?.[1];
+    const applied = /const MAX_RELATIVE_DIFFERENCE = ([\d.e-]+);/.exec(
+      source('mne-parity.test.ts'),
+    );
+    expect(Number(published)).toBe(Number(applied?.[1]));
+    // And the two published tables agree with each other about it.
+    expect(Number(published)).toBe(Number(/([\d.e-]+) relative/.exec(ROWS[2]?.[2] ?? '')?.[1]));
+  });
+
+  it('gives every bit-for-bit row a harness that compares exactly', () => {
+    const exact = ROWS_README.filter((cells) => (cells[3] ?? '').includes('bit for bit'));
+    // Two of the four, and the page's shorter table carries only the first of them.
+    expect(exact).toHaveLength(2);
+    for (const cells of exact) {
+      const name = (cells[0] ?? '').replaceAll('`', '');
+      const harness = codeOnly(source(name));
+      expect(harness, name).toContain('Object.is');
+      expect(harness, name).not.toContain('toBeCloseTo');
+    }
+  });
+
+  it('describes the window corpus-parity actually samples', () => {
+    // "It samples a bounded window per signal … taken at the **start, the middle and the end**.
+    //  The end window is the one that earns its place: a reader whose record arithmetic drifts
+    //  does so with distance from the start."
+    expect(README.replace(/\s+/g, ' ')).toContain('the **start, the middle and the end**');
+    expect(source('corpus-parity.test.ts')).toContain('at the start, the middle and the end');
   });
 });

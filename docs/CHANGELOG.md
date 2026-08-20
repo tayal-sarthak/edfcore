@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.320
+
+- **Extended** 0.4.319 to the second copy of the harness table. `scripts/golden/README.md` carries
+  the complete one — four rows rather than the documentation page's three, because it includes
+  `corpus-parity.test.ts`, the only harness whose inputs nobody here chose — and `tests/README.md`
+  sends the reader to it for "what each harness claims and how strong that claim is".
+- That copy names each harness by file, which is the stronger form, so a row cannot outlive the
+  test it describes. Every named file has to exist, every bit-for-bit row has to belong to a
+  harness that compares with `Object.is` and no tolerance, and the MNE bound has to match both the
+  constant in the harness and the figure the other table publishes.
+
 ## 0.4.319
 
 - **Added** a check that the three cross-implementation harnesses claim on the page exactly what
