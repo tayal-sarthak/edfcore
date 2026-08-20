@@ -27,6 +27,9 @@ import { buildEdf } from '../support/writer.js';
 
 const PAGE = DOCS_PAGES.get('physical-values.md') ?? '';
 
+/** The same page with its line wrapping collapsed, for claims made across a wrapped sentence. */
+const FLAT = PAGE.replace(/\s+/g, ' ');
+
 /** The range the page tabulates: -500..500 µV over the full 16-bit digital span. */
 const RANGE = {
   physicalMinimum: -500,
@@ -101,5 +104,70 @@ describe('the disagreement table', () => {
     const zero = rows.find((row) => row.digital === 0);
     expect(zero?.edfcore).not.toBe(0);
     expect(RANGE.digitalMinimum + RANGE.digitalMaximum).not.toBe(0);
+  });
+});
+
+describe('the census the page takes of the whole range', () => {
+  // "the two forms produce a different float64 for 37,144 of the 65,536 possible sample values
+  //  (57 % of them). The largest disagreement is 8.5e-14 µV, which is 5.6e-12 of one
+  //  quantisation step."
+  // Matched against the page with its line wrapping collapsed, so rewrapping the paragraph
+  // cannot silently turn this check off.
+  const prose =
+    /a different float64 for ([\d,]+) of the ([\d,]+) possible sample values \((\d+) % of them\)\. The largest disagreement is ([\d.e-]+) [^ ]+, which is ([\d.e-]+) of one quantisation step/.exec(
+      FLAT,
+    );
+
+  /** Both forms over every encoding, once, for the four numbers the prose states. */
+  async function census(): Promise<{
+    differing: number;
+    total: number;
+    largest: number;
+    inSteps: number;
+  }> {
+    const { header } = await openEdf(byteSource(BYTES));
+    const signal = getSignal(header, 'Fp1');
+    const bitValue = signal.scale?.bitValue ?? Number.NaN;
+    const digital = new Int32Array(RANGE.digitalMaximum - RANGE.digitalMinimum + 1);
+    for (let index = 0; index < digital.length; index += 1) {
+      digital[index] = RANGE.digitalMinimum + index;
+    }
+    const produced = toPhysical(signal, digital);
+
+    let differing = 0;
+    let largest = 0;
+    for (let index = 0; index < digital.length; index += 1) {
+      const mine = produced[index] ?? Number.NaN;
+      const other = textbook(digital[index] ?? 0, bitValue);
+      if (Object.is(mine, other)) continue;
+      differing += 1;
+      largest = Math.max(largest, Math.abs(mine - other));
+    }
+    return { differing, total: digital.length, largest, inSteps: largest / bitValue };
+  }
+
+  it('states the census in prose the page still carries', () => {
+    expect(prose).not.toBeNull();
+  });
+
+  it('counts the sample values the page counts', async () => {
+    const { differing, total } = await census();
+    expect(total).toBe(Number((prose?.[2] ?? '').replaceAll(',', '')));
+    expect(differing).toBe(Number((prose?.[1] ?? '').replaceAll(',', '')));
+    expect(Math.round((differing / total) * 100)).toBe(Number(prose?.[3]));
+  });
+
+  it('measures the largest gap the page measures, to the digits it prints', async () => {
+    const { largest, inSteps } = await census();
+    // Both are quoted to two significant figures, so that is the agreement being asked for.
+    const twoFigures = (value: number): string => value.toExponential(1);
+    expect(twoFigures(largest)).toBe(twoFigures(Number(prose?.[4])));
+    expect(twoFigures(inSteps)).toBe(twoFigures(Number(prose?.[5])));
+  });
+
+  it('leaves the difference far below anything an amplifier can express', async () => {
+    // "about eleven orders of magnitude below the smallest difference the amplifier can express"
+    const { inSteps } = await census();
+    expect(Math.round(-Math.log10(inSteps))).toBe(11);
   });
 });

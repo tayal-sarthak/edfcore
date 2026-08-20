@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.314
+
+- **Added** the census underneath the table 0.4.313 pinned: the two conversion forms are run over
+  every one of the 65,536 encodings and the four numbers the page states are computed from the
+  result — 37,144 differing values, 57 % of them, a largest gap of 8.5e-14 and 5.6e-12 of a
+  quantisation step. The quoted figures are parsed from the page and compared at the two
+  significant figures they are written to.
+- The sentence after them, that the gap is eleven orders of magnitude below anything an amplifier
+  can express, is derived rather than trusted. It is the reason the difference is safe to have,
+  and it is the number most likely to be left behind by a change to either form.
+
 ## 0.4.313
 
 - **Added** an execution of the conversion table on `physical-values.md`: four rows of exact
