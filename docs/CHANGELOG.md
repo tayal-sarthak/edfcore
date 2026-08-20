@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.338
+
+- **Added** a check that the three published copies of `ByteSource` agree. It is the one type a
+  caller implements rather than consumes — the extension point that lets a file, a blob, an object
+  store and an HTTP range share one path — so it is printed in full on `data-sources.md`, again on
+  `api-sources.md`, and declared in `src/types.ts`. Two of those are hand-typed copies of the
+  third.
+- A drift here is worse than a stale sentence: someone writes an implementation against a printed
+  signature, TypeScript disagrees with the page, and the page is what they trusted. A dropped
+  `readonly`, a `close` that stopped being optional, a `ReadOptions` parameter that gained a
+  sibling — each is a one-word edit that neither `astro check` nor `tsc` can see, because a fenced
+  block is not code either of them compiles. `doc-snippets-compile.test.ts` compiles the fences
+  that are complete programs; this one is a declaration, so it is compared against the declaration.
+
 ## 0.4.337
 
 - **Added** an execution of the annotation listing on `quick-start.md`. The page's own format
