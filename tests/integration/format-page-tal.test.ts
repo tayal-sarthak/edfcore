@@ -91,13 +91,31 @@ describe('splitting before decoding', () => {
     //  one of them" — proved rather than quoted, over every code point that has an encoding.
     const encoder = new TextEncoder();
     let checked = 0;
-    for (let codePoint = 0x80; codePoint <= 0x10ffff; codePoint += 1) {
-      // The surrogate range has no encoding of its own.
-      if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
-      for (const byte of encoder.encode(String.fromCodePoint(codePoint))) {
-        checked += 1;
+    // Encoded in blocks rather than one code point at a time. UTF-8 is context-free, so the bytes
+    // of a run of code points are the concatenation of each one's bytes — and 1.1 million calls to
+    // `String.fromCodePoint` and `encode` took long enough to time out under a loaded suite, which
+    // is a property of the loop rather than of the claim. Same 4,382,464 bytes, about a tenth of
+    // the time, and no weakening: raising the timeout instead would have kept a five-second check
+    // in a suite that runs it on every commit (0.4.332).
+    const BLOCK = 0x10000;
+    for (let start = 0x80; start <= 0x10ffff; start += BLOCK) {
+      let run = '';
+      for (
+        let codePoint = start;
+        codePoint < start + BLOCK && codePoint <= 0x10ffff;
+        codePoint += 1
+      ) {
+        // The surrogate range has no encoding of its own.
+        if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
+        run += String.fromCodePoint(codePoint);
+      }
+      const bytes = encoder.encode(run);
+      checked += bytes.length;
+      for (const byte of bytes) {
         if (byte >= 0x80) continue;
-        expect.fail(`U+${codePoint.toString(16)} encodes byte 0x${byte.toString(16)} below 0x80`);
+        expect.fail(
+          `a code point in [${start}, ${start + BLOCK}) encodes byte 0x${byte.toString(16)}`,
+        );
       }
     }
     // Every code point above U+007F, so the claim is exhaustive rather than sampled.

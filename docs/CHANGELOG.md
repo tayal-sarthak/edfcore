@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.332
+
+- **Fixed** a test of mine that could time out. The UTF-8 sweep added in 0.4.324 encoded each of
+  the 1.1 million code points above U+007F on its own and walked the result with an iterator, which
+  took about 2.6 seconds alone and over five under a loaded suite — past the default timeout. It
+  had passed every run until the suite grew enough to starve it.
+- Now encoded in blocks and scanned by index. UTF-8 is context-free, so the bytes of a run of code
+  points are the concatenation of each one's, and the check covers the same 4,382,464 bytes in
+  about a tenth of the time. Raising the timeout was the other option and the wrong one: it would
+  have left a five-second check running on every commit to prove something that takes a third of a
+  second to prove.
+
 ## 0.4.331
 
 - **Added** an execution of the example `migrating-to-0-3.md` builds its whole argument on: on a
