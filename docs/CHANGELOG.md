@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.323
+
+- **Added** an execution of the four-line record arithmetic on `edf-format.md` — the sample width
+  per family, the record length as the summed sample counts, each signal's offset within a record
+  as the sum of the counts before it, and the file offset of record `r`. The four lines are checked
+  to still be on the page, then run against four shapes: both families, a five-signal file, a
+  one-signal file, and the mixed-rate case the page describes, EEG at 256 samples per record beside
+  a channel at 1.
+- `concepts-arithmetic.test.ts` covers one specific file from the concepts page. These are the
+  general equations that file is an instance of, including the closing one: the last record has to
+  end exactly at the end of the file, with no padding and no trailer.
+
 ## 0.4.322
 
 - **Fixed** a wrong claim on `edf-format.md`. It named `|0`, `<<` and `>>>` together as operators

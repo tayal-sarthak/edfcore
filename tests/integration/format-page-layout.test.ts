@@ -216,3 +216,77 @@ describe('the address the page works out by hand', () => {
     expect(value).toBe(raw & 0x8000 ? raw - 0x10000 : raw);
   });
 });
+
+describe('the record arithmetic the page states as four lines', () => {
+  /**
+   * The block itself, so the check fails if the page stops making these four claims:
+   *
+   *   bytesPerSample      = 2 for EDF, 3 for BDF
+   *   recordByteLength    = bytesPerSample * SUM(samplesPerRecord[j] for all j)
+   *   recordByteOffset[i] = bytesPerSample * SUM(samplesPerRecord[j] for j < i)
+   *   fileOffset(r)       = headerByteLength + r * recordByteLength
+   */
+  it('is still the block the page prints', () => {
+    const flat = PAGE.replace(/\s+/g, ' ');
+    expect(flat).toContain('bytesPerSample = 2 for EDF, 3 for BDF');
+    expect(flat).toContain(
+      'recordByteLength = bytesPerSample * SUM(samplesPerRecord[j] for all j)',
+    );
+    expect(flat).toContain(
+      'recordByteOffset[i] = bytesPerSample * SUM(samplesPerRecord[j] for j < i)',
+    );
+    expect(flat).toContain('fileOffset(r) = headerByteLength + r * recordByteLength');
+  });
+
+  // "Different signals may declare different counts, so one file can hold EEG at 256 samples per
+  //  record alongside a temperature probe at 1." Both families, and a channel at 1.
+  const SHAPES = [
+    { format: 'EDF', counts: [256, 16, 1] },
+    { format: 'BDF', counts: [256, 16, 1] },
+    { format: 'EDF', counts: [1] },
+    { format: 'BDF', counts: [64, 64, 64, 3, 7] },
+  ] as const;
+
+  for (const { format, counts } of SHAPES) {
+    it(`holds for ${format} with ${counts.length} signal(s) at ${counts.join('/')}`, async () => {
+      const bytes = buildEdf({
+        format,
+        recordCount: 4,
+        recordDurationSeconds: 1,
+        signals: counts.map((samplesPerRecord, index) => ({
+          label: `S${index}`,
+          samplesPerRecord,
+        })),
+      });
+      const { header } = await openEdf(byteSource(bytes));
+
+      expect(header.bytesPerSample).toBe(format === 'EDF' ? 2 : 3);
+
+      const total = counts.reduce((sum, count) => sum + count, 0);
+      expect(header.recordByteLength).toBe(header.bytesPerSample * total);
+
+      let before = 0;
+      counts.forEach((count, index) => {
+        expect(getSignal(header, `S${index}`).recordByteOffset).toBe(
+          header.bytesPerSample * before,
+        );
+        before += count;
+      });
+
+      // `fileOffset(r) = headerByteLength + r * recordByteLength`, ending exactly at the file end.
+      for (let record = 0; record < header.recordCount; record += 1) {
+        const offset = header.headerByteLength + record * header.recordByteLength;
+        expect(offset).toBeLessThan(bytes.byteLength);
+      }
+      expect(header.headerByteLength + header.recordCount * header.recordByteLength).toBe(
+        bytes.byteLength,
+      );
+
+      // "There is no sample-rate field in EDF … A rate is the quotient of the two."
+      counts.forEach((count, index) => {
+        expect(getSignal(header, `S${index}`).samplesPerRecord).toBe(count);
+        expect(getSignal(header, `S${index}`).sampleRateHz).toBe(count / 1);
+      });
+    });
+  }
+});
