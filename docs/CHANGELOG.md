@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.284
+
+- **Added** a check that the README's first badge and `/api.json` are the same contract. The badge
+  URL carries a JSONPath — `query=%24.exports.total` — against an endpoint generated from the three
+  built entry points, and that design exists so the number is counted rather than typed: the site
+  footer read "Version 0.1.0" for three minor series. The two halves had never been compared.
+  Renaming `total` in the endpoint leaves the badge querying a path that is gone, and shields.io
+  does not fail loudly for that — it renders an empty value in the corner of the README, which is
+  the one place nobody looks after the first week.
+- The path is extracted from the badge and walked through the object the endpoint builds, the URL
+  is checked against `package.json`'s `homepage`, and the total is checked against the API surface
+  row it should agree with. The endpoint is read as text rather than imported, because it lives
+  under `website/` and importing it would pull in a tsconfig CI does not install — the boundary
+  0.4.264 exists to hold.
+
 ## 0.4.283
 
 - **Added** a check that the sidebar order is a total order. `content.config.ts` requires `section`
