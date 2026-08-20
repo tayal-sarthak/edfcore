@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.321
+
+- **Added** a guard for the offset rule `edf-format.md` states: offsets stay in plain floats, which
+  are exact to 2^53, because a data offset in a multi-gigabyte BDF crosses 2^31 and a bitwise
+  operator wraps it negative there without warning. Nothing checked it, and the failure is the
+  silent kind — a 22-hour BDF passes 2^31 bytes about nine hours in, so a truncated offset would
+  read plausible samples from the wrong place for the whole back half of the recording.
+- Not a ban: `decode/digital.ts` assembles every sample with `|` and `<<` and must, and the same
+  page prints those two lines as the definition of the format. The guard is an inventory instead —
+  every bitwise operator in `src/` has to sit in one of three modules with a written reason, which
+  makes adding a fourth a deliberate act. `record-index.ts` is one of the three, and its entry
+  records why `(low + high) >> 1` is safe: the record count comes from an eight-character header
+  field, so the index cannot approach 2^30.
+- The demonstration corrects a detail the page leaves implicit. `| 0` and `>>` wrap the offset
+  negative at 2^31, but `>>>` is unsigned and returns something plausible until 2^32 — about
+  eighteen hours into the same recording — which is the more dangerous of the two behaviours.
+
 ## 0.4.320
 
 - **Extended** 0.4.319 to the second copy of the harness table. `scripts/golden/README.md` carries
