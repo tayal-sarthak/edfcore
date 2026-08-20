@@ -22,9 +22,9 @@ import { describe, expect, it } from 'vitest';
 import { toPhysical } from '../../src/decode/physical.js';
 import { getSignal } from '../../src/header/lookup.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf, readWindow } from '../../src/recording.js';
+import { openEdf, readAnnotations, readWindow } from '../../src/recording.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
-import { buildEdf } from '../support/writer.js';
+import { buildEdf, minimalEdfPlus } from '../support/writer.js';
 
 const PAGE = DOCS_PAGES.get('quick-start.md') ?? '';
 
@@ -156,5 +156,87 @@ describe('the two numbers the window prints', () => {
     // which is the claim that a window costs the same wherever it starts on a continuous file.
     expect(toPhysical(eeg, chunk?.signals[0]?.digital ?? []).length).toBe(Number(printed?.[2]));
     expect(chunk?.byteLength).toBe(Number(printed?.[4]));
+  });
+});
+
+describe('the two onset axes', () => {
+  /** Record 0 starting half a second in, which is the only sub-second timing EDF+ carries. */
+  const START_OFFSET = 0.5;
+  const ONSET = 1.75;
+
+  const BYTES_OFFSET = minimalEdfPlus({
+    recordCount: 3,
+    recordDurationSeconds: 1,
+    signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+    annotationSignals: [
+      {
+        samplesPerRecord: 40,
+        tals: (record) => (record === 1 ? [{ onset: ONSET, texts: ['Arousal'] }] : []),
+      },
+    ],
+    recordOnsetSeconds: (record) => START_OFFSET + record,
+  });
+
+  const event = async () => {
+    const recording = await openEdf(byteSource(BYTES_OFFSET));
+    const { annotations } = await readAnnotations(recording, { start: 0, count: 3 });
+    const found = annotations.find((entry) => entry.text === 'Arousal');
+    if (found === undefined) throw new Error('fixture lost its annotation');
+    return found;
+  };
+
+  it('names both members of both pairs', () => {
+    // Until 0.4.336 the page said "three ways" and named `onsetSecondsFromFirstRecord`,
+    // `onsetSecondsFromHeaderStart` and `onsetTicks` — one float from each axis and one bigint
+    // from only one of them.
+    const flat = PAGE.replace(/\s+/g, ' ');
+    for (const field of [
+      'onsetSecondsFromFirstRecord',
+      'onsetTicksFromFirstRecord',
+      'onsetSecondsFromHeaderStart',
+      'onsetTicks',
+    ]) {
+      expect(flat, field).toContain(`\`${field}\``);
+    }
+    expect(flat).toContain('from the *same axis*');
+  });
+
+  it('pairs each float with the bigint on its own axis', async () => {
+    const found = await event();
+    expect(found.onsetSecondsFromHeaderStart).toBe(ONSET);
+    expect(found.onsetSecondsFromFirstRecord).toBe(ONSET - START_OFFSET);
+    // "Print the seconds and compare the ticks — from the same axis."
+    expect(Number(found.onsetTicks) / 1e7).toBe(found.onsetSecondsFromHeaderStart);
+    expect(Number(found.onsetTicksFromFirstRecord) / 1e7).toBe(found.onsetSecondsFromFirstRecord);
+  });
+
+  it('separates the two axes by exactly the sub-second start offset', async () => {
+    const found = await event();
+    // "that offset is exactly what the two axes differ by"
+    expect(Number(found.onsetTicks - found.onsetTicksFromFirstRecord) / 1e7).toBe(START_OFFSET);
+  });
+
+  it('puts an event in two places if the pair is crossed, which is what the page now warns about', async () => {
+    const found = await event();
+    // The advice as it read before: print the rebased seconds, compare the header-axis ticks.
+    expect(Number(found.onsetTicks) / 1e7).not.toBe(found.onsetSecondsFromFirstRecord);
+  });
+
+  it('collapses the difference on a file with no offset, which is why it was easy to miss', async () => {
+    const plain = minimalEdfPlus({
+      recordCount: 3,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+      annotationSignals: [
+        {
+          samplesPerRecord: 40,
+          tals: (record) => (record === 1 ? [{ onset: ONSET, texts: ['Arousal'] }] : []),
+        },
+      ],
+    });
+    const recording = await openEdf(byteSource(plain));
+    const { annotations } = await readAnnotations(recording, { start: 0, count: 3 });
+    const found = annotations.find((entry) => entry.text === 'Arousal');
+    expect(found?.onsetTicks).toBe(found?.onsetTicksFromFirstRecord);
   });
 });

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.336
+
+- **Fixed** wrong advice on `quick-start.md`. It said an annotation carries its onset "three ways"
+  and then named `onsetSecondsFromFirstRecord`, `onsetSecondsFromHeaderStart` and `onsetTicks` —
+  one float from each axis and a bigint from only one of them — closing with "Print the seconds;
+  compare the ticks." Followed literally on a file that declares a sub-second start offset, that
+  prints the rebased seconds and compares the header-axis ticks: on a 0.5 s offset, an event shown
+  at 1.25 s and tested at 1.75 s, silently.
+- There are four fields, two per axis, and `annotations.md` has had them right in a table all
+  along. The quick start now names both members of both pairs, keeps the "print the seconds,
+  compare the ticks" advice with "from the same axis" attached, and says what the two axes differ
+  by. Checked on a file with an offset and again on one without, where the two collapse — which is
+  why this was easy to miss.
+- This is the same shape as the defect the rename in 0.3.0 exists to prevent: two quantities that
+  agree on an ordinary file and part company on the one that matters.
+
 ## 0.4.335
 
 - **Added** a check over the console output `quick-start.md` prints. Between two `text` blocks the

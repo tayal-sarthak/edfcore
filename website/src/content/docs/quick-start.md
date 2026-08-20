@@ -175,7 +175,7 @@ try {
 
 The record range is required and has no default. Scanning a whole file for annotations is expensive, so `{ start: 0, count: recording.header.recordCount }` has to appear in your source.
 
-Each annotation carries its onset three ways. `onsetSecondsFromFirstRecord` is rebased to the start of record 0, which is the convention EDFlib, pyEDFlib and MNE use. `onsetSecondsFromHeaderStart` is the verbatim on-disk value, and `onsetTicks` is an exact `bigint` in 100-nanosecond units. Print the seconds; compare the ticks.
+Each annotation carries its onset on **two axes**, each as a float and as an exact `bigint` in 100-nanosecond units. `onsetSecondsFromFirstRecord` and `onsetTicksFromFirstRecord` are rebased to the start of record 0, which is the convention EDFlib, pyEDFlib and MNE use. `onsetSecondsFromHeaderStart` and `onsetTicks` are the verbatim on-disk value. Print the seconds and compare the ticks — from the *same axis*. A file may declare a sub-second start offset in record 0, and that offset is exactly what the two axes differ by, so printing `onsetSecondsFromFirstRecord` beside a comparison on `onsetTicks` puts an event on screen in one place and tests it in another. [Annotations](/docs/annotations) has all four fields side by side.
 
 ## Next
 
