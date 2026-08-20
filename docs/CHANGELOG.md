@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.319
+
+- **Added** a check that the three cross-implementation harnesses claim on the page exactly what
+  they assert in code. `physical-values.md` tabulates them precisely because they are not equally
+  strong — pyEDFlib values bit for bit, pyEDFlib onsets exact to the tick, MNE only to 1e-12
+  relative and explicitly not bit-exact — and that is a claim about the tests, so no test could
+  previously be wrong about it in a way that showed.
+- The MNE bound is now read out of `mne-parity.test.ts` rather than restated: loosening that one
+  constant for a flaky run would otherwise leave the page publishing a parity claim a thousand
+  times stronger than the one being made, with the whole suite still green. The two exact rows are
+  checked for the ABSENCE of a tolerance, with comments stripped first — `golden-values.test.ts`
+  explains at length why it does not use one, and the explanation must not vouch for itself.
+
 ## 0.4.318
 
 - **Strengthened** the check that the golden fixtures can tell the two scaling forms apart.
