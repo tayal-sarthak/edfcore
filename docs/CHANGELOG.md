@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.299
+
+- **Extended** `verify:site` to check the generated markdown carries the page, not just its head.
+  Every check before this one asked whether a URL exists, and a generator that emitted the
+  frontmatter and dropped `entry.body` would have satisfied all of them: `llms-full.txt` would
+  still list all 23 pages, every `.md` twin would still render its title and canonical link, and
+  the whole thing would be a table of contents for text nobody shipped. `entry.body` is one
+  property access away from being forgotten in either generator.
+- One distinctive prose line is taken from the middle of each page's source and looked for in both
+  outputs. Dropping it from the twin route flagged all 23.
+
 ## 0.4.298
 
 - **Corrected** the promise over the "things that look like bugs and are not" list, which 0.4.254

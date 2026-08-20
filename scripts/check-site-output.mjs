@@ -127,6 +127,34 @@ for (const path of htmlPages) {
   }
 }
 
+// --- and the markdown actually carries the page ---------------------------
+//
+// Every check above asks whether a URL exists. A generator that emitted the frontmatter and
+// dropped `entry.body` would satisfy all of them: `llms-full.txt` would still list every page,
+// every `.md` twin would still render its title and canonical link, and the whole thing would be
+// a table of contents for text nobody shipped. `entry.body` is one property access away from
+// being forgotten in either generator.
+//
+// So one distinctive line is taken from the middle of each page's source and looked for in both.
+
+for (const slug of slugs) {
+  const source = readFileSync(join(PAGES_DIR, `${slug}.md`), 'utf8');
+  const body = source.split('---').slice(2).join('---');
+  const candidates = body
+    .split('\n')
+    .filter((line) => line.trim().length > 60 && !line.startsWith('|') && !line.startsWith('`'));
+  const probe = candidates[Math.floor(candidates.length / 2)]?.trim();
+  if (probe === undefined) {
+    fail(`${slug}.md has no prose line long enough to look for`);
+    continue;
+  }
+  if (!full.includes(probe)) fail(`llms-full.txt lists /docs/${slug} without its text`);
+  const twin = join(DIST, 'docs', `${slug}.md`);
+  if (existsSync(twin) && !readFileSync(twin, 'utf8').includes(probe)) {
+    fail(`/docs/${slug}.md renders its head and not its body`);
+  }
+}
+
 // --- the inspector's sample recording is a file edfcore can read ----------
 //
 // `website/src/scripts/sample-edf.ts` writes an EDF+C file in the browser so the demo has
