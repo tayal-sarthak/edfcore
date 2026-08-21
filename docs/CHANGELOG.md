@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.340
+
+- **Added** a check for the table `large-files.md` opens with: a read count and a byte count for
+  each of four shapes of file, supporting the sentence that is the reason to reach for this
+  library at all — "That is the entire cost, whatever the file size." All four rows are now opened
+  through a recording source and counted.
+- A read count is not something a type or a lint can hold. It is a property of the call graph and
+  it changes by accident: a helper that fetches a field it already has, a probe that stops
+  short-circuiting on a one-record file, a header read split per signal block. The page names that
+  last one outright, and over HTTP it is the difference between one round trip and sixty-four on a
+  call the caller believes is free — so it is checked on a 64-signal file. Also pinned: the header
+  read uses the computed `256 * (ns + 1)` rather than the byte-length field, checked against a file
+  that declares a wrong one.
+
 ## 0.4.339
 
 - **Added** the three refusals `quick-start.md` promises, each of which is a single clause on the
