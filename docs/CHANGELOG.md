@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.358
+
+- **Added** checks for three small pure functions on `api-primitives.md`. `decodeHeaderLatin1` is
+  the one with teeth: the page does not merely say `TextDecoder` is unused, it says why, with a
+  measurement — every relevant label reports `windows-1252` on Node and decodes `0x80` as U+0080,
+  while the WHATWG standard mandates U+20AC, so the same header bytes become different strings on a
+  server and in a tab. `text-decoder-ban.test.ts` forbids the call; this checks the behaviour the
+  ban buys, at the byte the two disagree about and across all 256 of them.
+- `formatStartTimeNaive` returns `undefined` for two conditions, and the second is the one worth
+  having: a starttime of `23.59.60` fails its grammar, and without that branch the file came back
+  as midnight — an instant it never gave, and for a sleep study the most believable start there is.
+- Its example renders `1951`, which is the FORMAT rather than the result of the field in the
+  fixture: the two-digit year rule puts 00..84 in 2000..2084, so `02.08.51` is 2051 and only a
+  four-digit EDF+ `Startdate` can say 1951. The check compares the shape against the page and the
+  value against the rule, which is what the first version of it got wrong.
+
 ## 0.4.357
 
 - **Added** an execution of the two-signal `trimToWindow` example on `api-primitives.md`. It exists
