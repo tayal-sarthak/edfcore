@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.375
+
+- **Added** `tests/property/read-agreement.test.ts`: the two ways to read the same records return
+  the same samples. `readWindow` resolves a time window and splits it; `readRecords` is handed a
+  range directly. Every worked example in the documentation uses whichever is more convenient, so a
+  caller who computes a range with `resolveTimeWindow` and reads it with `readRecords` has to get
+  exactly what `readWindow` would have returned — and nothing said so.
+- Each has thorough tests of its own and they share a decoder, but the layer above the decoder is
+  separate, and a divergence there is not a decode bug: the samples would be individually correct
+  and attached to the wrong records, which is the failure mode this package treats as the worst
+  kind because nothing about the numbers looks wrong.
+- So the fixture's generator makes every sample a function of its own record and position, and the
+  second property checks each returned value against where the chunk says it came from — over
+  arbitrary geometries, since the interesting windows are the awkward ones: shorter than a record,
+  starting mid-record, running off the end.
+
 ## 0.4.374
 
 - **Added** a check over what `installation.md` says each entry point contains. The page names
