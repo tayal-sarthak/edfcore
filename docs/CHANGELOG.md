@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.350
+
+- **Added** an execution of the truth table on `validation.md` — four rows over two independent
+  conditions, whether the file carries per-record timestamps and whether `scanSamples` was asked
+  for — plus the `0 0` the page prints when a complete index is handed over.
+- The `none` rows are a promise about cost: a sweep that quietly started traversing a plain EDF
+  would return exactly the same report, and the only evidence would be the wall clock on a 13 GiB
+  file. The `every record` rows are a promise about correctness: skipping them would report a
+  clean file it had not checked.
+- The row with a trap in it is the one about the index. A PROBED index is what `openEdf` hands you
+  and the obvious thing to pass, and it describes two records; the page says it is ignored and
+  "buys nothing", so a version that accepted it would report a clean file on the strength of the
+  first and last record. That it still reads everything is now asserted.
+
 ## 0.4.349
 
 - **Added** an execution of the cost table on `reading-signals.md`: one call for three channels
