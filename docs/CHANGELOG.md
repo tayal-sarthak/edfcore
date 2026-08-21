@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.347
+
+- **Added** an execution of the `bigint` ticks decision on `design-decisions.md`. It is defended
+  with a specific, hard-to-notice failure — two onsets that are one instant on disk comparing
+  unequal after a round trip through a binary fraction, an averaging window landing a sample off
+  for a subset of trials — and that is arithmetic, so it can be shown instead of asserted.
+- Worth showing, because the cost paragraph underneath is a standing invitation to convert to
+  seconds and be done with it. Three tenths is now demonstrated to be three times one tenth to the
+  tick and not in seconds, and a seven-decimal onset survives exactly while its float does not.
+- The path itself is checked from the source. `tal/ticks.ts` states that `parseFloat`,
+  `Number(text)` and float arithmetic appear nowhere on it, and nothing made that true — it is one
+  careless conversion away from being false while every existing test passes, because the two agree
+  on almost every value. Scanned with comments stripped, since the docblock making the claim quotes
+  the very calls being looked for.
+
 ## 0.4.346
 
 - **Added** an execution of the `strict` section of `design-decisions.md`, which is where the
