@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.370
+
+- **Added** an execution of the annotations-signal section of `concepts.md`, the page the README
+  calls the mental model the rest of the API follows from. Both claims in it describe a wrong
+  answer that looks right.
+- Decoding an annotations channel as samples yields "a plausible-looking trace made of ASCII" with
+  no wobble to say anything went wrong, so the refusal is the feature and the page prints the whole
+  message — now compared word for word. It is a plain `RangeError` rather than an `EdfError`
+  because it can only be a caller's mistake, which is checked from the consumer's side: a handler
+  branching on `isEdfError` must not catch it, or a caller's bug gets reported as a bad file.
+- The second is that only the first annotations signal carries timekeeping, so only its first TAL
+  is stripped. Stripping the others deletes a real event silently — the annotation is simply not in
+  the list and nothing says one is missing — so a file with two annotation channels now has to
+  return both of their first events.
+
 ## 0.4.369
 
 - **Added** a check over what a `ValidationReport` promises on `validation.md`. `ok` is the field a
