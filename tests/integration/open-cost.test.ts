@@ -170,3 +170,99 @@ describe('the header read the page describes in prose', () => {
     expect(spy.reads[1]?.length).toBe(256 * DATA_SIGNALS.length);
   });
 });
+
+describe('the file the page measured', () => {
+  /**
+   * "Measured on a 29,925,760-byte EDF+C (8 channels at 256 Hz, 7,200 one-second records,
+   *  4,156-byte records)", rebuilt from that description.
+   *
+   * The annotation channel is not in the parenthesis and is implied by the record size: eight
+   * channels at 256 samples is 4,096 bytes, and the page says 4,156, so 60 bytes of it are the
+   * 30-sample annotation region an EDF+C must carry. That the assembled file comes out at exactly
+   * the byte count in the sentence is the check that the description was read correctly.
+   */
+  const DESCRIBED =
+    /Measured on a ([\d,]+)-byte EDF\+C \((\d+) channels at (\d+) Hz, ([\d,]+) one-second records, ([\d,]+)-byte\s+records\)/.exec(
+      PAGE,
+    );
+
+  const digits = (text: string | undefined): number => Number((text ?? '').replaceAll(',', ''));
+
+  const BYTES = (() => {
+    const channels = digits(DESCRIBED?.[2]);
+    const hz = digits(DESCRIBED?.[3]);
+    return minimalEdfPlus({
+      recordCount: digits(DESCRIBED?.[4]),
+      recordDurationSeconds: 1,
+      signals: Array.from({ length: channels }, (_unused, index) => ({
+        label: `EEG ${index}`,
+        samplesPerRecord: hz,
+      })),
+      annotationSignals: [{ samplesPerRecord: 30 }],
+    });
+  })();
+
+  /**
+   * The `{ offset, length }` lines of the `open reads:` block alone.
+   *
+   * Scoped to that block on purpose: the page prints the same shape again further down for the
+   * eight-hour window, and a page-wide match picks those up and reports six reads for a call that
+   * issues four.
+   */
+  const BLOCK = (() => {
+    const at = PAGE.indexOf('open reads:');
+    if (at === -1) throw new Error('large-files.md no longer prints the measured open reads');
+    const end = PAGE.indexOf('```', at);
+    return PAGE.slice(at, end === -1 ? undefined : end);
+  })();
+
+  const PRINTED_READS = [...BLOCK.matchAll(/\{ offset: (\d+), length: (\d+) \}/g)].map(
+    ([, offset = '', length = '']) => ({ offset: Number(offset), length: Number(length) }),
+  );
+
+  /** `total: 10,872 bytes = 0.036 % of the file` */
+  const TOTAL = /total: ([\d,]+) bytes = ([\d.]+) % of the file/.exec(BLOCK);
+
+  it('describes a file that comes out at the size it names', () => {
+    expect(DESCRIBED).not.toBeNull();
+    expect(BYTES.byteLength).toBe(digits(DESCRIBED?.[1]));
+  });
+
+  it('has the record size the description implies', async () => {
+    const { header } = await openEdf(byteSource(BYTES));
+    expect(header.recordByteLength).toBe(digits(DESCRIBED?.[5]));
+  });
+
+  it('issues exactly the four reads the page prints, in order', async () => {
+    expect(PRINTED_READS).toHaveLength(4);
+    const spy = spySource(byteSource(BYTES));
+    await openEdf(spy);
+    expect(spy.reads.map((read) => ({ offset: read.offset, length: read.length }))).toEqual(
+      PRINTED_READS,
+    );
+  });
+
+  it('reads the total the page totals, and the fraction it works out', async () => {
+    expect(TOTAL).not.toBeNull();
+    const spy = spySource(byteSource(BYTES));
+    await openEdf(spy);
+    const total = spy.reads.reduce((sum, read) => sum + read.length, 0);
+    expect(total).toBe(digits(TOTAL?.[1]));
+    // Quoted to three decimals, so that is the agreement being asked for.
+    expect(((total / BYTES.byteLength) * 100).toFixed(3)).toBe(Number(TOTAL?.[2]).toFixed(3));
+  });
+
+  it('never addresses the middle of the file, whatever its size', async () => {
+    // The claim the four reads exist to support: "That is the entire cost, whatever the file size."
+    const spy = spySource(byteSource(BYTES));
+    const recording = await openEdf(spy);
+    const last = spy.reads.at(-1);
+    // The only byte past the header that is touched at all is in the first record and the last.
+    const middle = spy.reads.filter(
+      (read) =>
+        read.offset > recording.header.headerByteLength + recording.header.recordByteLength &&
+        read.offset < (last?.offset ?? 0),
+    );
+    expect(middle).toEqual([]);
+  });
+});

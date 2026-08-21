@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.341
+
+- **Added** an execution of the read pattern `large-files.md` measured. The page prints four byte
+  ranges and a total for opening a 29,925,760-byte EDF+C, and the file is now rebuilt from the
+  sentence describing it — eight channels at 256 Hz, 7,200 one-second records — and opened through
+  a recording source, so all four offsets and lengths have to match, in order.
+- Rebuilding it is itself a check on having read the description right: the annotation channel is
+  not in the parenthesis and is implied by the record size, since eight channels at 256 samples is
+  4,096 bytes and the page says 4,156. The assembled file comes out at exactly the byte count in
+  the sentence. The read block is matched inside its own fence, because the page prints the same
+  shape again for the eight-hour window further down and a page-wide match reports six reads for a
+  call that issues four.
+
 ## 0.4.340
 
 - **Added** a check for the table `large-files.md` opens with: a read count and a byte count for
