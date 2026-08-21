@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.381
+
+- **Added** the closure this batch earned: every documentation page has to be named by a test that
+  is about that page. `docs-coverage.test.ts` sweeps all of them for exported names and
+  `doc-snippets-compile.test.ts` compiles every fence, but a generic sweep says nothing about
+  whether a page's own tables, worked numbers and refusals have ever been executed.
+- Several pages had none until recently. `edf-format.md` and `physical-values.md` were the first
+  two found that way, `migrating-to-0-3.md`, `api-validate.md` and `quick-start.md` the next three,
+  and each turned out to be carrying claims worth checking — one of them a wrong one. All
+  twenty-three are named now, and a page added tomorrow either gets a test or fails this and says
+  which page it is.
+- The sweeps are excluded from counting rather than forbidden from naming a page. The first version
+  forbade it and was wrong to: `docs-coverage.test.ts` anchors its own non-vacuity with
+  `DOCS.has('api-helpers.md')`, which is reasonable and is not a check about that page. What
+  matters is that no page is covered only by a sweep.
+
 ## 0.4.380
 
 - **Added** enforcement for the fixture policy in `tests/README.md`: "No file from teuniz.net,
