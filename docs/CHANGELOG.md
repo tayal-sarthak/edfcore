@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.362
+
+- **Added** a check over the edfcore column of the capabilities table on `comparison.md`. Seven
+  rows, and only one column this repository is entitled to check: the other four describe packages
+  nobody here controls, surveyed at a point in time, and asserting anything about them would be
+  asserting about someone else's release schedule. The claim under test is that every "Yes" in our
+  own column is true of the package as it stands.
+- Worth checking because a comparison table is the most self-serving thing a project publishes and
+  the one a reader is least able to verify. The two rows the page itself calls load-bearing are the
+  two easiest to overstate, so both are demonstrated rather than asserted: random access by a
+  partial read counted through a recording source and landing past the middle of the file, and
+  EDF+D by a gap that puts record 3 at 13 seconds where the nominal grid would put it at 3.
+
 ## 0.4.361
 
 - **Added** a check over the error-class table on `api-errors.md`. Seven classes, each with an
