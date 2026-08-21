@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.349
+
+- **Added** an execution of the cost table on `reading-signals.md`: one call for three channels
+  against three calls for one, at one read and 15,380 bytes versus three and 46,140. The file is
+  rebuilt from the sentence above the table, and both rows are measured through a recording source.
+- The table is an argument about how to write a loop, and it is the argument most likely to be
+  ignored, because three calls return the same answers as one and nothing in the result says the
+  caller paid triple. The check also constrains the direction that would look like an improvement:
+  narrowing a multi-signal read to per-signal ranges decodes fewer bytes and turns one request into
+  three. The row that must not move is the first — one read, and the whole record.
+- The three calls are additionally asserted to read the identical byte range each time, which is
+  what makes the extra two waste rather than work.
+
 ## 0.4.348
 
 - **Added** a check for what `index.locate` costs, against the two read counts `discontinuous.md`
