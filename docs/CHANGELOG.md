@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.346
+
+- **Added** an execution of the `strict` section of `design-decisions.md`, which is where the
+  odd-looking choices are defended and where two pieces of load-bearing behaviour had no test that
+  read the page.
+- The `info` exemption is the first. Without it, `strict: true` would reject nearly every real
+  recording — `DATE_CLIPPED_TO_1985_2084` is on almost all of them — and it would do it while
+  looking correct, because the mode is called strict and rejecting is what it is for. Removing it
+  reads as tightening. A conforming file now has to open under strict and still carry that
+  diagnostic.
+- The second is the list of conditions that throw "either way". Three of the four are properties of
+  the header and are checked in both modes. The fourth, record onsets that go backwards, gets its
+  own section, because choosing a fixture where it throws at open would have hidden something real:
+  `openEdf` reads records 0 and n-1 and nothing else, so a reversal between them throws immediately
+  and one in the middle is not something it has seen. That file opens with a probed index and
+  throws the moment `buildRecordIndex` reads the records — "either way" is about the two modes, not
+  about throwing before the bytes are read.
+
 ## 0.4.345
 
 - **Added** a check that the six single-interface field tables on `api-types.md` list exactly the
