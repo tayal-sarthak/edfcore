@@ -102,9 +102,15 @@ elsewhere:
 
 > **Note**
 > Agreeing at the endpoints is a property of *this* range, not of the EDFlib form. On many
-> declarations it lands an ulp or two away from the declared bound instead — a signal declaring
-> `1`..`1000` over `0`..`4095` converts its digital minimum to `1.000000000000092`, and one
-> declaring `-500`..`-1` over the full 16-bit range converts its maximum to `-1.000000000000027`.
+> declarations it lands slightly off the declared bound instead — a signal declaring `1`..`1000`
+> over `0`..`4095` converts its digital minimum to `1.000000000000092`, and one declaring
+> `-500`..`-1` over the full 16-bit range converts its maximum to `-1.000000000000027`.
+> `tests/property/scaling.test.ts` searches for the worst and measures it in the same unit as the
+> rest of this page: about **2e-5 of one quantisation step**, reached when the two physical bounds
+> sit far from zero with a narrow span between them, because `physicalMaximum / bitValue -
+> digitalMaximum` then cancels badly. Far below the smallest difference an amplifier can express,
+> and not zero.
+>
 > The textbook form returns the declared bound exactly at both ends by construction, which is one
 > of the ways it is numerically better and is not a reason to switch: bit-parity with pyEDFlib is.
 >

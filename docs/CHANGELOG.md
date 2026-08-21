@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.343
+
+- **Added** `tests/property/scaling.test.ts`, which measures the bound 0.4.342 asserted. Random
+  declarations are built, written, parsed and converted at both endpoints, and the error is
+  compared against what the file itself declares — the fourth property file in the suite and the
+  first over the scaling expression.
+- Two wrong units on the way to the right one, both recorded in the file. ULP distance is the
+  mistake `mne-parity.test.ts` already documents: a declaration with bounds of 0.0002 and -4827
+  sits 5.4 million ULP from the smaller one while being physically indistinguishable from it.
+  Relative error fails at the other end — a bound of 0.001 beside one of 99,999 shows a relative
+  error of 1.3e-3 for an absolute error far below anything the file can express. Quantisation steps
+  are the only unit in which "you could not notice this" is a statement about the recording, and
+  they are what the rest of the page already uses. The measured worst is about 2e-5 of a step, and
+  0.4.342's note has been corrected from a relative figure to that one.
+- The property found a real constraint on its first run: a physical bound lives in an
+  eight-character field, so `1e-6` is written `0.000000` and comes back degenerate. Everything is
+  now measured against the parsed header rather than the numbers handed to the writer, which makes
+  this a property about declarations a file can actually hold.
+
 ## 0.4.342
 
 - **Corrected** a claim on `physical-values.md` that read as general and holds only for the range

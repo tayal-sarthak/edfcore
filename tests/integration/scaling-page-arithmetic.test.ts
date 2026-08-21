@@ -614,6 +614,10 @@ describe('the endpoints, which are exact only sometimes', () => {
     expect(FLAT).toContain('Agreeing at the endpoints is a property of *this* range');
     expect(FLAT).toContain('`1.000000000000092`');
     expect(FLAT).toContain('`-1.000000000000027`');
+    // Measured in quantisation steps, the unit the rest of the page uses — see
+    // `tests/property/scaling.test.ts` for why the two obvious alternatives are both wrong here.
+    expect(FLAT).toContain('of one quantisation step');
+    expect(FLAT).toContain('tests/property/scaling.test.ts');
   });
 
   it('produces the two values the note quotes', async () => {
