@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.345
+
+- **Added** a check that the six single-interface field tables on `api-types.md` list exactly the
+  members those interfaces have, in declaration order. That page is the field-by-field reference
+  and where someone goes to learn what is on an `EdfHeader` without opening `types.ts`, and all six
+  tables are hand-typed copies of a declaration.
+- Both directions of drift are silent. A member added to `types.ts` and not to the page is a field
+  nobody can discover — which is how `declaredRecordCount` or `recordCountSource` would go unused
+  by exactly the caller who needed them. A row for a member that no longer exists is worse: it
+  reads as an API, the reader writes `header.something`, and the answer is `undefined` rather than
+  an error. `docs-coverage.test.ts` proves every export is mentioned; nothing had looked inside a
+  type.
+- One table spans three interfaces and cannot have its rows attributed to any one of them, so it
+  is skipped by name and the number of skipped tables is asserted — an exemption that cannot
+  quietly grow.
+
 ## 0.4.344
 
 - **Added** a check over what `data-sources.md` publishes about `cachedSource`. `cache.test.ts`
