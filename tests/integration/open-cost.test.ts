@@ -266,3 +266,70 @@ describe('the file the page measured', () => {
     expect(middle).toEqual([]);
   });
 });
+
+/**
+ * The same four costs again, in prose, on `api-reading.md`.
+ *
+ * `large-files.md` states them as a table and `api-reading.md` states them as a sentence, and both
+ * are read by someone deciding whether opening a file is cheap enough to do on a click. Two
+ * statements of one fact in two forms is the shape this repository keeps finding wrong: the
+ * section list in 0.3, the diagnostic tables in 0.3.39, the `ByteSource` interface in 0.4.338.
+ *
+ * The table is already checked against the library above. This checks the prose against the table,
+ * so the three agree rather than two of them agreeing and a third drifting — and it is the cheaper
+ * direction, because the prose spells its numbers as words and a reader cannot diff a word against
+ * a digit by eye.
+ */
+describe('the same costs in prose on api-reading.md', () => {
+  const PROSE = (DOCS_PAGES.get('api-reading.md') ?? '').replace(/\s+/g, ' ');
+
+  const WORDS: ReadonlyMap<string, number> = new Map([
+    ['zero', 0],
+    ['one', 1],
+    ['two', 2],
+    ['three', 3],
+    ['four', 4],
+  ]);
+
+  const spelled = (word: string | undefined): number =>
+    WORDS.get((word ?? '').toLowerCase()) ?? Number.NaN;
+
+  it('is still a sentence about read counts', () => {
+    expect(PROSE).toContain('`openEdf` never scans the file');
+  });
+
+  it('gives a plain file the count the table gives it', () => {
+    // "On a plain EDF or BDF it costs **two reads**"
+    const match = /On a plain EDF or BDF it costs \*\*(\w+) reads\*\*/.exec(PROSE);
+    expect(match).not.toBeNull();
+    expect(spelled(match?.[1])).toBe(readsFor('plain EDF'));
+  });
+
+  it('gives an annotated file the count the table gives it', () => {
+    // "On a file that carries an annotations signal it costs **four**"
+    const match = /On a file that carries an annotations signal it costs \*\*(\w+)\*\*/.exec(PROSE);
+    expect(match).not.toBeNull();
+    expect(spelled(match?.[1])).toBe(readsFor('EDF+ or BDF+'));
+  });
+
+  it('gives a single-record file the count the table gives it', () => {
+    // "A single-record file is probed once, for three reads total"
+    const match = /A single-record file is probed once, for (\w+) reads total/.exec(PROSE);
+    expect(match).not.toBeNull();
+    expect(spelled(match?.[1])).toBe(readsFor('EDF+ or BDF+ with one record'));
+  });
+
+  it('agrees that a file with no records is not probed', () => {
+    // "a file with no data records is not probed at all" — which is the header reads and no more.
+    expect(PROSE).toContain('a file with no data records is not probed at all');
+    expect(readsFor('a file with zero records')).toBe(readsFor('plain EDF'));
+  });
+
+  it('describes the two probes as the records the table charges for', () => {
+    // "plus one whole data record at each end of the file … the timekeeping onsets of record 0
+    //  and record `recordCount - 1`."
+    expect(PROSE).toContain('one whole data record at each end of the file');
+    expect(PROSE).toContain('record 0 and record `recordCount - 1`');
+    expect(readsFor('EDF+ or BDF+') - readsFor('plain EDF')).toBe(2);
+  });
+});

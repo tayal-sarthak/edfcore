@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.353
+
+- **Added** a cross-check between the two places `openEdf`'s cost is published. `large-files.md`
+  states it as a four-row table and `api-reading.md` states it as a sentence, and both are read by
+  someone deciding whether opening a file is cheap enough to do on a click.
+- The table was already checked against the library in 0.4.340. This checks the prose against the
+  table, so all three agree rather than two agreeing while a third drifts — the shape this
+  repository keeps finding wrong, in the section list, the diagnostic tables and the `ByteSource`
+  interface before it. It is also the cheaper direction to automate: the prose spells its counts as
+  words, and nobody diffs a word against a digit by eye.
+
 ## 0.4.352
 
 - **Added** `tests/property/window-cost.test.ts`, which states in general what four checks in this
