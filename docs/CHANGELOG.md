@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.368
+
+- **Added** `tests/property/inspect-safety.test.ts`. `inspectEdf` is the triage call and makes the
+  strongest promise in the package: `openEdf` and `parseHeader` promise to throw an `EdfError`
+  rather than escape the error model, and `fuzz.test.ts` holds them to that over flipped, random
+  and truncated bytes — `inspectEdf` promises not to throw about content at all. That promise had
+  only ever been tested against fixtures somebody wrote.
+- A promise of the form "never, for any input" is exactly the kind a fixture cannot establish: the
+  inputs a person thinks of are the ones already handled, and the four defects fuzzing found during
+  development were all of that shape. Random bytes, random bytes behind a valid version block, a
+  bit flipped anywhere, and every truncation length exhaustively now go through it.
+- The report is checked as well as the call, because "never returns believable garbage" is the
+  fourth clause of the safety invariant and a triage report full of `NaN` would satisfy "did not
+  throw" while telling a reader nothing true. Every source is in memory, so nothing can fail except
+  on what the bytes say — which makes any rejection a broken promise rather than an ambiguous one.
+
 ## 0.4.367
 
 - **Extended** 0.4.338's interface check to the three structural shims `api-sources.md` prints and
