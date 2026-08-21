@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.342
+
+- **Corrected** a claim on `physical-values.md` that read as general and holds only for the range
+  it introduces. "The two forms agree at the endpoints and disagree in the last place elsewhere"
+  is true of the tabulated -500..500 over -32768..32767, and false of most declarations: the
+  EDFlib expression derives an offset from `physicalMaximum / bitValue` and multiplies back, and
+  nothing in that round trip has to land on the declared bound. A signal declaring `1`..`1000`
+  over `0`..`4095` converts its digital minimum to `1.000000000000092`.
+- Not a defect in edfcore — EDFlib does the same and reproducing it bit for bit is the entire
+  point — but a reader who took the sentence generally would derive a plot axis from `toPhysical`
+  at the extremes and get a bound an ulp or two off. The sentence is now scoped to its range, and
+  a note gives the general case and points at `physicalRangeOf`, which reads the declared fields
+  and is exact.
+- Checked from both sides: the two quoted values are produced, the tabulated range still lands
+  exactly, and `physicalRangeOf` returns the declared bounds on all three.
+
 ## 0.4.341
 
 - **Added** an execution of the read pattern `large-files.md` measured. The page prints four byte

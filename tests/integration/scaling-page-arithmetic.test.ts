@@ -82,8 +82,9 @@ describe('the disagreement table', () => {
     }
   });
 
-  it('agrees at the endpoints and parts company in between, as the page says', () => {
-    // "The two forms agree at the endpoints and disagree in the last place elsewhere."
+  it('agrees at the endpoints and parts company in between, for this range', () => {
+    // "For the range below the two forms agree at the endpoints and disagree in the last place
+    //  elsewhere." Scoped to this range since 0.4.342 — see the describe below for why.
     for (const row of rows) {
       const agrees = Object.is(row.edfcore, row.textbook);
       expect(agrees).toBe(row.digital === -32768 || row.digital === 32767);
@@ -573,5 +574,86 @@ describe('the four conditions that leave a signal with no scale', () => {
     expect(() => toPhysical(getSignal(header, 'D'), new Int32Array([0]))).toThrowError(
       quoted.replace(/\n\s*/g, ' ').trim(),
     );
+  });
+});
+
+describe('the endpoints, which are exact only sometimes', () => {
+  /**
+   * The note added in 0.4.342, and the reason it had to be.
+   *
+   * The page said "The two forms agree at the endpoints" as a statement about the two forms. It is
+   * true of the range it tabulates and false of most others: the EDFlib expression computes an
+   * offset from `physicalMaximum / bitValue` and multiplies back, and nothing in that round trip
+   * has to land on the declared bound. A reader who took the sentence generally would derive a
+   * plot axis from `toPhysical` at the extremes and get a bound an ulp or two off — which is what
+   * `physicalRangeOf` exists to avoid, and the page now says so.
+   *
+   * Not a defect in edfcore. EDFlib does the same, and reproducing it is the entire point.
+   */
+  async function endpointsOf(range: {
+    physicalMinimum: number;
+    physicalMaximum: number;
+    digitalMinimum: number;
+    digitalMaximum: number;
+  }) {
+    const bytes = buildEdf({
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'A', samplesPerRecord: 2, physicalDimension: 'uV', ...range }],
+    });
+    const { header } = await openEdf(byteSource(bytes));
+    const signal = getSignal(header, 'A');
+    const converted = toPhysical(
+      signal,
+      Int32Array.from([range.digitalMinimum, range.digitalMaximum]),
+    );
+    return { signal, low: converted[0], high: converted[1] };
+  }
+
+  it('carries the note, with both values it quotes', () => {
+    expect(FLAT).toContain('Agreeing at the endpoints is a property of *this* range');
+    expect(FLAT).toContain('`1.000000000000092`');
+    expect(FLAT).toContain('`-1.000000000000027`');
+  });
+
+  it('produces the two values the note quotes', async () => {
+    // A signal declaring `1`..`1000` over `0`..`4095`.
+    const first = await endpointsOf({
+      physicalMinimum: 1,
+      physicalMaximum: 1000,
+      digitalMinimum: 0,
+      digitalMaximum: 4095,
+    });
+    expect(String(first.low)).toBe('1.000000000000092');
+
+    // And one declaring `-500`..`-1` over the full 16-bit range.
+    const second = await endpointsOf({
+      physicalMinimum: -500,
+      physicalMaximum: -1,
+      digitalMinimum: -32768,
+      digitalMaximum: 32767,
+    });
+    expect(String(second.high)).toBe('-1.000000000000027');
+  });
+
+  it('still lands exactly on the range the table tabulates', async () => {
+    const exact = await endpointsOf(RANGE);
+    expect(Object.is(exact.low, RANGE.physicalMinimum)).toBe(true);
+    expect(Object.is(exact.high, RANGE.physicalMaximum)).toBe(true);
+  });
+
+  it('gives physicalRangeOf the declared bounds exactly, on every one of them', async () => {
+    // "`physicalRangeOf(signal)` reads the declared fields and is exact, which is what it is for."
+    for (const range of [
+      RANGE,
+      { physicalMinimum: 1, physicalMaximum: 1000, digitalMinimum: 0, digitalMaximum: 4095 },
+      { physicalMinimum: -500, physicalMaximum: -1, digitalMinimum: -32768, digitalMaximum: 32767 },
+    ]) {
+      const { signal } = await endpointsOf(range);
+      expect(physicalRangeOf(signal)).toEqual({
+        low: Math.min(range.physicalMinimum, range.physicalMaximum),
+        high: Math.max(range.physicalMinimum, range.physicalMaximum),
+      });
+    }
   });
 });

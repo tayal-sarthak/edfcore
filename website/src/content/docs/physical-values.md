@@ -87,7 +87,8 @@ bit against pyEDFlib and EDFlib rather than approximately. The textbook expressi
 `physicalMinimum + (digital - digitalMinimum) * gain` is numerically *better* (fewer operations
 away from the endpoints, less cancellation). edfcore does not use it.
 
-The two forms agree at the endpoints and disagree in the last place elsewhere:
+For the range below the two forms agree at the endpoints and disagree in the last place
+elsewhere:
 
 | digital | edfcore (EDFlib form) | textbook form |
 |---|---|---|
@@ -98,6 +99,17 @@ The two forms agree at the endpoints and disagree in the last place elsewhere:
 
 (Digital zero does not map to physical zero here, and that is correct: the digital range
 −32768..32767 is not symmetric about zero, so neither is the map.)
+
+> **Note**
+> Agreeing at the endpoints is a property of *this* range, not of the EDFlib form. On many
+> declarations it lands an ulp or two away from the declared bound instead — a signal declaring
+> `1`..`1000` over `0`..`4095` converts its digital minimum to `1.000000000000092`, and one
+> declaring `-500`..`-1` over the full 16-bit range converts its maximum to `-1.000000000000027`.
+> The textbook form returns the declared bound exactly at both ends by construction, which is one
+> of the ways it is numerically better and is not a reason to switch: bit-parity with pyEDFlib is.
+>
+> So do not derive an axis from `toPhysical` at the extremes. `physicalRangeOf(signal)` reads the
+> declared fields and is exact, which is what it is for.
 
 For this range the two forms produce a different float64 for 37,144 of the 65,536 possible
 sample values (57 % of them). The largest disagreement is 8.5e-14 µV, which is 5.6e-12 of one
