@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.374
+
+- **Added** a check over what `installation.md` says each entry point contains. The page names
+  roughly twenty functions across three paragraphs as the answer to "what do I get if I import
+  this", and a name in that list that is not an export sends a reader to an import error on their
+  first line. It is also checked to name nothing that lives behind `edfcore/node`, which is the
+  claim the whole browser story rests on.
+- The exports map is printed as JSON — not a description of `package.json` but `package.json`,
+  retyped, which is the strongest form of a copy and the easiest to let drift. `publint` and
+  `packaging-claims.test.ts` check the real map for shape and for the absence of environment
+  conditions; neither can see that the page prints the same three entries. It is now parsed and
+  compared entry for entry, and the six condition names the page lists are checked against the
+  manifest.
+- "Two functions" for `edfcore/node` is asserted as an exact count rather than a floor: that entry
+  point exists to be the only module a browser build must not reach, so every name added to it is
+  another thing a bundler has to be kept away from.
+
 ## 0.4.373
 
 - **Added** a cross-check between the two tables of the four onset fields — `annotations.md` lists
