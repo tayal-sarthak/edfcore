@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.352
+
+- **Added** `tests/property/window-cost.test.ts`, which states in general what four checks in this
+  batch pinned one file at a time. Each of those is a specific recording with a number beside it,
+  and each would keep passing if the rule behind it broke for every file except the one in the
+  example.
+- The rule: for any well-formed continuous recording and any window that overlaps it, `readWindow`
+  issues exactly one read, and that read is a whole number of records. `byteLength` is asserted as
+  an identity rather than a bound — exactly the records the chunk reports, whatever fraction of
+  them the caller wanted — because that is what makes the number in the result worth publishing,
+  and it is what a per-signal narrowing would quietly break while still returning the right
+  samples.
+- The third property is the general form of the table on `reading-signals.md`: asking for one
+  channel costs the same reads and the same bytes as asking for all of them, on arbitrary
+  geometries rather than on the three-signal file the page measures.
+
 ## 0.4.351
 
 - **Added** checks for two read counts on `api-reading.md`, a page that opens by inviting them:
