@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.365
+
+- **Added** a check that the layer table in `AGENTS.md` names the modules that are actually at each
+  layer. `module-layers.test.ts` already enforces that every module declares a layer, that no
+  runtime import goes up one, and that the table names every layer the source declares — but not
+  the contents of any row.
+- AGENTS.md calls the table "a summary of it, not a second definition", and a summary that
+  disagrees with its source is still wrong. This one is easy to disagree with, because two rows
+  split a directory: layer 5 is `io/` and layer 6 carves `io/read.ts` back out, exactly as layers 1
+  and 3 split `tal/`. So a directory claims everything under it except what another row names by
+  file, and both splits are asserted as the point of the rule rather than exceptions to it.
+- Row 7 names nothing — "entry points, and the pure helpers over them" — which supplies the
+  closure that makes the check tight: every module no row claims has to be at layer 7. Only a path
+  counts as a claim, since row 5 also mentions `ByteSource`, which is the type the adapters
+  implement rather than a module being placed.
+
 ## 0.4.364
 
 - **Added** checks for three claims in the README's "Design in one page", each of which is an
