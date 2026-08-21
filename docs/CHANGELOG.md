@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.371
+
+- **Added** a check on where the type tests are actually verified. `tests/types/` holds five
+  `.test-d.ts` files carrying the only assertions a runtime test cannot make — what each subpath
+  can name alone, that the documented examples typecheck, that a `Blob` and a `Response` satisfy
+  the structural shims — and vitest runs them with its own typecheck disabled.
+- That combination reports a false green. Put a plain type error into one and vitest loads it,
+  finds the runtime half fine, and prints a pass; only `npm run typecheck` catches it, because
+  `tsconfig.json` happens to include `tests`. Nothing connected that line to the five files
+  depending on it, and narrowing the include to `src` would look like an ordinary tidy-up: `npm run
+  check` would stay green, vitest would keep reporting the type tests as passing, and every
+  type-level guarantee in the package would be unchecked.
+- So the wiring is asserted rather than assumed — which config the typecheck script names, that its
+  include reaches every type test, that the only exclusion is the gitignored scratch directory, and
+  that vitest is deliberately not the thing doing the checking.
+
 ## 0.4.370
 
 - **Added** an execution of the annotations-signal section of `concepts.md`, the page the README
