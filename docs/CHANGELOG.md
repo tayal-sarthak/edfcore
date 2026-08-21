@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.380
+
+- **Added** enforcement for the fixture policy in `tests/README.md`: "No file from teuniz.net,
+  PhysioNet or edfplus.info may be committed." That is a licence rule and a privacy one — one of
+  those files is a real person's overnight polysomnogram, and committing it would publish it to
+  npm's mirrors and to every fork, permanently, in a way no later commit can undo.
+- It held by one line in `.gitignore` and by nobody adding an exception, which is the shape of rule
+  that survives until the day someone wants a test to run in CI. Now every file the corpus can
+  download is checked against what git tracks, the whole download directory is checked rather than
+  the manifest's filenames alone, and every manifest entry has to record its source and licence —
+  a file whose licence nobody wrote down is one nobody can decide about later.
+- The committed exception is checked to be exactly what the README says it is: the only tracked
+  EDF, BDF or REC files are the six goldens, none of which shares a name with anything the manifest
+  fetches, because they were generated locally rather than downloaded from anyone.
+
 ## 0.4.379
 
 - **Added** an execution of the "Oddities that bite implementers" section of `edf-format.md`, which
