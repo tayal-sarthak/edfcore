@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.369
+
+- **Added** a check over what a `ValidationReport` promises on `validation.md`. `ok` is the field a
+  caller branches on and means less than it looks like — exactly "no diagnostic has severity
+  `error`", not a claim that the file is conformant, and a false `ok` not a claim it is unreadable.
+  The four codes the page says survive to a report at that severity are checked to be the only ones
+  that do, on a file where one signal has no scale and the other is fine.
+- The sentence pinned hardest is the one about what cannot appear: no always-fatal code reaches a
+  report, because a file carrying one cannot be opened, and a report about such a file would be
+  incoherent rather than merely wrong. The single exception is asserted from the other side —
+  `TIMELINE_NOT_MONOTONIC` makes the sweep reject.
+- `signalStats` has a shape a caller indexes by: one entry per data signal in `dataSignalIndices`
+  order, with annotation channels excluded because their bytes are text, so an off-by-one gives
+  every channel its neighbour's statistics. And a signal with no samples reports zeroes rather than
+  infinities — `-Infinity` is what an unseeded reduce produces, and it is a number a caller would
+  plot.
+
 ## 0.4.368
 
 - **Added** `tests/property/inspect-safety.test.ts`. `inspectEdf` is the triage call and makes the
