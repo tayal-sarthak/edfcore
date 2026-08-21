@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.378
+
+- **Added** a check that the browser inspector uploads nothing, which is the most consequential
+  claim on the site. `demo.astro` says a browser can read these files "so a researcher never has to
+  hand a patient recording to a server", and somebody will drop a real clinical recording on that
+  page on the strength of that sentence.
+- It is a claim about an absence, and nothing notices an absence breaking. A copy button that
+  reported usage, an error handler that posted a stack trace with a filename in it, an analytics
+  snippet in the shared layout — each is a normal thing to add to a website, and each would make
+  the sentence false without changing anything a visitor can see. So every source the site ships is
+  scanned for a way to send bytes: `fetch`, `XMLHttpRequest`, `sendBeacon`, `WebSocket`,
+  `EventSource`, a form, a remote dynamic import.
+- `navigator.clipboard` is allowed by name rather than by permitting `navigator` generally, and the
+  pattern is asserted to still reject `navigator.sendBeacon` — the primitive built for exactly the
+  thing this forbids. The check covers the layout too, since the promise is about the page a
+  visitor is on and the layout wraps it.
+
 ## 0.4.377
 
 - **Added** a check that the exports badge and the API-surface table on the README show the same
