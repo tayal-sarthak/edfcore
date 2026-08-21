@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.366
+
+- **Added** a check that every version number this repository cites is one it released. The
+  codebase explains itself in release numbers — docblocks say "fixed in 0.3.56", the documentation
+  pages date every behaviour they describe, the changelog cross-references itself — and there are
+  several hundred such citations across 248 files, none of which had ever been checked.
+- They rot silently in two directions: a transposed digit points a reader at nothing, and a
+  citation written while a version is still being cut names a number that never shipped, which is
+  the same failure the fourteen changelog holes were. A wrong version number looks exactly like a
+  right one to a compiler, a linter and a human skimming a diff.
+- The hard part is telling a version from everything else shaped like one, since this tree is full
+  of EDF startdates and starttimes, spec clauses like `2.1.1` and runtime floors like `22.12.0`. A
+  loose scan reports forty-five of those and no real defects; `0.` with no leading zero separates
+  them exactly, and that narrowing is asserted against the lookalikes rather than left to luck.
+
 ## 0.4.365
 
 - **Added** a check that the layer table in `AGENTS.md` names the modules that are actually at each
