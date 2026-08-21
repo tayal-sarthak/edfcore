@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.373
+
+- **Added** a cross-check between the two tables of the four onset fields — `annotations.md` lists
+  them by axis, `api-helpers.md` under "Which onset field to compare" — so the two agree about
+  which four exist, which axis each is measured from, and which two are exact. Two tables of one
+  fact is the shape this repository keeps finding wrong; their orders differ by design, so the sets
+  are what have to match.
+- The "exact" column is a claim about arithmetic rather than a label, and it is now executed: it is
+  why `filterAnnotationsByTime` compares ticks, and the page warns that comparing the seconds
+  fields means "an onset and a bound that should be equal need not compare equal". Three tenths is
+  three times one tenth to the tick and not in seconds, on the rebased axis a window is measured
+  on.
+- The worked example's four values are produced from a file built to its description, and the two
+  axes are checked to differ by exactly `timeline.startOffsetSeconds` — which is the whole reason
+  there are two of them.
+
 ## 0.4.372
 
 - **Added** checks for the sample-grid section of `api-helpers.md`. The page opens by naming what a
