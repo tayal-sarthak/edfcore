@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.354
+
+- **Added** a compile check over every signature the reference pages print. Four pages open each
+  function with a `ts` fence holding its declaration and nothing else — thirty-odd across
+  `api-primitives`, `api-reading`, `api-sources` and `api-validate` — and every one is hand-typed.
+  They are the first thing a reader sees for a function and what they write their call against.
+- `doc-snippets-compile.test.ts` compiles the fences that are complete programs and skips these: a
+  bare declaration imports nothing, so it never matched the filter that finds runnable examples.
+  The most load-bearing line on each reference page was the one nothing compiled.
+- Assignability is checked in BOTH directions, which is the difference between "the documented
+  shape is usable" and "the documented shape is the real one" — one direction alone accepts a page
+  that widens a parameter or narrows a return, and a widened parameter describes a function that
+  does not exist. Signatures are extracted per fence rather than by scanning the page, because a
+  lazy match for the parameter list's closing paren runs past it into the prose: `Promise<{ … }>`
+  has no `):` to stop at and the next parenthetical sentence does.
+- The types a declaration mentions are resolved through `barrel-types.ts` rather than a hard-coded
+  list. The first version used a list and missed four, which is the failure that helper was
+  extracted to stop repeating.
+
 ## 0.4.353
 
 - **Added** a cross-check between the two places `openEdf`'s cost is published. `large-files.md`
