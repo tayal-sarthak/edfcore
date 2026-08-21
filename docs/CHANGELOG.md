@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.348
+
+- **Added** a check for what `index.locate` costs, against the two read counts `discontinuous.md`
+  prints — three for the first call, zero for a second one nearby.
+- The zero is the one worth holding. A UI that calls `locate` on every pointer move is either free
+  or a request per frame, and nothing at the call site says which; a memo dropped in a refactor
+  changes no result at all, so no other test would notice. The three is worth holding for its
+  parenthesis rather than its size: records 0 and 5 are already known because `openEdf` probed
+  them, so the search starts from what the open already paid for.
+- Also pinned: that the search reads one record at a time rather than widening to a range, which
+  would still answer correctly and cost far more over HTTP; and the file the page draws, whose span
+  of 16 and coverage of 6 are computed independently and differ by the ten seconds no record
+  covers.
+
 ## 0.4.347
 
 - **Added** an execution of the `bigint` ticks decision on `design-decisions.md`. It is defended
