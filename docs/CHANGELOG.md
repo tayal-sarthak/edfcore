@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.356
+
+- **Added** an execution of the `resolveTimeWindow` example on `api-primitives.md`: a one-second
+  window from t = 2.5 on a file with one-second records, straddling records 2 and 3. The function
+  exists so the price of a window is auditable before a byte is read, and a reader planning a
+  viewport from that example is doing arithmetic that has to hold — including that two records are
+  paid for to get one second.
+- The three ways to get nothing back are checked as well, since returning `[]` rather than throwing
+  is what lets a caller loop over ranges with no special case: a non-positive duration, a window
+  outside the recording, and one inside a gap on an index that knows where the gaps are. The last
+  is paired with the case either side of it, so the emptiness is about the gap rather than about
+  the file. And a probed index over a file with gaps throws rather than guessing at onsets nobody
+  has read.
+
 ## 0.4.355
 
 - **Fixed** a test of mine that could time out. The signature check added in 0.4.354 spawned `tsc`
