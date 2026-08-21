@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.360
+
+- **Added** checks for the two things `toPhysicalEnvelope` does that `toPhysical` must not be used
+  for. A bucket no sample landed in carries a digital `0`, because `min` and `max` are
+  `Int32Array`s and cannot hold a sentinel — and through the affine map that becomes mid-scale for
+  any channel whose range is not centred on zero. On the 0..1000 channel the page names it is 500,
+  which is now computed from the scale rather than quoted: a completely believable reading, drawn
+  as a flat trace across a hole.
+- That failure is worth a test precisely because everything about it looks right — the number is
+  inside the channel's range, the arrays agree in length, the trace is continuous, and the only
+  sign is a stretch nobody sampled drawn as a steady midpoint. Both arrays now have to be `NaN`
+  wherever `counts` is zero, and `counts` itself has to be untouched.
+- The second is polarity: a negative gain makes the map decreasing, so mapping `min` to `min`
+  yields an envelope drawn inside out. Every filled bucket on such a channel is checked to come
+  back with its lower bound below its upper one.
+
 ## 0.4.359
 
 - **Added** a check for the two bucket-count rules on `api-helpers.md`. `readEnvelope` clamps
