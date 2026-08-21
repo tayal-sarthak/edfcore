@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.355
+
+- **Fixed** a test of mine that could time out. The signature check added in 0.4.354 spawned `tsc`
+  inside an `it`, which takes a couple of seconds alone and rather more under a loaded suite —
+  past the default per-test timeout. It passed every run alone and failed the first time the whole
+  suite ran it.
+- Now compiled once at module scope, which is what `doc-snippets-compile.test.ts` next door
+  already does with its own compiler run. Collection time is not on a per-test clock, so the work
+  happens where it is not being timed, and nothing about the check weakens.
+
 ## 0.4.354
 
 - **Added** a compile check over every signature the reference pages print. Four pages open each

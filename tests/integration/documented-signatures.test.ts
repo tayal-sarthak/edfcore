@@ -173,6 +173,15 @@ function compile(): string {
   }
 }
 
+/**
+ * Compiled once, at module scope, the way `doc-snippets-compile.test.ts` does it.
+ *
+ * Spawning `tsc` takes a couple of seconds alone and rather more under a loaded suite, which is
+ * past the default per-test timeout — a property of starting a compiler, not of the check. Module
+ * scope is collection time rather than test time, so the work happens where it is not on a clock.
+ */
+const OUTPUT = compile();
+
 describe('the printed signatures', () => {
   it('found a substantial number of them across the reference pages', () => {
     // Thirty-odd today. A collapse to a handful means the extraction stopped matching, which
@@ -188,7 +197,6 @@ describe('the printed signatures', () => {
   });
 
   it('are assignable to and from the real ones', () => {
-    const output = compile();
-    expect(output, output).toBe('');
+    expect(OUTPUT, OUTPUT).toBe('');
   });
 });
