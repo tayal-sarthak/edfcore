@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.377
+
+- **Added** a check that the exports badge and the API-surface table on the README show the same
+  number, and a check on the reason they can. `/api.json` sums the runtime exports of the three
+  published entry points at build time; `api-surface.test.ts` counts the same thing from the
+  barrels and asserts the table. Two counters, one number, printed a screen apart on the same page.
+- They agree because the three entry points share no runtime name, so a sum is the same as a union
+  — and nothing stated that. Re-exporting `openEdf` from `edfcore/node` so a Node consumer needs
+  one import is an obvious convenience, and it would make the badge count it twice: 79 above a
+  table reading 78, on the page a reader is looking at to decide whether to install the package.
+  Neither number would be wrong about what it measures, which is what makes the disagreement hard
+  to explain and easy to ship.
+
 ## 0.4.376
 
 - **Fixed** a gap in `.gitignore`: `.venv/` was not in it. `scripts/golden/README.md` tells you to
