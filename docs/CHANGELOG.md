@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.376
+
+- **Fixed** a gap in `.gitignore`: `.venv/` was not in it. `scripts/golden/README.md` tells you to
+  build a virtualenv at the repository root and install pyedflib and mne into it, and
+  `scripts/release.mjs` stages with `git add -A` — whose docblock says that `-A` honours
+  `.gitignore`, "which is what keeps `dist/`, `node_modules/` and `tests/scratch/` out". A
+  regeneration run followed by a release would have put a few hundred megabytes of Python into a
+  release commit, by following two sets of documented instructions in order.
+- **Added** the check that found it, over the rest of what that README promises. The regeneration
+  block has to name four scripts that exist and every script in the directory, so none is
+  undocumented and none is named that is not there. "The venv is not committed and CI never builds
+  it" is checked both ways: the ignore rule, and no workflow step that installs or runs Python.
+- And the claim the whole harness rests on — "Nothing in `tests/corpus/golden/` is produced by
+  edfcore" — is read off the files rather than trusted. Every golden carries a `producer`, and no
+  producer names this package: a golden regenerated with edfcore's own writer would compare edfcore
+  against itself and pass no matter what either did.
+
 ## 0.4.375
 
 - **Added** `tests/property/read-agreement.test.ts`: the two ways to read the same records return

@@ -12,5 +12,11 @@ deleted/
 # behaviour was current when they were written, so committing them pins defects.
 tests/scratch/
 
+# The virtualenv `scripts/golden/README.md` tells you to build for pyedflib and mne. It is created
+# at the repository root by following those instructions, and `scripts/release.mjs` stages with
+# `git add -A` — so without this line a regeneration run puts a few hundred megabytes of Python
+# into a release commit.
+.venv/
+
 # Local editor/agent tooling
 .claude/
