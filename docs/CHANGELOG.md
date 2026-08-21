@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.359
+
+- **Added** a check for the two bucket-count rules on `api-helpers.md`. `readEnvelope` clamps
+  `buckets` to the densest signal's sample count, because more buckets than samples leaves holes
+  that mean nothing. `readEnvelopeAtResolution` does not clamp, because a resolution is a promise
+  about seconds per pixel and honouring it by dropping buckets would silently shorten the span the
+  caller is drawing.
+- The page gives the case where they part company — a 4-second run of a 2 Hz signal at 0.25 s per
+  bucket reporting 16 buckets with 8 filled — and it is now produced. That sentence is what a
+  viewer's indexing depends on: `bucketCount` is the field to read before indexing, and a caller
+  who trusts the number they passed walks off the end of a short run or draws a grid narrower than
+  the window it claims to cover.
+
 ## 0.4.358
 
 - **Added** checks for three small pure functions on `api-primitives.md`. `decodeHeaderLatin1` is
