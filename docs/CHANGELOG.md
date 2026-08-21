@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.367
+
+- **Extended** 0.4.338's interface check to the three structural shims `api-sources.md` prints and
+  to the adapter table under them. The shims exist so neither the DOM nor `@types/node` leaks into
+  the published `.d.ts` — naming `Blob` forces `lib.dom` on every consumer — and each is the
+  minimum shape edfcore uses.
+- `shim-assignability.test-d.ts` already proves a `Blob`, a `File`, an `AbortSignal` and a
+  `Response` all fit. What it cannot see is whether the page prints the same shape it proves things
+  about, and a shim is exactly the declaration someone copies off a page to build a test double
+  from: a member the page shows and the type does not is a double that compiles against the page
+  and is refused by the library.
+- `FetchLike` is checked for an absence instead. `signal` is deliberately not in its printed `init`
+  and is still passed at runtime, because naming it would break the assignability of
+  `globalThis.fetch` — so the check is that it stays absent from both, and that the page still
+  explains why, since without the explanation the omission reads as an oversight.
+- The adapter table's rows now have to name real exports from the entry point each row names, with
+  the two filesystem adapters behind `edfcore/node` and everything else reachable from the
+  universal entry — the split the shims exist to protect.
+
 ## 0.4.366
 
 - **Added** a check that every version number this repository cites is one it released. The
