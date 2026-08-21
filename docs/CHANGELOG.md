@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.351
+
+- **Added** checks for two read counts on `api-reading.md`, a page that opens by inviting them:
+  "They are exact and testable: wrap your source in a recorder and count."
+- Both are about paths a well-formed file never takes, which is why neither had a test.
+  `readHeader` is exactly two reads, and one when the signal-count field is unreadable — because
+  the second read's size is computed from that field, and a speculative read of an unknown size is
+  the thing being avoided. The saved read is not the point: the caller gets `SIGNAL_COUNT_INVALID`
+  rather than a complaint about a byte range, and that is what is asserted.
+- The same distinction on the next line. A file too short for the header it declares is a file
+  defect, `SOURCE_TOO_SMALL`, not an `EdfSourceError` about a range past the end — getting it
+  backwards is not a crash but a truncated recording reported as an I/O error, which sends the
+  reader to their network stack instead of to their file. Also pinned: the probe costs nothing
+  without an annotations signal, and both probed onsets are memoised into the index while a record
+  between them is not.
+
 ## 0.4.350
 
 - **Added** an execution of the truth table on `validation.md` — four rows over two independent
