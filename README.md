@@ -151,8 +151,12 @@ for (const d of recording.header.diagnostics) {
 }
 ```
 
-Every diagnostic carries the field, the byte offset, the raw bytes as written, the spec clause it
-violates, and what to do next. Pass `{ strict: true }` and the first one throws instead.
+Every diagnostic names the field at fault, the spec clause it violates, and what to do next. One
+anchored to a header field carries that field's byte offset and its raw bytes as written too. The
+two about the spacing of record onsets carry neither, because the defect is a relationship between
+records rather than a value sitting at an offset — they name the record instead where one record is
+at fault, and the whole file where the shape is. Pass `{ strict: true }` and the first one throws
+instead.
 
 **Digital and physical are two functions.** `chunk.signals[i].digital` is an `Int32Array` of
 the values as stored. `toPhysical(signal, digital)` returns a `Float64Array` in the signal's own

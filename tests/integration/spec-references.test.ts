@@ -12,6 +12,11 @@
  * through a helper — which is why a static scan of the object literals reports seven false
  * positives and cannot answer the question. So this asks the diagnostics themselves.
  *
+ * 0.4.363 widened this from the spec clause alone to everything the README promises per
+ * diagnostic, and corrected the promise while doing it: two of the codes reached here carry no
+ * byte offset and no raw bytes, because they compare record onsets against each other rather than
+ * reporting a value at an offset.
+ *
  * The reach is stated rather than implied. Twenty-four of the forty-six codes are produced here:
  * nine targeted files for the header defects that need a specific pair of fields, and a bit-flip
  * sweep over the first 900 bytes of a well-formed EDF+ file for everything the header parser and
@@ -21,6 +26,7 @@
  * asserted so the sweep cannot quietly stop reaching anything.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
@@ -148,6 +154,76 @@ describe('the claim the page closes with', () => {
     expect(references.size).toBeGreaterThan(5);
     for (const reference of references) {
       expect(reference, reference).toMatch(/^(EDF specification|EDF\+|EDF FAQ|BioSemi|EDF spec)/);
+    }
+  });
+});
+
+/**
+ * The rest of what the README promises for every diagnostic.
+ *
+ * "Every diagnostic names the field at fault, the spec clause it violates, and what to do next. One
+ * anchored to a header field carries that field's byte offset and its raw bytes as written too."
+ *
+ * The split is the part worth pinning. It was "the field, the byte offset, the raw bytes as
+ * written, the spec clause … and what to do next" for every diagnostic until 0.4.363, and two of
+ * the codes this sweep reaches have never carried the middle two: `DISCONTINUITY_IN_CONTINUOUS_FILE`
+ * and `RECORD_ONSET_SPACING_VIOLATION` are about the spacing between two records, so there is no
+ * one offset the defect sits at and no field text to quote. They carry a record index instead, and
+ * that is the right answer rather than a gap — a byte offset invented for them would point at a
+ * record that is individually fine.
+ */
+describe('the rest of what a diagnostic carries', () => {
+  /** The two whose defect is a relationship rather than a value at an offset. */
+  const RELATIONAL = new Set([
+    'DISCONTINUITY_IN_CONTINUOUS_FILE',
+    'RECORD_ONSET_SPACING_VIOLATION',
+  ]);
+
+  it('is promised in the README, with the split', () => {
+    const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8').replace(
+      /\s+/g,
+      ' ',
+    );
+    expect(readme).toContain('Every diagnostic names the field at fault');
+    expect(readme).toContain('The two about the spacing of record onsets carry neither');
+  });
+
+  it('names the field at fault, on every one of them', async () => {
+    const nameless = (await collect())
+      .filter((entry) => (entry.field ?? '').trim() === '')
+      .map((entry) => entry.code);
+    expect([...new Set(nameless)]).toEqual([]);
+  });
+
+  it('says what to do next, on every one of them', async () => {
+    // The clause `next-clause.test.ts` requires of every THROWN message, required here of every
+    // collected one.
+    const mute = (await collect())
+      .filter((entry) => !entry.message.includes('Next:'))
+      .map((entry) => entry.code);
+    expect([...new Set(mute)]).toEqual([]);
+  });
+
+  it('carries a byte offset and raw bytes wherever the defect sits at one', async () => {
+    const found = await collect();
+    const anchored = found.filter((entry) => !RELATIONAL.has(entry.code));
+    expect(anchored.length).toBeGreaterThan(0);
+    for (const entry of anchored) {
+      expect(entry.byteOffset, entry.code).toBeTypeOf('number');
+      expect(entry.raw, entry.code).toBeTypeOf('string');
+    }
+  });
+
+  it('carries neither on the two about record spacing, rather than an invented offset', async () => {
+    const relational = (await collect()).filter((entry) => RELATIONAL.has(entry.code));
+    // The sweep has to actually reach them, or the exemption above is unexamined.
+    expect(new Set(relational.map((entry) => entry.code))).toEqual(RELATIONAL);
+    for (const entry of relational) {
+      expect(entry.byteOffset, entry.code).toBeUndefined();
+      expect(entry.raw, entry.code).toBeUndefined();
+      // They still name the field and say what to do, which is what every diagnostic owes.
+      expect(entry.field, entry.code).toBe('timekeeping TAL');
+      expect(entry.message, entry.code).toContain('Next:');
     }
   });
 });

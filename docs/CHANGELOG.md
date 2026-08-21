@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.363
+
+- **Corrected** the README's promise about diagnostics and widened 0.4.325's check to cover it. It
+  said every diagnostic carries "the field, the byte offset, the raw bytes as written, the spec
+  clause it violates, and what to do next". Two of them carry neither the offset nor the raw bytes:
+  `DISCONTINUITY_IN_CONTINUOUS_FILE` and `RECORD_ONSET_SPACING_VIOLATION` are about the spacing of
+  record onsets, so there is no one offset the defect sits at and no field text to quote.
+- That is the right answer rather than a gap — an offset invented for them would point at a record
+  that is individually fine — so the sentence now says which diagnostics carry which. It also
+  distinguishes the two ways the first of them is raised: against the last probed record when one
+  record is at fault, and as a whole-file summary when the shape is, which is why not even a record
+  index is always available.
+- The sweep now checks all five properties instead of the spec clause alone: every diagnostic names
+  its field and says what to do next, everything anchored to a header field carries an offset and
+  its raw bytes, and the two relational codes carry neither and are asserted to be reached, so the
+  exemption is examined rather than assumed.
+
 ## 0.4.362
 
 - **Added** a check over the edfcore column of the capabilities table on `comparison.md`. Seven
