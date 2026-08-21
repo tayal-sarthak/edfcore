@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.372
+
+- **Added** checks for the sample-grid section of `api-helpers.md`. The page opens by naming what a
+  reader would otherwise write — `Math.round(seconds * signal.sampleRateHz)` — and tabulating three
+  ways it fails silently. Two of them are now demonstrated: an undefined rate on a zero-duration
+  file makes the expression `NaN` where the grid functions throw a `RangeError`, and rounding
+  rather than flooring reaches the next sample before its boundary.
+- The rounding rule is checked as the property the page states it as: rounding a sample's start up
+  to a whole tick keeps `gridSampleStartTicks` and `gridSampleIndexAt` inverse for every index,
+  because a truncated tick lands inside the previous sample. Verified across every sample of six
+  records at 128 samples over 0.3 s — the geometry whose boundaries are half ticks — and with the
+  truncating alternative shown to land early.
+- The third row, the index drifting by one over a long recording, is deliberately NOT asserted, and
+  the test says so. Fed the tick this package publishes, the naive expression agrees with the
+  integer arithmetic for every index of every geometry tried; the two roundings cancel. The drift
+  belongs to times a caller arrives at some other way, and a fixture manufacturing one would be
+  asserting about its own construction rather than about the library.
+
 ## 0.4.371
 
 - **Added** a check on where the type tests are actually verified. `tests/types/` holds five
