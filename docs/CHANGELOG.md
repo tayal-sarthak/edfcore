@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.379
+
+- **Added** an execution of the "Oddities that bite implementers" section of `edf-format.md`, which
+  is that page's payload: seven paragraphs each naming a thing about EDF that produces a wrong
+  answer rather than an error. The page is written for someone about to write their own parser —
+  which the comparison page says is what people overwhelmingly do — so these are the claims most
+  likely to be acted on by a reader who never installs the package.
+- Each is checked against the library, because that is the only way to check them and because each
+  is a place edfcore could regress into the naive behaviour being warned about. A date eighty years
+  wrong, a record count silently short, a rate of `Infinity`, a first header byte mangled by the
+  decoder that read it, and a redundant header size believed over the computed one — every
+  paragraph describes a bug that looks like working software.
+
 ## 0.4.378
 
 - **Added** a check that the browser inspector uploads nothing, which is the most consequential
