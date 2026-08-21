@@ -1,6 +1,6 @@
 {
   "name": "edfcore",
-  "version": "0.4.356",
+  "version": "0.4.357",
   "description": "Modern, typed, zero-dependency reader for EDF, EDF+, BDF and BDF+ biosignal files. Works in browsers and Node with true random access.",
   "keywords": [
     "edf",

@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.357
+
+- **Added** an execution of the two-signal `trimToWindow` example on `api-primitives.md`. It exists
+  to make one point — a 256 Hz channel and a 3 Hz channel asked for the same window start at
+  different instants and hold different counts — and that is why `startSeconds` lives on
+  `EdfChunkSignal` rather than only on the chunk. Both printed rows are now produced.
+- The rule underneath is also pinned: membership is decided against the tick edfcore PUBLISHES for
+  a sample, not against its exact rational start. The page's own worked figure is checked both
+  ways — 256 samples in a one-second record put sample 1 at 39,062.5 ticks, which is not a whole
+  tick, published as 39,063 — because selecting on the exact start excluded the very sample a
+  caller had aligned the window to, a defect this project shipped and fixed in 0.3.56.
+- Plus the three things trimming promises about its result: a subarray view rather than a copy so
+  it allocates nothing, a zero-length result rather than an error for a window that misses, and a
+  refusal when the header is not the one the chunk was read with.
+
 ## 0.4.356
 
 - **Added** an execution of the `resolveTimeWindow` example on `api-primitives.md`: a one-second
