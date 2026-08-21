@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.344
+
+- **Added** a check over what `data-sources.md` publishes about `cachedSource`. `cache.test.ts`
+  covers the behaviour thoroughly — eviction order, deduplication, copies, clamping, abort — but
+  every one of those tests passes its own sizes in order to be deterministic, so the two DEFAULTS
+  a caller inherits by writing `cachedSource(inner)` were invisible to all of them.
+- Those defaults are what almost every caller actually gets. They are checked twice: against the
+  private constants they come from, and behaviourally — one byte asked for, one whole 1 MiB block
+  fetched, and the rest of that block then free.
+- Also executed: the worked recipe at the end of the section, which is arithmetic a reader is told
+  to do themselves and which makes a claim about cost. `readHeader` costs two reads against the
+  uncached source, the derived block size is a whole number of records, and `openEdf`'s second pass
+  pulls in block 0 — the block the first record read needs anyway.
+
 ## 0.4.343
 
 - **Added** `tests/property/scaling.test.ts`, which measures the bound 0.4.342 asserted. Random
