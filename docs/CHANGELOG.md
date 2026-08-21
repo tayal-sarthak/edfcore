@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.364
+
+- **Added** checks for three claims in the README's "Design in one page", each of which is an
+  absence and therefore hard to notice. There is no recording-wide rate — a header field holding
+  one would be the obvious convenience and can only ever be right for one channel, so its
+  non-existence is asserted alongside the three per-signal rates the README names.
+- `sampleRateHz` is `undefined` when the record duration is zero, which is legal EDF and which
+  PhysioNet's hypnograms really declare. `Infinity` is what an unguarded division gives, would pass
+  every `typeof` check, and would make `NaN` of every time converted through it — so the check is
+  that it is neither a number nor that number.
+- And there is no gap-filling option, checked as an absence across every option name the public
+  types declare. An option to fill a gap is an option to fabricate samples the amplifier never
+  recorded, and once it exists somebody's config turns it on.
+- Also pinned: that a window is measured on `onsetTicksFromFirstRecord` rather than `onsetTicks`.
+  The fixture puts the two axes in different records on purpose — a half-second offset leaves both
+  inside the same record-aligned chunk, which is how this advice would look correct while being
+  untestable.
+
 ## 0.4.363
 
 - **Corrected** the README's promise about diagnostics and widened 0.4.325's check to cover it. It
