@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.361
+
+- **Added** a check over the error-class table on `api-errors.md`. Seven classes, each with an
+  `edfErrorKind` — the field a caller branches on, since `instanceof` is false across a realm
+  boundary — so the table is the map between the class you catch and the string you switch on. Each
+  row now has a fixture that produces the condition it describes, so none is checked by assertion
+  alone, and a class whose kind changed would otherwise fall silently into a different branch of
+  every consumer's handler.
+- The distinction below the table is checked too. An error raised from a diagnostic opens with its
+  code in brackets; `EdfDiagnostic.message` does not, because `formatDiagnostics` renders the code
+  from the field beside it. Prefixing `error.code` when displaying a diagnostic therefore prints it
+  twice, which is what the inspector on this site did until 0.4.185 — a convention, and a
+  convention is what the next message quietly breaks.
+
 ## 0.4.360
 
 - **Added** checks for the two things `toPhysicalEnvelope` does that `toPhysical` must not be used
