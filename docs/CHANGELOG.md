@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.400
+
+- **Added** a check that the two tsconfigs differ only where they are meant to. `npm run typecheck`
+  runs both on purpose — the build config compiles `src/` with `lib: ["ES2022"]` and `types: []` so
+  the DOM and `@types/node` cannot leak into the published declarations — and AGENTS.md states that
+  split. What it does not state is that everything else about them has to match.
+- That is the half with consequences. Every strictness flag in the root config is the setting the
+  suite is written under, including the `tests/types/*.test-d.ts` files whose job is to prove the
+  public API compiles for a consumer. Turn `noUncheckedIndexedAccess` off there alone and they keep
+  passing while they stop testing what they claim: `src/` still compiles strictly, and the snippet
+  asserting a consumer's experience is now checked under settings no consumer has.
+- The repository has already paid for that flag once. Until 0.4.259 the snippet AGENTS.md tells
+  agents to copy ended `chunks[0].signals[0].digital` and did not compile in a strict project.
+- The eleven strictness flags are also asserted individually, so turning one off in *both* configs —
+  which a comparison alone would call agreement — still fails. Divergences must be named, and a
+  named divergence the configs have since settled fails too, because a stale exception is a hole.
+
 ## 0.4.399
 
 - **Added** to `verify:tarball` the three files npm packs by convention rather than because `files`
