@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.396
+
+- **Added** a check that the share card is the image the page says it is. `og.png` is 537 KB of
+  pixels nothing in this repository opens, and it is the only thing many people ever see of the
+  project — every link posted in a channel or pasted into a chat renders it.
+- `Base.astro` declares `og:image:width` and `og:image:height` to scrapers that lay the preview out
+  before the bytes arrive, so wrong numbers letterbox or crop the card at the far end, where nobody
+  who could fix it is looking. Those are now read out of the PNG's own IHDR chunk rather than taken
+  on trust.
+- The export is `qlmanage` then `sips -c 630 1200`, which keeps the middle of a square thumbnail.
+  That works only because `og.svg` is a 1200x1200 canvas with the card in a band offset by half the
+  leftover; changing the canvas takes the wrong rows, quietly, because a wrongly cropped card is
+  still a card. The offset is now derived from the two numbers instead of being a literal.
+- `og:image:alt` is what a screen reader says and what shows when the image fails. It quotes the
+  line the card prints, names the annotation the card draws and calls the trace green, and all
+  three are now checked against the SVG.
+
 ## 0.4.395
 
 - **Added** a check that `vercel.json` describes the site this repository builds. It is the one
