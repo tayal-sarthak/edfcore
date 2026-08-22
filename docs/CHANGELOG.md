@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.418
+
+- **Fixed** the rest of what 0.4.417 was about. Memoising the diagnostic sweep cut
+  `spec-references.test.ts` from 13.0 s to 4.4 s and did not settle the timeouts: whichever check
+  ran first still did the whole sweep inside its own five-second budget, and on a machine running a
+  video call and an emulator that alone took 6.5 s. Three release runs failed on it after the
+  memo landed.
+- The sweep is now paid for in a `beforeAll` with a timeout of its own. The work is real rather
+  than a hang, so the honest answer is to say how long it may take — once, in one place, rather
+  than as a number repeated on seven checks. Every check then finds the memo warm and runs at the
+  default timeout, which is the budget that should govern a check.
+- Worth stating plainly: the previous entry claimed more than it delivered. It reduced the risk by
+  more than a factor of five and left the first caller carrying the whole cost.
+
 ## 0.4.417
 
 - **Fixed** the cost of `spec-references.test.ts`, which was the most expensive file in the suite by

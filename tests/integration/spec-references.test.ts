@@ -27,7 +27,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
 import type { EdfDiagnostic } from '../../src/types.js';
@@ -141,6 +141,21 @@ function collect(): Promise<readonly EdfDiagnostic[]> {
   collected ??= sweep();
   return collected;
 }
+
+/*
+ * And the sweep is paid for in a hook, with a timeout of its own.
+ *
+ * Memoising it in 0.4.417 cut the file from 13 s to 4.4 s and did not settle this: whichever check
+ * ran first still did the whole sweep inside its own five-second budget, and on a machine running
+ * a video call and an emulator that alone took 6.5 s. Three release runs failed on it.
+ *
+ * The work is real rather than a hang, so the answer is to say how long it may take — once, here,
+ * rather than as a number repeated on seven checks. Every check then finds the memo warm and runs
+ * at the default timeout, which is the budget that should govern a check.
+ */
+beforeAll(async () => {
+  await collect();
+}, 60_000);
 
 describe('the claim the page closes with', () => {
   it('is still on the page', () => {
