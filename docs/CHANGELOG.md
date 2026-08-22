@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.392
+
+- **Added** a check that the docblocks reach the published types, which five other checks quietly
+  assume. `config/tsconfig.build.json` sets `removeComments: false`, and that one line is why the
+  module docblock of `src/index.ts` is the hover text an editor shows over an import, and why
+  `readme-status.test.ts`, `node-floor.test.ts`, `module-layers.test.ts`, `file-references.test.ts`
+  and `next-clause.test.ts` each say some version of "this comment ships, so a stale one is stale
+  in the package".
+- Nothing asserted it. Flip the flag and all five keep passing — they read `src/`, and the claim
+  they draw from it is about `dist/`. What changes is that the published `.d.ts` files lose every
+  line of documentation, an editor shows a bare signature on hover, and the package's reasoning
+  about itself stops being visible to anyone who installs it.
+- The setting is asserted and then the artifact is checked rather than the setting: a distinctive
+  sentence from three source docblocks has to be present, verbatim, in the `.d.ts` built from it.
+  `removeComments` is one of several ways to lose them, and reading the file catches the rest.
+
 ## 0.4.391
 
 - **Added** a check that the defaults the option tables print are the defaults the code applies.
