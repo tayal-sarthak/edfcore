@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.417
+
+- **Fixed** the cost of `spec-references.test.ts`, which was the most expensive file in the suite by
+  a wide margin. Seven checks in it ask questions of the same set of diagnostics, and each rebuilt
+  it from scratch: nine targeted parses plus 2,700 bit-flipped ones, seven times over. The sweep is
+  now run once for the file. It drops from 13.0 s to 4.4 s, and the work inside the tests from
+  10.3 s to 1.9 s.
+- The reason to care is not the seconds. Every one of those seven checks sat within reach of
+  vitest's default 5 s timeout, which makes a test that passes or fails on how busy the machine is —
+  and two of them did fail, on a laptop running a video call and an emulator, for reasons that have
+  nothing to do with the code. A shared CI runner is the same machine on a bad day, and
+  `scripts/release.mjs` gates the tag on CI going green.
+- Memoised rather than hoisted to a module-level `await`, so the sweep starts when the first check
+  asks for it and a rejection surfaces inside a test rather than as an unhandled one.
+
 ## 0.4.416
 
 - **Added** tests for a file with no annotations signal, whose record onsets are arithmetic. Plain

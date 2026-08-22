@@ -112,7 +112,7 @@ async function diagnosticsOf(bytes: Uint8Array): Promise<readonly EdfDiagnostic[
 }
 
 /** Every diagnostic the targeted files and the sweep between them produce. */
-async function collect(): Promise<readonly EdfDiagnostic[]> {
+async function sweep(): Promise<readonly EdfDiagnostic[]> {
   const found: EdfDiagnostic[] = [];
   for (const bytes of TARGETED) found.push(...(await diagnosticsOf(bytes)));
   // The header of this file is 1024 bytes, so 900 lands inside it and in the first record.
@@ -122,6 +122,24 @@ async function collect(): Promise<readonly EdfDiagnostic[]> {
     }
   }
   return found;
+}
+
+/**
+ * The sweep, run once for the file.
+ *
+ * Seven checks below ask questions of the same set of diagnostics, and each used to rebuild it:
+ * nine targeted parses plus 2,700 bit-flipped ones, seven times over. That made this the most
+ * expensive file in the suite by a wide margin and put every one of those checks within reach of
+ * the default 5 s timeout — which is a test that passes or fails on how busy the machine is, and
+ * fails on a shared CI runner for reasons that have nothing to do with the code (0.4.417).
+ *
+ * Memoised rather than hoisted to a module-level `await`: the sweep then starts when the first
+ * check asks for it, so a rejection surfaces inside a test rather than as an unhandled one.
+ */
+let collected: Promise<readonly EdfDiagnostic[]> | undefined;
+function collect(): Promise<readonly EdfDiagnostic[]> {
+  collected ??= sweep();
+  return collected;
 }
 
 describe('the claim the page closes with', () => {
