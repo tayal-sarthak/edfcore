@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.397
+
+- **Fixed** `website/design/og.svg`, which had been missing its final newline since it was drawn.
+  `.editorconfig` has asked for one on every file in this repository the whole time.
+- **Added** the check that would have caught it. Biome formats the `.ts`, `.mjs`, `.json` and
+  `.jsonc` files and reports a deviation as a lint error; everything else here — the markdown, the
+  two workflows, the `.astro` components, the stylesheet, the Python under `scripts/golden/`,
+  `og.svg` and `LICENSE` — was governed by `.editorconfig` and by nothing at all, and between them
+  they are most of what a reader ever opens.
+- `.editorconfig` is a request to an editor, not a check, and every way of breaking it is invisible
+  in review: a missing final newline shows as one line in one diff and then never again, and a CRLF
+  ending shows as nothing until the day a whole file appears rewritten.
+- The rules are read out of `.editorconfig` rather than restated, so deleting a line turns its
+  check off — and a separate assertion that all five are still declared is what makes that a
+  visible decision. The `[*.md]` exemption for trailing whitespace is honoured, because two spaces
+  is a hard line break.
+
 ## 0.4.396
 
 - **Added** a check that the share card is the image the page says it is. `og.png` is 537 KB of
