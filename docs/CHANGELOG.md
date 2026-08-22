@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.389
+
+- **Added** a check that the three verifications outside `npm run check` are run by something.
+  `AGENTS.md` says CI runs all three, and that arrangement is sound and fragile: `verify:package`
+  packs the tarball and asks publint and `@arethetypeswrong/cli` what a consumer would resolve,
+  `verify:tarball` asks what npm would ship and what it must not, `verify:site` reads the generated
+  endpoints out of `website/dist`. None can run inside the suite, so the suite could not notice one
+  of them ceasing to run at all.
+- Deleting a `- run:` line from `ci.yml` is a one-line edit that turns a check into a script nobody
+  invokes, leaves every test here green, and leaves that paragraph saying CI runs it. The gap would
+  surface the next time the thing it guards broke, which is when nobody is reading CI config.
+- The set comes from `package.json` rather than from the prose — every `verify:*` script has to be
+  a step in `ci.yml`, and none of them may be reachable from `npm run check`, which is the premise
+  of the arrangement. The fenced block in `AGENTS.md` is then checked against that same set, so
+  "three" is a number this can be wrong about.
+
 ## 0.4.388
 
 - **Fixed** the figure three places give for the size of this suite. The README said 1,900 or more
