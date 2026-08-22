@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.422
+
+- **Added** tests for what `byteSource` accepts and what it says about everything else. It is the
+  first call almost everyone makes, and the one place a caller's mistake can be mistaken for a
+  defect in their file: `new Uint8Array(x)` accepts almost anything — a string, a plain object and
+  `null` all yield an empty array, a `number[]` one of the wrong length — so a source built from
+  any of them reads back as `[SOURCE_TOO_SMALL] the header is 0 bytes`, blaming the recording for
+  an argument.
+- Two acceptances are load-bearing and neither is obvious from the signature. A Node `Buffer`
+  works because it is a `Uint8Array`, and `await readFile(path)` is how almost everyone in Node
+  gets bytes. A buffer or view from another realm works because the guard is
+  `Object.prototype.toString`, not `instanceof` — until 0.3.20 the ArrayBuffer half used
+  `instanceof` while the SharedArrayBuffer half already used the tag, so a real, usable
+  ArrayBuffer from an iframe was refused as "a plain object" and told to pass the ArrayBuffer
+  itself, which is what the caller had done. That case now runs through `node:vm`, because a
+  same-realm buffer passes `instanceof` and would let the defect back in unnoticed.
+- Two refusals are load-bearing too. An `Int8Array` has one byte per element, so it passes every
+  length check and then has its already-signed elements sign-extended a second time during decode:
+  fabricated microvolts with no error anywhere. A `DataView` is the other shape that looks like
+  bytes and is not.
+
 ## 0.4.421
 
 - **Fixed** the first line of `edfcore validate`, which did not pluralise. A report with two errors
