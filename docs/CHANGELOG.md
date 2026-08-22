@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.409
+
+- **Added** tests for the start offset a chunk has to derive when it does not begin at record 0.
+  A caller following the `decodeAnnotations` example on `api-primitives.md` hands over a record
+  range that usually excludes record 0, so record 0's sub-second offset — what every published
+  onset is rebased on — has to be derived by subtracting the nominal distance back to it.
+- That subtraction is valid only while the records in between are contiguous, which is what a
+  discontinuous file is not. A derived value outside [0, 1) is therefore evidence about the file:
+  on one marked EDF+C it means the file is either discontinuous while claiming continuity or its
+  onsets drift, and the diagnostic says so instead of rebasing on a number known to be wrong. On an
+  EDF+D file the same value implies nothing, so nothing is reported — otherwise `strict` would
+  reject every conformant discontinuous recording.
+- A supplied `originTicks` or `startOffsetTicks` outranks the derivation even when it lies outside
+  [0, 1), because it came from the timeline rather than from arithmetic across a gap. That is what
+  keeps the diagnostic count a property of the file: before 0.3.15 the three internal callers
+  re-derived it per chunk, and one file produced 1, 2, 4, 7, 16 or 31 of them purely as a function
+  of `maxMaterializeBytes`.
+
 ## 0.4.408
 
 - **Added** tests for the refusals in the sample helpers. `sampleAt`, `sampleStartTicksOf` and
