@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.408
+
+- **Added** tests for the refusals in the sample helpers. `sampleAt`, `sampleStartTicksOf` and
+  `gridSampleIndexAt` all map between a time and a sample index, all three sit behind a guard
+  rejecting the signals and files where no such mapping exists, and none of those guards had ever
+  been executed.
+- None of the inputs is exotic. An annotations channel is in `header.signals`, so
+  `signals.map((s, i) => sampleAt(recording, i, t))` reaches it on the first EDF+ file. A signal
+  declaring zero samples per record opens with a warning, beside live channels. A file whose
+  records do not advance in time opens with a warning too, and `api-errors.md` names a scoring file
+  as the reason it is legal.
+- The three messages differ because the ways out differ — an annotations channel to
+  `onsetTicksFromFirstRecord`, a zero-sample signal to the diagnostic explaining it, a zero-duration
+  file to `readRecords` — so the pairing is checked rather than the error type. `sample-grid.ts` and
+  `sample-locate.ts` carry the same three refusals and are checked side by side, because 0.3.78 was
+  the two disagreeing about which onset field to recommend.
+
 ## 0.4.407
 
 - **Added** tests for a window over a recording whose records do not advance in time.
