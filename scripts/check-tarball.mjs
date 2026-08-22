@@ -71,6 +71,14 @@ if (docs.length !== 1 || docs[0] !== 'docs/CHANGELOG.md') {
   fail(`docs/ holds ${JSON.stringify(docs)}, and files lists only the changelog`);
 }
 
+// The three npm adds by convention rather than because `files` asks for them. `files` is an
+// allow-list and none of these is on it, so all three ship on a rule this repository does not
+// state and cannot see: an `.npmignore` would override `files` entirely, and a package that
+// arrives without LICENSE is an MIT package whose terms are not in it.
+for (const conventional of ['package.json', 'README.md', 'LICENSE']) {
+  if (!paths.includes(conventional)) fail(`${conventional} is not in the tarball`);
+}
+
 // --- and nothing it should not --------------------------------------------
 
 for (const prefix of ['tests/', 'website/', 'config/', 'scripts/', '.github/', 'node_modules/']) {

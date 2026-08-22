@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.399
+
+- **Added** to `verify:tarball` the three files npm packs by convention rather than because `files`
+  asks for it: `package.json`, `README.md` and `LICENSE`. `files` is an allow-list and none of the
+  three is on it, so all three ship on a rule this repository does not state and cannot see.
+- A package that arrives without `LICENSE` is an MIT package whose terms are not in it, which is
+  the half of 0.4.398 a text comparison cannot reach. Without `README.md` the npm page is blank —
+  the first thing anyone sees of the project, and the last thing anyone would think to check.
+- `.npmignore` is what makes this reachable rather than theoretical: it overrides `files` outright,
+  so adding one for an unrelated reason can take all three out at once.
+
 ## 0.4.398
 
 - **Added** a check that the licence is one licence. `package.json` declares `"license": "MIT"` —
