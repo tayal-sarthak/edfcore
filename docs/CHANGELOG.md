@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.405
+
+- **Added** tests for `locate` at the edges of a file. `discontinuous.md` states the contract in
+  one sentence — "`undefined` means the instant is in a gap or outside the recording, never that
+  the lookup failed" — and only the gap half was covered.
+- A caller cannot distinguish the two. A viewer scrubbing to a timestamp gets `undefined` and draws
+  nothing; if that came from a search that ran off the end of an array it would draw nothing for a
+  time that does exist, and the recording would appear to be missing data it holds.
+- Four shapes, each a different branch: a time before the first record, which is also where a
+  negative time lands; a file with one record, where there is no interval to bisect; a file with no
+  records, where every instant is outside; and records of zero duration, which contain only the
+  instant they start on and answer with the last record sharing it, because with no interval there
+  is nothing to prefer an earlier one by.
+- `onsetTicks` is the other refusal on the index and the one a caller reaches by arithmetic — an
+  index computed from a duration and a rate is exactly where a fractional or out-of-range number
+  comes from. Its `requested` and `available` fields are checked, not just its message.
+
 ## 0.4.404
 
 - **Added** tests for the buffered whole body — what `allowFullDownload: true` leaves behind once
