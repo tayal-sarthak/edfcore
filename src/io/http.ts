@@ -474,9 +474,11 @@ export async function httpSource(
   };
 }
 
-/** `slice`, not `subarray`: the buffered body is retained state and the caller owns its result. */
 /**
  * A read served from the buffered whole body.
+ *
+ * `slice`, not `subarray`: the body is retained state and the caller owns its result, so a view
+ * into it would let one reader's write change what the next reader sees.
  *
  * The overrun is diagnosed HERE rather than left to `assertExactRead`. That guard exists for a
  * source the CALLER wrote — its message ends "make read() loop until `length` bytes have arrived"

@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.404
+
+- **Added** tests for the buffered whole body — what `allowFullDownload: true` leaves behind once
+  the transfer is done. `hardening.test.ts` pins the transfer count, which was a real
+  out-of-memory defect; everything about the buffer itself was unchecked.
+- A read off it returns a **copy**. `sliceFullBody` says `slice`, not `subarray`, because the body
+  is retained state: a view into it makes one caller's write change what the next caller reads, and
+  the samples that change belong to a different part of the recording. Same property
+  `api-sources.md` states for `cachedSource`, on the other object that retains bytes.
+- The resource can be **shorter than the source was told**. `options.byteLength` with
+  `allowFullDownload` is exactly the pair `data-sources.md` recommends for a broken origin, so a
+  stale `Content-Length` behind it is the combination a reader actually reaches for. The message
+  for that names the real size from the body in hand rather than offering `assertExactRead`'s
+  advice, which no retry could act on (0.3.75).
+- A transfer that **fails** must not poison the source, and the probe-time entry — a length probe
+  answered with a 200, where the size is learned from the download rather than a header — is a
+  second route to the same buffer.
+- Folded the stranded one-line docblock above `sliceFullBody` into the real one. It has been the
+  first commit's comment sitting under a longer block added in 0.3.75, where no editor would show
+  it, and the `slice`-not-`subarray` reason it states is now the property above.
+
 ## 0.4.403
 
 - **Fixed** the length probe taking a `Content-Range` total from a range unit that is not bytes.
