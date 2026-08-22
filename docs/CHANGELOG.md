@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.386
+
+- **Added** a property test for the window rule annotations are filtered by: overlap rather than
+  containment for an event with a duration, and half-open containment of the onset for an instant,
+  so adjacent windows partition a recording without double-counting the boundary.
+- `tests/unit/annotations-query.test.ts` checks that with hand-placed events at hand-picked
+  boundaries and is thorough about the cases someone thought of — the instant at t = 0, the epoch
+  ending exactly where the window starts, the duration a writer spelled `0` rather than omitting.
+  What no example can say is that the rule holds for a partition it was not written against.
+- So the events are generated, written into a real EDF+ file and read back through the parser
+  before anything is filtered. The comparison is on `onsetTicksFromFirstRecord`, and those ticks
+  are parsed digit by digit out of the TAL: an oracle fed hand-built objects would agree with the
+  filter about numbers no file ever produced.
+- Three properties over that: every instantaneous event gets exactly one window of a partition,
+  an event with a duration gets every window it overlaps and no other, and the result matches an
+  independent case analysis in ticks. Changing `onset >= from` to `onset > from` in the filter —
+  one character — fails the first two with a shrunk counterexample.
+
 ## 0.4.385
 
 - **Added** a check that the file the inspector hands a first-time visitor is one edfcore accepts.
