@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.398
+
+- **Added** a check that the licence is one licence. `package.json` declares `"license": "MIT"` —
+  the string npm indexes, GitHub's sidebar reads and every corporate approval process greps for —
+  and `LICENSE` is the only one of the five copies that actually grants anything. The other four
+  describe it.
+- The failure this guards is not someone changing the licence. It is someone changing one copy: a
+  relicensing that updates `LICENSE` and leaves the manifest saying MIT ships a package whose two
+  statements of its own terms disagree, which is worse than either being wrong alone. The holder is
+  the same shape — three hand-typed copies of one name, in the manifest, the file and the README.
+- The body is checked as well as the heading, because a truncated `LICENSE` is still a `LICENSE`.
+  The grant and the warranty disclaimer are what make it MIT rather than a title over an empty
+  file, and one that lost its disclaimer is a licence someone could argue carries a warranty.
+- The copyright year is deliberately not checked. There is no `Date` in this repository, and a year
+  assertion is a test that fails on the first of January for no reason anyone would want.
+
 ## 0.4.397
 
 - **Fixed** `website/design/og.svg`, which had been missing its final newline since it was drawn.
