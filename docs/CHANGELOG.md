@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.423
+
+- **Removed** an unreachable branch from `byteSource`'s argument description, and the comment
+  claiming it prevented a message nothing can produce. It named an `ArrayBuffer` or a
+  `SharedArrayBuffer` in a refusal — but the description is built on the throw path alone, which is
+  reached only when the same `BUFFER_TAGS` test has already answered no.
+- It was reachable once. The branch was added when a refusal called those buffers "a plain
+  object", and it stopped being reachable in 0.3.20, when the acceptance check was widened from
+  `instanceof` to the same tags. Nothing noticed, because dead code that agrees with the code
+  around it reads as thoroughness.
+- `BUFFER_TAGS` itself stays: it is what accepts a buffer from another realm, which 0.4.422 now
+  exercises through `node:vm`.
+
 ## 0.4.422
 
 - **Added** tests for what `byteSource` accepts and what it says about everything else. It is the

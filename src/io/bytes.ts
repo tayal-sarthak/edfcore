@@ -14,17 +14,19 @@ import { assertExactRead, assertReadRange, isByteArray, throwIfAborted } from '.
 /**
  * Describes what arrived, for an argument that is not bytes. Never prints the value: it could be
  * anything, including something large.
+ *
+ * No `ArrayBuffer` or `SharedArrayBuffer` branch, and there cannot usefully be one: this is called
+ * on the throw path alone, which `byteSource` reaches only when the SAME `BUFFER_TAGS` test has
+ * already answered no. A branch here carried one for a while — added when a refusal called them
+ * "a plain object" — and it stopped being reachable once the acceptance check was widened to the
+ * tags in 0.3.20. Removed in 0.4.423, along with the comment claiming it prevented a message
+ * nothing can produce.
  */
 function describe(value: unknown): string {
   if (value === null) return 'null';
   if (value === undefined) return 'undefined';
   if (ArrayBuffer.isView(value)) return Object.prototype.toString.call(value).slice(8, -1);
   if (Array.isArray(value)) return 'a plain Array';
-  // Buffers are named too. Without this a refusal called them "a plain object", which sent the
-  // reader looking for the wrong problem entirely.
-  if (BUFFER_TAGS.has(Object.prototype.toString.call(value))) {
-    return Object.prototype.toString.call(value).slice(8, -1);
-  }
   return typeof value === 'object' ? 'a plain object' : `a ${typeof value}`;
 }
 
