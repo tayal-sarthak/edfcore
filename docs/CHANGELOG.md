@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.383
+
+- **Added** a check for the last paragraph of `data-sources.md`, which says what survives
+  `close()`: the header and the timeline stay readable, and `readRecords`, `readWindow`,
+  `readAnnotations` and an unmemoised `index.locate` fail. Every `fileSource` example on the site
+  is wrapped in `try { … } finally { await source.close?.() }`, so a recording outliving its handle
+  is the ordinary shape of a program here, and that paragraph was the only statement of which half
+  of the object still works.
+- The carve-out in it turned out to be narrower than it reads. A probed index memoises records 0
+  and n−1 at open and every record a search walks over, so `locate(0.5)` answers after the close
+  only if it already ran before it — on a freshly opened file the binary search probes a midpoint
+  first. Both cases are pinned, since a later memoisation change makes that quietly more generous.
+- It does not claim the rejection is an `EdfError`. It is whatever the source raises: for
+  `fileHandleSource` that is Node's own `Error: file closed`, and `isEdfError` returns false for
+  it. Closing your own handle is not a file defect.
+
 ## 0.4.382
 
 - **Fixed** the docblock at the top of `scripts/release.mjs`, which described the scheme that was
