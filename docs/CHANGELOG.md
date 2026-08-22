@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.406
+
+- **Added** tests for the index `validateRecording` is handed, and whether it is allowed to answer
+  for the file. `api-validate.md` describes the option as a complete index "whose onsets the sweep
+  reuses instead of reading them again", and nothing checked what happens when the index does not
+  fit.
+- That is an ordinary mistake — a viewer holding indices for several open recordings, a helper that
+  caches one per session, a loop that forgets to rebuild — and the consequence is not a wrong number
+  but a wrong file: the segments and gaps of recording A reported as the structure of recording B,
+  in a report whose whole purpose is to say whether *this* file conforms.
+- The rejection is checked by observation rather than by reading the guard. A rejected index makes
+  the sweep read the onsets itself, so a spy counts it, and the cost is required to equal passing no
+  index at all — which is what "ignored" has to mean.
+- Also covers `DISCONTINUITY_IN_CONTINUOUS_FILE` on a file that both skips and repeats time. Gaps
+  travel in one array partitioned by sign, an overlap being an entry with a negative duration
+  (0.2.69), and counting the array told a reader that a file missing no data had a gap (0.3.3). One
+  of each is the case where the message has to say both, and no fixture produced it.
+
 ## 0.4.405
 
 - **Added** tests for `locate` at the edges of a file. `discontinuous.md` states the contract in
