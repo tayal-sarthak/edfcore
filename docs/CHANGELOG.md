@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.402
+
+- **Added** tests for what `httpSource` accepts before it issues anything: a URL, a `fetch` and a
+  length. Three sentences on `api-sources.md` describe constructing a source, and all three were
+  prose.
+- "It accepts a `URL` object as well as a string, because `URL` structurally satisfies
+  `{ href: string }`." A `URL` is what `new URL(name, base)` hands you, so passing one is the
+  normal case rather than the clever one — and nothing here had ever passed anything but a string
+  literal.
+- `fetch` defaults to `globalThis.fetch`, and throws `EdfSourceError` at construction when neither
+  is available. That is the path every browser caller takes and the one no test could take, because
+  the suite replaces the global with a trap that refuses. It is exercised now by standing a
+  counting double in the global's place for the length of one test, which is the only way to
+  observe the fallback without reaching a network.
+- `byteLength` must be a non-negative safe integer. Its whole purpose is to skip the probes, so a
+  bad value is a value that would otherwise be trusted as the size of a resource nobody measured,
+  and every read is then range-checked against a fiction. Zero is accepted, because an empty
+  resource is a real one.
+
 ## 0.4.401
 
 - **Added** a check that the palette has one definition. `tokens.css` opens by explaining the
