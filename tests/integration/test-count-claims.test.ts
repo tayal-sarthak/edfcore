@@ -51,7 +51,14 @@ interface Claim {
   readonly text: string;
 }
 
-/** A figure, a hedge and the word: `2,000+ tests`, `2,000-odd tests`. */
+/**
+ * A figure, a hedge and the word: a grouped count, then `+` or `-odd`, then `tests`.
+ *
+ * Spelled out rather than illustrated. An example here is a claim as far as the scanner below is
+ * concerned, so a comment naming the figures this matches makes this file a fourth place stating
+ * the number — and the first to go stale, since raising the claim elsewhere would not touch it.
+ * That is exactly what happened at 0.4.415, for the second time in this file's short life.
+ */
 const CLAIMS: readonly Claim[] = (() => {
   const sources: Array<{ where: string; text: string }> = [
     { where: 'README.md', text: readFileSync(new URL('README.md', ROOT), 'utf8') },

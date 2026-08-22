@@ -1,7 +1,7 @@
 /**
  * The browser claim, executed.
  *
- * The README supports Chrome 94+, Firefox 93+ and Safari 15.4+. Every one of the 2,000-odd tests
+ * The README supports Chrome 94+, Firefox 93+ and Safari 15.4+. Every one of the 2,500-odd tests
  * in this repository runs under vitest's `environment: 'node'`, where `process.env` and
  * `Buffer.from` work perfectly — so none of them could ever have caught the one mistake that
  * breaks all three browsers at once: a bare Node global.

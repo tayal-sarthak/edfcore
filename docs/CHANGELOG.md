@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.415
+
+- **Raised** the test-count figure from 2,000 to 2,500 in the README's status line, the note at the
+  foot of `installation.md` and the docblock of `browser-safety.test.ts`. The suite has outgrown
+  the old number: 2,002 written-out cases, and vitest reports around 2,900 once `it.each` rows
+  expand.
+- Found by `test-count-claims.test.ts`, added in 0.4.388 for exactly this. A claim of the form
+  "N or more" stays true forever once it is true, which is the property that makes it worthless —
+  it can never be wrong, so it is never re-read, and half the real scale is a wrong impression
+  conveyed in a true sentence. This is the first time the guard has fired.
+- **Fixed** the same self-quotation trap in that file, for the second time. The comment documenting
+  the regex illustrated it with the two spellings it matches, so the scanner read its own examples
+  as a fourth statement of the figure — and the one place raising the claim elsewhere would never
+  touch. The comment now describes the shape instead of spelling a number.
+
 ## 0.4.414
 
 - **Added** a check that binds every entry of AGENTS.md's "Things that look like bugs and are not"
