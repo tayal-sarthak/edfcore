@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.416
+
+- **Added** tests for a file with no annotations signal, whose record onsets are arithmetic. Plain
+  EDF and plain BDF carry no timekeeping TALs, so record `r` starts at `r * recordDuration` by
+  definition and reading the data would answer a question the bytes do not contain.
+- The consequence is a cost, and cost is why the index is shaped the way it is.
+  `locate-cost.test.ts` pins the EDF+ numbers the page prints for a file whose onsets have to be
+  read. For the majority of files in the world the number is zero, and nothing said so — a refactor
+  that probed unconditionally would be invisible in every result, because the probe would derive
+  the same arithmetic value it found written nowhere. Only the request count changes, and on a
+  remote recording that is the difference between opening a file and paying one range request per
+  step of a binary search.
+- `buildRecordIndex` is the sharper case. On an EDF+ file it is a full traversal, which is why the
+  page tells you to gate it on the two-probe verdict; on a plain EDF it must be free, and it still
+  has to call `onProgress` once with the traversal complete, so the fastest possible file is not
+  the one whose progress bar never moves.
+
 ## 0.4.415
 
 - **Raised** the test-count figure from 2,000 to 2,500 in the README's status line, the note at the
