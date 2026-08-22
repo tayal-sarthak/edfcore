@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.410
+
+- **Added** a check that nothing on the site tells a crawler to stay away. `robots.txt.ts` opens
+  with a decision and its reasoning — everything is open to every crawler, including the AI
+  training crawlers, because an open-source library wants the opposite of what a publisher
+  protecting paid content wants — and that decision was enforced by nothing.
+- Every way of reversing it is a normal-looking edit no reviewer would flag as a policy change: a
+  `Disallow:` added during a "block the AI scrapers" tidy-up; `Google-Extended` or
+  `Applebot-Extended` added to look thorough, whose only effect is to opt out of model training; a
+  `<meta name="robots" content="noindex">` copied from a staging site; an `X-Robots-Tag` in
+  `vercel.json`, which overrides the page and the file both. None changes anything a visitor sees.
+- `check-site-output.mjs` reads the built `robots.txt` and checks one thing — that the sitemap it
+  names was emitted — and runs in CI only. This is the source-level half, in `npm run check`.
+- The emitted lines are read out of the `body` array rather than the whole file. Scanning the file
+  for quoted strings does not work: the docblock is English, and one apostrophe in "a model's
+  training data" shifts the pairing for everything after it — which is how a `Disallow` line added
+  to the body went unseen while this check was being written.
+
 ## 0.4.409
 
 - **Added** tests for the start offset a chunk has to derive when it does not begin at record 0.
