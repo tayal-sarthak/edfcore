@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.411
+
+- **Added** tests for the envelope of the files and selections a viewer produces by accident.
+  `readEnvelope` exists to draw a recording at pixel width, so its caller is a UI: the signal
+  indices come from a multi-select, the bucket count from a canvas width, and the file from
+  whatever was dropped on the page.
+- **The same signal asked for twice** — a multi-select that appends on click, a "select all" over a
+  list that already had one checked — is now pinned as one series in order of first mention, and
+  costing what asking once costs. **A signal with no samples in a record** draws as an empty series
+  rather than failing the whole envelope, so a "plot everything" loop still gets a slot for every
+  channel it named. **A file whose records do not advance in time** buckets without dividing by the
+  duration: `readEnvelope` divides the samples evenly, because there are no timestamps to place
+  them along, and `readEnvelopeAtResolution` gets one bucket, because the span is zero.
+- A fourth case is a request rather than a file: a `secondsPerBucket` finer than one tick has no
+  whole-tick answer, and asking for one bucket per tick and letting the fold clamp to one bucket per
+  sample was a comment with nothing behind it.
+
 ## 0.4.410
 
 - **Added** a check that nothing on the site tells a crawler to stay away. `robots.txt.ts` opens
