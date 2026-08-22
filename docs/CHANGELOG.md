@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.394
+
+- **Added** a check that every field the error tables on `api-errors.md` document is on the error
+  you actually catch. Those tables are the point of the classes: a caller reads `matchingIndices`
+  to offer a choice of channel, `budgetBytes` to decide how much to ask for next time, `available`
+  to clamp a range, `receivedLength` to tell a short read from a truncated file.
+- `error-classes.test.ts` checks the class-to-`edfErrorKind` table above them, because that is what
+  a cross-realm `catch` switches on. The field tables underneath were never executed, and a renamed
+  field passes everything here: TypeScript is happy, because the rename is consistent inside the
+  package, the page still describes the old name, and the consumer reading it gets `undefined` —
+  which in a handler looks like "this error did not carry that detail" rather than a breaking
+  change.
+- So one error of each class is provoked by the condition its row describes, and every documented
+  field is looked for on the instance with the documented type. A field documented as `X |
+  undefined` may be absent, but the name still has to be one the class defines, which is what stops
+  a misspelt row from being unfalsifiable.
+
 ## 0.4.393
 
 - **Added** a property test for the rule `design-decisions.md` states about out-of-range samples: a
