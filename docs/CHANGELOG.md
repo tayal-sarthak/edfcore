@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.401
+
+- **Added** a check that the palette has one definition. `tokens.css` opens by explaining the
+  pairing — the signal green carries the trace, the rose is semantic and marks events, and rose
+  rather than red because red-on-green is the one pairing red-green colourblindness collapses, with
+  the measured separation written down. That reasoning is worth something only while the colours it
+  describes are the colours a visitor sees.
+- Three places cannot say `var(--signal)` and so restate the value. `og.svg`, because an SVG
+  exported by `qlmanage` has no stylesheet: nine literal hexes. The two `theme-color` metas, because
+  the browser paints the chrome before any CSS arrives — wrong values put a stale band above and
+  below a scrolling page, on phones, where nobody developing the site is looking. And
+  `TraceStrip.astro`, which reads the tokens at runtime and is right to, but whose fallbacks are the
+  palette written a third way in decimal RGB — the copy least likely to be recognised as one.
+- Each is now required to be the specific token that does its job, resolved through `var()` the way
+  the cascade does: `theme-color` is `--bg` in each layer, the card's rose is on the annotation, and
+  each canvas fallback is its own token's default-theme value.
+- The beam head is deliberately exempt. Its core is a near-white green brighter than any token,
+  because a phosphor blowout is additive light and there is no palette entry for it.
+
 ## 0.4.400
 
 - **Added** a check that the two tsconfigs differ only where they are meant to. `npm run typecheck`
