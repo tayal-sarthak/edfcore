@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.388
+
+- **Fixed** the figure three places give for the size of this suite. The README said 1,900 or more
+  tests, the note at the foot of `installation.md` said 1,200 or more, and the docblock of
+  `browser-safety.test.ts` said 1,900-odd — three figures for one fact, the smallest of them eight
+  hundred behind. All three now say 2,000.
+- None of them was ever false, which is why nothing caught them. A claim of the form "N or more"
+  stays true forever once it is true, and the property that makes it safe is the property that
+  makes it worthless: it can never be wrong, so it is never re-read. What a reader takes from it is
+  a sense of scale, and half the real scale is a wrong impression conveyed in a true sentence.
+- **Added** the check that keeps it current: the figure has to be one figure wherever it is stated,
+  and no smaller than the number of `it(...)` and `test(...)` declarations the suite writes out. It
+  fails when the suite grows past what the pages claim, which is the direction this rots in.
+- It does not check the other direction. Four dozen of those declarations are `it.each(...)`,
+  expanding at run time to one case per row, so the count read out of the files is a floor rather
+  than the total — the right side to be wrong on, since a figure that clears it is true of the real
+  total too, but nothing here would notice one inflated past both.
+
 ## 0.4.387
 
 - **Added** a check that the published `bin` runs as a program. `cli.test.ts` and the rest drive
