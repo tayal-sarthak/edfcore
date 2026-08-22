@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.414
+
+- **Added** a check that binds every entry of AGENTS.md's "Things that look like bugs and are not"
+  to the test that pins it. The section exists because each entry is something a reader improves on
+  sight — the scaling expression has an obviously better rearrangement, `readWindow` returning an
+  array for a continuous file is an obviously unnecessary wrapper, an optional `signal.scale` is an
+  obviously missing default — and every one of them has been proposed.
+- It closes with a promise about itself: "Each of the code rules has a test pinning it and a comment
+  explaining why." Nothing checked that sentence, and both ways it stops being true are ordinary. A
+  rule gets added because someone was bitten by it and no test comes with it, so the list reads as
+  enforced while it is not. Or a test is renamed in a tidy-up, and nothing fails — the rule is still
+  checked, or it is not, and nobody can tell which from the list.
+- The binding is checked in both directions: a new bullet with no entry fails, and an entry naming
+  a file that no longer exists or no longer mentions the rule fails too. Each binding carries a
+  phrase the file must contain, so a filename alone cannot stand in for a check.
+- The last entry is exempt by the sentence's own words — it is a fact about a branch on a remote,
+  which an offline suite cannot see — and it is required to still BE the last, because a rule
+  appended after it would inherit an excuse written for something else.
+
 ## 0.4.413
 
 - **Added** tests for the calendar edfcore validates against. `isValidCalendarDate` exists because
