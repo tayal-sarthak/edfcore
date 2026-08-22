@@ -78,7 +78,7 @@ for (const event of annotations) {
 }
 ```
 
-> **Status: 0.4.x, early.** edfcore runs 1,900+ tests on generated fixtures, and it's checked
+> **Status: 0.4.x, early.** edfcore runs 2,000+ tests on generated fixtures, and it's checked
 > against public corpora it didn't author: the EDF, EDF+ and 24-bit BDF+ test files from
 > teuniz.net, and PhysioNet's sleep-edfx (a real 22-hour polysomnography recording and its
 > sleep-staging file). Those checks are numeric. Channels labelled `sine 8.5 Hz` decode to

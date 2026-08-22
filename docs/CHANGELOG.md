@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.387
+
+- **Added** a check that the published `bin` runs as a program. `cli.test.ts` and the rest drive
+  `runCli` through an injected `CliIo`, deliberately, so they need no build; `cli-pipe.test.ts`
+  spawns the built file but always as `node dist/cli.js`, naming the interpreter itself. Between
+  them they covered every line of the program and none of the mechanism that starts it.
+- Delete the `#!/usr/bin/env node` from `src/cli.ts` and every test here still passes: the build
+  succeeds, `verify:tarball` finds the bin target in the tarball, and `node dist/cli.js header
+  f.edf` works exactly as before. `npx edfcore header f.edf` — the first command the README prints
+  — fails on the first line of JavaScript, because the shell it was handed to is not a JavaScript
+  engine.
+- So the built file is given the executable bit npm's tarball carries for a bin and run with no
+  interpreter named, which is the only way to check the shebang rather than the file's first line:
+  a CRLF ending, a leading blank line or a BOM each leave the text intact and the program
+  unloadable.
+- Both spawns close stdin and carry a timeout, because that failure does not look like an error. A
+  file with no shebang is handed to `/bin/sh`, which reads JavaScript as shell and sits waiting for
+  input — without the timeout a deleted shebang hangs the suite instead of failing it.
+
 ## 0.4.386
 
 - **Added** a property test for the window rule annotations are filtered by: overlap rather than
