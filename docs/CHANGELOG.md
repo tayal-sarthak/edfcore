@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.385
+
+- **Added** a check that the file the inspector hands a first-time visitor is one edfcore accepts.
+  `website/src/scripts/sample-edf.ts` writes an EDF+C by hand from the specification for the demo's
+  "load a sample recording" button, and it is the only EDF writer here the suite never touched:
+  `tests/support/writer.ts` is checked constantly, and that one was checked by whoever last loaded
+  the page.
+- A drift there is the worst-placed defect on the site. The visitor clicks the one button the page
+  offers and the inspector reports diagnostics about a file we wrote, which reads as edfcore being
+  wrong about a valid recording — on the page built to demonstrate the opposite.
+- It opens as EDF+C with 120 one-second records and five signals, validates with `ok: true` and one
+  info diagnostic (the two-digit startdate year every conforming EDF+ file carries), carries its
+  seven scored events with the apnea spanning 70 s to 84 s, and decodes inside every declared
+  physical range without flattening to a line.
+- The generator is compiled with `tsc` and imported from a temporary directory rather than
+  imported directly, because `transform-boundary.test.ts` forbids pulling TypeScript out of
+  `website/` — vite would resolve that file's tsconfig out of `website/node_modules`, which the CI
+  check job does not install. `tsc` on a named file reads no tsconfig at all.
+
 ## 0.4.384
 
 - **Added** the browser half of `node-floor.test.ts`. The Node floor is checked in eleven places
