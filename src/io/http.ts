@@ -107,9 +107,19 @@ function rangeFromContentRange(
   return { first, last };
 }
 
-/** `Content-Range: bytes 0-0/12345` -> 12345. A `/*` total is unknown, not zero. */
+/**
+ * `Content-Range: bytes 0-0/12345` -> 12345. A `/*` total is unknown, not zero.
+ *
+ * The `bytes` unit is required, as it is in `rangeFromContentRange` above. RFC 7233 lets a server
+ * answer in a range unit of its own, and a total counted in some other unit is not a byte length:
+ * taking it built a source whose every read is then range-checked against a number measuring
+ * something else, which is the same fiction `options.byteLength` is validated to prevent. The
+ * other caller reaches this only after `rangeFromContentRange` has already accepted the header,
+ * so nothing that worked before stops working (fixed in 0.4.403).
+ */
 function totalFromContentRange(value: string | null): number | undefined {
   if (value === null) return undefined;
+  if (!/^\s*bytes\s/.test(value)) return undefined;
   const slash = value.lastIndexOf('/');
   if (slash < 0) return undefined;
   return parseNonNegativeInteger(value.slice(slash + 1));

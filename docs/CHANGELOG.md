@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.403
+
+- **Fixed** the length probe taking a `Content-Range` total from a range unit that is not bytes.
+  RFC 7233 lets a server answer in a unit of its own, and `Content-Range: items 0-0/4096` was read
+  as a 4,096-byte resource — building a source whose every read is then range-checked against a
+  number measuring something else. That is exactly the fiction `options.byteLength` is validated to
+  prevent, arriving by the route nobody validates.
+- `totalFromContentRange` now requires the `bytes` unit, as `rangeFromContentRange` beside it
+  already did. The other caller reaches it only after that stricter parse has already accepted the
+  header, so nothing that worked before stops working; a header in another unit now falls through
+  to the fatal "could not determine the size", which tells the caller to pass `byteLength`.
+- **Added** tests for the three routes to a length, in the order they are tried. The
+  `Content-Length` route in particular had never been taken: every double in the suite answers the
+  probe, so the HEAD's own answer was the cheapest path and the untested one.
+- The fall-through is the clause with teeth. An object store answering `403` to `HEAD` while
+  serving ranges happily is the ordinary case for a bucket with a narrow policy. It is a `catch`
+  that swallows every rejection, so what it must swallow is pinned — and so is the fact that it
+  stops swallowing once the probe itself is what failed.
+
 ## 0.4.402
 
 - **Added** tests for what `httpSource` accepts before it issues anything: a URL, a `fetch` and a
