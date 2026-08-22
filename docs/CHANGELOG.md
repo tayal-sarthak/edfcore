@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.391
+
+- **Added** a check that the defaults the option tables print are the defaults the code applies.
+  Four reference pages carry a `Default` column, and between them they publish the numbers almost
+  every caller gets by passing nothing: 256 MiB for `maxMaterializeBytes`, 1 MiB blocks and a
+  64 MiB budget for `cachedSource`, four in-flight requests for `httpSource`.
+- They are observed rather than imported. Comparing the tables with `DEFAULT_MAX_MATERIALIZE_BYTES`
+  would pass just as happily on a release where that constant is no longer what resolves — the
+  failure `options.ts` opens by describing, where the budget is resolved in six modules across the
+  stack. So the budget is read off the `EdfBudgetError` a refused allocation carries, the block
+  size off the read the cache issues, the LRU budget off the clamp it applies to an oversized
+  block, and the concurrency off the peak number of requests in flight.
+- Finding out what 256 MiB is costs a few hundred bytes: the budget is checked against the header
+  geometry before anything is allocated, so the fixture is a header that declares 4,000 records of
+  120,000 bytes over a source that fabricates them.
+- The last check is the closure. Every numeric cell in those `Default` columns has to be one of the
+  values observed here, so a newly documented number either gets an observation or fails and names
+  the page it is on.
+
 ## 0.4.390
 
 - **Changed** the CLI's print cap from a literal repeated at four call sites to one
