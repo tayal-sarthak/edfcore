@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.382
+
+- **Fixed** the docblock at the top of `scripts/release.mjs`, which described the scheme that was
+  replaced in 0.4.326: "this script only moves the version forward and creates the GitHub Release;
+  `publish.yml` sees that release and publishes to npm". It has created no release and watched no
+  release since — the tag it pushes is what publishes — and that paragraph is the first thing
+  anyone reads before running the script.
+- `release-model.test.ts` has asserted the trigger, the ordering and the absence of `gh release
+  create` since 0.4.327, and every one of those checks passed the whole time. They read what the
+  script calls, and a comment calls nothing.
+- So the docblock is checked too, by the affirmative rather than the negative: it has to name the
+  pushed tag as what publishes, say outright that the script creates no release, and point at
+  `npm run announce`. A docblock rewritten back to the old scheme has to delete those sentences to
+  read coherently, and deleting them fails.
+
 ## 0.4.381
 
 - **Added** the closure this batch earned: every documentation page has to be named by a test that

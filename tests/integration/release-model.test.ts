@@ -16,6 +16,13 @@
  * So the trigger is asserted from the outside, along with the two orderings the gate depends on:
  * that CI runs on a push to main at all, since the release waits for check runs that would
  * otherwise never appear, and that `release.mjs` pushes main before it tags.
+ *
+ * And the docblock at the top of `release.mjs`, which is a fourth statement of the model and the
+ * one a contributor reads before running the script. It still described the old scheme until
+ * 0.4.382 — "this script only moves the version forward and creates the GitHub Release;
+ * publish.yml sees that release and publishes to npm" — six versions after the code beneath it
+ * stopped doing either. Every check here passed the whole time: they read what the script CALLS,
+ * and a comment calls nothing.
  */
 
 import { readFileSync } from 'node:fs';
@@ -30,6 +37,13 @@ const RELEASE = read('scripts/release.mjs');
 const ANNOUNCE = read('scripts/announce-batch.mjs');
 const AGENTS = read('AGENTS.md');
 const MANIFEST = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
+
+/** The opening docblock: what someone reads before running the script. */
+function docblock(source: string): string {
+  const end = source.indexOf('*/');
+  if (end === -1) throw new Error('no opening docblock');
+  return source.slice(0, end).replace(/\s+/g, ' ');
+}
 
 /** The `on:` block of a workflow, up to the next top-level key. */
 function triggers(workflow: string): string {
@@ -120,6 +134,32 @@ describe('a GitHub release is not part of shipping a version', () => {
     expect(ANNOUNCE).toContain('compare(version, through) <= 0');
     // And it refuses a version with no tag rather than announcing an empty or wrong range.
     expect(ANNOUNCE).toMatch(/there is no v\$\{through\} tag here/);
+  });
+});
+
+describe('and the docblock that says so', () => {
+  it('is a docblock at all, not an empty match', () => {
+    // Both scripts open with one. If the extraction ever silently returned nothing, every
+    // `not.toMatch` below would pass on an empty string.
+    expect(docblock(RELEASE).length).toBeGreaterThan(400);
+    expect(docblock(ANNOUNCE).length).toBeGreaterThan(200);
+  });
+
+  it('names the pushed tag as the thing that publishes', () => {
+    expect(docblock(RELEASE)).toContain('triggers on that pushed tag');
+  });
+
+  it('says outright that the script creates no release', () => {
+    // The affirmative is what the stale version got wrong, so the affirmative is what is pinned.
+    // A docblock rewritten to describe a release step has to delete this sentence to stay
+    // coherent, and deleting it fails here.
+    expect(docblock(RELEASE)).toContain('It creates no GitHub release');
+    expect(docblock(RELEASE)).not.toMatch(/sees that release and publishes/i);
+  });
+
+  it('points at the script that does cut one', () => {
+    expect(docblock(RELEASE)).toContain('npm run announce');
+    expect(docblock(ANNOUNCE)).toContain('One GitHub release for a whole batch');
   });
 });
 

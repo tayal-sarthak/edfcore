@@ -1,10 +1,13 @@
 /**
- * Cut a release.
+ * Cut a release: one commit, one tag, one npm version.
  *
- * Publishing happens in CI, not here. This script only moves the version forward and creates
- * the GitHub Release; `.github/workflows/publish.yml` sees that release and publishes to npm with
+ * Publishing happens in CI, not here. This script moves the version forward, commits, and pushes
+ * the tag; `.github/workflows/publish.yml` triggers on that pushed tag and publishes to npm with
  * the NPM_TOKEN repository secret, so no npm credential is needed on this machine. Trusted
  * publishing would be better and is not available here — see the note in that workflow.
+ *
+ * It creates no GitHub release. Until 0.4.326 it did, and that release was what publish.yml
+ * watched for; `npm run announce` now cuts one for a whole batch of tags afterwards.
  *
  *   node scripts/release.mjs patch -m "What changed"    0.1.1 -> 0.1.2
  *   node scripts/release.mjs minor -m "What changed"    0.1.1 -> 0.2.0
