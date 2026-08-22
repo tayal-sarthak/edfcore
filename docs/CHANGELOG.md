@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.419
+
+- **Added** tests for the two ways `mergeChunks` can be handed an input whose numbers look right.
+  It concatenates by position — signal `i` of the second chunk continues signal `i` of the first —
+  and the refusal for a different NUMBER of channels was pinned. The same channels in a different
+  ORDER was not.
+- A caller reaches that without doing anything strange: `signalIndices` built from a `Set`, from
+  `Object.keys`, from a checkbox list re-rendered between reads, or from `getSignal` calls made in
+  whatever order the labels came back. Merging those splices one electrode's samples onto another's
+  and returns a chunk that looks entirely normal — right length, right record range, right
+  timestamps — with two channels swapped halfway through. Nothing downstream would catch it,
+  because there is nothing wrong with the numbers, only with which channel they belong to. On a
+  montage that is the difference between a left-temporal seizure and a right-temporal one.
+- The second is the array itself. `mergeChunks` addresses its input by index, so a hole left by a
+  `filter` or a splice would read as `undefined` and be dereferenced; it is refused by name
+  instead, pointing at the array `readWindow` returned.
+
 ## 0.4.418
 
 - **Fixed** the rest of what 0.4.417 was about. Memoising the diagnostic sweep cut
