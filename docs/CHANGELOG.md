@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.420
+
+- **Added** tests for how long a TAL timestamp field may be. An onset and a duration are digits
+  with no declared length — the grammar ends them with a structural byte, so their size is whatever
+  the writer put between two markers, in a region that is 30 bytes on one file and 60 kilobytes on
+  another.
+- `MAX_TIMESTAMP_FIELD_CHARS` is that bound. Both fields carry the check; the onset's was
+  exercised and the duration's was not, and they matter differently. An over-long onset is a
+  malformed TAL from the first byte. An over-long duration arrives after a perfectly good onset,
+  which is the shape that gets past a reader's attention.
+- The guard sits before the decode, which is the property worth having: past it, a region full of
+  digits between two markers is a bigint the size of the region, parsed on every record of every
+  read that touches annotations.
+- A skipped TAL is skipped alone — the parser resumes at the terminator, so the events after a
+  hostile one are still read, and the bound is checked from both sides so it is where the message
+  says it is.
+
 ## 0.4.419
 
 - **Added** tests for the two ways `mergeChunks` can be handed an input whose numbers look right.
