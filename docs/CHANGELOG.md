@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.395
+
+- **Added** a check that `vercel.json` describes the site this repository builds. It is the one
+  configuration file here nothing reads on a normal day — the tests do not need it, `npm run check`
+  does not touch it, and it takes effect on a machine nobody watches — and its couplings are all
+  silent when broken.
+- The build command names four scripts across two workspaces, and each has to exist. Its
+  `outputDirectory` has to be the directory `check-site-output.mjs` inspects, or one of them is
+  looking at a build nobody serves. The two `Content-Type: text/plain` rules have to name routes a
+  page generator produces, or `/llms.txt` arrives as a download while CI still finds the file in
+  `dist/` and passes. And `trailingSlash` is stated here and again in `astro.config.mjs` in
+  different vocabularies: disagreeing gives every documentation URL a redirect it did not ask for.
+- The `Permissions-Policy` row is checked for a different reason. `inspector-privacy.test.ts`
+  proves the demo sends nothing; this is the other half — the header that stops the page asking for
+  a camera, a microphone or a location at all. That is the kind of line dropped in a config tidy-up
+  because nothing appears to use it.
+
 ## 0.4.394
 
 - **Added** a check that every field the error tables on `api-errors.md` document is on the error
