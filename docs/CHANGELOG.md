@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.412
+
+- **Added** tests for four header fields that are all finite and imply a gain that is not. An EDF
+  physical bound is eight bytes of ASCII, which is room for an exponent, so a physical range can
+  underflow against the digital range — `0` to `5E-324` over -1..1 puts `bitValue` at zero and
+  `offset` at infinity — or overflow it, where `-9.9E307` to `9.9E307` exceeds float64 before the
+  division happens.
+- Nothing about such a file looks wrong. The header parses, every field is in range for its width,
+  and a reader who does not check `signal.scale` gets a column of `NaN` where microvolts should be
+  — which plots as an empty panel, or silently poisons a mean. The scale is refused exactly as the
+  obvious degeneracies are, and `decodeDigital` keeps working, which is the whole reason
+  `toPhysical` is a separate call.
+- A signal declaring a negative `samplesPerRecord` is the other shape of "parses and cannot be
+  used", and it is fatal rather than diagnosed: every later signal's byte offset inside a record is
+  a running sum of that field, so a negative one does not make one signal wrong, it makes every
+  signal after it point at the wrong bytes.
+
 ## 0.4.411
 
 - **Added** tests for the envelope of the files and selections a viewer produces by accident.
