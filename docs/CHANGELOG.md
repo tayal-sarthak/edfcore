@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.407
+
+- **Added** tests for a window over a recording whose records do not advance in time.
+  `concepts.md` calls a zero record duration legal and says what edfcore does about it — a
+  `ZERO_RECORD_DURATION` warning, `sampleRateHz` left `undefined`, "and keeps reading" — and
+  `api-errors.md` names the shape it comes from: an annotations-only EDF+ recording, whose records
+  carry events and no samples.
+- "Keeps reading" is the part with a window in it. Every record sits at one instant, so a window
+  either contains that instant or it does not and there is no interval arithmetic to do. That is
+  why the code has a separate branch for it, and why that branch is where a division by zero would
+  otherwise live. Both index shapes carry their own copy — a complete index answers from its
+  segments, a probed one from the nominal grid — and the two are now required to agree on every
+  window put to them.
+- The boundary rule is the same as everywhere else: a window opening exactly on the instant
+  contains it, one closing exactly on it does not.
+
 ## 0.4.406
 
 - **Added** tests for the index `validateRecording` is handed, and whether it is allowed to answer
