@@ -48,8 +48,29 @@ describe('formatValidationReport', () => {
     );
     const [first] = text.split('\n');
     expect(first).toContain('PASS');
-    expect(first).toContain('2 warning');
+    // Plural where there are several and singular where there is one, on the same line — the
+    // pairing is the check, because either alone reads fine until you see the other (0.4.421).
+    expect(first).toContain('2 warnings');
     expect(first).toContain('1 info');
+    expect(first).not.toContain('1 infos');
+  });
+
+  it('pluralises the severity counts the way it pluralises the records', () => {
+    const many = formatValidationReport(
+      report([diagnostic('A', 'error'), diagnostic('B', 'error'), diagnostic('C', 'info')]),
+    ).split('\n');
+    expect(many[0]).toContain('2 errors');
+    expect(many[0]).toContain('1 info');
+    expect(many[1]).toContain('scanned 12 records');
+
+    // And the singular of both, which is the shape the old code got right by accident.
+    const one = formatValidationReport({
+      ...report([diagnostic('A', 'error')]),
+      recordsScanned: 1,
+    }).split('\n');
+    expect(one[0]).toContain('1 error');
+    expect(one[0]).not.toContain('1 errors');
+    expect(one[1]).toContain('scanned 1 record,');
   });
 
   it('says FAIL when anything is an error', () => {

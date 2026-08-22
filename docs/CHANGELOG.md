@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.421
+
+- **Fixed** the first line of `edfcore validate`, which did not pluralise. A report with two errors
+  and two infos opened `FAIL — 2 error, 1 warning, 2 info`, directly above a line reading
+  `scanned 12 records`. One function, two conventions, and the ungrammatical one on the line a
+  reader sees first — `pluralise` was defined three lines above it and used for the record count
+  only.
+- The severity counts now go through it: `2 errors, 1 warning, 2 infos`. The test pins the plural
+  and the singular on the same line, because either alone reads fine until you see the other.
+
 ## 0.4.420
 
 - **Added** tests for how long a TAL timestamp field may be. An onset and a duration are digits

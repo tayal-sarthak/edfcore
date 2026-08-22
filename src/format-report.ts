@@ -53,7 +53,11 @@ export function formatValidationReport(
           ] as const
         )
           .filter(([count]) => count > 0)
-          .map(([count, severity]) => `${count} ${severity}`)
+          // Through `pluralise`, like the record count on the line below. Until 0.4.421 this
+          // interpolated the severity name raw, so the first line of every `edfcore validate`
+          // read "2 error, 1 warning, 2 info" above a line reading "scanned 12 records" — one
+          // function, two conventions, and the ungrammatical one on the line a reader sees first.
+          .map(([count, severity]) => pluralise(count, severity))
           .join(', ');
   lines.push(`${verdict} — ${severities}`);
   lines.push(
