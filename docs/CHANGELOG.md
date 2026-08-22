@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.393
+
+- **Added** a property test for the rule `design-decisions.md` states about out-of-range samples: a
+  sample outside the declared digital range comes back as it was stored, is counted for free during
+  decode, and converts on the affine map that produced the samples inside the range. Clamping
+  instead flat-tops real peaks and draws saturation the hardware did not produce, so `edfcore` ships
+  the clamp as a separate function you call on purpose — EDFlib clamps on read, and cross-validating
+  against it needs the same operation.
+- The unit tests check that with chosen values against chosen ranges. What examples cannot say is
+  that nothing clamps for some combination: a negative gain, a range that does not straddle zero, a
+  24-bit signal whose declared span is narrower than a 16-bit one's. Those are the shapes where a
+  stray `Math.min` looks correct in review.
+- Four properties over generated ranges, generated samples and both storage widths: the decoded
+  integers are the integers written, `outOfDigitalRangeCount` is what an independent pass finds,
+  the physical step per digital unit outside the range equals the step inside it — which is what
+  "extrapolates" means — and `clampToDigitalRange` moves exactly the samples outside the range and
+  nothing else.
+
 ## 0.4.392
 
 - **Added** a check that the docblocks reach the published types, which five other checks quietly
