@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.384
+
+- **Added** the browser half of `node-floor.test.ts`. The Node floor is checked in eleven places
+  against `engines.node`, a field a package manager reads; the browser floor has no such field —
+  no browserslist, nothing in `package.json` — and its three statements (the README's compatibility
+  line, the Runtimes table on `installation.md`, and the summary string `llms.txt` hands an agent)
+  were three independent sentences that happened to agree.
+- The table is the source, since it is the one with the reasoning printed under it, and the other
+  two are checked against it. A floor raised in one place tells a reader their browser is supported
+  on one page and unsupported on the next.
+- The check with teeth is the last one. The table's stated basis is "ES2022 syntax, `BigInt`,
+  `Blob.prototype.slice`, and `TextDecoder`", and the first of those is not an observation about
+  the code — it is `target` and `lib` in `config/tsconfig.build.json`. Raising either to ES2023 is
+  a one-word edit that compiles, ships, passes every other test here, and invalidates all three
+  published floors at once.
+- It does not check that 94, 93 and 15.4 are the right versions for those four features. That is a
+  question about browser release history, which nothing in this repository can settle.
+
 ## 0.4.383
 
 - **Added** a check for the last paragraph of `data-sources.md`, which says what survives
