@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.413
+
+- **Added** tests for the calendar edfcore validates against. `isValidCalendarDate` exists because
+  a `Date` is the wrong tool: real files carry 31 April and 29 February in common years, and
+  `new Date(1997, 3, 31)` rolls both forward into a neighbouring month rather than rejecting them.
+  A recording silently dated a day later than it was made is the kind of error nobody finds,
+  because the wrong answer is a perfectly ordinary date.
+- `date-ban.test.ts` proves no `Date` is constructed anywhere. That left the arithmetic which
+  replaced it, exercised only through the parser, where a rejected date is indistinguishable from a
+  rejected field.
+- The month lengths are not restated — restating a table checks a transcription, and the
+  transcription is what would already be wrong. The properties it must satisfy are checked instead,
+  from the Gregorian calendar rather than from this file: the twelve months sum to 365 or 366 for
+  every year from 1 to 9999; four hundred consecutive years hold exactly 97 leap years and 146,097
+  days, which is a whole number of weeks; and a century not divisible by 400 holds 24, not 25.
+- A table with a month a day short fails the first for every year, and a leap rule missing its
+  century exception fails the second by three days a cycle.
+
 ## 0.4.412
 
 - **Added** tests for four header fields that are all finite and imply a gain that is not. An EDF
