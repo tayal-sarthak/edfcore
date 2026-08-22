@@ -47,6 +47,15 @@ export interface CliIo {
   err(text: string): void;
 }
 
+/**
+ * Diagnostics or events printed when `--limit` is not given.
+ *
+ * Stated in four places besides this one — the usage text, the message a bad `--limit` raises, the
+ * README, and `cli.md` — and applied at four call sites. It was the literal `20` at every one of
+ * them until 0.4.390, which is the shape of number that ends up meaning two different things.
+ */
+const DEFAULT_ITEM_LIMIT = 20;
+
 const USAGE = `edfcore — read EDF, EDF+, BDF and BDF+ files
 
   npx edfcore header <file>       the header, the signals, and any diagnostics
@@ -60,7 +69,7 @@ Options
   --help, -h                      print this and exit 0
   --patient                       include patient identification (header, validate, json)
   --list                          list events one per line instead of counting (events)
-  --limit <n>                     diagnostics or events to print, default 20
+  --limit <n>                     diagnostics or events to print, default ${DEFAULT_ITEM_LIMIT}
                                   (header, validate, events --list)
   --version, -v                   print the version and exit
 
@@ -120,7 +129,7 @@ export function parseArgs(argv: readonly string[]): Args {
       if (!Number.isSafeInteger(value) || value < 0) {
         throw new CliUsageError(
           `--limit needs a whole number, received ${String(argv[i + 1])}. Next: pass a count, ` +
-            'or omit --limit for the default of 20.',
+            `or omit --limit for the default of ${DEFAULT_ITEM_LIMIT}.`,
         );
       }
       limit = value;
@@ -241,7 +250,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(
         `${formatHeader(recording.header, { includePatientId: args.patient, diagnosticsHint: false })}\n`,
       );
-      const limit = args.limit ?? 20;
+      const limit = args.limit ?? DEFAULT_ITEM_LIMIT;
       if (recording.header.diagnostics.length > 0) {
         io.out(
           `\n${formatDiagnostics(recording.header.diagnostics, {
@@ -278,9 +287,9 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(
         `${formatValidationReport(report, {
           header: recording.header,
-          maxItems: args.limit ?? 20,
+          maxItems: args.limit ?? DEFAULT_ITEM_LIMIT,
           ...redaction(args),
-        })}\n${truncationHint(report.diagnostics.length, args.limit ?? 20)}`,
+        })}\n${truncationHint(report.diagnostics.length, args.limit ?? DEFAULT_ITEM_LIMIT)}`,
       );
       // Exit 1 on failure so a CI job can gate on it without parsing the output.
       return report.ok ? 0 : 1;
@@ -299,7 +308,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       io.out(`${annotations.length} annotation(s)\n\n`);
 
       if (args.list) {
-        const limit = args.limit ?? 20;
+        const limit = args.limit ?? DEFAULT_ITEM_LIMIT;
         // `onsetSecondsFromFirstRecord`, because that is the axis the rest of this CLI reports on:
         // `gaps` prints it, `header` counts records from it, and t = 0 is the start of record 0.
         // The on-disk value is `onsetSecondsFromHeaderStart`, and mixing the two in one output

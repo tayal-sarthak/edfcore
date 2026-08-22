@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.390
+
+- **Changed** the CLI's print cap from a literal repeated at four call sites to one
+  `DEFAULT_ITEM_LIMIT`. Behaviour is identical: `--limit` still defaults to twenty diagnostics or
+  events. What changes is that `header`, `validate` and `events --list` can no longer drift apart
+  from each other, which is the failure a number written out four times invites — one command
+  printing twenty while another prints fifty, with both pages still saying twenty.
+- The usage line and the message a bad `--limit` raises are now built from that constant too, so
+  the two places the CLI states the number cannot disagree with the number it applies.
+- **Added** the check for the rest of it. The cap is observed rather than imported — sixty events
+  in, lines counted out — and the usage text, the error message and the README's "print twenty at
+  a time" are each checked against what was counted. Raising the cap and updating the pages passes;
+  raising it and forgetting one of them does not.
+
 ## 0.4.389
 
 - **Added** a check that the three verifications outside `npm run check` are run by something.
