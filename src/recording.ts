@@ -26,6 +26,7 @@
 import { decodeDigitalCounted } from './decode/digital.js';
 import { EdfChannelNotFoundError } from './errors.js';
 import { readHeader, readRecordBytes } from './io/read.js';
+import { assertByteSource } from './io/source.js';
 import { buildTimeline } from './record-index.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ticksToSeconds } from './tal/ticks.js';
@@ -57,6 +58,8 @@ import type {
  * it is two more, probing the first and last records for their timekeeping onsets.
  */
 export async function openEdf(source: ByteSource, options?: OpenOptions): Promise<EdfRecording> {
+  // Before any read, so `openEdf(bytes)` is answered by name rather than by whatever fails first.
+  assertByteSource(source);
   const header = await readHeader(source, options);
   const { timeline, index } = await buildTimeline(source, header, options);
   return { source, header, timeline, index };

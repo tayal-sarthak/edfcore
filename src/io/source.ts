@@ -12,7 +12,7 @@
  */
 
 import { EdfSourceError } from '../errors.js';
-import type { AbortSignalLike, ReadOptions } from '../types.js';
+import type { AbortSignalLike, ByteSource, ReadOptions } from '../types.js';
 
 /**
  * The byte count of a genuine byte array, or `undefined` for anything else — which is why
@@ -125,4 +125,79 @@ export function throwIfSignalAborted(signal?: AbortSignalLike): void {
   const error = new Error('The read was aborted through options.signal.');
   error.name = 'AbortError';
   throw error;
+}
+
+/**
+ * What the caller passed, and the adapter that would have turned it into a `ByteSource`.
+ *
+ * Named by shape rather than by class, for the reason `bytes.ts` gives: `instanceof` is false
+ * across a realm boundary, and a `File` from an iframe is still a `File`.
+ */
+function adapterFor(source: unknown): string {
+  if (
+    ArrayBuffer.isView(source) ||
+    Object.prototype.toString.call(source) === '[object ArrayBuffer]'
+  ) {
+    return 'wrap them with byteSource(bytes)';
+  }
+  if (typeof source === 'string') {
+    return (
+      'that looks like a path — use fileSource(path) from "edfcore/node", or read the bytes ' +
+      'yourself and pass byteSource(bytes)'
+    );
+  }
+  const candidate = source as { size?: unknown; arrayBuffer?: unknown } | null;
+  if (
+    typeof candidate?.size === 'number' &&
+    typeof (candidate as { arrayBuffer?: unknown }).arrayBuffer === 'function'
+  ) {
+    return 'that looks like a Blob or a File — use blobSource(file)';
+  }
+  return (
+    'use byteSource(bytes) for bytes in memory, fileSource(path) from "edfcore/node" for a file, ' +
+    'blobSource(file) for a File, or httpSource(url) for a URL'
+  );
+}
+
+/**
+ * `Uint8Array`, `ArrayBuffer`, `string`, `nothing`. Never the value: it could be anything.
+ *
+ * No article, and `byteSource`'s own refusal is phrased the same way — "received Int8Array". An
+ * article needs to know that `Uint8Array` is said "yoo-int", which no rule about vowels gets
+ * right, and getting it wrong is the kind of thing a reader notices instead of the message.
+ */
+function describeGiven(source: unknown): string {
+  if (source === null) return 'null';
+  if (source === undefined) return 'nothing';
+  // The built-in tag, not `instanceof`: it is the same across realms, which is the reason
+  // `bytes.ts` uses it too.
+  return typeof source === 'object' || typeof source === 'function'
+    ? Object.prototype.toString.call(source).slice(8, -1)
+    : typeof source;
+}
+
+/**
+ * The source is a `ByteSource` before anything reads from it.
+ *
+ * This is the first argument of the first call, and passing the bytes themselves — `openEdf(bytes)`
+ * rather than `openEdf(byteSource(bytes))` — is the likeliest mistake anyone makes with this
+ * library. Until 0.4.444 it produced `TypeError: source.read is not a function`, which names
+ * neither edfcore, nor the adapter that was missing, nor the one word that fixes it; `undefined`
+ * produced a `TypeError` about a property of undefined instead, from a different line.
+ *
+ * `byteSource` itself has refused a wrong argument by name since the beginning, and says what to
+ * pass instead. This is the same courtesy one call earlier, where more people meet it.
+ *
+ * Checked structurally — a `read` function and a numeric `byteLength` — because a `ByteSource` is
+ * an interface a caller may implement, and `api-sources.md` documents writing one.
+ */
+export function assertByteSource(source: unknown): asserts source is ByteSource {
+  const candidate = source as { read?: unknown; byteLength?: unknown } | null | undefined;
+  if (typeof candidate?.read === 'function' && typeof candidate.byteLength === 'number') return;
+  const received = describeGiven(source);
+  throw new EdfSourceError(
+    `a ByteSource is needed — an object with a byteLength and a read() — and received ` +
+      `${received}. Next: ${adapterFor(source)}.`,
+    { offset: 0, requestedLength: 0 },
+  );
 }

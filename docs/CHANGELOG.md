@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.444
+
+- **Fixed** the likeliest mistake anyone makes with this library saying nothing about itself.
+  Every example is `openEdf(byteSource(bytes))`, `openEdf(fileSource(path))`,
+  `openEdf(blobSource(file))` — the wrapper is the whole design, and it is also one more call than
+  a reader expects, so leaving it out is what people do. `openEdf(bytes)` answered with
+  `TypeError: source.read is not a function`, and `openEdf()` with a `TypeError` about a property
+  of `undefined` from a different line. Neither names edfcore, the adapter that was missing, or the
+  one word that fixes it.
+- `byteSource` has refused a wrong argument by name since the beginning and says what to pass
+  instead. This is the same courtesy one call earlier, where more people meet it, and on
+  `inspectEdf` too — the triage call is where an unfamiliar file arrives, so it is where a caller
+  who has not met `ByteSource` arrives.
+- The advice is chosen by shape, because the right adapter differs and a list of four is a list a
+  reader has to work through. Bytes get `byteSource`; a string is almost always a path, and the
+  adapter for that lives in a different entry point, which is worth saying; anything with a `size`
+  and an `arrayBuffer` is a `Blob` or a `File` from a picker.
+- The check is structural — a `read` function and a numeric `byteLength` — because `ByteSource` is
+  an interface `api-sources.md` documents implementing. A caller's own adapter is a `ByteSource`
+  whether or not it inherits from anything, and refusing one would be worse than the `TypeError`
+  this replaces. A `read` with no length is still refused: without one nothing can be range-checked,
+  and every read would be a request into the dark.
+
 ## 0.4.443
 
 - **Fixed** a missing record range throwing a raw `TypeError`. `assertRecordRange` was already

@@ -26,7 +26,7 @@ import { createDiagnostic, DiagnosticSink } from './diagnostics/collector.js';
 import { type EdfError, type EdfFormatError, isEdfError } from './errors.js';
 import { parseHeader } from './header/parse.js';
 import { detectVariant } from './header/variant.js';
-import { assertExactRead } from './io/source.js';
+import { assertByteSource, assertExactRead } from './io/source.js';
 import type { ByteSource, EdfDiagnostic, EdfInspection, EdfVariant, ReadOptions } from './types.js';
 
 /** 128 KiB is exactly `256 * 512`, i.e. the whole header of a 511-signal file. */
@@ -123,6 +123,9 @@ export async function inspectEdf(
   source: ByteSource,
   options?: ReadOptions,
 ): Promise<EdfInspection> {
+  // The triage call is where an unfamiliar file arrives, so it is also where a caller who has not
+  // met `ByteSource` arrives. Same refusal as `openEdf`, one call earlier in their day.
+  assertByteSource(source);
   const byteLength = source.byteLength;
   const budget = Math.min(MAX_INSPECT_BYTES, byteLength);
 
