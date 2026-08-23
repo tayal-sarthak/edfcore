@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.464
+
+- **Added** tests for the `maxMaterializeBytes` boundary in all three modules that check it —
+  `io/read.ts` before a record range, `decode/digital.ts` before the `Int32Array`, and
+  `envelope.ts` before the bucket accumulators. All three admit a requirement equal to the budget,
+  and every existing test set a budget far below what it asked for or far above it, so relaxing
+  any of the three to a strict comparison left the suite green.
+- Equality is the case the option is used in. The documented way to stay inside a budget is to
+  size the request to it — take `maxMaterializeBytes`, divide by `header.recordByteLength`, read
+  that many records — and done exactly that lands ON the number every time. A strict comparison
+  refuses the arithmetic the error message itself recommends, so "read fewer records per call"
+  would be advice a caller had already followed perfectly.
+- Both sides of each boundary, and the refusal is checked to carry the same two numbers on
+  `requiredBytes` and `budgetBytes`. Those are the fields `api-errors.md` documents so a caller can
+  compute the next request instead of guessing at it, and a boundary error that reported them
+  inconsistently would be worse than one that did not report them at all.
+
 ## 0.4.463
 
 - **Added** the half-open edge cases for the branch `trimToWindow` takes when nothing in the chunk
