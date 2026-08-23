@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.441
+
+- **Added** a property test that the chunk size is a memory bound and not an answer.
+  `streamRecords` exists so a caller can walk a twelve-hour recording without holding it, and
+  `chunkRecords` is the only knob — so everything it hands back has to be independent of it. The
+  existing demonstration uses chosen sizes on one file; the sizes that break this kind of code are
+  the ones nobody chooses: one record at a time, a chunk larger than the file, one that divides the
+  range exactly, one that leaves a record over.
+- The failure is not a crash. A boundary handled one record short returns every sample from the
+  right file in the right order with one missing at each seam, and a caller concatenating the
+  chunks gets an array of plausible length whose timestamps — computed from each chunk's own record
+  range — are all correct. It shows up as a recording that is quietly a few seconds short.
+- The three things `api-helpers.md` promises beyond the samples are checked at every chunk size
+  too: chunks arrive in time order, never span a gap, and carry the same `precededByGap` a
+  `readWindow` chunk does. The gap one is why the chunking is not simply "every n records" — a run
+  ending mid-chunk has to end the chunk — so a discontinuous file is generated deliberately, with a
+  complete index read back onto the recording the way the page tells a caller to.
+
 ## 0.4.440
 
 - **Fixed** a carriage return inside a diagnostic message being able to forge a diagnostic line.
