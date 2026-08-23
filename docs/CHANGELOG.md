@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.448
+
+- **Added** tests for what `edfcore json` puts in a file you are about to pipe somewhere. Piping is
+  the whole reason the command exists — into `jq`, a manifest, a ticket, a spreadsheet a directory
+  sweep produced — which is why identification is opt-in here as it is in `formatHeader`.
+- `json` defends differently from the other two commands. `header` and `validate` redact, putting
+  a placeholder where a value was; `json` omits the key entirely, because an object recording that
+  a patient field existed and was withheld is a different thing for a machine to read.
+- The diagnostics are the quieter half. They are reduced to `code` and `severity` — no message, no
+  raw, no actual — so identification cannot arrive through a diagnostic that quoted the field it
+  was complaining about, and every identification diagnostic does quote it. That is achieved by an
+  object literal naming two properties, which is one careless spread away from carrying all of
+  them.
+- `trimEdfField` rather than `.trim()` is the third. `.trim()` leaves U+0000 in place, so on the
+  NUL-padded fields a large share of real writers emit, `JSON.stringify` escapes each one into a
+  six-character sequence inside the value — unreadable, and a disclosure of the field's exact
+  width.
+
 ## 0.4.447
 
 - **Added** a check that a machine which has not downloaded the corpus still gets a green suite.
