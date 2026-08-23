@@ -395,6 +395,42 @@ describe('COMMA_DECIMAL_SEPARATOR', () => {
     expect(error.signalIndex).toBe(1);
   });
 
+  /*
+   * The two fields with a documented recovery, where the refusal is easiest to doubt.
+   *
+   * `readNumericField` exists for exactly two fields — the declared header size, which always
+   * loses to the computed one, and the record count, which is recoverable from the source length.
+   * Both are documented as survivable, and both were tested only with values that survive. So the
+   * one line in that function that does not recover, `if (parse.problem === 'comma-decimal') throw`,
+   * had never run, and deleting it changed nothing anyone could see: the comma would have fallen
+   * through to `!parse.ok`, become `NaN`, and been quietly replaced by the computed size or by the
+   * count the file length implies.
+   *
+   * That silence is the danger the code exists for. "1,024" in the record count is one thousand and
+   * twenty-four records to the writer that wrote it, and recovering from the source length gives a
+   * plausible number that is right only by accident — while `recordCount` is the number every read
+   * range in the library is checked against.
+   */
+  it.each([
+    { field: 'recordCount' as const, raw: '1,024', byteOffset: 236 },
+    { field: 'headerByteLength' as const, raw: '5,12', byteOffset: 184 },
+  ])('refuses a comma in $field, which is otherwise a recoverable field', (bad) => {
+    const bytes = cleanFile({ raw: { ...CLEAN_DATES, [bad.field]: bad.raw } });
+    const error = thrownBy(bytes);
+
+    expect(error.code).toBe('COMMA_DECIMAL_SEPARATOR');
+    expect(error.field).toBe(bad.field);
+    expect(error.byteOffset).toBe(bad.byteOffset);
+  });
+
+  it.each([
+    { field: 'recordCount' as const, raw: 'many', code: 'RECORD_COUNT_RECOVERED' },
+    { field: 'headerByteLength' as const, raw: '9999', code: 'HEADER_SIZE_MISMATCH' },
+  ])('recovers from any OTHER bad $field, which is what makes the comma the exception', (bad) => {
+    const header = parse(cleanFile({ raw: { ...CLEAN_DATES, [bad.field]: bad.raw } }));
+    expect(codesOf(header)).toContain(bad.code);
+  });
+
   it('treats a comma between non-digits as plain junk, not as a decimal separator', () => {
     const bytes = cleanFile({ raw: { ...CLEAN_DATES, recordDuration: 'a,b' } });
     expect(thrownBy(bytes).code).toBe('NUMERIC_FIELD_INVALID');

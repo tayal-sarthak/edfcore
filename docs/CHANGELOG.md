@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.459
+
+- **Added** the two `COMMA_DECIMAL_SEPARATOR` cases that were missing: a comma in the declared
+  header size, and a comma in the record count.
+- `readNumericField` exists for exactly those two fields, because both have an authoritative
+  alternative — the computed header size always wins, and the record count is recoverable from the
+  source length. Both were tested only with values that recover, so the one line in that function
+  which does NOT recover had never run. Deleting it changed nothing visible: the comma fell through
+  to `!parse.ok`, became `NaN`, and was quietly replaced.
+- That silence is what the refusal is for. `"1,024"` in the record count is one thousand and
+  twenty-four records to the writer that wrote it; recovering from the source length yields a
+  plausible number that is right only by accident, and `recordCount` is what every read range in
+  the library is checked against.
+- The contrast is asserted alongside it — any other bad value in those two fields still recovers,
+  with `RECORD_COUNT_RECOVERED` or `HEADER_SIZE_MISMATCH` — so the new cases pin the comma as the
+  exception rather than pinning the fields as fatal.
+
 ## 0.4.458
 
 - **Added** tests for a bad HTTP status during a READ, which had never run. `httpSource` reports a
