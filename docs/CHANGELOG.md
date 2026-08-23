@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.458
+
+- **Added** tests for a bad HTTP status during a READ, which had never run. `httpSource` reports a
+  status from two places and they are different events: the length probe's "could not read" means
+  the source never existed, and that one was covered; the one inside a read happens on a source
+  that already opened a file, already parsed its header and is part way through a recording.
+- That is the failure this adapter meets most. A signed URL whose expiry passed during a long
+  overnight study, a rotated token, a tightened bucket policy, a 500 from an origin behind a CDN —
+  all of them are mid-read statuses, and the message is written for that reader specifically: it
+  names the byte range being fetched and ends by asking about authentication headers and expiry,
+  neither of which means anything for a URL that never worked.
+- Three statuses are checked because the status is quoted rather than classified. edfcore has no
+  opinion about which 4xx or 5xx means what, and a reader matching the message against an access
+  log needs the number the server actually sent.
+- Also pinned: a failed read leaves no state behind. Without that case, every assertion here would
+  pass on an implementation that latched the first failure and refused every read afterwards —
+  which for a renewed token is the difference between a retry that works and a source that is
+  finished.
+
 ## 0.4.457
 
 - **Documented** `INSPECTION_FAILED` as unreachable today, and added the test that keeps that
