@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.445
+
+- **Added** tests for what a cached read passes down to the source and what it keeps. A block read
+  serves every concurrent reader of that block, which makes the caller's read options a question
+  rather than a detail: an option belonging to one reader must not travel, and one belonging to the
+  read must.
+- `signal` does not travel, and `cache.test.ts` covers why at length — a viewer aborting the window
+  the user scrolled away from killed the fresh window whenever both landed in the same block
+  (0.3.43). `maxMaterializeBytes` does travel, and nothing checked it. It is not one reader's
+  preference but a ceiling on what may be allocated, and the block read is the allocation.
+- `cachedSource` over `httpSource` is the composition `api-sources.md` recommends, and there the
+  block read is the request that goes out. A caller who lowered the budget for a read on a phone,
+  and had it dropped on the way to the transport, gets exactly the allocation they were refusing.
+- The pair is the point: two options, two answers, one call site, and the reason each is what it is
+  has nothing to do with the other. An unset budget is checked to be absent rather than present and
+  `undefined`, because `exactOptionalPropertyTypes` is on and a source reading it with `??` would
+  see a different thing.
+
 ## 0.4.444
 
 - **Fixed** the likeliest mistake anyone makes with this library saying nothing about itself.
