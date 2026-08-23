@@ -79,6 +79,19 @@ function diagnosticOf(error: EdfError): EdfDiagnostic {
       createDiagnostic({ code: formatError.code, message: formatError.message })
     );
   }
+  /*
+   * Unreachable today, and kept deliberately rather than deleted.
+   *
+   * `inspectEdf` wraps exactly one call, and every `EdfError` `parseHeader` can throw is an
+   * `EdfFormatError`: a `DiagnosticSink` is the only channel a fatal takes, and both `fatal` and
+   * `report` construct that class. Its one other throw is a plain `RangeError` for a bad
+   * `sourceByteLength`, which is not an `EdfError` and is rethrown a line earlier.
+   *
+   * It stays because the day a parse-time rule refuses with an `EdfRangeError` or an
+   * `EdfSourceError` — a budget check moved earlier, a scaling rule that refuses on the header —
+   * this is the arm that has to be here, and a missing one is harder to notice than an idle one.
+   * `tests/integration/inspection-failed-guard.test.ts` pins the premise so that stays honest.
+   */
   return createDiagnostic({
     // Not a format code: the header did not fail its grammar, some other rule refused it. The
     // code union is open precisely so a case like this does not have to borrow a wrong name.

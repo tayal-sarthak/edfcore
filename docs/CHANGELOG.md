@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.457
+
+- **Documented** `INSPECTION_FAILED` as unreachable today, and added the test that keeps that
+  statement honest.
+- `diagnosticOf` in `inspect.ts` has two arms: an `EdfFormatError` becomes the diagnostic it is
+  already carrying, and anything else becomes `INSPECTION_FAILED`. Nothing can reach the second.
+  `inspectEdf` wraps exactly one call, and every `EdfError` `parseHeader` throws is an
+  `EdfFormatError` — a `DiagnosticSink` is the only channel a fatal takes, and both `fatal` and
+  `report` construct that class. Its one other throw is a plain `RangeError`, rethrown a line
+  earlier.
+- Kept rather than deleted, for the reason `validate.ts` gives about its own idle date check: the
+  day a parse-time rule refuses with an `EdfRangeError` or an `EdfSourceError`, this is the arm
+  that has to be there, and a missing guard is harder to notice than an idle one.
+- The new test checks the premise structurally — no module the parse reaches constructs and throws
+  an `EdfError` directly — and `header/lookup.ts`, which is on the graph and does throw two channel
+  errors, is exempted by a check rather than by name: the only binding anything on the parse path
+  imports from it is `isAnnotationLabel`, a pure predicate. An import of `getSignal` added there
+  fails the test, in the same commit that would make this code reachable.
+
 ## 0.4.456
 
 - **Added** a test for the line that divides the two kinds of failure inside `inspectEdf`: the
