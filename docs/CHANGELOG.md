@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.438
+
+- **Added** tests for `--limit 0` and the blank line that belongs to the rows rather than to the
+  notice. A truncated listing has to say so, since a silently shortened one reads as a complete
+  one, so every capped command prints a notice naming what it withheld, separated from the rows
+  above it by a blank line.
+- That blank line belongs to the rows. With `--limit 0` there are none, and emitting it anyway left
+  two blank lines and a notice hanging under the count, as though the rows had failed rather than
+  been asked for (fixed in 0.4.181). It is one ternary, and the only thing distinguishing it from a
+  stray newline nobody would defend is knowing what the blank line is for.
+- `--limit 0` is not a contrived argument. It is what a script passes to ask "how many are there?"
+  without paying to print them, and what `--limit "$N"` becomes when `N` is empty. The count line
+  and the notice are then the whole of the useful output.
+- The notice is also pinned to name what was withheld rather than what was shown, and to stay
+  absent when nothing was — across the events listing and the header's diagnostics, which cap the
+  same way through different formatters.
+
 ## 0.4.437
 
 - **Added** a check that the throwaway probes stay runnable and cannot reach the suite, the
