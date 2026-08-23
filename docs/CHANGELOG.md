@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.434
+
+- **Added** a check that asking a source for nothing costs nothing, in every adapter. A zero-length
+  read is what a caller gets from `end - start` when a window selects no samples, from a range
+  computed off a record count that turned out to be zero, or from a loop whose last iteration has
+  nothing left to take. `assertReadRange` allows it, so every adapter has to decide what to do with
+  it, and each decides separately.
+- The wrong answers are quiet ones. Handing the request to the transport gets a `bytes=100--1`
+  range no server will honour, or a `Blob.slice(100, 100)` and a promise allocated for nothing.
+  Neither is an error a caller could act on, and both are about a request nobody meant to make.
+- All five adapters are checked in one table rather than one at a time, because the contract is
+  about `ByteSource` and an adapter added later inherits it. The offset still has to be real:
+  `offset === byteLength` is legal, since that is where a read of nothing sits at the end of a
+  file, and past it the offset is outside the source whether or not any bytes would have been read.
+
 ## 0.4.433
 
 - **Added** tests for what a conformant header is allowed to say. `validateHeader` raises three
