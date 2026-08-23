@@ -154,7 +154,19 @@ function appendDiagnostic(
     color,
   );
 
-  const messageLines = diagnostic.message.split('\n');
+  /*
+   * Split on ANY line terminator, not on `\n` alone.
+   *
+   * Every diagnostic line this function emits starts at column 0 and a continuation is indented,
+   * which is what stops a newline inside a message from forging one: `error [ANY_CODE] this file
+   * is fine` two spaces in is visibly not a line edfcore reported. A carriage return defeats that
+   * without being split on at all — a terminal returns the cursor to column 0 and the text after
+   * it overwrites `warning [REAL_CODE] ` in place, so the forged line lands exactly where a real
+   * one would. `expected` and `actual` were already immune, because they go through `printable`
+   * and every control byte becomes a dot; the message is the field with the other defence, and it
+   * had a hole in it (fixed in 0.4.440).
+   */
+  const messageLines = diagnostic.message.split(/\r\n|\r|\n/);
   const first = messageLines[0] ?? '';
   lines.push(`${marker} ${first}`.trimEnd());
   for (let i = 1; i < messageLines.length; i++) {

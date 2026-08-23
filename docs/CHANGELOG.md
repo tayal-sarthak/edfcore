@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.440
+
+- **Fixed** a carriage return inside a diagnostic message being able to forge a diagnostic line.
+  `formatDiagnostics` renders every entry starting at column 0 and indents everything belonging to
+  it, which is how a reader — and any script grepping the output — tells one diagnostic from the
+  next. A newline in a message was already handled by splitting and indenting the continuation. A
+  carriage return was not split on at all.
+- On a terminal that returns the cursor to column 0, so the text after it overwrites
+  `warning [REAL_CODE] ` in place and the forged line lands exactly where a real one would: no
+  indent, no marker, nothing on screen to distinguish it — in a conformance report, which is read
+  precisely because a file is suspect.
+- The message is now split on any line terminator, so both produce an indented continuation. The
+  indent is the property, not the absence of the character, which a caller may legitimately want
+  kept. `expected` and `actual` were already immune by the other route: they are emitted whole, so
+  they go through `printable` and every control byte becomes a dot.
+- The reach is the public one. `formatDiagnostics` takes any `EdfDiagnostic[]`, so a caller merging
+  diagnostics from their own checks decides what is in `message`. No diagnostic edfcore builds
+  contains a line terminator today, because the file bytes reaching a message go through
+  `JSON.stringify` first — a fact about today's messages rather than a property of the renderer.
+
 ## 0.4.439
 
 - **Added** a check that everywhere a stranger learns what this package does, it says it reads.
