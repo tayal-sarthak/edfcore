@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.431
+
+- **Added** tests that a 16-bit channel labelled `Status` is not a BioSemi Status channel.
+  `api-helpers.md` explains why `readTriggers` locates the channel itself rather than taking a
+  `signalIndices` — "a 24-bit EEG sample decoded as a trigger word yields plausible-looking events
+  out of ordinary data" — and that reasoning is about the wrong channel of the right file. The
+  other way in is the right channel name in the wrong kind of file.
+- `Status` is not a BioSemi word. Plenty of systems label a channel that way, and a plain EDF file
+  carrying one is an ordinary thing to be handed. Its samples are 16 bits of a measurement; a
+  BioSemi Status word is 24 bits of a latched bit field with the trigger input in the low 16 and
+  flags at bits 16, 20 and 22. Read one as the other and the low bits become codes, bit 16 becomes
+  an epoch marker that flips constantly, and what comes back is a dense list of events with real
+  timestamps from a channel that recorded a voltage. Nothing about that output says it is wrong.
+- The guard is one line, and it is what makes the documented
+  `getStatusSignal(header) !== undefined` check mean "this is an ActiveTwo recording" rather than
+  "something here is called Status". It had never been given a 16-bit file to refuse. The label
+  matching is deliberately forgiving about case and padding; the width is not.
+
 ## 0.4.430
 
 - **Added** tests for a patient's date of birth being redacted out of a message that never quotes
