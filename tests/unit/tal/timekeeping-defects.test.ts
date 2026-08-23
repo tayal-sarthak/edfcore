@@ -214,3 +214,84 @@ describe('the evidence the diagnostic names is the evidence it carries', () => {
     expect(formatDiagnostics(dropped)).toMatch(/\n {2}bytes: /);
   });
 });
+
+describe('a timekeeping TAL with more than one empty text', () => {
+  /*
+   * The fourth rung of `timekeepingDefect`'s ladder, and the one that had never run.
+   *
+   * `+t 0x14 0x14 0x00` is the conforming shape: one onset, no duration, exactly one empty text.
+   * `+t 0x14 0x00` drops the empty text and is the widespread shorthand above. This is the other
+   * direction — `+t 0x14 0x14 0x14 0x00`, two empty texts — which a writer emits by looping over
+   * an events list that happens to be empty and terminating each iteration anyway.
+   *
+   * Benign, like the shorthand: the onset is unambiguous, nothing was carried and nothing is lost.
+   * What makes it worth reporting at all is that it is the same class of writer bug as the merged
+   * annotation, and a reader comparing two files needs to know which one their parser was lenient
+   * about. EDFlib rejects both.
+   */
+  const encodeOnset = (record: number): number[] => encode(`+${record}`);
+
+  /** Every record's timekeeping TAL rewritten to the shape the case names. */
+  async function withTimekeeping(shape: (record: number) => number[]) {
+    const bytes = buildEdf({
+      plus: 'C',
+      recordCount: 3,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 4 }],
+      annotationSignals: [{ samplesPerRecord: 40, tals: () => [] }],
+      recordOnsetSeconds: (r: number) => r,
+    });
+    const probe = await openEdf(byteSource(bytes));
+    const header = probe.header;
+    const signal = header.signals[header.annotationSignalIndices[0] as number];
+    if (signal === undefined) throw new Error('fixture has no annotations channel');
+    for (let r = 0; r < 3; r += 1) {
+      const offset =
+        header.headerByteLength + r * header.recordByteLength + signal.recordByteOffset;
+      bytes.fill(0, offset, offset + signal.recordByteLength);
+      bytes.set(shape(r), offset);
+    }
+    return openEdf(byteSource(bytes));
+  }
+
+  const TWO_EMPTY = (r: number): number[] => [...encodeOnset(r), 0x14, 0x14, 0x14, 0x00];
+  const CONFORMING = (r: number): number[] => [...encodeOnset(r), 0x14, 0x14, 0x00];
+
+  it('is reported, and says how many it found', async () => {
+    const recording = await withTimekeeping(TWO_EMPTY);
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: 3 });
+
+    const reported = diagnostics.filter((d) => d.code === 'TIMEKEEPING_TAL_NONCONFORMANT');
+    expect(reported).toHaveLength(1);
+    expect(reported[0]?.message).toContain('carries 2 empty texts, where the grammar allows');
+  });
+
+  it('is counted as benign, so it is capped at one report per call', async () => {
+    // All three records are malformed the same way. The cap is the whole reason the two kinds
+    // carry separate flags, and a rung landing on the destructive side would flood a real file.
+    const recording = await withTimekeeping(TWO_EMPTY);
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: 3 });
+    const reported = diagnostics.find((d) => d.code === 'TIMEKEEPING_TAL_NONCONFORMANT');
+
+    expect(reported?.message).toContain('nothing was lost');
+    expect(reported?.message).toContain('once per decodeAnnotations() call');
+    expect(reported?.message).not.toContain('EVERY affected record');
+  });
+
+  it('still uses the onset, which is what makes it benign', async () => {
+    const recording = await withTimekeeping(TWO_EMPTY);
+    const { annotations } = await readAnnotations(recording, { start: 0, count: 3 });
+    // No events, because nothing was carried — the malformation is in the empty runs alone.
+    expect(annotations).toEqual([]);
+    // And the record onsets are the ones the TALs state, so the timing survived the defect.
+    expect(recording.timeline.spanSeconds).toBe(3);
+  });
+
+  it('says nothing about the conforming shape, which differs by one byte', async () => {
+    // Non-vacuity, and precisely scoped: the same fixture, the same hand-written regions, one
+    // 0x14 fewer. A check that fired on both would pass every assertion above.
+    const recording = await withTimekeeping(CONFORMING);
+    const { diagnostics } = await readAnnotations(recording, { start: 0, count: 3 });
+    expect(diagnostics.map((d) => d.code)).not.toContain('TIMEKEEPING_TAL_NONCONFORMANT');
+  });
+});

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.460
+
+- **Added** the fourth rung of `timekeepingDefect`'s ladder, which had never run: a timekeeping
+  TAL written `+t 0x14 0x14 0x14 0x00` — two empty texts where the grammar allows exactly one.
+- The other three rungs were covered. Text merged into the timekeeping TAL is the destructive one
+  and has its own file; a stray duration and the widespread `+t 0x14 0x00` shorthand are both
+  benign and both tested. This is the shorthand's opposite — a writer looping over an events list
+  that happens to be empty and terminating each iteration anyway — and deleting the check for it
+  failed nothing.
+- Pinned as BENIGN, which is the part that matters. The two kinds carry separate once-per-call
+  flags, and a rung landing on the destructive side would report every record of a file whose
+  writer does this throughout. The fixture makes all three records malformed and asserts one
+  report, with the "nothing was lost" advice rather than the "EVERY affected record" advice.
+- And the onset still governs the timeline: the span is asserted, so a rung that reported the
+  defect while losing the timing would fail here rather than pass quietly.
+
 ## 0.4.459
 
 - **Added** the two `COMMA_DECIMAL_SEPARATOR` cases that were missing: a comma in the declared
