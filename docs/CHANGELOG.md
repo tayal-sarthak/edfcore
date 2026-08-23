@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.437
+
+- **Added** a check that the throwaway probes stay runnable and cannot reach the suite, the
+  typecheck or a commit. `tests/scratch/` holds reproductions written while chasing a defect: they
+  assert whatever behaviour was current when they were written, which makes them useful for an
+  afternoon and poison afterwards, because a committed probe pins a defect as if it were a
+  decision.
+- Four mechanisms keep that true, in four different files, and none was checked. `.gitignore` keeps
+  them out of a commit, which matters because `scripts/release.mjs` stages with `git add -A`. The
+  main vitest config excludes the directory so a leftover probe cannot join the run that gates a
+  tag. `tsconfig.json` excludes it for the same reason on the other half of `npm run check`, and
+  the vitest config's own comment says the two move together — only one of which is where anyone
+  would look. And the scratch config is what makes a probe runnable anyway, because vitest applies
+  `exclude` even to an explicit filename filter.
+- The exemption is stated too: the scratch config deliberately does not load the offline trap, since
+  a probe reproducing a defect against a real server is a legitimate thing to write. That is an
+  absence, and an absence is what someone adds for consistency.
+- The strongest check is the live one — nothing under `tests/scratch/` is tracked, asked of git
+  rather than of the ignore file, because that is the property and the rest is mechanism.
+
 ## 0.4.436
 
 - **Added** tests that a real `AbortSignal` reaches `fetch` and a bare `{ aborted }` shim never
