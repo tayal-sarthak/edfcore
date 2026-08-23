@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.446
+
+- **Added** a property test that flooring a sample's published start names the same sample again,
+  including before t = 0. `gridSampleStartTicks` rounds a start up to a whole tick on purpose — 256
+  samples in a one-second record puts sample 1 at 39,062.5 ticks, published as 39,063 — and the
+  rounding exists so that flooring it back names the sample it came from. `time/window.ts` records
+  what happens when a bound uses the other rounding: half of all indices excluded from a window
+  beginning at their own published start, and a one-sample window coming back empty (0.3.56).
+- Examples are where this arithmetic hides. A geometry whose boundaries land on whole ticks — 100
+  or 256 samples a second — cannot tell the two roundings apart at all, and those are the
+  geometries anyone writing a test reaches for first. The fractional ones are generated
+  deliberately.
+- Negative indices are the half with a branch of their own. A time before the recording gives a
+  negative index rather than truncating toward zero and colliding with sample 0 — a pre-stimulus
+  window in an ERP analysis is exactly that — and for a negative numerator bigint division already
+  truncates toward positive infinity, so the ceiling is the quotient itself and stepping would be
+  wrong. One `?:` separates the two, and nothing had ever asked it for a negative index.
+
 ## 0.4.445
 
 - **Added** tests for what a cached read passes down to the source and what it keeps. A block read
