@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.433
+
+- **Added** tests for what a conformant header is allowed to say. `validateHeader` raises three
+  advisory diagnostics about how a header is written, each checked somewhere for the case where it
+  fires, and none for the case where it stays quiet — which is the direction with consequences.
+- A conformance report is only worth reading if a clean file produces a short one. `PREFILTERING_NONE`
+  holds four spellings of "no filtering" that EDF+ and real writers use interchangeably, and
+  dropping one means every file from that writer carries a warning about a field it filled in
+  correctly. Nobody debugs that; they stop reading the warnings, which are the same warnings that
+  would have told them something real.
+- The headline is the whole of it at once: a header that follows EDF+ to the letter — an
+  `EEG Fpz-Cz` label, a named transducer, `HP:` and `LP:` terms — produces no conformance
+  diagnostics at all. That sentence is the product these checks exist to make possible and it was
+  never asserted.
+- One subtlety is pinned deliberately. A bare `EEG` label is flagged, because the rule is
+  `<type> <sensor>` and a type with no sensor names a category rather than a channel. The condition
+  that gets that right reads like a redundant length check beside the set membership next to it,
+  and simplifying it away would silently accept `EEG`, `ECG` and `Temp` as channel names.
+
 ## 0.4.432
 
 - **Added** a check that every version is still signed, and of the four lines that make it so.
