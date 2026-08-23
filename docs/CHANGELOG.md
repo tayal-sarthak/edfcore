@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.439
+
+- **Added** a check that everywhere a stranger learns what this package does, it says it reads.
+  `design-decisions.md` gives the constraint a heading of its own — "edfcore does not write EDF,
+  and will not before 1.0. A writer exists in the test suite and is not exported" — and four other
+  places carry it, each reaching a different reader: AGENTS.md tells an agent, the README tells
+  someone deciding whether to install, `comparison.md` sends a would-be writer to pyEDFlib, and the
+  npm description tells everyone who opens none of them.
+- The `keywords` array is the one that can quietly say otherwise. It is metadata nobody reviews
+  closely, it exists to be matched against searches, and adding `edf-writer` for discoverability is
+  a plausible thing to do. It would work: the package would surface for a search it cannot serve,
+  and the people it brought in are exactly the ones `comparison.md` is written to send elsewhere.
+  No code change, and nothing to fail.
+- So the keywords are checked from both directions — every format the package reads is listed, so a
+  search for `bdf+` finds it, and nothing in the list advertises writing.
+
 ## 0.4.438
 
 - **Added** tests for `--limit 0` and the blank line that belongs to the rows rather than to the
