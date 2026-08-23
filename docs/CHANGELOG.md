@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.443
+
+- **Fixed** a missing record range throwing a raw `TypeError`. `assertRecordRange` was already
+  thorough about the values a range can hold — a negative start, a fractional one, a `NaN` count, a
+  range past the last record, and shapes that are not ranges at all — and refused each with the
+  file's record count and a next step. Two values were not: `undefined` and `null` reach
+  `records.start` before anything has looked at them, and produced `Cannot read properties of
+  undefined (reading 'start')`, which names neither the option, nor the file, nor anything to do
+  about it.
+- They are also the likeliest two. A range built from JSON, from a config file, from a JavaScript
+  call site, or from an object spread that dropped a key is absent rather than malformed —
+  `{ start: 0, count: undefined }` is what a half-built object looks like, and that was already
+  handled. The whole thing missing was not.
+- One guard, two entry points: `readRecords` and `readAnnotations` share it. A count of zero is
+  still accepted, because a range naming no records is answerable and the answer is nothing; only
+  the absence of a range is a mistake. `requested` on the error is the stand-in, so a handler
+  reading it finds an object rather than `undefined`.
+
 ## 0.4.442
 
 - **Fixed** the one required option with no default saying nothing useful when it was left off.

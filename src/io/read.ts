@@ -84,14 +84,26 @@ function describeRange(range: RecordRange): string {
 
 function assertRecordRange(header: EdfHeader, records: RecordRange): void {
   const available: RecordRange = { start: 0, count: header.recordCount };
-  const startValid = Number.isSafeInteger(records.start) && records.start >= 0;
-  const countValid = Number.isSafeInteger(records.count) && records.count >= 0;
-  if (startValid && countValid && records.start + records.count <= header.recordCount) return;
+  /*
+   * Read off a stand-in when there is no range at all.
+   *
+   * `records` is typed, and the type is not the only way in: a selection built from JSON, from a
+   * config file or from a JavaScript call site arrives at run time. Every wrong SHAPE already
+   * reached the message below — an array, a string and `{ start: 0 }` all read as
+   * `{ start: undefined, count: undefined }` and are refused with a next step — while `undefined`
+   * and `null` threw `TypeError: Cannot read properties of undefined (reading 'start')` from the
+   * two lines under this one, which names neither the option nor anything to do about it
+   * (fixed in 0.4.443).
+   */
+  const range: RecordRange = records ?? ({} as RecordRange);
+  const startValid = Number.isSafeInteger(range.start) && range.start >= 0;
+  const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
+  if (startValid && countValid && range.start + range.count <= header.recordCount) return;
   throw new EdfRangeError(
-    `records ${describeRange(records)} is not inside the ` +
+    `records ${describeRange(range)} is not inside the ` +
       `${header.recordCount} data records this file contains. Next: clamp the range against ` +
       'header.recordCount, or call index.locate(seconds) to find a record index for a time.',
-    { requested: records, available },
+    { requested: range, available },
   );
 }
 
