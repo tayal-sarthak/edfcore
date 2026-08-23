@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.454
+
+- **Added** a test for `validateHeader`'s own `DATE_FIELDS_DISAGREE` check on the ordinary case:
+  a `dd.mm.yy` field that resolves to 2051 beside a recording identification `Startdate` that
+  spells 1951 out.
+- `checkDates` reports that code from two arms, and only the EDF+ `yy` escape arm had ever been
+  run through `validateHeader`. The ordinary arm — the case the code is named for and the one
+  every doc page uses as its example — was covered five times over in `resolveStartTime`, which
+  is a different function in a different file that happens to emit the same code on the read
+  path. Deleting the comparison in `validate.ts` left the suite green.
+- That matters because the two are deliberately independent. `validateHeader` is documented as
+  standing on its own so a caller can sweep a header it did not open, and 0.3.81 fixed this exact
+  shape of bug in the other direction: the escape arm was missing here, so the parser and the
+  conformance sweep disagreed about whether one file had a defect.
+- The assertions are on `specReference`, not on the code. Both functions cite EDF+ additional
+  specification 4; only this one cites it as "(local recording identification)" and prints the
+  header's date as a resolved day rather than as raw bytes. A test that asserted the code alone
+  would have passed on the parser's diagnostic and proved nothing about the function it names.
+
 ## 0.4.453
 
 - **Added** tests for the date comparison behind `DATE_IMPLAUSIBLE`, at every level rather than
