@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.450
+
+- **Added** a property test that `printable` never changes the width of what it is given. Every
+  table the package prints depends on it: `formatHeader` pads a label into a column, the CLI's
+  `signals` output is tab-separated for `cut -f2`, and the validation report lines observed ranges
+  up under a heading — all on text read out of a file, where EDF says a label is sixteen bytes and
+  says nothing about what may be in them.
+- The module's docblock states the rule and rejects two alternatives, both of which are the natural
+  thing to reach for and both correct-looking: a stripped control character is gone, an escaped one
+  is legible. Either shifts a column by a character per occurrence. Those alternatives are now an
+  executable contrast rather than a comment — the property computes both and shows one shortens and
+  one lengthens.
+- The generated text covers what a fixture-writer does not think of: astral characters, which are
+  two UTF-16 units and one iteration of a `for…of`; lone surrogates, which are one of each; the
+  Latin-1 supplement, which a European electrode label really contains; and the line separator the
+  docblock argues should pass through. DEL is drawn separately, because a generator covering only
+  0x00-0x1f leaves the second half of the condition untouched while looking thorough.
+- Three invariants, and the third is what makes the first two mean anything: the length is
+  unchanged, no C0 or DEL survives, and every character that was not one is exactly what it was.
+  Without the third, returning a string of dots would satisfy the other two.
+
 ## 0.4.449
 
 - **Added** a check that the sourcemaps in the published package point at files the package ships.
