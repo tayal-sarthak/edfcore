@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.436
+
+- **Added** tests that a real `AbortSignal` reaches `fetch` and a bare `{ aborted }` shim never
+  does. `FetchLike` deliberately does not name `signal` — naming it would pull the DOM
+  `AbortSignal` into the published types by parameter contravariance, the exact dependency the
+  structural shims exist to avoid — so the signal is handed over at runtime, on one line.
+- Both halves matter and they fail differently. Attaching a shim is loud: the platform `fetch`
+  throws a `TypeError` on an init whose `signal` is not an `AbortSignal`, so every request from a
+  caller using the published `AbortSignalLike` type would fail at once. Not attaching a real one is
+  silent, and that is the half nothing had exercised — no test had ever given `httpSource` a
+  genuine `AbortSignal`.
+- Without the attach, `throwIfSignalAborted` still rejects the caller's promise at the next poll,
+  so an abort looks like it worked, while the request runs to completion. On a range covering a few
+  hundred megabytes that is the difference between cancelling a transfer and paying for it, and the
+  only visible symptom is a bill, or a phone that stays warm after the user navigated away.
+- The caller's own signal object has to be the one attached, not a copy, or aborting theirs aborts
+  nothing. A source-level signal and a per-read one are both checked, since the page documents the
+  first as the default for every request and the second as winning over it.
+
 ## 0.4.435
 
 - **Added** a check that the announce script cuts one release and that a dry run cuts none.
