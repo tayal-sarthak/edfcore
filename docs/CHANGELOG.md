@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.462
+
+- **Added** the edge cases for `countOutOfDigitalRange`, the third copy of a rule whose other two
+  copies were already pinned. `decodeInt16` and `decodeInt24` count a sample as out of range only
+  when it is strictly outside `[digitalMinimum, digitalMaximum]`; this copy runs when a trim
+  narrows a chunk that had one, and neither of its comparisons was pinned at the edge. Relaxing
+  either left the suite green.
+- A sample sitting exactly at the declared maximum is the common case, not the exotic one — a
+  saturating amplifier parks a channel at 32767 for the length of an artefact.
+  `outOfDigitalRangeCount` is documented as meaning the declared range is WRONG, so counting a
+  clipped sample says that about the one file where the declaration is exactly right. And only
+  for callers who trimmed: the same samples would be in range before the trim and out of range
+  after it.
+- The inverted declaration is pinned here too. `digitalMinimum > digitalMaximum` is a real writer
+  bug, the decoder compares against min/max of the pair rather than the pair as written, and this
+  copy has to agree — taking them as written makes every sample out of range, again only after a
+  trim.
+- Found by mutation, not by coverage: all three lines were reported as covered.
+
 ## 0.4.461
 
 - **Added** the exact-edge cases for `resolveTimeWindow` on a segmented index. The window is

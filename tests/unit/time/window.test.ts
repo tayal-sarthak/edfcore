@@ -513,6 +513,74 @@ describe('trimToWindow returns a view, corrected and clamped', () => {
     expect(trimToWindow(header, chunk, 2, 1).outOfDigitalRangeCount).toBe(1);
   });
 
+  /*
+   * The recount's bounds are INCLUSIVE, and that is the third copy of one rule.
+   *
+   * `decodeInt16` and `decodeInt24` count a sample as out of range only when it is strictly
+   * outside `[digitalMinimum, digitalMaximum]`, and both are pinned. `countOutOfDigitalRange` here
+   * is the copy that runs when a trim narrows a chunk that had one, and neither of its two
+   * comparisons was pinned at the edge: relaxing either left every test green.
+   *
+   * The values at the edge are the common case, not the exotic one. A saturating amplifier parks a
+   * channel at 32767 for the whole of an artefact, and `EdfChunkSignal.outOfDigitalRangeCount` is
+   * documented as meaning the declared range is WRONG. Counting a clipped sample would say that
+   * about the one file where the declaration is exactly right — and only for callers who trimmed,
+   * so the same samples would be in range before the trim and out of range after it.
+   */
+  const AT_THE_EDGES = Int32Array.from([0, 0, 0, -32768, 32767, -32769, 32768, 0, 0]);
+
+  it('counts a sample AT the declared minimum or maximum as inside it', () => {
+    const chunk = chunkSignalOf({
+      sampleCount: 9,
+      startSeconds: 0,
+      digital: AT_THE_EDGES,
+      // Non-zero, so the recount actually runs rather than reusing this number.
+      outOfDigitalRangeCount: 2,
+    });
+
+    // [1, 1.5) keeps samples 3 and 4 — exactly -32768 and exactly 32767 and nothing else.
+    const edgesOnly = trimToWindow(header, chunk, 1, 0.5);
+    expect(Array.from(edgesOnly.digital)).toEqual([-32768, 32767]);
+    expect(edgesOnly.outOfDigitalRangeCount).toBe(0);
+  });
+
+  it('counts the two samples that really are outside, and only those', () => {
+    const chunk = chunkSignalOf({
+      sampleCount: 9,
+      startSeconds: 0,
+      digital: AT_THE_EDGES,
+      outOfDigitalRangeCount: 2,
+    });
+
+    // [1, 3) keeps samples 3..8: both edge values and both true outliers.
+    const trimmed = trimToWindow(header, chunk, 1, 2);
+    expect(Array.from(trimmed.digital)).toEqual([-32768, 32767, -32769, 32768, 0, 0]);
+    expect(trimmed.outOfDigitalRangeCount).toBe(2);
+  });
+
+  it('normalises an inverted declaration, as the decoder does', () => {
+    // `digitalMinimum > digitalMaximum` is a real writer bug and the decoder compares against
+    // min/max of the pair rather than against the pair as written. A recount that took them as
+    // written would call every sample out of range on such a file, and only after a trim.
+    const inverted = headerOf(
+      buildEdf({
+        signals: [
+          { label: 'Fp1', samplesPerRecord: 3, digitalMinimum: 32767, digitalMaximum: -32768 },
+        ],
+        recordCount: 3,
+        recordDurationSeconds: 1,
+      }),
+    );
+    const chunk = chunkSignalOf({
+      sampleCount: 9,
+      startSeconds: 0,
+      digital: AT_THE_EDGES,
+      outOfDigitalRangeCount: 2,
+    });
+
+    expect(trimToWindow(inverted, chunk, 1, 2).outOfDigitalRangeCount).toBe(2);
+  });
+
   it('holds every sample at the chunk start when the record duration is zero', () => {
     // recordDuration = 0 is legal, and no sample advances in time, so the chunk is wholly
     // inside the window or wholly outside it.
