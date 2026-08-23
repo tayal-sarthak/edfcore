@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.463
+
+- **Added** the half-open edge cases for the branch `trimToWindow` takes when nothing in the chunk
+  advances in time — a zero record duration, or a signal with no samples per record. It decides
+  membership with its own comparison pair, and the existing test put the chunk at 0 and asked
+  about `[0, 1)` and `[1, 2)`, missing both boundaries by a whole second.
+- Relaxing the right-hand comparison to `<=` admitted a chunk that begins exactly where the window
+  ends, so two adjacent windows both returned it and a caller walking such a file got every sample
+  twice. Relaxing the left-hand one excluded a chunk that begins exactly where the window begins,
+  which is the ordinary way anyone asks for the first window of a file.
+- The `windowDurationTicks > 0n` clause guarding both survives mutation and is left as it is. It
+  is redundant with the pair below it — with a zero-length window, `chunkStartTicks <
+  windowStartTicks + 0n` is already false wherever the left comparison holds — so no input can
+  distinguish it, and the empty-window case is asserted for what it promises rather than to kill a
+  mutant it cannot reach.
+
 ## 0.4.462
 
 - **Added** the edge cases for `countOutOfDigitalRange`, the third copy of a rule whose other two

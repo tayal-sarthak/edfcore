@@ -597,6 +597,33 @@ describe('trimToWindow returns a view, corrected and clamped', () => {
     expect(trimToWindow(zeroHeader, chunk, 1, 1).sampleCount).toBe(0);
   });
 
+  it('applies the same half-open rule to a chunk that cannot advance in time', () => {
+    /*
+     * The all-or-nothing branch decides membership with its own comparison pair, and neither half
+     * had been tested at the edge — the case above puts the chunk at 0 and asks about [0, 1) and
+     * [1, 2), which miss both boundaries by a whole second. Relaxing the right-hand comparison to
+     * `<=` put a chunk in the window that begins exactly where the window ends, so two adjacent
+     * windows both returned it and a caller walking a zero-duration file got every sample twice.
+     */
+    const zeroHeader = headerOf(
+      buildEdf({
+        signals: [{ label: 'Fp1', samplesPerRecord: 3 }],
+        recordCount: 2,
+        recordDurationSeconds: 0,
+      }),
+    );
+    const chunk = chunkSignalOf({ sampleCount: 6, startSeconds: 2 });
+
+    // The window ENDS at the chunk's instant: out, the same rule the record-aligned path uses.
+    expect(trimToWindow(zeroHeader, chunk, 0, 2).sampleCount).toBe(0);
+    // The window BEGINS at it: in, and all of it, because nothing here advances.
+    expect(trimToWindow(zeroHeader, chunk, 2, 1).sampleCount).toBe(6);
+    // Past it entirely.
+    expect(trimToWindow(zeroHeader, chunk, 3, 1).sampleCount).toBe(0);
+    // And an empty window selects nothing even when it starts exactly at the chunk.
+    expect(trimToWindow(zeroHeader, chunk, 2, 0).sampleCount).toBe(0);
+  });
+
   it('refuses a chunk signal the header does not describe', () => {
     const chunk = chunkSignalOf({ signalIndex: 9, sampleCount: 3, startSeconds: 0 });
 
