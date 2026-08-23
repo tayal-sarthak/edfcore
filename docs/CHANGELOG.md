@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.425
+
+- **Added** tests for the one sentence `api-reading.md` gives about the shape of `signalIndices`:
+  "Duplicates are dropped; the order you give is the order of `chunk.signals`." It was prose, in
+  the options table every reader consults before their first read.
+- Both halves are reached by ordinary code. A repeated index comes from a multi-select that appends
+  on click, a "select all" over a list that already had one checked, or `[...montage, ...extras]`
+  where the two overlap. The order comes from wherever the indices were built, and a caller drawing
+  `chunk.signals[0]` as the top trace is trusting it.
+- They fail differently and both quietly. A duplicate that is not dropped costs a second decode and
+  returns an array with one more entry than the caller's legend has rows, so every trace below the
+  repeat is drawn with the wrong label. An order that is not preserved swaps two traces outright,
+  and on a montage two channels of EEG look like two channels of EEG.
+- `readRecords`, `readWindow` and `streamRecords` are all checked. They share one resolver today —
+  `stream.ts` says it must produce the byte-identical refusal `readWindow` does — but that is a
+  fact about the code and the promise is about the API.
+
 ## 0.4.424
 
 - **Added** a property test that reading a stretch in pieces and joining them is reading it whole.
