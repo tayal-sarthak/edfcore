@@ -388,23 +388,46 @@ describe('the probe array must describe the whole file', () => {
   // A RangeError, never an EdfFormatError: nothing here is the file's fault.
   const header = headerOf(minimalEdfPlus({ recordCount: 4 }));
 
+  /*
+   * `says` is the point of this table, not decoration.
+   *
+   * `assertProbeShape` refuses three different things and every case here asserted only
+   * `RangeError`, so a case proved nothing about the guard it was named after — it proved that
+   * SOME guard refused it. The out-of-order case was the one that drifted: its probes ran
+   * 0, 3, 1, whose LAST entry is record 1 rather than record 3, so it was refused by the
+   * ends-of-the-file check two guards earlier and the ordering loop never ran once in the suite.
+   * Deleting that loop outright left every test here green.
+   */
   const badProbeCases = [
-    { name: 'no probes at all for a file that has records', probes: [] as RecordOnsetProbe[] },
-    { name: 'the first probe is not record 0', probes: probes([1, 3], 1) },
+    {
+      name: 'no probes at all for a file that has records',
+      probes: [] as RecordOnsetProbe[],
+      says: 'received no onset probes for a file with 4 data records',
+    },
+    {
+      name: 'the first probe is not record 0',
+      probes: probes([1, 3], 1),
+      says: 'received probes for records 1..2',
+    },
     {
       name: 'the last probe is not the last record',
       probes: [
         { recordIndex: 0, onsetTicks: 0n },
         { recordIndex: 2, onsetTicks: 2n * SECOND },
       ],
+      says: 'received probes for records 0..2',
     },
     {
-      name: 'the probes are out of order',
+      // Both ends are right, so nothing before the ordering loop has anything to say about it,
+      // and the onsets rise throughout so the monotonicity check that runs next cannot either.
+      name: 'the probes are out of order between the two ends',
       probes: [
         { recordIndex: 0, onsetTicks: 0n },
+        { recordIndex: 2, onsetTicks: 1n * SECOND },
+        { recordIndex: 1, onsetTicks: 2n * SECOND },
         { recordIndex: 3, onsetTicks: 3n * SECOND },
-        { recordIndex: 1, onsetTicks: 1n * SECOND },
       ],
+      says: 'received probes out of order: record 1 follows record 2',
     },
   ];
 
@@ -414,8 +437,25 @@ describe('the probe array must describe the whole file', () => {
 
       expect(error).toBeInstanceOf(RangeError);
       expect(error).not.toBeInstanceOf(EdfFormatError);
+      expect((error as RangeError).message).toContain(badCase.says);
     });
   }
+
+  it('accepts an intermediate probe that IS in order, so the loop refuses only disorder', () => {
+    // The same four probes sorted. `assertProbeShape` documents intermediate probes as optional
+    // rather than unwelcome, and without this the ordering loop could refuse every array of
+    // three or more and still pass the case above.
+    const timeline = buildTimelineFromProbes({
+      header,
+      probes: [
+        { recordIndex: 0, onsetTicks: 0n },
+        { recordIndex: 1, onsetTicks: 1n * SECOND },
+        { recordIndex: 2, onsetTicks: 2n * SECOND },
+        { recordIndex: 3, onsetTicks: 3n * SECOND },
+      ],
+    });
+    expect(timeline.recordCount).toBe(4);
+  });
 
   it('refuses probes for a file with no records', () => {
     const emptyHeader = headerOf(minimalEdf({ recordCount: 0 }));
@@ -425,6 +465,6 @@ describe('the probe array must describe the whole file', () => {
         header: emptyHeader,
         probes: [{ recordIndex: 0, onsetTicks: 0n }],
       }),
-    ).toThrow(RangeError);
+    ).toThrow(/received 1 onset probes for a file with no data records/);
   });
 });

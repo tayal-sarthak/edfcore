@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.455
+
+- **Fixed** a test that refused what it was named after by accident. `timeline.test.ts` listed
+  "the probes are out of order" among the arrays `buildTimelineFromProbes` must refuse, and its
+  probes were records 0, 3, 1 — whose LAST entry is record 1 rather than record 3 on a four-record
+  file. `assertProbeShape` checks the two ends before it checks the order, so that array was
+  refused with "received probes for records 0..1, but the start offset comes from record 0 and the
+  span ends at record 3", and the ordering loop underneath had never run once in the suite.
+- The case now runs 0, 2, 1, 3: both ends correct, so nothing before the loop has anything to say
+  about it, and rising onsets throughout, so the monotonicity check that runs next cannot claim it
+  either. Deleting the loop outright now fails one test instead of none.
+- Every case in that table now asserts the sentence its guard produces, not just `RangeError`.
+  Three different refusals share the class, so asserting the class alone proves only that SOME
+  guard fired — which is exactly how the case above drifted without anyone noticing.
+- Added the case the loop must NOT refuse: four probes in order, one of them intermediate.
+  `assertProbeShape` documents intermediate probes as optional rather than unwelcome, and a loop
+  that refused every array of three or more would have passed the disorder case just as well.
+
 ## 0.4.454
 
 - **Added** a test for `validateHeader`'s own `DATE_FIELDS_DISAGREE` check on the ordinary case:
