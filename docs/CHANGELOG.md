@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.453
+
+- **Added** tests for the date comparison behind `DATE_IMPLAUSIBLE`, at every level rather than
+  the year alone. The half of that code which is reachable reports a patient born after the
+  recording that captured them — not a hypothetical shape, since EDF's start date is two digits and
+  the EDF+ rule that 00..84 mean 2000..2084 turns a 1974 recording into a 2074 one.
+- The comparison is three lines — year, then month, then day — and every fixture that reached it
+  differed in the year, so two of the three had never run. A comparison stopping at the year still
+  catches the case that motivated the check, and silently stops catching a birthdate later in the
+  same year: a mistyped month, or a `dd-MMM-yyyy` subfield with its day and month transposed, which
+  is every date before the thirteenth.
+- The equality boundary is the other half and the one worth getting right in this direction. A
+  recording made on the day of birth is a neonatal EEG, which is an ordinary thing to point this
+  library at; `> 0` rather than `>= 0` is what keeps that file clean, and an off-by-one there would
+  report a defect on every recording taken in a delivery suite.
+
 ## 0.4.452
 
 - **Added** tests that a server ignoring Range is downloaded once however the readers arrive.
