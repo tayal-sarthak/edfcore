@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.452
+
+- **Added** tests that a server ignoring Range is downloaded once however the readers arrive.
+  `allowFullDownload: true` turns every read into a claim on one transfer, and getting that wrong
+  is not slow but fatal: every read that entered `fetchRange` used to issue its own GET, each
+  buffering the whole resource, so N concurrent block reads downloaded the file N times and held up
+  to `maxConcurrency` copies at once.
+- `hardening.test.ts` pins the count for readers arriving together at the default concurrency.
+  Three other ways to arrive each take a different branch: queued behind the gate with
+  `maxConcurrency: 1`, where waiting for a slot is exactly when a stale decision is most likely;
+  arriving while the first reader is still finding out whether the server honours Range; and
+  arriving once everything has settled, where nothing should go out at all.
+- Requests and transfers are counted separately, because different guards protect them. The one
+  inside the response handler stops a second download; the ones before the request stop a second
+  GET. With only the first, eight readers cost eight requests and one body — the same bill on a
+  metered origin, for the same bytes, and nothing in the result to show it.
+
 ## 0.4.451
 
 - **Added** a property test for `bucketCount` over arbitrary windows. `api-helpers.md` calls it
