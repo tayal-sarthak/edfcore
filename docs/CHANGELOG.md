@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.427
+
+- **Added** a property test for `trimToWindow` against the rule it states rather than the examples
+  it was written from. The source says which samples belong in a window in one line — "Sample j is
+  in the window when `ceil(j * D / S)` is in `[R, Rend)`" — and what the code does is a closed form
+  derived from it: two `floorDiv`s over bigint products, with the derivation written above them. A
+  closed form is exactly where an off-by-one lives, and the derivation is the part a reader takes
+  on trust.
+- So the rule is implemented the obvious way, asking every sample, and the two must select the same
+  set for arbitrary geometries and windows. The naive version is too slow for a library and is
+  obviously right, which is the only pairing worth testing a closed form against.
+- The rounding it turns on is not incidental. 256 samples in a one-second record puts sample 1 at
+  39,062.5 ticks, published as 39,063, and selecting on the exact start rather than the published
+  one excluded that sample from a window beginning at its own published start — half of all indices
+  at that rate, and at 128 samples per 0.29 s a one-sample window came back empty (0.3.56).
+  Geometries whose boundaries miss whole ticks are generated deliberately, because the ones that
+  land on them cannot tell the two rules apart.
+- Three obligations from the docblock come with it, none previously checked in general: adjacent
+  windows partition a chunk exactly, a window covering the chunk is the identity, and the result is
+  a view rather than a copy.
+
 ## 0.4.426
 
 - **Added** a property test that the cache is invisible at every size it can be configured to.
