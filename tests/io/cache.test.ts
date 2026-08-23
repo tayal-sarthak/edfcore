@@ -275,6 +275,36 @@ describe('the LRU budget is respected, and a read too big for it is not cached',
     ]);
   });
 
+  it('still owns the wrapped source’s lifetime at a zero budget', async () => {
+    /*
+     * The pass-through is a DIFFERENT object — `cachedSource` returns it before it builds any of
+     * the cache state — with its own `read` and its own `close`. The read half is covered above
+     * and by `source-contract.test.ts`; the close half was not, and it is the half with a
+     * consequence a test cannot see indirectly.
+     *
+     * `cachedSource(await fileSource(path), { maxBytes: 0 })` is a reasonable thing to write: the
+     * page says the budget is floored at 0, and wrapping unconditionally while tuning the number
+     * per environment is how a caller ends up there. A pass-through that dropped the delegation
+     * would hold the descriptor open for the life of the process, and nothing about the reads
+     * would look wrong.
+     */
+    const spy = spySource(byteSource(ramp(256)));
+    const cached = cachedSource(spy, { maxBytes: 0 });
+    await cached.read(0, 8);
+
+    await cached.close?.();
+
+    expect(spy.closed).toBe(true);
+  });
+
+  it('closes a wrapped source that has no close() of its own', async () => {
+    // `ByteSource.close` is optional, and `byteSource(bytes)` is the adapter that omits it. The
+    // `?.` is what makes closing a zero-budget wrapper over an in-memory file safe rather than a
+    // TypeError, which is the shape a caller hits while swapping adapters.
+    const cached = cachedSource(byteSource(ramp(64)), { maxBytes: 0 });
+    await expect(cached.close?.()).resolves.toBeUndefined();
+  });
+
   it('closes the wrapped source and drops what it was holding', async () => {
     const spy = spySource(byteSource(ramp(256)));
     const cached = cachedSource(spy, { blockBytes: 256, maxBytes: 1 << 20 });

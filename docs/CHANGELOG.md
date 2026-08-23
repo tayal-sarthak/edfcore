@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.465
+
+- **Added** the close half of `cachedSource`'s pass-through, which had never run. At `maxBytes: 0`
+  the function returns a different object entirely — built and returned before any cache state
+  exists — with its own `read` and its own `close`. The read half was covered twice over; the
+  close half is the one whose failure a test cannot see indirectly.
+- `cachedSource(await fileSource(path), { maxBytes: 0 })` is a reasonable thing to write. The page
+  documents the budget as floored at 0, and wrapping unconditionally while tuning the number per
+  environment is how a caller arrives there. A pass-through that dropped the delegation would hold
+  the descriptor open for the life of the process, with nothing about the reads looking wrong.
+- The optional-`close` case is pinned alongside it: `ByteSource.close` is optional and
+  `byteSource(bytes)` is the adapter that omits it, so `source.close?.()` is what makes closing a
+  zero-budget wrapper over an in-memory file resolve rather than throw a `TypeError` — the shape a
+  caller hits while swapping adapters.
+
 ## 0.4.464
 
 - **Added** tests for the `maxMaterializeBytes` boundary in all three modules that check it —
