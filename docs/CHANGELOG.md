@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.429
+
+- **Added** tests for `edfcore validate` exiting 1 because validation failed. The exit-code table on
+  `cli.md` gives `1` two meanings in one row — "the file could not be read, or validation failed" —
+  and only the first was exercised. `runCli` returns `report.ok ? 0 : 1`, and nothing had ever
+  driven it down the `false` side, which is the entire reason the command exists.
+- A CI job gating on conformance branches on that number without reading a word of the output, and
+  it can fail in two opposite ways. A gate that never fires passes every recording, including the
+  ones the library refused to scale, and nobody investigates a green tick. A gate that always fires
+  gets switched off, and the conformance checking goes with it.
+- The second is likelier, and it turns on a boundary now stated as a subject: a warning is not a
+  failure. `LABEL_CONVENTION_NONCONFORMANT` is on almost every real recording, CHB-MIT ships a
+  duplicated channel label, a file marked EDF+C whose onsets drift is a warning because real
+  writers do that, and a zero record duration is legal EDF. A gate rejecting any of those would
+  reject the corpus this library was built to read.
+- `header` on the same refused file exits 0, and that contrast is checked. It reports what the
+  header says and adjudicates nothing, which is what makes asking for a verdict worth doing.
+
 ## 0.4.428
 
 - **Added** a check that a version number which never reached npm says so at the heading and says
