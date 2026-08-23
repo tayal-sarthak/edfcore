@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.428
+
+- **Added** a check that a version number which never reached npm says so at the heading and says
+  where its work went. Nineteen of the six hundred-odd headings in this file name a version nobody
+  can install; they exist because a reader comparing `npm view edfcore versions` against the file
+  would otherwise find a hole and be unable to tell a lost number from a missing note.
+- `changelog-continuity.test.ts` checks the sequence. What it cannot see is whether a heading tells
+  the truth about itself, which is the half 0.4.307 was about: fourteen entries had been written
+  before their release failed, so each read exactly like one that shipped, with the correction in a
+  different entry further up that a reader landing on `## 0.4.288` never sees.
+- So the marker has to be first — a note further down is a note nobody scrolling to a version
+  reads — and it has to point forward, because "Never released" alone strands the reader with work
+  that exists under a number they now have to search for. The pointer is bounded at twenty patches
+  and every real one is within six, so an incidental mention of some later release cannot stand in
+  for it: the 0.2.29 entry names 0.4.194 as the release that wrote it down, and that is not where
+  its work went.
+- The two forms are kept apart on purpose. A number consumed before a tag was cut never became
+  public at all; a version that was tagged and whose publish then failed is public on GitHub and
+  absent from npm, which is a different thing to be told.
+
 ## 0.4.427
 
 - **Added** a property test for `trimToWindow` against the rule it states rather than the examples
