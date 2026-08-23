@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.449
+
+- **Added** a check that the sourcemaps in the published package point at files the package ships.
+  `sourceMap` and `declarationMap` in the build config and `src` in `files` are one feature: tsc
+  emits maps whose sources are `../src/x.ts` relative to `dist/` and inlines no `sourcesContent`,
+  so the maps resolve only because the TypeScript ships beside them. That is why
+  `check-tarball.mjs` refuses a tarball without `src/` with the words "the sourcemaps resolve to
+  nothing".
+- Nothing checked that the maps say what the arrangement assumes, and three edits break it while
+  failing nothing: dropping `src` from `files` to make the tarball smaller — 250 KB of TypeScript
+  for a package whose `dist` is what runs looks like dead weight; turning `sourcesContent` on,
+  which makes `src/` redundant right up until someone turns it off again; or turning either map off.
+- What breaks is not a build. It is a consumer stepping into `openEdf` in a debugger and landing in
+  compiled output, or "go to definition" on `EdfHeader` opening a `.d.ts` instead of the file whose
+  comments explain the field. The package still installs, still imports, still passes everything
+  here — what stops working is the reason `removeComments: false` and `declarationMap` are set at
+  all, that the source is what a reader reaches.
+
 ## 0.4.448
 
 - **Added** tests for what `edfcore json` puts in a file you are about to pipe somewhere. Piping is
