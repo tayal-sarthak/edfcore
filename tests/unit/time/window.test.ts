@@ -289,6 +289,48 @@ describe('resolveTimeWindow across a gap', () => {
     expect(resolveTimeWindow(timeline, index, 101, 1)).toEqual([{ start: 5, count: 1 }]);
   });
 
+  /*
+   * The window is half-open, [start, start + duration), and the segmented path decides that on one
+   * line: `segmentEndTicks <= windowStartTicks || segmentStartTicks >= windowEndTicks`. Both
+   * comparisons could be relaxed to strict ones and every test above still passed, because no
+   * window here had ever touched a segment edge EXACTLY — they overlapped by a record or missed by
+   * ninety seconds.
+   *
+   * What that costs is a duplicated or a missing record at every gap. Ask for [0, 4) and [4, 100)
+   * on this file — the natural way to walk a recording segment by segment — and a relaxed left
+   * comparison returns record 3 in both, so a consumer concatenating the two gets one second of
+   * signal twice, at the seam where a sleep study is most likely to be scored.
+   */
+  it('excludes a segment that ends exactly where the window starts', () => {
+    // [4, 100): segment 0 ends at 4 and segment 1 begins at 100, so both edges are touched and
+    // neither is inside. Nothing at all, from a 96-second window over an 8-record file.
+    expect(resolveTimeWindow(timeline, index, 4, 96)).toEqual([]);
+  });
+
+  it('excludes a segment that starts exactly where the window ends', () => {
+    expect(resolveTimeWindow(timeline, index, 99, 1)).toEqual([]);
+  });
+
+  it('includes a segment that starts exactly where the window starts', () => {
+    // The other side of half-open: the left edge is IN. Without this the two cases above would
+    // pass on an implementation that excluded every boundary rather than the right one.
+    expect(resolveTimeWindow(timeline, index, 100, 1)).toEqual([{ start: 4, count: 1 }]);
+    expect(resolveTimeWindow(timeline, index, 0, 4)).toEqual([{ start: 0, count: 4 }]);
+  });
+
+  it('covers each record exactly once when two windows meet at a segment edge', () => {
+    // The property the line exists for, stated as a walk: [0, 4) then [4, 100) then [100, 104).
+    const walk = [
+      ...resolveTimeWindow(timeline, index, 0, 4),
+      ...resolveTimeWindow(timeline, index, 4, 96),
+      ...resolveTimeWindow(timeline, index, 100, 4),
+    ];
+    const visited = walk.flatMap((range) =>
+      Array.from({ length: range.count }, (_, i) => range.start + i),
+    );
+    expect(visited).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  });
+
   it('refuses to guess on a discontinuous file whose index is only probed', () => {
     // span != covered says there is at least one gap, and a probed index knows where neither the
     // gap nor the records after it start. A RangeError, not an EdfError: the file is fine.

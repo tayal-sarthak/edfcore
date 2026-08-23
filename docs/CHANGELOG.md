@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.461
+
+- **Added** the exact-edge cases for `resolveTimeWindow` on a segmented index. The window is
+  half-open — `[start, start + duration)` — and the segmented path decides that on one line:
+  `segmentEndTicks <= windowStartTicks || segmentStartTicks >= windowEndTicks`. Relaxing either
+  comparison to a strict one left the whole suite green, because no window in it had ever landed
+  on a segment edge exactly: they overlapped by a record or missed by ninety seconds.
+- The cost is a duplicated record at every gap. Walking a discontinuous file segment by segment —
+  `[0, 4)` then `[4, 100)` on the fixture here — a relaxed left comparison returns record 3 in
+  both, so a consumer concatenating the two gets one second of signal twice, at the seam where a
+  sleep study is most likely to be scored.
+- Four cases: a segment ending exactly where the window starts is out, a segment starting exactly
+  where the window ends is out, a segment starting exactly where the window starts is IN, and a
+  three-window walk that visits records 0..7 once each. The third is what stops the first two
+  passing on an implementation that excluded every boundary rather than the right one.
+- Found by mutating the comparisons rather than by reading the coverage report, which called the
+  line covered.
+
 ## 0.4.460
 
 - **Added** the fourth rung of `timekeepingDefect`'s ladder, which had never run: a timekeeping
