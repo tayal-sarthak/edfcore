@@ -6,8 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
-## 0.4.423
+## 0.4.424
 
+- **Added** a property test that reading a stretch in pieces and joining them is reading it whole.
+  That is the promise `mergeChunks` exists to make, and it is what lets a caller bound memory
+  without changing an answer. `merge-chunks.test.ts` demonstrated it on one split of one file, and
+  every check around it is about a merge that must be refused — the thing that has to hold for
+  every split of every file was shown for one.
+- The failure it guards is silent and arithmetic. A merge that dropped the last sample of each
+  piece, or summed the wrong bytes, returns an array of the length a caller expects, holding real
+  samples from the real file, shifted. Nothing downstream can tell: the timestamps come from the
+  record range, which is right, and the values are plausible because they came from the recording.
+  It surfaces as an event marked half a second late, weeks later, in someone else's analysis. So
+  the bookkeeping is checked alongside the samples — `records`, `byteLength` and the chunk's own
+  start in ticks are all quantities a caller reads off the result.
 - **Removed** an unreachable branch from `byteSource`'s argument description, and the comment
   claiming it prevented a message nothing can produce. It named an `ArrayBuffer` or a
   `SharedArrayBuffer` in a refusal — but the description is built on the throw path alone, which is
@@ -18,6 +30,15 @@ defect; those are called out below.
   around it reads as thoroughness.
 - `BUFFER_TAGS` itself stays: it is what accepts a buffer from another realm, which 0.4.422 now
   exercises through `node:vm`.
+
+## 0.4.423
+
+Never released. The release run bumped the version, passed its own checks and pushed, and CI then
+failed all three Node jobs on formatting: a test file written after `npm run format` had run was
+swept into the commit by `git add -A` unformatted. Nothing was tagged and nothing went to npm, but
+the bump was already public, which consumed the number. The same failure as `0.4.176`, arriving
+from the other side — there the local check caught it after the bump, here the local check never
+saw the file. The work that carried this heading shipped in `0.4.424`.
 
 ## 0.4.422
 

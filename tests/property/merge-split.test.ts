@@ -94,7 +94,9 @@ describe('a read split into pieces and joined again', () => {
         const parts: EdfChunk[] = [];
         let start = 0;
         for (const size of splits(total, pieces)) {
-          parts.push(await readRecords(recording, { records: { start, count: size }, signalIndices }));
+          parts.push(
+            await readRecords(recording, { records: { start, count: size }, signalIndices }),
+          );
           start += size;
         }
         const merged = mergeChunks(parts);
@@ -127,7 +129,9 @@ describe('a read split into pieces and joined again', () => {
         const parts: EdfChunk[] = [];
         let start = 0;
         for (const size of splits(total, pieces)) {
-          parts.push(await readRecords(recording, { records: { start, count: size }, signalIndices }));
+          parts.push(
+            await readRecords(recording, { records: { start, count: size }, signalIndices }),
+          );
           start += size;
         }
         const merged = mergeChunks(parts);
