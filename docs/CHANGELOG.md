@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.447
+
+- **Added** a check that a machine which has not downloaded the corpus still gets a green suite.
+  `tests/README.md` opens with "`git clone && npm test` is green and offline"; the offline half is
+  a property — a trap replaces `fetch` and `offline.test.ts` proves it is armed — and the other
+  half, that a fresh clone passes without the ~59 MB the fetch script pulls, was enforced by
+  convention.
+- It is the half a contributor meets first, and it fails unwelcomingly: they clone, run the suite,
+  and watch it fail on files they were never told to download, in tests named after recordings they
+  have never heard of, with the fix in a README they have not reached yet.
+- CI is what makes the convention load-bearing rather than theoretical. It runs `npm ci` and
+  `npm run check` and never fetches the corpus, so every job is a run in the skipping state — an
+  unguarded corpus test fails every job on every push, blocking every release, and looks like a
+  problem with the corpus rather than with the guard.
+- The rule is mechanical: a test file that builds a path into the downloaded directory has to ask
+  whether the file is there. Both halves are needed — `fixture-policy.test.ts` sits in the same
+  folder, names the directory in a git check, reads nothing from it, and must not be required to
+  guard.
+
 ## 0.4.446
 
 - **Added** a property test that flooring a sample's published start names the same sample again,
