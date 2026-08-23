@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.426
+
+- **Added** a property test that the cache is invisible at every size it can be configured to.
+  `api-sources.md` describes `cachedSource` as "removed by deleting one wrapper from the expression
+  that built the source", which is the property a caller relies on when they add it: the reads get
+  cheaper and nothing else changes.
+- The existing demonstration is one script of six reads at the default block size, where the 1 MiB
+  block swallows the fixture whole — so it demonstrates a cache that never evicts, never stitches
+  and never splits. The interesting sizes are the other ones: a block smaller than a read makes
+  every answer a stitch, a budget smaller than a few blocks makes the cache evict mid-sequence, and
+  a read wider than the budget bypasses the cache entirely. All three are reachable from an
+  ordinary configuration — blocks sized to a record, a budget sized to a phone.
+- The failure is not a crash. Stitching arithmetic off by a block start returns the right number of
+  bytes from the right file, taken from the wrong offset: a header that parses, samples that plot,
+  and a recording quietly shifted.
+- The copy rule is scoped rather than assumed. It is asserted for reads the cache actually serves;
+  a read wider than the whole budget returns the wrapped source's own array by design, because
+  nothing is retained on that path, and `cached.ts` says so. Each property builds its fixture
+  fresh, since a test that writes into a result would otherwise edit the bytes it compares against
+  and pass on the damage.
+
 ## 0.4.425
 
 - **Added** tests for the one sentence `api-reading.md` gives about the shape of `signalIndices`:
