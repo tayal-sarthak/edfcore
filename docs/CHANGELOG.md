@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.432
+
+- **Added** a check that every version is still signed, and of the four lines that make it so.
+  `scripts/release.mjs` ends a successful run by telling whoever cut it that the version "is on npm
+  with a provenance attestation". It prints that unconditionally, nothing verified the workflow
+  still signs anything, and nothing could notice if it stopped: npm accepts an unsigned publish
+  exactly as it accepts a signed one, and the only difference is a panel missing from a web page
+  nobody reloads.
+- The attestation is not decoration here. AGENTS.md explains that the
+  `archive/pre-squash-2026-08-16` branch is load-bearing precisely because every version published
+  that day carries a signed attestation naming the commit it was built from — a whole branch is
+  kept alive so those Source Commit links keep resolving.
+- Four things hold it together and each is a line a tidy-up removes without a thought:
+  `id-token: write`, where the signing key comes from and whose removal looks like tightening
+  permissions; `--provenance` on the publish step, which looks redundant next to `publishConfig`;
+  `--provenance` *not* in `publishConfig`, the opposite tidy-up, because there it would apply to a
+  publish from a laptop that has no OIDC token to sign with; and `registry-url` on `setup-node`,
+  without which the publish is unauthenticated and never gets far enough to sign anything.
+- The reasons written beside them are checked too, since they are the only thing standing between
+  the next reader and the tidy-up.
+
 ## 0.4.431
 
 - **Added** tests that a 16-bit channel labelled `Status` is not a BioSemi Status channel.
