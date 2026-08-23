@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.435
+
+- **Added** a check that the announce script cuts one release and that a dry run cuts none.
+  `npm run announce` is the last step of every batch and the only command here that writes to
+  GitHub. Everything else — the bump, the commit, the tag, the publish — is either reversible or
+  gated by `npm run check`. A release is neither: it is public the moment it exists, it notifies
+  watchers, and a second one over the same range is not something anyone undoes quietly.
+- Three properties keep that safe and none was checked. Exactly one mutating call, because one
+  release per version is precisely what this script replaced and a per-version loop reintroduced by
+  someone would look like a fix. A dry run that exits rather than falling through, or the flag
+  people use to preview a batch would announce it. And a refusal to announce past a tag with no
+  changelog entry, because the notes *are* the changelog entries — a missing one produces a release
+  whose body skips a version, in the one artefact a reader trusts to be complete.
+- The title is pinned too: `edfcore <first>–<last>` with an en dash, dropping the range for a
+  single version, cut on the newest tag so it points at the code the range ends with. A small thing
+  to get wrong and a permanent one, since release titles are what the release list looks like
+  forever.
+
 ## 0.4.434
 
 - **Added** a check that asking a source for nothing costs nothing, in every adapter. A zero-length
