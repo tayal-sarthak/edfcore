@@ -28,7 +28,7 @@ import { EdfBudgetError, EdfChannelNotFoundError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
-import { gapBefore } from './recording.js';
+import { assertSignalIndices, gapBefore } from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { resolveTimeWindow } from './time/window.js';
@@ -158,6 +158,8 @@ function resolveEnvelopeSignals(
   header: EdfHeader,
   signalIndices: readonly number[],
 ): readonly EdfSignal[] {
+  // The same refusal `resolveSignals` gives, from the resolver the envelope path uses instead.
+  assertSignalIndices(signalIndices);
   const seen = new Set<number>();
   const signals: EdfSignal[] = [];
   for (const signalIndex of signalIndices) {

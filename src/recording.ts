@@ -72,10 +72,44 @@ export async function openEdf(source: ByteSource, options?: OpenOptions): Promis
  * Exported for `stream.ts`, which must produce the byte-identical refusal `readWindow` does — not
  * for the barrel. Validating a selection is not a public operation.
  */
+/** What arrived, for a selection that is not an array. Never prints the value: it could be huge. */
+function describeSelection(value: unknown): string {
+  if (value === null) return 'null';
+  if (value === undefined) return 'missing';
+  return `a ${typeof value}`;
+}
+
+/**
+ * The one required option with no default, refused in edfcore's own words.
+ *
+ * `reading-signals.md` explains why there is no "all signals" default: so that the whole of a
+ * 256-channel file is never read because an argument was omitted. Omitting it was a caller
+ * mistake the type system catches — and TypeScript is not the only way in. A selection built from
+ * JSON, from a config file, from a JavaScript call site, or from an object spread that dropped a
+ * key arrives at run time, and until 0.4.442 it produced `TypeError: signalIndices is not
+ * iterable`: no `Next:` clause, no mention of edfcore, and nothing naming the option. Every other
+ * bad argument on this path already says what to pass instead (fixed in 0.4.442).
+ *
+ * No caller prefix, for the reason `resolveSignals` below carries none: it is shared by
+ * `readWindow`, `readRecords`, `streamRecords` and the envelope calls, and a hard-coded name is
+ * wrong for all but one of them. `envelope.test.ts` records that exact mistake being made by three
+ * functions sharing two helpers (0.3.35). The option's own name is what a caller needs.
+ */
+export function assertSignalIndices(signalIndices: unknown): void {
+  if (Array.isArray(signalIndices)) return;
+  throw new RangeError(
+    `signalIndices is ${describeSelection(signalIndices)}, not an array of signal ` +
+      'indices. There is no "all signals" default, so that the whole of a 256-channel file is ' +
+      'never read because an argument was omitted. Next: pass header.dataSignalIndices for all ' +
+      'of the data signals, or an array of the indices you want.',
+  );
+}
+
 export function resolveSignals(
   header: EdfHeader,
   signalIndices: readonly number[],
 ): readonly EdfSignal[] {
+  assertSignalIndices(signalIndices);
   const seen = new Set<number>();
   const signals: EdfSignal[] = [];
   for (const signalIndex of signalIndices) {

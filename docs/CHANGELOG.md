@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.442
+
+- **Fixed** the one required option with no default saying nothing useful when it was left off.
+  `reading-signals.md` explains why `signalIndices` has no "all signals" default — so a 256-channel
+  file "is never read wholesale because an argument was left off" — which makes omitting it a
+  mistake the API is designed around, and it was the only bad argument on this path that answered
+  with a raw `TypeError: signalIndices is not iterable`.
+- TypeScript catches it at a typed call site, and TypeScript is not the only way in: a selection
+  built from JSON, from a config file, from a JavaScript call site, or from an object spread that
+  dropped a key arrives at run time. `readWindow` already refused a non-finite `startSeconds` with
+  a sentence and a next step; the array beside it did not.
+- The refusal names the option, says what to pass instead, and carries the page's reason with it —
+  the answer to "why can I not just omit it?" belongs at the call site. An empty array is still
+  accepted: a caller who computed an empty list asked for nothing, which is answerable, and only a
+  value that is not a list at all is a mistake.
+- No caller prefix, for the reason `resolveSignals` carries none. It is shared by `readWindow`,
+  `readRecords`, `streamRecords` and both envelope calls, and a hard-coded name would be wrong for
+  all but one — the mistake `envelope.test.ts` records three functions making once already.
+
 ## 0.4.441
 
 - **Added** a property test that the chunk size is a memory bound and not an answer.
