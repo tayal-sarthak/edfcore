@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.430
+
+- **Added** tests for a patient's date of birth being redacted out of a message that never quotes
+  the field. `redactDiagnostic` withholds identification by substituting the field's value out of
+  the message by text, and `DATE_IMPLAUSIBLE` defeats every spelling of it: the field says
+  `02-MAY-2050`, the message says `2050-05-02`, because it is comparing two dates and prints both
+  in one form. No substring of the raw field appears in that sentence. It is redacted anyway, from
+  `actual` — which carries whatever the message chose to print.
+- It is also the case with the widest reach. The other identification diagnostics fire on a
+  malformed field, so a conformant file never produces them; this one fires on a perfectly
+  conformant patient field whose only fault is a year the two-digit header rule resolved into the
+  future, which is what a recording made before 1985 or after 2084 looks like. A clinical file with
+  nothing wrong with it, printed by a command asked to withhold the patient, and a date of birth in
+  the output.
+- The other half is what must survive. Substitution is on the value, never on the code or the rule,
+  so the code, the byte offset, the field name, the spec clause and the recording's own start date
+  are all still there — and a field nobody asked to withhold is still quoted verbatim.
+
 ## 0.4.429
 
 - **Added** tests for `edfcore validate` exiting 1 because validation failed. The exit-code table on
