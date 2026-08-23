@@ -228,3 +228,69 @@ describe('the boundary test is exact, not approximate', () => {
     ]);
   });
 });
+
+describe('a hand-built ArrayLike with holes in it', () => {
+  /*
+   * The signature is `ArrayLike<bigint>`, not `BigInt64Array`, and the difference is the whole
+   * reason two `undefined` checks exist inside the walk. `decodeAnnotations` returns a
+   * `BigInt64Array`, where an index inside the length always holds a value, so nothing in the
+   * suite had ever passed anything else and both checks were dead — deleting either changed
+   * nothing, and the function would then throw on the input its own type admits.
+   *
+   * Throwing is the wrong answer here. This module is documented as structural: it reports the
+   * shape the onsets have and judges none of it. A hole is not a discontinuity, and turning a
+   * traversal into an exception would mean a caller assembling onsets from partial probes — the
+   * shape the `ArrayLike` signature exists for — gets a stack trace instead of the segments it
+   * does know about.
+   *
+   * The third `undefined` check, in the gaps loop, cannot be reached from here at all: it reads
+   * `segments`, which this function built itself. It is left alone rather than pinned by a test
+   * that would have to fake the array to run it.
+   */
+  /** `length` entries, `values` at the named indices, nothing at the rest. */
+  function sparse(length: number, values: Readonly<Record<number, bigint>>): ArrayLike<bigint> {
+    return { length, ...values } as ArrayLike<bigint>;
+  }
+
+  it('skips a hole rather than throwing, and keeps walking past it', () => {
+    // Records 0..4 on a one-second grid with record 2 missing. The pair (1, 2) and the pair
+    // (2, 3) are both unjudgeable, so neither opens a segment, and 3 follows 1 in the walk.
+    const onsets = sparse(5, { 0: 0n, 1: SECOND, 3: 3n * SECOND, 4: 4n * SECOND });
+
+    const { segments, gaps } = buildSegmentation(onsets, SECOND);
+
+    expect(recordsOf(segments)).toEqual([{ start: 0, count: 5 }]);
+    expect(gaps).toHaveLength(0);
+  });
+
+  it('still splits on a discontinuity between two entries that ARE present', () => {
+    // Non-vacuity: skipping a hole must not become skipping the comparison. Record 4 starts ten
+    // seconds late, and that pair has both onsets, so it is a boundary.
+    const onsets = sparse(5, { 0: 0n, 1: SECOND, 3: 3n * SECOND, 4: 14n * SECOND });
+
+    const { segments, gaps } = buildSegmentation(onsets, SECOND);
+
+    expect(recordsOf(segments)).toEqual([
+      { start: 0, count: 4 },
+      { start: 4, count: 1 },
+    ]);
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0]?.durationTicks).toBe(10n * SECOND);
+  });
+
+  it('reports nothing at all when record 0 is the hole', () => {
+    // The origin defaults to `onsetTicks[0]`, so without it there is no axis to rebase onto and
+    // every second this function returns would be measured from a number it invented.
+    const onsets = sparse(4, { 1: SECOND, 2: 2n * SECOND, 3: 3n * SECOND });
+
+    expect(buildSegmentation(onsets, SECOND)).toEqual({ segments: [], gaps: [] });
+  });
+
+  it('reports nothing when record 0 is the hole even with an explicit origin', () => {
+    // The refusal is about record 0's onset, not about the origin: a segment's `records.start`
+    // is 0 and its first onset is `onsetTicks[0]`, which is still missing.
+    const onsets = sparse(4, { 1: SECOND, 2: 2n * SECOND, 3: 3n * SECOND });
+
+    expect(buildSegmentation(onsets, SECOND, 0n)).toEqual({ segments: [], gaps: [] });
+  });
+});

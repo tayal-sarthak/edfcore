@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.466
+
+- **Added** tests for `buildSegmentation` over a sparse `ArrayLike`, which is what its signature
+  admits and what nothing had ever passed it. `decodeAnnotations` returns a `BigInt64Array`, where
+  an index inside the length always holds a value, so both `undefined` checks inside the walk were
+  dead: deleting either changed nothing, and the function would then throw on an input its own
+  type accepts.
+- Throwing is the wrong answer for this module. It is documented as structural — it reports the
+  shape the onsets have and judges none of it — so a hole is not a discontinuity, and a caller
+  assembling onsets from partial probes would get a stack trace instead of the segments it does
+  know about.
+- Four cases: a hole is skipped and the walk continues past it; a discontinuity between two
+  entries that ARE present still splits, so skipping a hole has not become skipping the
+  comparison; and a missing record 0 returns nothing at all, with or without an explicit origin,
+  because that onset is the axis every second here is measured from.
+- The third `undefined` check, in the gaps loop, is left alone and said so in the test: it reads
+  the `segments` array the function built itself, so no input reaches it and pinning it would mean
+  faking the array.
+
 ## 0.4.465
 
 - **Added** the close half of `cachedSource`'s pass-through, which had never run. At `maxBytes: 0`
