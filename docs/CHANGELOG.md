@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.451
+
+- **Added** a property test for `bucketCount` over arbitrary windows. `api-helpers.md` calls it
+  "the field to read before indexing, and it is not always the `buckets` you asked for" — a caller
+  who sizes a canvas to 800 pixels, asks for 800 buckets and loops to 800 reads past the end of
+  `counts` on any run shorter than 800 samples, which is every run near the end of a recording and
+  every run between two gaps.
+- The two calls answer differently and both answers are deliberate. `readEnvelope` clamps to the
+  densest signal's sample count, because a grid with more buckets than samples has columns that
+  mean nothing. `readEnvelopeAtResolution` does not, because its contract is the bucket WIDTH:
+  shortening the count would shorten the grid rather than coarsen it, and a time axis asked for
+  30 s per bucket has to keep getting it.
+- Both rules are exactly the kind that hold for the case someone checked — a run long enough for
+  the clamp never to bite, a resolution dividing the span exactly — so they are now checked over
+  generated geometries, along with the invariant a caller actually indexes on: every signal's
+  `counts`, `min` and `max` are `bucketCount` long, whatever the count turns out to be.
+
 ## 0.4.450
 
 - **Added** a property test that `printable` never changes the width of what it is given. Every
