@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.456
+
+- **Added** a test for the line that divides the two kinds of failure inside `inspectEdf`: the
+  `if (!isEdfError(error)) throw error` at the top of its `catch`.
+- A defect in the file is reported, never thrown — that is what triage is for, and it is well
+  covered. A mistake in the ARGUMENTS has to stay a throw, and nothing in the suite had ever
+  thrown a non-`EdfError` out of `parseHeader`, so the rethrow never ran. Replacing it with a
+  `return` failed nothing.
+- The cost of losing it is specific. `EdfInspection` carries no field meaning "the arguments were
+  wrong", so a swallowed `RangeError` comes back as `ok: false` with a diagnostic list blaming
+  the file for a number the caller supplied.
+- The reachable caller bug is a `ByteSource` reporting a `byteLength` past 2^53 — a hand-written
+  adapter over a paged API, or a `Content-Range` nobody checked. `assertByteSource` accepts it
+  because it is a number, and `parseHeader` refuses it because it cannot be a byte count. The
+  test asserts `isEdfError` is false on what comes back, since that is the predicate the
+  documented `catch` recipe branches on.
+
 ## 0.4.455
 
 - **Fixed** a test that refused what it was named after by accident. `timeline.test.ts` listed
