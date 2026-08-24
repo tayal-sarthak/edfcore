@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.482
+
+- **Added** the `maxMaterializeBytes` boundary for `validateRecording`'s scan scratch buffer — the
+  fourth place in the package that compares a requirement against that budget, and the one
+  0.4.464 missed. That release pinned the other three by grepping for `resolveMaterializeBudget`;
+  this call site names its own variable, so the grep walked past it.
+- The rule has to be the same in all four. A caller who sizes a request to the budget lands ON the
+  number, and a strict comparison here refuses the arithmetic the other three accept — for the one
+  option whose whole purpose is letting a caller state a ceiling and work up to it.
+- Two records of ten samples need eighty bytes of `Int32Array`: a budget of eighty scans them, and
+  seventy-nine is refused with both numbers on the error. Relaxing the comparison now fails a test
+  instead of none.
+
 ## 0.4.481
 
 - **Added** tests for the two overlaps `validate.ts` documents as deliberate. Its docblock names

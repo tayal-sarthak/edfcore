@@ -267,6 +267,33 @@ describe('validateRecording honours maxMaterializeBytes for its scan scratch buf
     ).rejects.toMatchObject({ edfErrorKind: 'budget', budgetBytes: 4096 });
   });
 
+  it('admits a scratch buffer that is exactly the budget', async () => {
+    /*
+     * The fourth place in the package that compares a requirement against `maxMaterializeBytes`,
+     * and the one 0.4.464 missed: that release pinned the boundary in `io/read.ts`,
+     * `decode/digital.ts` and `envelope.ts`, found by grepping for `resolveMaterializeBudget`, and
+     * this call site names its own variable so the grep walked past it.
+     *
+     * The rule is the same in all four, and it has to be: a caller who sizes a request to the
+     * budget lands ON the number, and a strict comparison here refuses the arithmetic the other
+     * three accept. Two records of ten samples need eighty bytes of `Int32Array`.
+     */
+    const recording = await openEdf(byteSource(minimalEdf({ recordCount: 2 })));
+    const report = await validateRecording(recording, {
+      scanSamples: true,
+      maxMaterializeBytes: 80,
+    });
+    expect(report.recordsScanned).toBe(2);
+  });
+
+  it('and refuses one byte of budget short of it', async () => {
+    // Non-vacuity: the case above passes because eighty is enough, not because the guard is off.
+    const recording = await openEdf(byteSource(minimalEdf({ recordCount: 2 })));
+    await expect(
+      validateRecording(recording, { scanSamples: true, maxMaterializeBytes: 79 }),
+    ).rejects.toMatchObject({ edfErrorKind: 'budget', requiredBytes: 80, budgetBytes: 79 });
+  });
+
   it('offers to drop scanSamples only when dropping it would help', async () => {
     /*
      * The refusal ended "or drop scanSamples and validate the header alone". On EDF+/BDF+ that
