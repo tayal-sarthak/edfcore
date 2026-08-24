@@ -579,6 +579,54 @@ describe('DIGITAL_RANGE_EXCEEDS_FORMAT', () => {
     expect(diagnostic.message).toContain('used for scaling exactly as written');
   });
 
+  it.each([
+    {
+      name: 'inverted',
+      digitalMinimum: 8388607,
+      digitalMaximum: -8388608,
+      also: 'INVERTED_DIGITAL_RANGE',
+    },
+    {
+      name: 'degenerate',
+      digitalMinimum: 8388607,
+      digitalMaximum: 8388607,
+      also: 'DEGENERATE_DIGITAL_RANGE',
+    },
+  ])(
+    'does not promise scaling on a DATA signal whose range is also $name',
+    ({ digitalMinimum, digitalMaximum, also }) => {
+      /*
+       * The third arm of the same clause, added in 0.3.120 and never run until now.
+       *
+       * 0.3.72 split the annotations case out and left this one unconditional, but the check runs
+       * BEFORE `buildScale` and never asks whether a scale will exist. Stamping BDF bounds into an
+       * EDF header is the confusion the whole diagnostic exists for, and the two commonest ways a
+       * writer does it — swapping the pair, or writing one value twice — leave the signal with no
+       * scale at all. Promising extrapolated physical values there describes a conversion
+       * `toPhysical` refuses.
+       */
+      const bytes = buildEdf({
+        format: 'EDF',
+        signals: [{ label: 'Fp1', samplesPerRecord: 4, digitalMinimum, digitalMaximum }],
+        recordCount: 1,
+        raw: CLEAN_DATES,
+      });
+      const header = parse(bytes);
+      const diagnostic = diagnosticWith(header, 'DIGITAL_RANGE_EXCEEDS_FORMAT');
+
+      // The premise, both halves: the range really is outside 16 bits AND really yields no scale.
+      expect(codesOf(header)).toContain(also);
+      expect(signalAt(header, 0).kind).toBe('data');
+      expect(signalAt(header, 0).scale).toBeUndefined();
+
+      expect(diagnostic.message).toContain('no scale is built from this range');
+      expect(diagnostic.message).not.toContain('expect physical values');
+      // Not the annotations wording either: this signal carries samples, it simply has no gain.
+      expect(diagnostic.message).not.toContain('carries TAL text');
+      expect(diagnostic.message).toContain('confused the two sample widths');
+    },
+  );
+
   it('does not promise scaling behaviour on an annotations channel, which has none', () => {
     /*
      * The check runs for every signal, which is right — a BDF range in an EDF+ file is exactly the

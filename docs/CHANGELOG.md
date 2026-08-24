@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.467
+
+- **Added** the test for the third arm of `DIGITAL_RANGE_EXCEEDS_FORMAT`'s advice clause, added in
+  0.3.120 and never run. Deleting it left every case in the suite green.
+- The diagnostic fires when a declared digital range does not fit the format's sample width, and
+  its last sentence tells the reader what to expect. 0.3.72 split the annotations case out;
+  0.3.120 added the case where a DATA signal gets no scale either, because the check runs before
+  `buildScale` and never asked whether one would exist. Both tested arms were covered; the one in
+  the middle was not.
+- The two fixtures are the two commonest ways a writer stamps BDF bounds into an EDF header —
+  swapping the pair, and writing one value twice — which leave `INVERTED_DIGITAL_RANGE` and
+  `DEGENERATE_DIGITAL_RANGE` behind and no gain at all. Both premises are asserted before the
+  wording is: the range really is outside 16 bits, and `signal.scale` really is `undefined`.
+- The assertions exclude the other two arms by name as well as checking their own, so a clause
+  that collapsed back to either of them fails here rather than passing on a shared phrase.
+
 ## 0.4.466
 
 - **Added** tests for `buildSegmentation` over a sparse `ArrayLike`, which is what its signature
