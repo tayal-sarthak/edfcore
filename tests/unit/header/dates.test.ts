@@ -441,6 +441,59 @@ describe('the dd-MMM-yyyy subfield date', () => {
     expect(parseSubfieldDate('02-08-1951').conformant).toBe(false);
   });
 
+  /*
+   * All twelve names, and the two that the `+ 1` can get wrong.
+   *
+   * `MONTH_ABBREVIATIONS.indexOf(...) + 1` turns a zero-based position into a month number, and
+   * `0` doubles as "not a month name" — so January sits exactly on the boundary the bounds check
+   * uses. Narrowing `month < 1` to `month <= 1` refuses every January and passed the whole suite:
+   * the fixtures here run on August, May and December, and no test had ever read a `JAN` subfield.
+   * That is a twelfth of every patient birthdate and every recording `Startdate` in the world.
+   *
+   * December is the other end and was covered by accident, through one birthdate fixture. Both
+   * ends are stated here rather than left to chance, and the ten in between come along for the
+   * cost of one line.
+   */
+  const MONTH_NAMES = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ] as const;
+
+  it.each(MONTH_NAMES.map((name, index) => ({ name, month: index + 1 })))(
+    'reads $name as month $month',
+    ({ name, month }) => {
+      const parsed = parseSubfieldDate(`15-${name}-1993`);
+      expect(parsed.date).toEqual({ year: 1993, month, day: 15 });
+      expect(parsed.conformant).toBe(true);
+    },
+  );
+
+  it('refuses a name that is not one of the twelve', () => {
+    // Non-vacuity for the table: `indexOf` returns -1 there, and `+ 1` makes it 0, which is what
+    // the lower bound is really for. Without this, a check that accepted everything would pass
+    // every case above.
+    expect(parseSubfieldDate('15-JAM-1993').date).toBeUndefined();
+    expect(parseSubfieldDate('15-J-1993').date).toBeUndefined();
+  });
+
+  it('refuses a numeric month outside 1..12, at both ends', () => {
+    // The numeric spelling reaches the same bounds by the other route.
+    expect(parseSubfieldDate('15-00-1993').date).toBeUndefined();
+    expect(parseSubfieldDate('15-13-1993').date).toBeUndefined();
+    expect(parseSubfieldDate('15-01-1993').date).toEqual({ year: 1993, month: 1, day: 15 });
+    expect(parseSubfieldDate('15-12-1993').date).toEqual({ year: 1993, month: 12, day: 15 });
+  });
+
   it('refuses an impossible day here as well', () => {
     expect(parseSubfieldDate('31-FEB-1951').date).toBeUndefined();
     expect(parseSubfieldDate('29-FEB-1951').date).toBeUndefined();

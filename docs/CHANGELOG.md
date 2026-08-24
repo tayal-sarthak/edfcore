@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.474
+
+- **Added** all twelve month names to the `dd-MMM-yyyy` subfield tests. `MONTH_ABBREVIATIONS
+  .indexOf(...) + 1` turns a zero-based position into a month number, and `0` doubles as "not a
+  month name" — so January sits exactly on the boundary the bounds check uses.
+- Narrowing `month < 1` to `month <= 1` refuses every January and passed the whole suite. The
+  fixtures ran on August, May and December, and no test had ever read a `JAN` subfield: that is a
+  twelfth of every patient birthdate and every recording `Startdate` there is, on the two fields
+  EDF+ added specifically so a year could be unambiguous.
+- December was covered by accident, through one birthdate fixture. Both ends are now stated rather
+  than left to chance, and the ten in between cost one line.
+- Two non-vacuity cases go with the table: a name that is not one of the twelve is refused, which
+  is what the lower bound is really for, and the numeric spelling is checked at 0, 1, 12 and 13,
+  since it reaches the same bounds by the other route.
+
 ## 0.4.473
 
 - **Added** tests for a runtime with no `TextDecoder`, which `tal/grammar.ts` is written for and

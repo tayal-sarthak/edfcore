@@ -230,7 +230,7 @@ function hexDump(bytes: Uint8Array): string {
 }
 
 function isPrintableAscii(byte: number): boolean {
-  return byte >= 0x20 && byte <= 0x7e;
+  return byte > 0x20 && byte <= 0x7e;
 }
 
 /** Keeps every entry on one line: control and non-ASCII characters become escapes, not bytes. */
