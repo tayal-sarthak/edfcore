@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.471
+
+- **Fixed** a one-each test table. 0.3.48 fixed the same defect on the two identification lines of
+  `edfcore header --patient` in one commit, and the cases behind it checked the empty field on
+  `patient` and the populated field on `recording`. Half the fix had nothing behind it: dropping
+  the `|| 'unknown'` from the recording line left every test green.
+- That half is the one a reader meets. A plain EDF file leaves the local recording identification
+  blank, which is most of them, so `edfcore header --patient` would print `recording` followed by
+  nothing at all — or, without the `trimEdfField`, by eighty dots, which is the shape 0.3.48
+  describes as reading like redaction rather than like an empty field.
+- Both cases now run for both fields from one table, so a fix applied to one line and not the
+  other fails here.
+
 ## 0.4.470
 
 - **Added** process-level tests for `cli.ts`'s failure handling. Every other CLI test drives

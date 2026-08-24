@@ -315,11 +315,11 @@ describe('NUL padding is not part of the identification field', () => {
    * space. `String.prototype.trim` does not strip U+0000, so the padding survived into `printable`
    * and printed as a run of dots — which reads as redaction, not as an empty field.
    */
-  function nulPadded(): Uint8Array {
+  function nulPadded(patientId: string, recordingId: string): Uint8Array {
     const bytes = buildEdf({
       recordCount: 2,
-      patientId: '',
-      recordingId: 'Startdate 02-MAY-1951 X X X',
+      patientId,
+      recordingId,
       signals: [{ label: 'Fp1', samplesPerRecord: 2 }],
     });
     // Only the TRAILING run, which is what padding is. Interior separators stay 0x20.
@@ -334,23 +334,50 @@ describe('NUL padding is not part of the identification field', () => {
     return bytes;
   }
 
-  it('prints `unknown` for an empty field rather than eighty dots', () => {
-    const header = parseHeader(nulPadded(), nulPadded().byteLength);
-    const line =
-      formatHeader(header, { includePatientId: true })
-        .split('\n')
-        .find((l) => l.startsWith('patient')) ?? '';
-    expect(line).toBe('patient      unknown');
-    expect(line).not.toContain('..');
-  });
+  const POPULATED = {
+    patientId: 'MCH-0234567 F 02-MAY-1951 Haagse_Harry',
+    recordingId: 'Startdate 02-MAY-1951 X X X',
+  };
 
-  it('does not trail a populated field with padding', () => {
-    const header = parseHeader(nulPadded(), nulPadded().byteLength);
-    const line =
+  /** The line each field prints on, and the text a populated one should produce. */
+  const LINES = [
+    { field: 'patientId' as const, prefix: 'patient      ', text: POPULATED.patientId },
+    { field: 'recordingId' as const, prefix: 'recording    ', text: POPULATED.recordingId },
+  ];
+
+  function lineFor(bytes: Uint8Array, prefix: string): string {
+    const header = parseHeader(bytes, bytes.byteLength);
+    return (
       formatHeader(header, { includePatientId: true })
         .split('\n')
-        .find((l) => l.startsWith('recording')) ?? '';
-    expect(line).toBe('recording    Startdate 02-MAY-1951 X X X');
+        .find((one) => one.startsWith(prefix.trimEnd())) ?? ''
+    );
+  }
+
+  /*
+   * BOTH lines, both ways. 0.3.48 fixed the same defect on the two lines in one commit, and the
+   * cases here checked the empty field on `patient` and the populated field on `recording` — one
+   * each, so half of the fix had nothing behind it. Dropping the `|| 'unknown'` from the recording
+   * line left every test green, and a plain EDF file leaves that field blank, which is most of
+   * them: `edfcore header --patient` would print `recording` followed by nothing at all.
+   */
+  it.each(LINES)(
+    'prints `unknown` for an empty $field rather than eighty dots',
+    ({ field, prefix }) => {
+      const bytes = nulPadded(
+        field === 'patientId' ? '' : POPULATED.patientId,
+        field === 'recordingId' ? '' : POPULATED.recordingId,
+      );
+      const line = lineFor(bytes, prefix);
+
+      expect(line).toBe(`${prefix}unknown`.trimEnd());
+      expect(line).not.toContain('..');
+    },
+  );
+
+  it.each(LINES)('does not trail a populated $field with padding', ({ prefix, text }) => {
+    const line = lineFor(nulPadded(POPULATED.patientId, POPULATED.recordingId), prefix);
+    expect(line).toBe(`${prefix}${text}`);
   });
 });
 
