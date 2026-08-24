@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.489
+
+- **Added** a property test for `summarizeDiagnostics`. Everything that prints a count of a file's
+  problems goes through it — the first line of `edfcore validate`, the summary under
+  `edfcore header`, and the `worst` a caller branches on to decide whether a recording is usable —
+  so its one job is to be the list, counted, and every way it can fail is quiet.
+- The existing tests pin the two DECISIONS, which is right: `worst` is by severity rank rather
+  than arrival, and it is `undefined` rather than `'info'` for an empty list. What nothing pinned
+  is that the counting adds up, and that is the part with no decision in it — which is exactly the
+  part nobody writes a case for.
+- Four invariants over arbitrary lists: the three severity counts sum to the length, each equals
+  the number of that severity in the input, `byCode` holds every code once and its counts sum to
+  the total, and it is descending by count with first-seen order inside a tie. The last is what
+  makes two runs over one file diffable, and the docblock promises it.
+- The generator draws from a four-code alphabet on purpose. Unique codes would produce entries of
+  count 1 for ever, and repeats and ties are the whole point — a hand-written fixture reaches
+  neither.
+
 ## 0.4.488
 
 - **Added** a property test for `formatDiagnostics`' `maxItems` accounting. The cap is what stops a
