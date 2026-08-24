@@ -28,27 +28,6 @@ export default defineConfig({
      * this suite's rules do not govern.
      */
     setupFiles: ['tests/support/offline.ts'],
-    /*
-     * A hang detector, not a performance budget.
-     *
-     * vitest's default is five seconds, which nobody here chose, and no test in this suite uses
-     * the clock as an assertion — the cost tests (`open-cost`, `read-header-cost`, `sweep-cost`)
-     * count READS and BYTES, which is what makes them stable. So the only thing a timeout does
-     * here is stop an infinite loop from taking the run with it.
-     *
-     * Five seconds is too tight for that job. Several tests build multi-megabyte fixtures and the
-     * heaviest ordinary case runs in about a second, so the default left under six times its own
-     * cost as headroom — and a run under `--coverage` is several times slower than one without,
-     * which is where the failures actually appeared: two in `read-pattern.test.ts` and one in
-     * `envelope.test.ts`, all three passing on the same commit without instrumentation. A timeout
-     * that fires on correct work teaches the reader to rerun rather than to read.
-     *
-     * Thirty seconds is thirty times the slowest ordinary test and still fails a genuine hang well
-     * inside a minute. The files that need longer still say so themselves — `spec-references`
-     * takes 60 s for one sweep, `read-pattern` 120 s to build its fixtures, and
-     * `extreme-geometry` 300 s explicitly as a hang detector for a file designed to provoke one.
-     */
-    testTimeout: 30_000,
     typecheck: {
       enabled: false,
     },
