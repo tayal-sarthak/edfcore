@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.483
+
+- **Added** the whitespace-at-the-ends cases for the prefiltering conformance check, and a comment
+  saying what the line they exercise is for. `trimEdfField` strips 0x20 and 0x00 and nothing else,
+  so a field padded or separated with a tab or a newline still carries it when it reaches
+  `checkPrefiltering`.
+- The split then yields an empty token at that end, and the `filter` beside it is the only thing
+  that stops an empty string being measured against `HP:`/`LP:`/`N:`/`G:` and failing. Nothing had
+  exercised it — every existing case is space-separated, and the separator pattern's own `+`
+  collapses an interior run without help — so dropping the filter reported a field whose terms are
+  perfectly well formed, on exactly the writers most likely to have used a tab.
+- The limit is asserted with it: whitespace around a term that is genuinely wrong is still
+  reported, so tolerating the edges has not become tolerating the contents.
+- The same shape as 0.4.472, in the other module that splits a fixed-width field on whitespace.
+
 ## 0.4.482
 
 - **Added** the `maxMaterializeBytes` boundary for `validateRecording`'s scan scratch buffer — the

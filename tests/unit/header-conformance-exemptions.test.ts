@@ -45,6 +45,8 @@ interface Overrides {
   readonly label?: string;
   readonly transducerType?: string;
   readonly prefiltering?: string;
+  /** The 80 bytes as written, for a value the padded spelling above cannot express. */
+  readonly raw?: { readonly prefiltering: string };
 }
 
 /** One signal, conformant in every field except the ones a case overrides. */
@@ -93,6 +95,34 @@ describe('the prefiltering field', () => {
 
   it.each(['bandpass', 'HP:0.1Hz oops', '0.1-75Hz'])('still reports %p', (prefiltering) => {
     expect(codesFor({ prefiltering })).toContain('PREFILTERING_NONCONFORMANT');
+  });
+
+  /*
+   * Whitespace at the ENDS, which `trimEdfField` does not remove.
+   *
+   * It strips 0x20 and 0x00 and nothing else, so a field padded or separated with a tab or a
+   * newline arrives at `checkPrefiltering` with that byte still on it. `split(/\s+/)` then yields an
+   * empty token at that end, and the `filter` on the line below is the only thing that stops an
+   * empty string being measured against `HP:`/`LP:`/`N:`/`G:` and failing.
+   *
+   * Nothing had exercised it: every case above is space-separated, and the separator pattern's own
+   * `+` collapses an interior run without help. Dropping the filter reports a field whose terms
+   * are perfectly well formed, on the writers most likely to have used a tab in the first place.
+   */
+  it.each([
+    ['a leading tab', '\tHP:0.1Hz'],
+    ['a trailing tab', 'HP:0.1Hz\t'],
+    ['a leading newline', '\nHP:0.1Hz LP:75Hz'],
+    ['tabs between the terms', 'HP:0.1Hz\tLP:75Hz'],
+  ])('accepts %s, which trimEdfField leaves behind', (_name, prefiltering) => {
+    expect(codesFor({ raw: { prefiltering: prefiltering.padEnd(80, ' ') } })).toEqual([]);
+  });
+
+  it('still reports a bad term with whitespace around it', () => {
+    // Non-vacuity: tolerating the edges is not tolerating the contents.
+    expect(codesFor({ raw: { prefiltering: '\tbandpass\t'.padEnd(80, ' ') } })).toContain(
+      'PREFILTERING_NONCONFORMANT',
+    );
   });
 });
 

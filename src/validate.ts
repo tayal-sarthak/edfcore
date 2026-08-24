@@ -178,6 +178,11 @@ function checkLabelConvention(header: EdfHeader, signal: EdfSignal, into: EdfDia
 function checkPrefiltering(header: EdfHeader, signal: EdfSignal, into: EdfDiagnostic[]): void {
   const text = signal.prefiltering;
   if (text.length === 0 || PREFILTERING_NONE.has(text)) return;
+  // `filter`, because `trimEdfField` strips 0x20 and 0x00 and nothing else. A field padded or
+  // separated with a tab or a newline still carries it here, and the split then yields an empty
+  // token at that end — measured against the four prefixes it fails, and a field whose terms are
+  // well formed is reported. The pattern's own `+` handles an interior run without help; this
+  // handles the ends (0.4.483).
   const tokens = text.split(/\s+/).filter((token) => token.length > 0);
   const conformant = tokens.every((token) =>
     PREFILTERING_PREFIXES.some((prefix) => token.startsWith(prefix)),
