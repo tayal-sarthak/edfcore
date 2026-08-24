@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.476
+
+- **Added** the zero-record-duration case to `readTriggers`, the last reader in the package
+  without one. `formatHeader`, `resolveTimeWindow`, `trimToWindow`, `gridSampleStartTicks` and
+  `readEnvelope` all have theirs; BDF permits a zero record duration, and this is the reader whose
+  own comment states what it means — every sample of every record sits at one instant.
+- What that costs is that time can no longer order the events, and `sampleIndex` is the only thing
+  that can. Three trigger runs come back as three events, all at tick 0, at sample indices 0, 2
+  and 5 — so the change detection still works when the times are all equal, which is the part
+  nothing else in the suite says.
+- The all-or-nothing rule is pinned with it: a window starting after that instant yields nothing
+  rather than the tail of the recording, and a zero-length window yields nothing either.
+- The guard the comment sits on is NOT claimed to be covered by this, and the test says so.
+  `ceilDiv(s * 0n, samplesPerRecord)` is 0 for every `s`, so its two branches agree on every
+  input and no test can tell them apart. What is checked is the outcome.
+
 ## 0.4.475
 
 - **Added** the boundary cases for `quote`, which is what keeps a `raw:` line on one line however

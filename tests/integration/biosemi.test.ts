@@ -580,3 +580,86 @@ describe('the published precededByGap rule matches the code', () => {
     }
   });
 });
+
+describe('a zero record duration, which BDF permits', () => {
+  /*
+   * Every sample of every record sits at the same instant, so time cannot order the events and
+   * `sampleIndex` is the only thing that can. `readTriggers` was the last reader with a
+   * zero-duration case untested — `formatHeader`, `resolveTimeWindow`, `trimToWindow`,
+   * `gridSampleStartTicks` and `readEnvelope` all have one — and this is the behaviour its own
+   * comment claims: "A zero record duration puts every sample of the record at its start
+   * instant."
+   *
+   * The guard that comment sits on cannot be distinguished by any input, and this does not
+   * pretend otherwise: `ceilDiv(s * 0n, samplesPerRecord)` is 0 for every `s`, so the arithmetic
+   * branch and the branch beside it agree. What is checked here is the OUTCOME, which nothing
+   * else in the suite states — that the events still arrive, still deduplicate, and still carry a
+   * sample index that separates them once their times no longer can.
+   */
+  const PLAN = [0, 0, 1, 1, 1, 2, 2, 2];
+
+  function flatBdf(): Uint8Array {
+    return buildEdf({
+      format: 'BDF',
+      plus: false,
+      recordCount: 4,
+      recordDurationSeconds: 0,
+      signals: [
+        {
+          label: 'A1',
+          samplesPerRecord: 2,
+          physicalMinimum: -262144,
+          physicalMaximum: 262144,
+          digitalMinimum: -8388608,
+          digitalMaximum: 8388607,
+          sample: () => 0,
+        },
+        {
+          label: 'Status',
+          samplesPerRecord: 2,
+          physicalMinimum: -262144,
+          physicalMaximum: 262144,
+          digitalMinimum: -8388608,
+          digitalMaximum: 8388607,
+          sample: (recordIndex: number, sampleIndex: number) =>
+            PLAN[recordIndex * 2 + sampleIndex] ?? 0,
+        },
+      ],
+    });
+  }
+
+  async function flatRecording(): Promise<EdfRecording> {
+    return openEdf(byteSource(flatBdf()));
+  }
+
+  it('reports every event at the same instant, exactly', async () => {
+    const recording = await flatRecording();
+    // The premise: the file really has no time axis.
+    expect(recording.header.recordDurationTicks).toBe(0n);
+
+    const events = await readTriggers(recording, { startSeconds: 0, durationSeconds: 1 });
+
+    expect(events.map((event) => event.ticks)).toEqual([0n, 0n, 0n]);
+    expect(events.map((event) => event.seconds)).toEqual([0, 0, 0]);
+  });
+
+  it('still finds each change, and still separates them by sample index', async () => {
+    // Three runs in the plan, so three events, and nothing is collapsed by the times matching.
+    const events = await readTriggers(await flatRecording(), {
+      startSeconds: 0,
+      durationSeconds: 1,
+    });
+
+    expect(events.map((event) => event.trigger)).toEqual([0, 1, 2]);
+    expect(events.map((event) => event.sampleIndex)).toEqual([0, 2, 5]);
+  });
+
+  it('is wholly inside a window or wholly outside it', async () => {
+    // Nothing advances, so a window either contains the one instant or it does not. A window
+    // starting after it yields nothing rather than the tail of the recording.
+    const recording = await flatRecording();
+
+    expect(await readTriggers(recording, { startSeconds: 1, durationSeconds: 1 })).toEqual([]);
+    expect(await readTriggers(recording, { startSeconds: 0, durationSeconds: 0 })).toEqual([]);
+  });
+});
