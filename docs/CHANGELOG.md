@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.475
+
+- **Added** the boundary cases for `quote`, which is what keeps a `raw:` line on one line however
+  hostile the 80 bytes behind it are. It has four boundaries and only the space at 0x20 was
+  pinned; the other three could each be narrowed with the whole suite still green.
+- All three are about ordinary bytes. `~` is 0x7e, the last printable ASCII character, and it
+  appears in real prefiltering fields (`HP:~0.1Hz`) — printed as an escape it reads as a control
+  byte in a field where the writer typed a tilde. U+00FF is the last character with a two-digit
+  escape, so narrowing that bound spells it `\u{ff}` while every other Latin-1 byte in the same
+  field is spelled `\xNN`, and one header field prints in two notations.
+- The one-line property is asserted directly as well: a field holding a newline, a tab and a
+  carriage return renders as exactly one `raw:` line.
+- And the deliberately different rule on `expected:` and `actual:` is asserted beside it. Those
+  are unquoted values in fixed-width columns, so a control byte becomes one dot through
+  `printable` rather than a four-character escape — the same byte prints two ways on two lines,
+  which is the design and not an inconsistency, and neither half is obvious without the other.
+
 ## 0.4.474
 
 - **Added** all twelve month names to the `dd-MMM-yyyy` subfield tests. `MONTH_ABBREVIATIONS
