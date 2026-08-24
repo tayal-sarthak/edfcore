@@ -24,7 +24,7 @@
  * only means something against a file that would hurt to read.
  */
 
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { readHeader, readRecordBytes } from '../../src/io/read.js';
@@ -133,6 +133,25 @@ function largeEdfPlusD(): Uint8Array {
   });
   return largeEdfPlusDCache;
 }
+
+/*
+ * Built once, and paid for somewhere that is allowed to take time.
+ *
+ * All three builders memoise, so only the first caller pays — but "the first caller" is a test
+ * body with the default five-second budget, and constructing 31 MB of records inside it is most of
+ * that budget on an idle machine and more than it on a loaded one. The two tests that happen to
+ * ask first, one per fixture, then fail on a timeout that has nothing to do with what they assert:
+ * both were seen failing under coverage instrumentation while the same run passed without it.
+ *
+ * This is what 0.4.417 and 0.4.418 did for `spec-references.test.ts`, in that order and for the
+ * same reason — memoising alone moves the cost to whichever test runs first, and a `beforeAll` is
+ * where a cost that belongs to the file rather than to one case is supposed to sit.
+ */
+beforeAll(() => {
+  largeEdf();
+  largeEdfPlus();
+  largeEdfPlusD();
+}, 120_000);
 
 // ---------------------------------------------------------------------------
 // readHeader: exactly two reads

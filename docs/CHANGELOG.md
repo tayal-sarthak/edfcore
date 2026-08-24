@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.484
+
+- **Moved** the 31 MB fixture builds in `read-pattern.test.ts` into a `beforeAll` with a budget of
+  its own. All three builders already memoised, so only the first caller paid — but "the first
+  caller" is a test body with vitest's five-second default, and building 31 MB of records inside
+  it is most of that on an idle machine and more than it on a loaded one.
+- The two tests that happen to ask first, one per fixture, then fail on a timeout that has nothing
+  to do with what they assert. Both were seen failing under coverage instrumentation while the
+  same run passed without it, which is the shape of failure that gets rerun rather than read.
+- This is what 0.4.417 and 0.4.418 did for `spec-references.test.ts`, in that order and for the
+  same reason: memoising alone moves the cost onto whichever test runs first, and a `beforeAll` is
+  where a cost belonging to the file rather than to one case is supposed to sit.
+
 ## 0.4.483
 
 - **Added** the whitespace-at-the-ends cases for the prefiltering conformance check, and a comment
