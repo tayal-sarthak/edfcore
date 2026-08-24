@@ -88,6 +88,39 @@ for (const prefix of ['tests/', 'website/', 'config/', 'scripts/', '.github/', '
 const fixtures = paths.filter((path) => /(^|\/)(corpus|scratch)\//.test(path));
 if (fixtures.length > 0) fail(`fixtures reached the tarball: ${fixtures.slice(0, 3).join(', ')}`);
 
+/*
+ * And nothing loose INSIDE the two directories that do ship.
+ *
+ * Everything above asks which directories reached the tarball. `files` is an allow-list of
+ * directories, so membership within one was never asked at all: `src` ships whatever happens to
+ * be sitting in it, tracked or not. A half-finished module kept while refactoring, a `.orig` left
+ * by a merge, an editor's swap file — each goes out to every consumer and is immutable once
+ * published.
+ *
+ * `src/` ships for one reason, which is that the sourcemaps resolve into it. A file git does not
+ * track is a file no sourcemap points at, so it is carrying weight for nobody.
+ *
+ * The rules npm applies on its own are the reason this is worth stating rather than assuming.
+ * `.DS_Store` is dropped by a convention this repository does not write down and cannot see —
+ * the same class of invisible rule as the three files npm adds for free above.
+ */
+const trackedSrc = new Set(
+  execFileSync('git', ['ls-files', 'src'], { cwd: ROOT, encoding: 'utf8' })
+    .split('\n')
+    .filter((line) => line !== ''),
+);
+const untracked = under('src/').filter((path) => !trackedSrc.has(path));
+if (untracked.length > 0) {
+  fail(`src/ ships files git does not track: ${untracked.slice(0, 3).join(', ')}`);
+}
+if (under('src/').length !== trackedSrc.size) {
+  fail(`src/ ships ${under('src/').length} files and git tracks ${trackedSrc.size}`);
+}
+const distStrays = under('dist/').filter((path) => !/\.(js|d\.ts|map)$/.test(path));
+if (distStrays.length > 0) {
+  fail(`dist/ holds files tsc did not emit: ${distStrays.slice(0, 3).join(', ')}`);
+}
+
 // --- report ----------------------------------------------------------------
 
 if (failures.length > 0) {

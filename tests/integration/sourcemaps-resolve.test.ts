@@ -73,6 +73,21 @@ describe('the build asks for them', () => {
     // And the tarball check refuses without it, with the reason.
     expect(read('scripts/check-tarball.mjs')).toContain('the sourcemaps resolve to nothing');
   });
+
+  it('ships that TypeScript and nothing else beside it', () => {
+    /*
+     * `files` is an allow-list of DIRECTORIES, so `src` ships whatever is sitting in it. The
+     * tarball check asked which directories arrived and never asked what was inside the two that
+     * are supposed to; every loose file in `src/` — a module kept while refactoring, a `.orig`
+     * from a merge — went out to every consumer and became immutable on publish.
+     *
+     * `git ls-files` is the comparison because `src/` ships for exactly one reason: the
+     * sourcemaps resolve into it. A file git does not track is a file no map points at.
+     */
+    const script = read('scripts/check-tarball.mjs');
+    expect(script).toContain("execFileSync('git', ['ls-files', 'src']");
+    expect(script).toContain('src/ ships files git does not track');
+  });
 });
 
 describe.skipIf(!BUILT)('the maps that were emitted', () => {

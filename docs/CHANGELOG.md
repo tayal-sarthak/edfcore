@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.480
+
+- **Added** membership checks inside the two directories the package actually ships.
+  `verify:tarball` asked which directories reached the tarball and never asked what was in them —
+  and `files` is an allow-list of DIRECTORIES, so `src` ships whatever happens to be sitting in
+  it, tracked or not.
+- A half-finished module kept while refactoring, a `.orig` left by a merge, an editor's swap file:
+  each goes out to every consumer, and a published version is immutable. `src/` ships for exactly
+  one reason — the sourcemaps resolve into it — so `git ls-files src` is the right comparison: a
+  file git does not track is a file no map points at.
+- `dist/` is checked the same way, against the three extensions `tsc` emits, so anything that
+  arrived there by some other route is named rather than shipped.
+- Both fire on a stray file and both name it. The rules npm applies on its own are why this is
+  worth stating rather than assuming: `.DS_Store` is dropped by a convention this repository does
+  not write down and cannot see, the same class of invisible rule as the three files npm adds for
+  free just above the new check.
+
 ## 0.4.479
 
 - **Fixed** a check that could pass on the machine that broke it and fail on CI. `file-references`
