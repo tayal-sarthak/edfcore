@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.485
+
+- **Added** the edge cases for the sub-second start offset, which is documented as `[0, 1)` and
+  was enforced by two comparisons that could both be relaxed with the suite green. The fixtures
+  that reach them use 1.5 s and 3 s — outside by a margin — so nothing had ever sat on the edge.
+- An offset of exactly 1.0 s is not an exotic value. It is what a writer produces the first time
+  it puts the same second in both fields, and it means every time edfcore publishes for that file
+  is a second out. `START_OFFSET_OUT_OF_RANGE` exists to say so, and quotes the interval it is
+  applying.
+- Both ends, in both paths: record 0's own onset and the value derived for a chunk that starts
+  later. Zero is checked as well, because it is the CLOSED end and the overwhelmingly common case
+  — a check that refused the boundary there would report every conforming file there is. One tick
+  below a second is the largest value the interval admits, and is accepted.
+- The EDF+D case goes with it: the same derived value carries no implication on a file whose
+  marker is for gaps, so the refusal is about the interval on a file claiming continuity rather
+  than about the arithmetic.
+
 ## 0.4.484
 
 - **Moved** the 31 MB fixture builds in `read-pattern.test.ts` into a `beforeAll` with a budget of
