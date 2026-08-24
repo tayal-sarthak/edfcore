@@ -1,6 +1,5 @@
 # edfcore
 
-[![exports](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fedfcore.vercel.app%2Fapi.json&query=%24.exports.total&label=exports&color=blue)](https://edfcore.vercel.app/api.json)
 [![downloads](https://img.shields.io/npm/dt/edfcore?label=downloads)](https://www.npmjs.com/package/edfcore)
 
 edfcore reads EDF, EDF+, BDF and BDF+ biosignal files in TypeScript, in the browser and in
@@ -310,10 +309,10 @@ the reason to trust the reader.
 
 Every number above is asserted against the package by
 [`tests/integration/api-surface.test.ts`](tests/integration/api-surface.test.ts) — it counts the
-real exports, renders the real `--help`, and fails when this table drifts from either. The
-`exports` badge at the top reads [`/api.json`](https://edfcore.vercel.app/api.json), which the
-documentation site generates at deploy time by importing the three published entry points and
-counting them, so it needs no maintenance at all.
+real exports, renders the real `--help`, and fails when this table drifts from either. The same
+counts are served at [`/api.json`](https://edfcore.vercel.app/api.json), which the documentation
+site generates at deploy time by importing the three published entry points and counting them, so
+it needs no maintenance at all.
 
 ---
 

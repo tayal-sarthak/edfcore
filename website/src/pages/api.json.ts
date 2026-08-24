@@ -6,10 +6,12 @@ import * as validateEntry from 'edfcore/validate';
 /**
  * `/api.json` — the size of the public surface, counted rather than written down.
  *
- * This exists to back the README's shields.io badge. A badge reading a number a human typed is
- * the site footer that said "Version 0.1.0" through three minor series: correct on the day it
- * was written and silently wrong afterwards. So the counts come from importing the three entry
- * points the package actually publishes, at build time, from the same `dist` that ships.
+ * It backed a shields.io badge on the README until 0.4.478, and outlives it: the README still
+ * links here, and the reason the numbers are counted rather than typed is unchanged. A published
+ * number a human wrote is the site footer that said "Version 0.1.0" through three minor series —
+ * correct on the day it was written and silently wrong afterwards. So the counts come from
+ * importing the three entry points the package actually publishes, at build time, from the same
+ * `dist` that ships.
  *
  * Runtime exports only. Types are erased before this file can see them, and counting them would
  * mean parsing source that is not this project's to parse from here — `api-surface.test.ts` does

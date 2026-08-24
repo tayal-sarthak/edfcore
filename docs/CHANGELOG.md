@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.478
+
+- **Removed** the `exports` badge from the top of the README, at the user's request. The number it
+  showed is still in the API surface table further down, and still counted rather than typed.
+- `/api.json` stays. The README links it, the site serves it, and the reason it exists — a
+  published count that a human wrote is the site footer that read "Version 0.1.0" through three
+  minor series — is unchanged by the badge going. Its docblock said it existed to back the badge,
+  which is no longer true, so it now says what it is.
+- `badge-contract.test.ts` was entirely about that badge: it pulled the JSONPath out of the
+  shields.io URL and walked it through the object the endpoint builds, because shields.io renders
+  a broken path as "invalid" in a corner nobody reads. With no badge there is no URL to read, so
+  the file has been retired to the repository's `deleted/` folder — and the half of it that still
+  has a subject, that `exports.total` resolves and equals the README's table, moved into
+  `api-badge.test.ts` rather than leaving with it.
+- That file now also asserts the badge is absent, so it cannot drift back in beside a table that
+  states the same number one line below it.
+
 ## 0.4.477
 
 - **Added** the case where a 206 says which bytes it sent and not how large the resource is. The
