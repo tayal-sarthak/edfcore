@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.481
+
+- **Added** tests for the two overlaps `validate.ts` documents as deliberate. Its docblock names
+  `RECORD_SIZE_ABOVE_RECOMMENDED` and `PATIENT_ID_NONCONFORMANT` as codes the parser already
+  emits, re-checked here "so a validation report stands on its own instead of only making sense
+  next to `header.diagnostics`" — and neither had ever been produced by `validateHeader` in a
+  test. Both were covered through `parseHeader`, which is the other copy, so deleting either
+  function from this module left the suite green.
+- A report that silently stopped standing on its own is the one failure that sentence exists to
+  prevent, and it is invisible: the codes are identical, so only the wording says which function
+  produced a diagnostic. Each case now asserts that the parser reports it, that `validateHeader`
+  reports it too, and that the two are distinguishable.
+- The list is read out of the docblock rather than written into the test. A third overlap added to
+  that sentence without a case fails the first check, which is what stops the prose and the cover
+  drifting apart — the same shape of drift 0.4.455 found in a test name.
+- The record-size boundary is pinned in both copies: 61,440 bytes exactly is not above the
+  recommendation. Narrowing that comparison warns every file that sized its records to the number
+  the specification names, which is the one size a careful writer would pick.
+
 ## 0.4.480
 
 - **Added** membership checks inside the two directories the package actually ships.
