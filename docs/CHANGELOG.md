@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.486
+
+- **Added** tests for the sentence the repeat counter turns into. `parseTalRegion` collapses many
+  occurrences of one defect into a single issue carrying a count, and `grammar.test.ts` pins the
+  counter thoroughly — but nothing checked whether the clause `reportIssue` builds from it appears
+  when it should and stays away when it should not.
+- Relaxing that guard puts "(1 occurrences in this region; the first is described)" on the
+  ordinary case. Ungrammatical, and worse than ungrammatical: it tells a reader looking at a
+  single bad TAL that there are others they cannot see. The same defect 0.4.421 fixed on the
+  validation report's first line — a count rendered without asking whether it needed rendering.
+- Both directions and the threshold: one occurrence carries no count, two says two, three says
+  three, and the bytes quoted are the FIRST offender's, which is what the clause promises. The
+  two-occurrence case is what stops a guard reading `> 2` passing everything else.
+
 ## 0.4.485
 
 - **Added** the edge cases for the sub-second start offset, which is documented as `[0, 1)` and
