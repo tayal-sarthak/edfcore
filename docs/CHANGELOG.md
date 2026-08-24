@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.488
+
+- **Added** a property test for `formatDiagnostics`' `maxItems` accounting. The cap is what stops a
+  file with four hundred defects filling a terminal, and the "... and N more" line under the output
+  is the only thing telling a reader that a cap was applied at all.
+- Both ways of getting it wrong are silent. Too small an N and a reader believes they have seen
+  more of the file than they have; a missing line and they believe they have seen all of it.
+- The rounding is where the untested cases were. `resolveLimit` floors a fractional `maxItems`,
+  clamps a negative one to zero, and treats `undefined` and any non-finite value as no cap —
+  four behaviours reachable from a flag, a config file or a caller's arithmetic, each changing
+  what N should be, and none of them a round number anyone writes into a fixture.
+- Three invariants, and the third is what makes the other two mean anything: the blocks shown are
+  the resolved limit, the notice appears exactly when something was withheld, and shown plus
+  hidden is the number that went in. Without the third, showing nothing and claiming everything was
+  hidden satisfies both of the others. Order is pinned separately — a reader who raises the cap
+  expects the lines they already read to still be above the new ones.
+
 ## 0.4.487
 
 - **Set** the suite's test timeout explicitly, at thirty seconds, with the reasoning in the config.
