@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.468
+
+- **Added** tests for the half of `redactDiagnostic` that had never been asked: what happens to a
+  diagnostic on a withheld field that carried no `raw` or no `actual`. Both substitutions are
+  conditional, and making either unconditional left the suite green.
+- The consequence is the 0.3.31 failure with its sign flipped. `raw: "[redacted]"` on a diagnostic
+  that never held the bytes makes `formatDiagnostics` print a `raw:` line under it, so a reader
+  auditing a report for what the tool held back finds evidence of patient text where there was
+  none. Output that looks redacted is worse than an obvious leak in both directions.
+- Also pinned: `expected` survives redaction. It is the grammar the field should have followed,
+  not a value read out of the file, and substituting it removes the only part of the line that
+  says what to do. And `actual` alone is enough to clear the message, which matters because a
+  diagnostic with no `raw` has no other spelling of the value to substitute by.
+- The diagnostics are written out rather than provoked from a file: `formatDiagnostics` is public
+  and takes any `EdfDiagnostic[]`, every parser-built identification diagnostic happens to carry
+  both fields, and the contract being pinned is the function's rather than one file's.
+
 ## 0.4.467
 
 - **Added** the test for the third arm of `DIGITAL_RANGE_EXCEEDS_FORMAT`'s advice clause, added in
