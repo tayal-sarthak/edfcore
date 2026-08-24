@@ -172,9 +172,26 @@ describe('an impossible calendar date is refused, never rolled over', () => {
 });
 
 describe('tolerated separators and stray spaces', () => {
-  // The EDF FAQ shows ' 2. 8.51' in the wild; ':', '-' and '/' all occur too. These parse,
-  // and are marked non-conformant rather than refused.
-  const TOLERATED: readonly string[] = ['02:08:51', '02-08-51', '02/08/51', ' 2. 8.51', '2.8.51'];
+  /*
+   * The EDF FAQ shows ' 2. 8.51' in the wild; ':', '-' and '/' all occur too. These parse, and are
+   * marked non-conformant rather than refused.
+   *
+   * The last four are the LEADING and TRAILING separator, which a different line tolerates: the
+   * split yields an empty part at that end, and `threeFields` filters empty parts out before it
+   * counts them. Nothing pinned that — removing the filter refuses all four while every case above
+   * still passed, because the separator pattern's own `+` already collapses an interior run.
+   */
+  const TOLERATED: readonly string[] = [
+    '02:08:51',
+    '02-08-51',
+    '02/08/51',
+    ' 2. 8.51',
+    '2.8.51',
+    '2.08.51.',
+    '.2.08.51',
+    '2-08-51-',
+    '-2.08.51',
+  ];
 
   for (const raw of TOLERATED) {
     it(`reads '${raw}' as 2 August 2051 and marks it non-conformant`, () => {
@@ -197,6 +214,22 @@ describe('tolerated separators and stray spaces', () => {
   it("marks exactly 'dd.mm.yy' conformant", () => {
     expect(parseHeaderStartDate('02.08.51').conformant).toBe(true);
     expect(parseHeaderStartDate('02.08.yy').conformant).toBe(true);
+  });
+
+  it('reads a leading minus as a separator, never as a sign', () => {
+    // `-2.08.51` is the 2nd, not day minus two. `parseDigits` refuses a sign outright, so without
+    // the empty-part filter this field would be unparseable rather than misread — but the two
+    // readings are worth telling apart in a test, because only one of them is silent.
+    const parsed = parseHeaderStartDate('-2.08.51');
+    expect(parsed.date).toEqual({ year: 2051, month: 8, day: 2 });
+  });
+
+  it('still counts a genuine fourth part, which the filter must not absorb', () => {
+    // Non-vacuity for the filter: it removes empty parts, not real ones. `02.08.51.99` has four
+    // and is refused, so tolerating a trailing separator has not become tolerating a trailing
+    // field.
+    expect(parseHeaderStartDate('02.08.51.99').status).toBe('unparseable');
+    expect(parseHeaderStartDate('.02.08.51.99').status).toBe('unparseable');
   });
 
   it('refuses a field that does not hold three parts at all', () => {

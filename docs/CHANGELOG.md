@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.472
+
+- **Documented and tested** what `threeFields` actually tolerates in a date or time field. Its
+  docblock said "any of the separators real writers emit and any amount of stray space", and the
+  empty-part filter underneath does something the sentence does not cover: it tolerates a LEADING
+  or TRAILING separator that is not a space — `.2.08.51`, `2-08-51-`, `-2.08.51`.
+- Nothing pinned that. The separator pattern ends in `+`, so an interior run collapses on its own,
+  and `trimEdfField` has already removed padding at both ends — so every case in the tolerated
+  table passed with the filter removed, while all four of these became unparseable.
+- A leading `-` is a separator and not a sign, which is now said in both places. It cannot be a
+  sign: `parseDigits` refuses one, so the alternative reading is not "day minus two" but
+  "unparseable" — and only one of those two is silent.
+- The filter's limit is pinned too: `02.08.51.99` still has four parts and is still refused, so
+  tolerating a trailing separator has not become tolerating a trailing field.
+
 ## 0.4.471
 
 - **Fixed** a one-each test table. 0.3.48 fixed the same defect on the two identification lines of

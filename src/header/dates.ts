@@ -129,6 +129,17 @@ function parseDigits(text: string, maxLength: number): number | undefined {
 /**
  * Split a date or time field into exactly three parts, tolerating any of the separators real
  * writers emit and any amount of stray space. Returns `undefined` when there are not three.
+ *
+ * Empty parts are dropped BEFORE the count, and that line does more than the sentence above
+ * suggests. `DATE_FIELD_SEPARATORS` ends in `+`, so an interior run collapses on its own and
+ * `trimEdfField` has already removed padding at both ends; what is left for the filter is a
+ * LEADING or TRAILING separator that is not a space — `.2.08.51`, `2-08-51-`, `-2.08.51`. Those
+ * split to four parts, one of them empty, and are read as the three the writer meant.
+ *
+ * A leading `-` is therefore a separator and not a sign. It cannot be one: `parseDigits` refuses
+ * a sign, so the alternative is not "day minus two" but "unparseable".
+ *
+ * A genuine fourth part is still four: `02.08.51.99` is refused, because nothing there is empty.
  */
 function threeFields(text: string): readonly [string, string, string] | undefined {
   const parts = trimEdfField(text)
