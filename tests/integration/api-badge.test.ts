@@ -16,9 +16,9 @@
  * about what it measures, which is what makes the disagreement hard to explain and easy to ship.
  *
  * A shields.io badge at the top of the README read `$.exports.total` from that endpoint until
- * 0.4.478, and `badge-contract.test.ts` checked that the JSONPath still resolved. The badge is
- * gone; the path is still what the endpoint publishes and what the site's own readers walk, so
- * that check moved here rather than leaving with it.
+ * 0.4.478, and a badge-contract test checked that the JSONPath still resolved. The badge is gone;
+ * the path is still what the endpoint publishes and what the site's own readers walk, so that
+ * check moved here rather than leaving with it.
  */
 
 import { readFileSync } from 'node:fs';

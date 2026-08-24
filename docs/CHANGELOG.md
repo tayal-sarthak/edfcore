@@ -14,7 +14,7 @@ defect; those are called out below.
   published count that a human wrote is the site footer that read "Version 0.1.0" through three
   minor series — is unchanged by the badge going. Its docblock said it existed to back the badge,
   which is no longer true, so it now says what it is.
-- `badge-contract.test.ts` was entirely about that badge: it pulled the JSONPath out of the
+- The badge-contract test was entirely about that badge: it pulled the JSONPath out of the
   shields.io URL and walked it through the object the endpoint builds, because shields.io renders
   a broken path as "invalid" in a corner nobody reads. With no badge there is no URL to read, so
   the file has been retired to the repository's `deleted/` folder — and the half of it that still
