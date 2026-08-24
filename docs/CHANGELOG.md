@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.477
+
+- **Added** the case where a 206 says which bytes it sent and not how large the resource is. The
+  short-tail message has a clause for that — "the end of the resource" rather than "the end of a
+  N-byte resource" — and nothing had ever taken it, because every case supplied a readable total.
+- A streaming origin produces it as a matter of course: the length is not known when the response
+  heads out, so RFC 7233's `*` goes in the slot and the range is still exact. Both spellings are
+  covered, the star and a total that is simply unreadable, because the clause is about
+  readability rather than about the star.
+- What it must not do is print the number it does not have. "the end of a undefined-byte
+  resource" is the shape that mistake takes, and it lands in the one sentence a reader consults
+  to decide whether their `options.byteLength` or their CDN is at fault. The assertions rule out
+  both `-byte resource` and the word `undefined`, and keep the number that IS known — the 32 the
+  source was built for, which is what the message is telling them to go and check.
+
 ## 0.4.476
 
 - **Added** the zero-record-duration case to `readTriggers`, the last reader in the package

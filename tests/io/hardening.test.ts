@@ -399,6 +399,42 @@ describe('a partial response is checked for WHICH bytes it carries', () => {
     expect(error.receivedLength).toBe(4);
   });
 
+  it.each([
+    ['the total is unknown, which RFC 7233 spells with a star', 'bytes 12-15/*'],
+    ['the total is there but unreadable', 'bytes 12-15/many'],
+  ])('names the resource without a size when %s', async (_name, contentRange) => {
+    /*
+     * The same short-tail branch, on a header that says WHICH bytes it sent and not how large the
+     * resource is. A streaming origin does exactly this: the length is not known when the response
+     * heads out, so `*` goes in the slot, and the range is still exact.
+     *
+     * The message has a clause for it and nothing had ever taken that clause — every case here
+     * supplied a readable total, so `total === undefined` fell to a phrase no test had read. What
+     * it must not do is print the number it does not have: "the end of a undefined-byte resource"
+     * is the shape that mistake takes, and it appears in the one sentence a reader consults to
+     * decide whether their `byteLength` or their CDN is at fault.
+     */
+    const { fetch } = misbehaving(contentRange, CONTENT.subarray(12, 16));
+    const source = await httpSource('https://example.invalid/f.edf', { fetch, byteLength: 32 });
+
+    const thrown: unknown = await source
+      .read(12, 8)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+    const error = thrown as EdfSourceError;
+
+    expect(error).toBeInstanceOf(EdfSourceError);
+    // The same diagnosis, with the size left out rather than invented.
+    expect(error.message).toContain('started where it was asked to');
+    expect(error.message).toContain('that is the end of the resource');
+    expect(error.message).not.toMatch(/-byte resource/);
+    expect(error.message).not.toContain('undefined');
+    // And the number it DOES have is still there, because that is the one it is telling the
+    // caller to go and check.
+    expect(error.message).toContain('built for 32 bytes');
+    expect(error.receivedLength).toBe(4);
+  });
+
   it('sees an ignored Range at construction only when it had to probe', async () => {
     /*
      * `data-sources.md` said the 200 check "happens during the length probe, before a second
