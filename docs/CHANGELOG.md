@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.470
+
+- **Added** process-level tests for `cli.ts`'s failure handling. Every other CLI test drives
+  `runCli` through an injected `CliIo`, which is deliberate and is why they run without a build;
+  it also means the shell around it — argv, the exit code, the real streams, and the one
+  `readFile` in the package that is not a `ByteSource` — was reached only by `cli-pipe.test.ts`,
+  for EPIPE alone. Three promises had nothing checking them.
+- A DIRECTORY is named as one. Node answers `fs.readFile` with `EISDIR: illegal operation on a
+  directory, read`, an errno with no path in it and no move to make; `fileSource` was fixed for
+  this in 0.3.98 and the CLI, which reads the file itself, in 0.4.178. Removing that translation
+  failed nothing. `ENOENT` is asserted to pass through unchanged, because Node's own text already
+  names the path and replacing it would be worse.
+- The EXIT CODE separates a typo from a bad file: 2 for a `CliUsageError`, 1 for anything else.
+  `documented-exit-codes.test.ts` pins what `runCli` returns; the mapping from a THROWN error to a
+  code lives in a `catch` no injected `CliIo` can reach, and collapsing both to 1 was invisible.
+- And a failure is one line. An `EdfError` already says what is wrong, where and what to do next,
+  so a stack trace over the top of it buries the only useful line — asserted by matching for a
+  run of `    at ` frames on both a directory and a truncated file.
+- Skips when `dist/` is absent, for the same reason `cli-pipe.test.ts` does: spawning is the only
+  way to run any of this, and a pass nobody earned is worse than a skip.
+
 ## 0.4.469
 
 - **Added** the cases where a 206's `Content-Range` cannot be parsed at all. edfcore checks that
