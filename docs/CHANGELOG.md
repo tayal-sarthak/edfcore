@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.487
+
+- **Set** the suite's test timeout explicitly, at thirty seconds, with the reasoning in the config.
+  vitest's default is five, which nobody here chose, and no test in this suite uses the clock as an
+  assertion — the cost tests count READS and BYTES, which is what makes them stable. The only job
+  a timeout has here is stopping an infinite loop from taking the run with it.
+- Five seconds is too tight for that job. Several tests build multi-megabyte fixtures and the
+  heaviest ordinary case runs in about a second, so the default left under six times its own cost
+  as headroom — and a run under `--coverage` is several times slower, which is where the failures
+  appeared: two in `read-pattern.test.ts` and one in `envelope.test.ts`, all three passing on the
+  same commit without instrumentation. A full coverage run of the suite now passes where it failed
+  before this change.
+- A timeout that fires on correct work teaches the reader to rerun rather than to read, which is
+  the opposite of what a red test is for.
+- Thirty seconds is thirty times the slowest ordinary test and still fails a genuine hang well
+  inside a minute. The files needing longer still say so themselves, and 0.4.484's `beforeAll` is
+  unaffected: moving a file-level cost out of an arbitrary test body is right whatever the budget
+  is.
+
 ## 0.4.486
 
 - **Added** tests for the sentence the repeat counter turns into. `parseTalRegion` collapses many
