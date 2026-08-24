@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.473
+
+- **Added** tests for a runtime with no `TextDecoder`, which `tal/grammar.ts` is written for and
+  nothing had ever run. `utf8Decoder()` is two branches — build one, or record that this runtime
+  has none — and every test in the suite runs on Node, where the global is always there. Both the
+  `null` and the message it selects were dead.
+- The degradation is the point of the branch. Annotation text is the one place edfcore decodes
+  UTF-8, and without the fallback a runtime lacking the global would throw while parsing a file
+  that is perfectly valid, losing the onsets, the timeline and every event over text nobody may be
+  reading.
+- What is pinned is the MESSAGE, not just the code. `ANNOTATION_TEXT_NOT_UTF8` also fires for a
+  text run that really is malformed, and the two call for opposite responses: one is a broken
+  file, the other is a working file on a runtime that cannot check it. Both are asserted, each
+  against the other's wording.
+- The Latin-1 expectation is derived from the fixture's own bytes rather than written out, so it
+  cannot drift from the string it is about, and the global is stubbed and restored rather than
+  deleted, so the decoder the module caches cannot leak into another file.
+
 ## 0.4.472
 
 - **Documented and tested** what `threeFields` actually tolerates in a date or time field. Its
