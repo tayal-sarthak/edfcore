@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.469
+
+- **Added** the cases where a 206's `Content-Range` cannot be parsed at all. edfcore checks that
+  header against the range it asked for, because `assertExactRead` is a length guard and cannot
+  see a right-sized body taken from the wrong offset — but `rangeFromContentRange` returns
+  `undefined` for anything outside `bytes <first>-<last>/`, and `undefined` means "no usable
+  claim", not "the claim was wrong".
+- Every existing case supplied a well-formed header or none at all, so the two `return undefined`
+  lines in the middle had never run. Turning either into a refusal would reject reads that are
+  fine, from servers that are behaving within RFC 7233.
+- Four shapes reach them and all four occur: a range unit that is not `bytes`, the unsatisfiable
+  `bytes */total` form, a header truncated before the total, and byte positions past 2^53 from a
+  proxy in front of an object store that counts in something else. A `FetchLike` double answering
+  every header with `null` is the fifth, and is the reason the rule is written this way.
+- The non-vacuous half is asserted on both sides of them: a header that DOES parse and names a
+  different part of the resource is still refused, and a short body behind an unreadable header is
+  still caught by length. "Unreadable" has not become "unchecked".
+
 ## 0.4.468
 
 - **Added** tests for the half of `redactDiagnostic` that had never been asked: what happens to a
