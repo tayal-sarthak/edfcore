@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.479
+
+- **Fixed** a check that could pass on the machine that broke it and fail on CI. `file-references`
+  resolves a backticked path against every file in the working tree, and its skip list held
+  `scratch` but not `deleted` — both gitignored, both present only on the machine that put them
+  there.
+- Found by hitting it. Retiring the badge-contract file to `deleted/` in 0.4.478 left a changelog
+  entry naming it; the reference resolved here and dangled on a clean checkout, so all three Node
+  jobs failed on the commit that retired the file — the moment its author is least expecting a
+  reference to it to break.
+- The asymmetry is what made it easy to miss. The second walk in that file descends only `src`,
+  `tests`, `scripts` and `config`, so a retired file can never MAKE a claim; it could only ever
+  vouch for one.
+- The walk is now a named function taking a root, and the new case runs it on a temporary tree
+  holding one live file, one under `deleted/` and one under `scratch/`. On the real tree the
+  assertion would say nothing on CI, where neither directory exists — which is the same trap one
+  level up.
+
 ## 0.4.478
 
 - **Removed** the `exports` badge from the top of the README, at the user's request. The number it
