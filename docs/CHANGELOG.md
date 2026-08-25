@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.499
+
+- **Added** the scaling contract as `concepts.md` states it: `signal.scale` is `undefined`,
+  `toPhysical` throws, and `decodeDigital` still works. Three lines that are the package's central
+  refusal rather than an illustration of it — the page names what the reference implementation does
+  instead, which is to substitute a gain of 1 and return ADC counts labelled as microvolts.
+- `physical-values.md` has its own arithmetic test and `scale.ts` has unit tests for each
+  condition. What nothing checked is the trio together on one signal, which is what a reader takes
+  away from the page: the samples are real and keep working, and it is the interpretation that is
+  unavailable.
+- The four conditions the paragraph lists are checked as a closed list, because a fifth appearing
+  without the sentence changing is the drift worth catching, and that sentence is what a reader
+  plans around.
+- The diagnostics block is the other closed list on that page — five properties, one per producer.
+  All five are now exercised and compared against the list parsed out of the page, so a sixth
+  producer, or a renamed property, fails here.
+
 ## 0.4.498
 
 - **Fixed** an error message quoted on two documentation pages that no version of edfcore has been
