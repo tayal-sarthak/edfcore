@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.502
+
+- **Added** a property test for the round trip between `sampleStartTicksOf` and `sampleAt` — the
+  pair a viewer uses, a cursor position in and a sample index out.
+- `api-helpers.md` states the rule as a four-way agreement: "`sampleAt`, `sampleStartTicksOf`, a
+  window bound and `readTriggers` all name the same sample." 0.3.32 settled it after `readTriggers`
+  disagreed with the other three, and 0.3.56 moved a window bound onto it after the same mismatch
+  turned up there. Both fixes were made against examples.
+- `sample-grid-roundtrip.test.ts` covers the pure pair, which takes a SIGNAL and knows nothing
+  about gaps. These take the RECORDING, and that is the difference: after a hole a sample's instant
+  is not its index times the interval, so inverting it means finding the segment first. That half
+  was only ever checked at chosen points.
+- Four geometries, two of them with a sample interval that is not a whole number of ticks, each run
+  contiguous and again across a ten-second hole — and once more in ticks rather than seconds, since
+  a trip through seconds can close on rounding luck.
+
 ## 0.4.501
 
 - **Added** the four normalisations `api-sources.md` states for `cachedSource`'s two options:
