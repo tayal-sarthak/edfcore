@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.490
+
+- **Added** a check that every published export is reached by the suite a fresh clone actually
+  runs. `tests/corpus/` skips when the corpus is absent — 59 MB of other people's recordings, not
+  redistributed — so those tests do not run on a clone, in CI unless fetched, or for a contributor
+  who has not asked for them.
+- An export whose only appearance in the suite is inside that directory is an export nothing
+  verifies on an ordinary run: it can be renamed, dropped from a barrel or left broken, and the run
+  a contributor does stays green. Not hypothetical here — `whole-api.test.ts` calls essentially the
+  whole barrel and is one of the files that skips.
+- All 78 pass today. The value is the tripwire: adding an export and testing it only against a real
+  file now fails, in the run that would otherwise say nothing.
+- `tests/scratch/` is excluded alongside the corpus for the reason 0.4.479 established — it is
+  gitignored, so anything in it satisfies a check on the machine that wrote it and nowhere else.
+- Deliberately coarse, and the file says so: an import is a floor, not proof the export is called.
+  The floor is the part that can be checked structurally, and it was not being checked at all.
+
 ## 0.4.489
 
 - **Added** a property test for `summarizeDiagnostics`. Everything that prints a count of a file's
