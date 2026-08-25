@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.503
+
+- **Added** the two snippets on `api-reading.md` that print values — what `openEdf` reports for an
+  eight-hour EDF+C, and what `buildRecordIndex` reports for a file with a one-minute hole — plus
+  the progress contract stated beside them.
+- `documented-read-counts.test.ts` covers that page's read counts. These are the blocks where it
+  prints fields, and they had nothing behind them.
+- The `onProgress` sentences are the part worth pinning, because a caller writes code against them
+  and cannot test them cheaply: "fires once per chunk", and "a file with no annotations signal is
+  not scanned at all … `onProgress` still fires once with the traversal complete, so a progress bar
+  finishes". A bar that stops short is the kind of defect that ships — it looks like slowness, the
+  file is fine, and nothing throws.
+- Dropping either call site now fails a test. Neither did before.
+
 ## 0.4.502
 
 - **Added** a property test for the round trip between `sampleStartTicksOf` and `sampleAt` — the
