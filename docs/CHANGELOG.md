@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.500
+
+- **Added** the halves of `discontinuous.md` its existing test did not reach: what `openEdf` alone
+  reports, and what an overlap looks like.
+- The overlap section is the one worth pinning. EDF+D never lets a record start before the previous
+  one ends; files do it anyway, and edfcore's answer is that there is no separate shape for it —
+  `EdfGap.durationSeconds` simply goes negative. The page demonstrates that with one line, `[-1, 1]`,
+  and a reader summing durations to get "time lost to gaps" needs it to be true.
+- So the sum is asserted too: on that file it comes to zero seconds lost across a recording that
+  plainly has a hole in it, which is the warning the page prints under the example, made
+  executable.
+- `gaps.length === segments.length - 1` is checked on the overlapping file specifically, since
+  that is the case where a reader would doubt a rule stated for "any file that has records".
+- And the probed-index block, which is the page's other promise: nothing on the object `openEdf`
+  returns reads as "this recording is continuous" when nothing has looked.
+
 ## 0.4.499
 
 - **Added** the scaling contract as `concepts.md` states it: `signal.scale` is `undefined`,
