@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.491
+
+- **Added** the `maxMaterializeBytes` boundary for `toPhysical` and `clampToDigitalRange` — the
+  fifth module that compares a requirement against that budget, and the last one still untested at
+  the edge.
+- Finding them one at a time is the thing that kept going wrong. 0.4.464 covered three, found by
+  grepping for `resolveMaterializeBudget`; 0.4.482 found a fourth in `validate.ts` whose local
+  variable the grep walked past; this is the fifth. So the file now enumerates the refusal sites
+  out of `src/` and fails on a sixth until it is listed — which is the only way this stops being a
+  rule that most of the code follows.
+- Both array widths are checked here rather than one, because they are different numbers reached
+  through the same comparison: eight bytes a sample for the float64 result, four for the clamped
+  int32. A boundary correct for one and wrong for the other would look tested.
+
 ## 0.4.490
 
 - **Added** a check that every published export is reached by the suite a fresh clone actually
