@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.505
+
+- **Added** the values `design-decisions.md` prints beside three of its decisions. `AGENTS.md`
+  sends every contributor to that page before proposing an architectural change, so it is the one
+  document read specifically to be argued with — and `design-absences.test.ts` checks the absences
+  it claims, not the demonstrations that justify them.
+- A decision whose example no longer produces what it prints is worse than an undocumented one: a
+  reader weighing the trade-off is reading the example to decide whether the cost is what the page
+  says it is.
+- The three chosen are each the evidence for a REJECTION rather than an illustration of an accepted
+  design — the start time as fields, which is the argument against returning a `Date`; the onset as
+  exact ticks beside its lossy seconds, which is the argument against `parseFloat`; and
+  `clampToDigitalRange` as a separate pure function, which is the argument against clamping on read
+  the way the reference implementation does.
+- The last one is asserted from both sides: the clamp produces the array the page prints, and a
+  read of the same samples does not clamp them.
+
 ## 0.4.504
 
 - **Added** the values `api-primitives.md` prints beside each primitive. That page is the reference
