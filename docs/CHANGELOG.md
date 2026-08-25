@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.494
+
+- **Added** a test that produces the refusal `large-files.md` prints. That page's budget section is
+  a transcript — three field values and the whole error message, wrapped over three lines, for a
+  named file — and nothing had compared any of it with what `readRecords` throws.
+- A message reworded in `io/read.ts` leaves a transcript on the site that no version of edfcore has
+  ever produced, and the transcript is the part a reader searches for when they hit the error.
+  `budget-boundary.test.ts` owns the rule; this owns the page.
+- The file on that page is 442 MB and is never built. `readRecords` refuses before it allocates or
+  reads, which is the property the section is about, so a source reporting the length and serving
+  the header is all this needs — and the last case counts the bytes to prove the refusal really did
+  come first, rather than after a 442,368,000-byte read of zeros.
+- Every number is read out of the page, including the geometry in the sentence that introduces the
+  file, so a fixture drifting from the prose fails rather than agreeing about the wrong recording.
+
 ## 0.4.493
 
 - **Added** the two edges of `readHeader`'s prefetch decision, both of which could be moved with
