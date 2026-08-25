@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.498
+
+- **Fixed** an error message quoted on two documentation pages that no version of edfcore has been
+  producing. `concepts.md` and `discontinuous.md` both print the `RangeError` you get for asking a
+  time question of a probed index, and both quoted it as "a probed index knows where neither the
+  gap nor the records after it start" — the library says "the discontinuity", and has since the
+  wording was narrowed.
+- Both were also missing a whole clause. The real message ends "Exactly: 160000000 against
+  60000000 ticks of 100 ns" before its `Next:`, and that sentence exists because the two second
+  counts in the clause above it can PRINT the same on a long recording. The pages had dropped the
+  one clause that makes the message actionable in the case it was written for.
+- Rewording an error is a small edit in a different file, which is why a quotation of one rots.
+  Found by running the walk-through rather than by reading it.
+- **Added** the rest of that walk-through as a test: the probed index admitting what it has not
+  seen, the span and coverage that differ, the two segments and one gap a scan finds, and the two
+  chunks the same `readWindow` call becomes once it has an index — with `precededByGap` on the
+  second and not the first.
+
 ## 0.4.497
 
 - **Added** a test that runs the example on `annotations.md` — the page a reader lands on from a

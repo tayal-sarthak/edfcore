@@ -187,8 +187,9 @@ recording.timeline.coveredSeconds;   //  6   — they differ, so there is a gap
 await readWindow(recording, { startSeconds: 0, durationSeconds: 20, signalIndices: [0] });
 // RangeError: this file cannot be mapped from seconds to records: its 6 records
 // span 16 s but cover only 6 s, so it contains at least one gap, and a probed index knows
-// where neither the gap nor the records after it start. Next: await buildRecordIndex(recording)
-// and pass the index it returns, or locate the window with index.locate(seconds).
+// where neither the discontinuity nor the records after it start. Exactly: 160000000 against
+// 60000000 ticks of 100 ns. Next: await buildRecordIndex(recording) and pass the index it
+// returns, or locate the window with index.locate(seconds).
 ```
 
 `buildRecordIndex` reads every record's onset and returns an index that knows the structure. It's a full traversal of the file, so it's never called implicitly. It takes `onProgress`, because it's the one operation in edfcore whose cost is proportional to the file size. `EdfRecording` is a plain struct, so you use the result by rebuilding one:
