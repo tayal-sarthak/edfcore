@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.507
+
+- **Added** a property test that `readWindow` and `readRecords` agree. They are the two selections
+  the API offers — name a time, or name records — and on a contiguous file a window landing on
+  record boundaries selects exactly the records a caller would have named, so the two must produce
+  the same bytes, sample counts, start and `byteOffset`. Nothing compared them.
+- That is the failure this project has hit repeatedly and names in `whole-api.test.ts`: "a function
+  can be individually correct and still disagree with its neighbour — six releases of this project
+  were exactly that". Each call had its own tests; the pair had none.
+- The window is derived from the records rather than typed, over arbitrary starts and counts and
+  three geometries, two of them with a record duration that is not a whole number of seconds.
+  `readWindow` resolves through `resolveTimeWindow` and `readRecords` does not, so the two reach
+  the same range by different arithmetic — which is the only reason comparing them means anything.
+- The limit is asserted too: half a record in, the window is no longer aligned and `readWindow`
+  returns both records, because a record is the unit the file can be read by.
+
 ## 0.4.506
 
 - **Added** the four-row cost table on `validation.md`, and the claim it exists to support:
