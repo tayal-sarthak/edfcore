@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.501
+
+- **Added** the four normalisations `api-sources.md` states for `cachedSource`'s two options:
+  `blockBytes` floored, never below 1, clamped down to `maxBytes`; `maxBytes` floored, never below
+  0. None was checked.
+- Each exists because a caller computes these numbers rather than typing them — a block size
+  derived from `header.recordByteLength`, a budget read from an environment variable, a fraction of
+  `navigator.deviceMemory`. `hardening.test.ts` covers the NaN refusals, which are a different rule
+  with an error attached, and `cache.test.ts` passes whole numbers throughout.
+- What the flooring costs is not obvious from the table, which is why the table is worth executing.
+  Rounding up fetches more than the caller budgeted for on every miss; a `blockBytes` of 0 that was
+  not floored to 1 divides by zero working out which block an offset falls in.
+- Each rule is checked through what the WRAPPED source is asked for, because that is the only place
+  the block size is observable — the cache has no accessor for it, deliberately.
+
 ## 0.4.500
 
 - **Added** the halves of `discontinuous.md` its existing test did not reach: what `openEdf` alone
