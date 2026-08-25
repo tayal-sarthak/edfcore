@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.508
+
+- **Added** an enforcement of the `grid` prefix rule. `migrating-to-0-3.md` explains why three
+  functions were renamed in a minor release, counts the cost — seven separate fixes for one defect,
+  each found because two functions disagreed rather than because one looked wrong — and ends with a
+  naming rule: "you cannot call `gridSampleStartSeconds` and believe you asked for elapsed
+  recording time."
+- A rule that a rename established and nothing enforces lasts until the next function is added, and
+  the next function is the one that would ship the eighth. It is now checked from both sides: every
+  export of the grid module carries the prefix, and no export of the recording-aware module does.
+  The prefix is only a signal if it is exclusive.
+- The reason for the split is asserted rather than described. On the page's own file — a
+  seven-second hole after record 2 — the twelfth sample is at 3 s on the grid and at 10 s in the
+  recording, and on a contiguous file the two calls give the same answer. That collapse is exactly
+  why the difference was easy to miss, so it is stated as a test rather than left as a remark.
+
 ## 0.4.507
 
 - **Added** a property test that `readWindow` and `readRecords` agree. They are the two selections
