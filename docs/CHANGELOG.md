@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.495
+
+- **Added** a test that measures the two cost tables on `large-files.md`. That page is the
+  random-access claim made concrete — it names two files by their exact geometry and prints, byte
+  for byte, what opening one and reading ten seconds out of the other costs. Four read ranges with
+  their offsets, two totals, a percentage, a sample count, an overread factor, and the highest byte
+  either read touches. None of it had ever been run.
+- `documented-read-counts.test.ts` checks the read COUNTS `api-reading.md` states in prose. This
+  page states offsets and lengths, which is the stronger claim and the one a reader budgets
+  against: an HTTP round trip is priced by where a range starts and how long it is, not by how many
+  there are.
+- Neither file is built. One is 29 MB and the other 442 MB, and both claims are about which bytes
+  are ASKED for, so a source that reports the length, serves a header of the right geometry and
+  records the ranges answers it exactly.
+- Every figure comes out of the page, so the two cannot drift apart in either direction. All of
+  them hold: the four open reads land on the offsets printed, the ten-second window is one
+  153,600-byte range at 221,191,936, and the far end of the recording is never addressed.
+
 ## 0.4.494
 
 - **Added** a test that produces the refusal `large-files.md` prints. That page's budget section is
