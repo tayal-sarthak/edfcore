@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.496
+
+- **Added** a test that builds and runs the file `api-types.md` documents itself with. That page
+  explains the type surface by showing one recording's values — a six-record EDF+D with a gap,
+  2,328 bytes — across nine separate snippets, and between them they state a byte offset, a byte
+  length, a tick count, a seconds-since-midnight, a sample count and what `locate` returns on both
+  sides of the gap. None of it had been run.
+- `type-tables.test.ts` checks the TABLES on that page: every field a row lists exists on the type,
+  with the type it claims. The snippets between the tables are the other half, and they are where
+  the numbers are. A reader who wants to know what `chunk.byteOffset` means reads `1548`, not the
+  row that says `number`.
+- Nine snippets and one file is what makes it worth building once. The page's internal consistency
+  is itself a claim — `1548` is `768 + 3 * 260`, and each of those three numbers is printed
+  elsewhere on the same page — so the fixture checks the arithmetic BETWEEN the snippets as well as
+  each snippet against the library. Every value is read out of the page.
+
 ## 0.4.495
 
 - **Added** a test that measures the two cost tables on `large-files.md`. That page is the
