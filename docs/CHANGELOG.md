@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.492
+
+- **Added** a test that runs the worked example on `reading-signals.md`. That page carries the
+  argument the whole indexing design exists for — `trimToWindow` compares integers taken from the
+  header as written, never `round(t * sampleRateHz)` — and it makes the case with six concrete
+  numbers and a footnote counting how often the two disagree. Nothing ran any of them.
+  `documented-examples.test-d.ts` compiles the snippets, which proves they are valid TypeScript
+  and says nothing about whether 8534 is the answer.
+- Numbers in prose rot in a direction that is hard to see. A value that was right when it was
+  written stays plausible for ever, because a reader checks it against their intuition rather than
+  against the library — and this page exists to correct an intuition. The footnote is the extreme
+  case: "1,000 of the first 3,001, always by exactly one sample" is a claim nobody can check by
+  reading, and the argument leans on it.
+- Every figure is read OUT OF THE PAGE and compared with what the library does, the way
+  `scaling-page-arithmetic.test.ts` reads the count it checks, so neither side can drift from the
+  other. All of them hold, footnote included: 1,000 disagreements over 3,001 second boundaries,
+  every one of them exactly one sample, and the float answer earlier every time.
+- Restoring the pre-0.3.56 rounding — the defect the code's own comment records — now fails this
+  file rather than only the unit tests written for it.
+
 ## 0.4.491
 
 - **Added** the `maxMaterializeBytes` boundary for `toPhysical` and `clampToDigitalRange` — the
