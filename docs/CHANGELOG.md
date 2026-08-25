@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.497
+
+- **Added** a test that runs the example on `annotations.md` — the page a reader lands on from a
+  search for how to read EDF+ events. The region's own header fields, the four events a full-file
+  read returns, and what a scan of a 200-record file costs were all prose.
+- The transcript is the part worth having under test. `-0.75 undefined pre-stimulus baseline` says
+  four things at once: onsets are relative to record 0, a negative onset is legal and kept, an
+  absent duration is `undefined` rather than `0`, and the list is sorted by time across record
+  boundaries. Any one of those changing leaves the page describing a library that no longer behaves
+  that way, and none of them is something a reader would think to doubt.
+- The read-cost block goes with it, because it is what the page uses to argue for spelling the
+  record range out at the call site: a full scan of a twelve-hour study is a full download of it.
+  Both rows are checked as one read of the size printed, and against the arithmetic — count records
+  at the record size.
+- Also pinned: a file with no annotations channel returns an empty list with no diagnostics, and
+  still returns the onset grid. That is a whole paragraph of the page and one line of assertions.
+
 ## 0.4.496
 
 - **Added** a test that builds and runs the file `api-types.md` documents itself with. That page
