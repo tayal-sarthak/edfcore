@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.506
+
+- **Added** the four-row cost table on `validation.md`, and the claim it exists to support:
+  "conformance costs one traversal rather than two", which is the reason `validateRecording` takes
+  an `index` at all.
+- `budget-invariance.test.ts` checks that the budget cannot change what the sweep REPORTS. Nothing
+  checked what it READS, and every row of that table is a cost a caller plans around — a plain EDF
+  is pure header arithmetic, an EDF+ without an index has to traverse, a complete index means it
+  does not, and `scanSamples` means it does regardless.
+- The sentences under the table are checked with it, including the one most likely to be quietly
+  wrong: a probed index — which is exactly what `openEdf` hands you, and therefore what a caller
+  passes by mistake — is ignored rather than refused, and the sweep reads the file itself. So is
+  an index covering a different number of records, which has the right shape and the wrong length.
+
 ## 0.4.505
 
 - **Added** the values `design-decisions.md` prints beside three of its decisions. `AGENTS.md`
