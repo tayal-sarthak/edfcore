@@ -25,6 +25,8 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
+import { parseEdfInteger } from '../../src/bytes/numbers.js';
+import { HEADER_FIELDS } from '../../src/constants.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { readHeader, readRecordBytes } from '../../src/io/read.js';
@@ -81,6 +83,30 @@ function largeSignals(): SignalSpec[] {
     samplesPerRecord: LARGE_SAMPLES_PER_RECORD,
     sample: () => 0,
   }));
+}
+
+/**
+ * A 256-byte fixed header declaring `signalCount`, padded out to `byteLength` with zeros.
+ *
+ * Written by hand rather than built, because the point is a header whose per-signal block is
+ * absent or absurd: `buildEdf` would have to allocate 2.56 MB of well-formed fields to say
+ * something about a decision made from the first 256 bytes.
+ */
+function fixedHeaderDeclaring(signalCount: number, byteLength: number): Uint8Array {
+  const bytes = new Uint8Array(byteLength).fill(0x20);
+  const put = (text: string, at: number): void => {
+    for (let i = 0; i < text.length; i += 1) bytes[at + i] = text.charCodeAt(i);
+  };
+  put('0', 0);
+  put('X X X X', 8);
+  put('Startdate X X X X', 88);
+  put('01.01.20', 168);
+  put('10.00.00', 176);
+  put(String(256 * (signalCount + 1)), 184);
+  put('1', 236);
+  put('1', 244);
+  put(String(signalCount), 252);
+  return bytes;
 }
 
 let largeEdfCache: Uint8Array | undefined;
@@ -202,6 +228,54 @@ describe('readHeader costs exactly two reads, whatever the signal count', () => 
 
     expect(spy.reads).toHaveLength(2);
     expect(only(spy.reads.slice(1))).toMatchObject({ offset: 256, length: 16_384 });
+  });
+
+  /*
+   * The two edges of the prefetch decision.
+   *
+   * `signalCountHint` is a hint and nothing else: it sizes the second read, and returning
+   * `undefined` means the second read is skipped so `parseHeader` can produce the right error from
+   * the 256 bytes in hand. Both of its edges could be moved with the suite green.
+   *
+   * The upper one is the interesting half. Narrowing `<= 9999` to `< 9999` refuses the hint for a
+   * file with the most signals a header can declare, so a legal 2.56 MB header is read 256 bytes
+   * at a time — except it is not read at all: the second read is skipped, `parseHeader` gets a
+   * quarter of a kilobyte, and the file is reported `SOURCE_TOO_SMALL`. A perfectly good recording,
+   * refused as truncated, at exactly one signal count.
+   */
+  it('prefetches for the largest signal count a header can declare', async () => {
+    const spy = spySource(byteSource(fixedHeaderDeclaring(9999, 256 * 10_000)));
+
+    // The per-signal block is zeros, so the parse refuses it — after the reads under test.
+    await readHeader(spy).catch(() => undefined);
+
+    expect(rangesOf(spy)).toEqual([
+      { offset: 0, length: 256 },
+      { offset: 256, length: 256 * 9999 },
+    ]);
+  });
+
+  it('cannot be asked for more than that, because four ASCII bytes cannot say it', () => {
+    /*
+     * The other side of the same guard is unreachable, and this is why: the field is four bytes
+     * and `parseEdfInteger` admits no exponent, so `9999` is the largest value that parses. The
+     * premise is checked rather than asserted in prose — widening the field or admitting `9e9`
+     * would make the guard live, and this fails in the same commit.
+     */
+    expect(HEADER_FIELDS.signalCount.length).toBe(4);
+    expect(parseEdfInteger('9999').value).toBe(9999);
+    expect(parseEdfInteger('9e9 ').ok).toBe(false);
+  });
+
+  it('skips the second read when the source ends with the fixed header', async () => {
+    // `remaining` is zero, and asking for zero bytes is still a read: it costs a round trip over
+    // HTTP and shows up in every read-count claim this file makes.
+    const spy = spySource(byteSource(fixedHeaderDeclaring(1, 256)));
+
+    await readHeader(spy).catch(() => undefined);
+
+    expect(spy.reads).toHaveLength(1);
+    expect(only(spy.reads)).toMatchObject({ offset: 0, length: 256 });
   });
 
   it('never reads past the header, even for a file whose data dwarfs it', async () => {

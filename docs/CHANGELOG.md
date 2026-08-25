@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.493
+
+- **Added** the two edges of `readHeader`'s prefetch decision, both of which could be moved with
+  the suite green.
+- The upper one is the one that matters. Narrowing `<= 9999` refuses the hint for a file declaring
+  the most signals a header can — and the consequence is not a slower read but a wrong answer: the
+  second read is skipped, `parseHeader` gets a quarter of a kilobyte of a 2.56 MB header, and a
+  perfectly good recording is reported `SOURCE_TOO_SMALL`. At exactly one signal count.
+- The other side of that guard is unreachable, and the test says so with a check rather than in
+  prose: the field is four ASCII bytes and `parseEdfInteger` admits no exponent, so `9999` is the
+  largest value that parses. Widening the field or admitting `9e9` makes the guard live, and fails
+  this in the same commit.
+- The lower edge is a source that ends with the fixed header. `remaining` is zero, and asking for
+  zero bytes is still a read — a round trip over HTTP, and an entry in every read-count claim this
+  file makes.
+
 ## 0.4.492
 
 - **Added** a test that runs the worked example on `reading-signals.md`. That page carries the
