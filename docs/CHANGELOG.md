@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.504
+
+- **Added** the values `api-primitives.md` prints beside each primitive. That page is the reference
+  for the layer under `openEdf`, and each entry ends with a line showing what comes back. Six of
+  them say something a reader would otherwise take on trust, and none was executed.
+- Two are contracts rather than examples. `again.buffer === scratch.buffer` is the whole reason
+  `decodeDigital` takes an `out` argument — zero allocations after the first, in a loop over a long
+  recording. And `decodeHeaderLatin1(bytes.subarray(0, 8))` printing `'0       '` with its padding
+  intact is the "no trimming, no interpretation" promise the paragraph above it spends five
+  sentences on: a function that trimmed would satisfy every other test of it, because almost
+  everything else compares a decoded field against its trimmed value.
+- `[ 0, 1 ]` from `findSignals` is the duplicate-label case the page annotates as something CHB-MIT
+  really does, and the reason `getSignal` has an ambiguity error at all. The sentence beside it —
+  the argument is trimmed, the match is case-sensitive, nothing else is normalised — is asserted
+  with it.
+
 ## 0.4.503
 
 - **Added** the two snippets on `api-reading.md` that print values — what `openEdf` reports for an
