@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.512
+
+- **Added** a read behind each of the four header-recovery diagnostics. When the header's numbers
+  disagree with the file, `parseHeader` recovers rather than refuses, and each recovery ends by
+  saying what a read will now do: which byte record 0 comes from, which records exist, which bytes
+  are never decoded. Every one of those is a claim about `decodeDigital` output, made in a module
+  that never calls it, and the existing tests stopped at the header fields the sentence mentions.
+- The gap is not hypothetical for `HEADER_SIZE_MISMATCH`. A three-signal file declaring a 512-byte
+  header has the same `recordCount` under either size, because the arithmetic that produced it used
+  whichever size the reader used; what separates the two readings is which 1024 bytes come back as
+  record 0. The declared offset lands in the middle of the per-signal block and decodes to numbers
+  rather than to an error, so the test asserts the ramp the writer wrote — and asserts alongside it
+  that the declared offset would have given something else, or the first assertion proves nothing.
+- `TRAILING_BYTES` and `PARTIAL_FINAL_RECORD` claim their bytes are never decoded and never padded
+  into existence. Both fixtures now write those bytes as `0x7F`, which decodes to 32639, a value
+  the sample ramp never produces — so "never decoded" is checked by looking for it in the output
+  rather than by trusting an offset. Reaching either by record number is refused, not returned.
+- `TRUNCATED_FILE` says the missing records are not readable and will not be fabricated. The
+  surviving records read exactly as they do in the intact file, and the pair the header claimed is
+  an `EdfRangeError` rather than zeros.
+
 ## 0.4.511
 
 - **Fixed** `physical-values.md` documenting the limitation 0.4.509 removed. Its note said a fifth
