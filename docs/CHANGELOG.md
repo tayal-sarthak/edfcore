@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.510
+
+- **Added** the one claim every diagnostic makes at once, as a property test: `raw` quotes the
+  bytes `byteOffset` names. `EdfDiagnostic.raw` is documented as "those bytes as text, exactly as
+  written including padding" — the bytes AT the offset the same diagnostic reports — and it is the
+  only evidence a reader has that a diagnosis is about the field in front of them.
+- It had gone wrong three times, three different ways, each found by eye rather than by a test:
+  0.3.26, where `NON_ASCII_HEADER_FIELD` quoted bytes contradicting its own claim; 0.3.68, where a
+  TAL diagnostic put the escaped message preview in `raw` and returned a 13-character string for
+  four bytes; and 0.3.73, where `PARTIAL_FINAL_RECORD` pointed into the data section while carrying
+  the record-count field's eight bytes. Nothing checked the pair, which is how one defect appeared
+  in three places.
+- Both sides are damaged at random and checked, because they derive the offset differently: a
+  header field's comes from a fixed table, a TAL's is recomputed as
+  `headerByteLength + recordIndex * recordByteLength + signal.recordByteOffset` while the bytes are
+  sliced from a record buffer that starts at neither. Dropping the last term of that sum, or adding
+  one to a header field's offset, each fail the run.
+- Roughly 15,000 diagnostics across 24 codes satisfy it today, and the run asserts the counts as
+  well as the property: a change that stopped producing diagnostics under damage would otherwise
+  pass by having nothing to check.
+
 ## 0.4.509
 
 - **Fixed** `toPhysical` naming a different cause than the header for one class of unscalable
