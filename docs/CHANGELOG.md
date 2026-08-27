@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.517
+
+- **Added** the convention `api-types.md` states in bold above every table on the page: "A field
+  that may be absent is `T | undefined`, and the key is always there." It is what lets a caller
+  write `header.startTime.resolvedDate === undefined` instead of `'resolvedDate' in
+  header.startTime`, and destructure a result without guarding each name. It was prose.
+- The type half is read out of `src/types.ts`: every optional member must live in an interface the
+  caller constructs — the ten `…Options` and `…Selection` types. An optional member on a result is
+  not a compile error anywhere. It quietly makes one field a name TypeScript will not let you read
+  without a guard.
+- The runtime half is the one a type cannot catch. A result assembled with a conditional spread —
+  `...(date === undefined ? {} : { resolvedDate: date })` — satisfies `T | undefined` and omits the
+  key, so `Object.keys` comes up short, `in` is false, and a JSON round-trip loses a field the
+  table says is always there. Twenty result interfaces are now instantiated and every declared
+  member checked with `Object.hasOwn`; writing that spread into `resolveStartTime` fails the run.
+- The fixture is built to leave fields ABSENT rather than present: an unreadable start date, a
+  signal with a degenerate digital range so it has no scale, annotations with no duration, and a
+  discontinuous file so one segment has a gap before it and one has none. Twenty fields come back
+  `undefined`, and the run asserts that count — on a file where everything happened to be defined
+  the check would pass while testing nothing.
+
 ## 0.4.516
 
 - **Added** the third column of the `EdfHeader` and `EdfSignal` tables on `api-types.md`, executed.
