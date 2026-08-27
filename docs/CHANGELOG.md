@@ -6,6 +6,32 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.0
+
+The public API is unchanged: nothing was added, removed or renamed, and no arithmetic moved. This
+is a series marker, cut for the same reason 0.4.0 was — the 0.4.x patches carried observable
+changes that a consumer pinning `~0.4.x` would rather have been told about in a version number:
+
+- **Error codes.** `toPhysical` reports the cause the header recorded for a signal whose four scale
+  fields are finite but whose derived gain is not: `DEGENERATE_PHYSICAL_RANGE` where it used to say
+  `SCALE_UNAVAILABLE` (0.4.509). Code branching on `error.code` sees a different answer for that
+  input — and the answer it used to give sent a reader to a `header.diagnostics` entry filed under
+  the other code.
+- **Error classes.** Two arguments that used to reach a raw `TypeError` now refuse the way every
+  other bad argument on their path does: an omitted or `null` record range, which produced
+  `Cannot read properties of undefined (reading 'start')` (0.4.443), and an omitted `signalIndices`,
+  which produced `TypeError: signalIndices is not iterable` (0.4.442). A `catch` that matched on the
+  message text of either sees new text; one that branches on `isEdfError` or on `RangeError` sees a
+  refusal where it used to see a crash.
+- **CLI.** A closed pipe is swallowed rather than rethrown: `edfcore signals big.edf | head -1` used
+  to print a kilobyte of stack trace to stderr and exit non-zero (0.4.175). A script gating on that
+  exit code gets a different answer, and the right one.
+
+Everything else in the line was tests, documentation and tooling. The README's suite-size floor went
+from 1,900 at 0.4.0 to 2,700, and the twenty-three documentation pages each acquired a test that
+runs their numbers rather than reading them. None of that is visible from a `package.json`, which is
+the argument for saying the rest of it here.
+
 ## 0.4.527
 
 - **Fixed** the `0.4.514` heading, which read like a version that shipped. It does not exist on
