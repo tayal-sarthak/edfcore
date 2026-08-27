@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.527
+
+- **Fixed** the `0.4.514` heading, which read like a version that shipped. It does not exist on
+  npm: the release run bumped, committed and pushed it, CI failed, and no tag was cut — but the
+  bump was already public on `main`, which spends the number. A reader comparing
+  `npm view edfcore versions` against this file would have found a hole with a normal-looking entry
+  over it, which is the exact shape `0.4.307` was written to stop.
+- The entry now opens with the notice, says which kind of never it was, and points forward to
+  `0.4.515`, where both CLI tests actually shipped. `0.4.515`'s own entry gains the column work it
+  had been carrying without saying so.
+- The cause is worth writing down because it is a process defect rather than a code one. The
+  commit contained a test file for the NEXT version, still half-finished in the working tree, which
+  `git add -A` swept in — the same way `0.4.474` acquired a mutated source file mid-experiment.
+  Nothing in the repository can catch that; the only thing that does is not leaving unfinished work
+  in the tree while a release is in flight.
+
 ## 0.4.526
 
 - **Added** the callout on `diagnostics.md` that stops a reader gating a read on the wrong number:
@@ -258,26 +274,22 @@ defect; those are called out below.
   the test, so a flag that gains or loses a command in the prose changes what is checked. The
   paragraph needs splitting at each flag to read: only two of the three carry a parenthesised list,
   and one pattern across the whole paragraph reads the third one's list as the second one's.
+- It carries `0.4.514`'s work as well, because that release never happened: the six columns of
+  `edfcore signals` are checked by content rather than by count, against the order read out of the
+  page's own table. Until 0.2.42 the page described a column list the command did not emit —
+  samples per record where it printed `kind`, and the authoritative field in no column at all — and
+  a count of six would not have caught that. `sampleRateHz` is empty on a legal zero record
+  duration, where `undefined`, `0` and `NaN` would each be a number a script divides by; `label`
+  and `physicalDimension` are trimmed by different things, and removing either now fails.
 
 ## 0.4.514
 
-- **Added** a check of what is in the six columns `edfcore signals` prints. `cli.md` tabulates them
-  by name and position and ends the sixth row with the instruction the command exists for — "the
-  authoritative count; index by this, never by the rate" — and the only test was that there are six
-  columns and one line per signal, which six columns of anything satisfy.
-- That is the defect the page records against itself. Until 0.2.42 it described a column list the
-  command did not emit: samples per record where the command printed `kind`, and the authoritative
-  field in no column at all. A count of six would not have caught it then either. The order is now
-  read out of the page's table rather than written in the test, so the two cannot drift apart.
-- The fixture gives its two data signals different sample counts and different units, so 4 Hz, 1.5
-  Hz, 8 and 3 are all distinct — no pair of columns can be swapped and still match.
-- The three qualified rows are checked as qualified. `sampleRateHz` is empty on a legal zero record
-  duration, where `undefined`, `0` and `NaN` would each be a number a script divides by. `label`
-  and `physicalDimension` are both called trimmed, and are trimmed by different things: the parser
-  strips EDF padding from both, the command adds `String.trim` to the dimension — which reaches a
-  tab — and passes the label through `printable`, which turns a tab into `.`. Removing either
-  fails now; before this, removing the first put a tab in the dimension and removing the second put
-  a seventh column in the row, handing `cut -f6` a unit where it expected a sample count.
+Never released. The release run bumped the version, committed and pushed before `npm run check`
+reached CI, and CI then failed on a test file the commit should not have contained: the flag-matrix
+test written for the NEXT version was still half-finished in the working tree, and `git add -A`
+swept it in. No tag was cut and nothing reached npm, but the bump was already public on `main`,
+which is what spent the number. Both CLI tests — the six columns of `signals` and the flag matrix —
+shipped in `0.4.515`, with the flag parser fixed.
 
 ## 0.4.513
 
