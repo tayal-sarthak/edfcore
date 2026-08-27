@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.525
+
+- **Added** a check that what the CLI prints is what the library reports, over the eight awkward
+  shapes. 0.4.524 checks the six commands survive them; surviving is not agreeing, and a command
+  that caught its own exception and printed a plausible summary would pass that while being worse
+  than a crash — the output is what a reader pastes into an issue.
+- Three commands carry values rather than prose, and each is re-derived from the library and
+  compared. They rot differently. `json` is read by scripts, so a field that quietly stops matching
+  the header is acted on rather than noticed. `events` prints a count and then a listing, which can
+  disagree with each other as well as with the file. `gaps` runs its own full scan — deliberately,
+  since the probed index cannot see a gap in the middle — so its numbers come from a second
+  traversal that nothing had compared with the first.
+- The `json` case pins the shape a zero record duration produces: `JSON.stringify` drops a key
+  whose value is `undefined`, so an absent sample rate is an absent KEY rather than a null, and the
+  test asserts the key is present exactly when the rate is. `--patient` is checked to print the raw
+  field with padding trimmed, and its absence to be a missing key rather than an empty string.
+- `signals` is not here — `cli-signals-columns.test.ts` ties all six of its columns to the header
+  already, which is this check in the same shape.
+
 ## 0.4.524
 
 - **Added** the six CLI commands over the eight awkward shapes, without the corpus. The CLI is
