@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.521
+
+- **Added** the timeline-helper agreement checks to the offline suite, the second group in
+  `tests/corpus/whole-api.test.ts` that skips without the corpus. `contiguityOf`, `segmentAt` and
+  `gapAt` each answer a question the index already answers, and the way they fail is by
+  disagreeing with it: a time reported as inside a segment AND inside a gap, a gap count that does
+  not match the segments it separates, segments that skip a record or claim one twice.
+- The zero-record-duration shape is why this group is worth running on built files as well as real
+  ones. Records then occupy no time, so every segment's half-open interval `[start, start)` is
+  empty and `segmentAt` returns `undefined` for every instant — the same answer the sample helpers
+  give for the same reason, and one that looks like a bug until you notice there is no time axis to
+  be on. The sleep-edfx hypnogram is a file of exactly that shape, and a fresh clone had none.
+- Each gap is checked to name the two segments it lies between and to start and end exactly where
+  they do, in ticks: a gap derived independently of the pair it separates is how a boundary comes
+  to be reported twice with two different numbers.
+- The last case asserts the shapes reach both branches — one file discontinuous, one contiguous,
+  one with a zero-width segment — so a green run is not one where every branch was skipped.
+
 ## 0.4.520
 
 - **Added** the header-helper agreement checks to the offline suite. `tests/corpus/whole-api.test.ts`
