@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.518
+
+- **Added** the other convention `api-types.md` states in bold: "Anything checkable against the
+  file is exposed twice", as the parsed value and as the raw bytes it came from, padding intact.
+  It is a convention rather than a nicety because of the sentence after it — a header field that
+  disagrees with what edfcore made of it is what you need when a file misbehaves — so the raw side
+  is the evidence a bug report is written from, and evidence that is not the file's own bytes is
+  worse than none.
+- `type-tables.test.ts` checks the raw interfaces list every field, and individual tests quote a
+  raw value here and there. Nothing checked the convention: that each of the ten fixed fields and
+  the ten per-signal fields, on every signal, is exactly the bytes the layout puts at that offset,
+  decoded the way the header is decoded and not trimmed on the way out.
+- The per-signal half is where a mistake would be invisible. The block is field-major, so one
+  signal's ten fields are ten different places in the header, each `256 + ns * before + i * width`,
+  and reading one from a neighbour's slot yields a plausible string rather than an error. The
+  fixture gives all three signals different values for every field and leaves padding in each, so a
+  shifted index and a trimming reader both fail — both were tried, and both do.
+
 ## 0.4.517
 
 - **Added** the convention `api-types.md` states in bold above every table on the page: "A field
