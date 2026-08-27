@@ -25,7 +25,7 @@ import { signalFieldOffset } from '../../src/header/signals.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf, readWindow } from '../../src/recording.js';
 import { DOCS_PAGES } from '../support/docs-pages.js';
-import { buildEdf } from '../support/writer.js';
+import { buildEdf, type SignalSpec } from '../support/writer.js';
 
 const PAGE = DOCS_PAGES.get('physical-values.md') ?? '';
 
@@ -428,10 +428,10 @@ describe('the out-of-range window the page shows', () => {
   });
 });
 
-describe('the four conditions that leave a signal with no scale', () => {
+describe('the five conditions that leave a signal with no scale', () => {
   /** The rows of the table the page introduces with "checked in this order". */
   const ROWS = (() => {
-    const at = PAGE.indexOf('Four conditions produce it, checked in this order:');
+    const at = PAGE.indexOf('Five conditions produce it, checked in this order:');
     if (at === -1) throw new Error('physical-values.md no longer lists the refusal conditions');
     const rows: string[][] = [];
     for (const line of PAGE.slice(at).split('\n')) {
@@ -464,7 +464,7 @@ describe('the four conditions that leave a signal with no scale', () => {
           physicalMaximum: 500,
           physicalDimension: 'uV',
           ...overrides,
-        },
+        } as SignalSpec,
       ],
     });
     const { header } = await openEdf(byteSource(bytes));
@@ -479,12 +479,16 @@ describe('the four conditions that leave a signal with no scale', () => {
     throw new Error('toPhysical did not refuse');
   }
 
-  it('lists the four the page says it lists', () => {
+  it('lists the five the page says it lists', () => {
+    // Five rows, four distinct codes: the degenerate physical range and the unusable derived gain
+    // are the same code reached two ways, which is why the page tabulates conditions rather than
+    // codes.
     expect(ROWS.map((cells) => (cells[0] ?? '').replaceAll('`', ''))).toEqual([
       'DEGENERATE_DIGITAL_RANGE',
       'DEGENERATE_PHYSICAL_RANGE',
       'INVERTED_DIGITAL_RANGE',
       'LOG_TRANSFORMED_CHANNEL',
+      'DEGENERATE_PHYSICAL_RANGE',
     ]);
   });
 
@@ -494,6 +498,9 @@ describe('the four conditions that leave a signal with no scale', () => {
       { physicalMinimum: 0, physicalMaximum: 0 },
       { digitalMinimum: 2047, digitalMaximum: -2048 },
       { physicalDimension: 'Filtered' },
+      // Written raw, because the builder's formatter cannot fit -9.9e+307 into an 8-byte field.
+      // Only exponent notation reaches this condition at all, so that is the whole of it.
+      { raw: { physicalMinimum: '-9.9E307', physicalMaximum: '9.9E307' } },
     ];
     for (const [index, overrides] of conditions.entries()) {
       expect(await refusalFor(overrides)).toBe((ROWS[index]?.[0] ?? '').replaceAll('`', ''));
@@ -524,6 +531,16 @@ describe('the four conditions that leave a signal with no scale', () => {
         physicalDimension: 'Filtered',
       }),
     ).toBe('INVERTED_DIGITAL_RANGE');
+    // The fifth is last, so a channel that is both log-transformed and unusably scaled is refused
+    // as the log-transformed one. It matters which: the log dimension says the samples mean
+    // something other than what a linear map would make of them, and the gain says the map itself
+    // is unusable. Only the first is a statement about the data.
+    expect(
+      await refusalFor({
+        physicalDimension: 'Filtered',
+        raw: { physicalMinimum: '-9.9E307', physicalMaximum: '9.9E307' },
+      }),
+    ).toBe('LOG_TRANSFORMED_CHANNEL');
   });
 
   it('accepts an inverted PHYSICAL range while refusing an inverted digital one', async () => {

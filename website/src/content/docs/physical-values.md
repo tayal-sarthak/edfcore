@@ -222,7 +222,7 @@ compute a gain, and `toPhysical` on such a signal throws `EdfScalingError`. The 
 the type makes reading the gain without a check a compile error. It does not gate the
 `toPhysical` call itself, which takes any `EdfSignal` and fails at runtime.
 
-Four conditions produce it, checked in this order:
+Five conditions produce it, checked in this order:
 
 | `error.code` | condition | reason |
 |---|---|---|
@@ -230,6 +230,7 @@ Four conditions produce it, checked in this order:
 | `DEGENERATE_PHYSICAL_RANGE` | `physicalMinimum === physicalMaximum` | every sample would map to one value |
 | `INVERTED_DIGITAL_RANGE` | `digitalMinimum > digitalMaximum` | no sanctioned meaning, unlike the physical case |
 | `LOG_TRANSFORMED_CHANNEL` | `physicalDimension` is exactly `"Filtered"` | the samples are log-compressed, so a linear map is wrong by orders of magnitude |
+| `DEGENERATE_PHYSICAL_RANGE` | the derived `bitValue` is `0` or not finite, or `offset` is not finite | four finite fields can still imply a gain float64 cannot hold |
 
 The first is the most common header defect in practice. EDFlib substitutes a gain of 1 here and
 returns ADC counts labelled as microvolts. edfcore sets `scale` to `undefined`.
@@ -254,12 +255,19 @@ unused fields instead: a channel declaring `0`/`0` was refused with `DEGENERATE_
 asserting a header defect, and the conventional `-1`/`1` one was told "the header recorded the
 reason", both sending the reader to a `header.diagnostics` entry that does not exist.
 
+The last condition is the rare one, and the only one that needs arithmetic rather than a
+comparison of two fields: an 8-byte field can write an exponent, so a physical range of
+`-9.9E307`..`9.9E307` over `-32768`..`32767` is four finite numbers whose `bitValue` is
+`Infinity`. Every converted sample would be `NaN` or infinite, which is a fabricated gain by
+another name, so it is refused exactly as the four above are.
+
 > **Note**
-> A fifth, rarer condition exists: four finite fields whose *derived* pair is not usable, such as
-> a physical range that underflows or overflows float64 against the digital range. The header
-> reports it as `DEGENERATE_PHYSICAL_RANGE`. The error thrown later by `toPhysical` carries
-> `SCALE_UNAVAILABLE`, because `toPhysical` re-derives the cause from the signal alone and can't
-> re-derive this one.
+> Until 0.4.509 that fifth condition was reported as `DEGENERATE_PHYSICAL_RANGE` on the header but
+> thrown by `toPhysical` as `SCALE_UNAVAILABLE`, whose text reads "the header recorded the reason
+> rather than the signal". A caller who caught the error and went looking through
+> `header.diagnostics` for `SCALE_UNAVAILABLE` found no such entry — it was there under the other
+> code. `toPhysical` re-derives this one from the same four fields now, so both sides name
+> `DEGENERATE_PHYSICAL_RANGE`.
 
 ### Digital data still works
 

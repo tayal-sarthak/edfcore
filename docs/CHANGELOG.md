@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.511
+
+- **Fixed** `physical-values.md` documenting the limitation 0.4.509 removed. Its note said a fifth
+  refusal condition exists, that the header calls it `DEGENERATE_PHYSICAL_RANGE`, and that
+  `toPhysical` "can't re-derive this one" so it throws `SCALE_UNAVAILABLE`. The last clause stopped
+  being true one release ago.
+- The page's table now lists five conditions rather than four, so the fifth is documented where a
+  reader looks for it rather than in an aside below. Five rows, four distinct codes: two conditions
+  reach `DEGENERATE_PHYSICAL_RANGE`, which is why the table is of conditions.
+- The table is not prose. `scaling-page-arithmetic.test.ts` parses these rows out of the page and,
+  for each, builds the signal and asserts `toPhysical` refuses it with the code in that row — so
+  the new row is checked by the same mechanism as the other four, and the page cannot describe a
+  refusal the library does not make. The order it claims is checked too: a channel that is both
+  log-transformed and unusably scaled is refused as the log-transformed one, which is the answer
+  that says something about the data rather than about the map.
+- The note is kept, rewritten as history: what the two sides used to report, and why looking up
+  `SCALE_UNAVAILABLE` in `header.diagnostics` used to find nothing.
+
 ## 0.4.510
 
 - **Added** the one claim every diagnostic makes at once, as a property test: `raw` quotes the
