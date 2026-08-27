@@ -55,7 +55,7 @@ function assertWithinBudget(
  * Why `signal.scale` is `undefined`, re-derived from the signal itself.
  *
  * The header records the matching diagnostic at parse time, but a bare `EdfSignal` does not
- * carry it, and `toPhysical` takes a signal. These four tests are the same ones `header/scale.ts`
+ * carry it, and `toPhysical` takes a signal. These five tests are the same ones `header/scale.ts`
  * applies, IN THE SAME ORDER — a signal can fail two of them at once, and the order is what
  * decides which cause is named, so the code reported here is the code the header reported.
  * `buildScale` owns that order; this function follows it. A signal that fails none
@@ -63,9 +63,9 @@ function assertWithinBudget(
  * naming the wrong cause is worse than admitting the cause is not on hand.
  */
 function describeScalingFailure(signal: EdfSignal): ScalingFailure {
-  const digitalSpec =
-    'EDF+ additional specification 5: "Digital maximum must be larger than Digital minimum"';
-  // FIRST, and ahead of the four re-derived tests. `parseSignalHeaders` deliberately does not run
+  const rangeSpec = 'EDF+ additional specification 5';
+  const digitalSpec = `${rangeSpec}: "Digital maximum must be larger than Digital minimum"`;
+  // FIRST, and ahead of the five re-derived tests. `parseSignalHeaders` deliberately does not run
   // `buildScale` over an annotations channel — its physical and digital fields describe nothing a
   // caller may use, and checking them "would report a defect about a number nobody may use". So
   // such a signal has no scale AND no diagnostic, and re-running the four tests over those unused
@@ -125,6 +125,42 @@ function describeScalingFailure(signal: EdfSignal): ScalingFailure {
       specReference: 'EDFlib edffloat.html',
     };
   }
+  // FIFTH, and the reason this function re-derives arithmetic rather than only reading fields:
+  // four finite fields can still imply a gain that is not finite. `buildScale` reports
+  // DEGENERATE_PHYSICAL_RANGE for that, and until 0.4.509 this fell through to the
+  // `SCALE_UNAVAILABLE` fallback below — whose text says the header holds the reason, while the
+  // header was in fact holding a different code. That is the same divergence 0.3.111 fixed
+  // between the two entry points, in the one arm nobody mirrored.
+  //
+  // Guarded on all four being finite, because a field that failed its grammar arrives here as
+  // NaN, and NaN would satisfy the non-finite test below and claim the gain as the cause. Its
+  // cause belongs to the field, was reported against the field, and is exactly the case the
+  // fallback's wording is true of.
+  if (
+    Number.isFinite(signal.physicalMinimum) &&
+    Number.isFinite(signal.physicalMaximum) &&
+    Number.isFinite(signal.digitalMinimum) &&
+    Number.isFinite(signal.digitalMaximum)
+  ) {
+    // `buildScale`'s expression, not a simplification of it: the two must agree on which ranges
+    // are refused, and the pinned form is what decides the edge cases.
+    const bitValue =
+      (signal.physicalMaximum - signal.physicalMinimum) /
+      (signal.digitalMaximum - signal.digitalMinimum);
+    const offset = signal.physicalMaximum / bitValue - signal.digitalMaximum;
+    if (bitValue === 0 || !Number.isFinite(bitValue) || !Number.isFinite(offset)) {
+      return {
+        code: 'DEGENERATE_PHYSICAL_RANGE',
+        reason:
+          `declares the physical range ${signal.physicalMinimum}..${signal.physicalMaximum} ` +
+          `over the digital range ${signal.digitalMinimum}..${signal.digitalMaximum}, and the ` +
+          `gain those imply is not a usable float64 number (bitValue ${bitValue}, offset ` +
+          `${offset}), so every converted sample would be NaN or infinite`,
+        specReference: rangeSpec,
+      };
+    }
+  }
+
   return {
     code: 'SCALE_UNAVAILABLE',
     reason: 'has no usable scale, and the header recorded the reason rather than the signal',

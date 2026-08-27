@@ -17,6 +17,7 @@
  * in the source; rewriting it is the mistake, and these tests exist to catch that rewrite.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeDigital } from '../../../src/decode/digital.js';
 import { clampToDigitalRange, physicalRangeOf, toPhysical } from '../../../src/decode/physical.js';
@@ -489,7 +490,44 @@ const REFUSAL_CASES: readonly RefusalCase[] = [
       physicalDimension: 'Filtered',
     },
   },
+  {
+    // The fifth refusal, and the only one that needs arithmetic rather than a field comparison:
+    // -9.9E307..9.9E307 over -32768..32767 is four finite fields whose bitValue is Infinity. The
+    // range is written raw because the builder's number formatter cannot fit -9.9e+307 into the
+    // 8-byte field — which is the point, since only an 8-byte exponent notation gets here.
+    name: 'four finite fields can still imply a gain that is not',
+    code: 'DEGENERATE_PHYSICAL_RANGE',
+    signal: {
+      label: 'EMG Chin',
+      samplesPerRecord: 4,
+      raw: { physicalMinimum: '-9.9E307', physicalMaximum: '9.9E307' },
+    },
+  },
 ];
+
+describe('the refusals are the five both modules know about', () => {
+  // `buildScale` decides which signals have no scale; `describeScalingFailure` re-derives WHY
+  // from the signal alone, because `toPhysical` never sees the header. A refusal added to one
+  // and not the other is not a compile error and not a test failure anywhere else: the header
+  // reports the new code and the throw quietly reports SCALE_UNAVAILABLE, whose own text tells
+  // the reader to go and find a diagnostic bearing a different code. That divergence shipped
+  // twice before it was worth counting — between the two entry points in 0.3.111, and in the
+  // derived-gain arm until 0.4.509 — so this counts the sites rather than trusting the mirror.
+  it('buildScale refuses in exactly five places', () => {
+    const source = readFileSync(new URL('../../../src/header/scale.ts', import.meta.url), 'utf8');
+    // Every refusal ends the same way: report the diagnostic, then abandon the scale.
+    const refusals = source.match(/\n {4}\);\n {4}return undefined;\n/g) ?? [];
+    expect(refusals).toHaveLength(5);
+  });
+
+  it('describeScalingFailure re-derives all five, and each case below fixes one', () => {
+    // Five refusals, four distinct codes: the degenerate physical range and the unusable derived
+    // gain share DEGENERATE_PHYSICAL_RANGE, which is why the count above is of sites and this is
+    // of cases.
+    expect(REFUSAL_CASES).toHaveLength(5);
+    expect(new Set(REFUSAL_CASES.map((testCase) => testCase.code)).size).toBe(SCALING_CODES.size);
+  });
+});
 
 describe('refusing to invent a gain', () => {
   for (const testCase of REFUSAL_CASES) {

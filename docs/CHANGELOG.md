@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.509
+
+- **Fixed** `toPhysical` naming a different cause than the header for one class of unscalable
+  signal. `header/scale.ts` refuses to build a scale in five places; `decode/physical.ts`
+  re-derives which one applied, from the signal alone, because `toPhysical` never sees the header.
+  It re-derived four of the five. The missing one is the case where all four scale fields are
+  finite but the gain they imply is not — `-9.9E307`..`9.9E307` over `-32768`..`32767` gives a
+  bitValue of `Infinity` — which the header reports as `DEGENERATE_PHYSICAL_RANGE`.
+- The cost was a message that pointed at nothing. Such a signal threw `SCALE_UNAVAILABLE`, whose
+  text reads "the header recorded the reason rather than the signal", so a caller who catches the
+  error and goes looking through `header.diagnostics` for `SCALE_UNAVAILABLE` finds no entry —
+  the entry is there under the other code. Both `error.code` and the reason are now the header's,
+  and the message quotes the bitValue and offset it computed.
+- The re-derivation is guarded on all four fields being finite, because a field that failed its
+  grammar arrives as `NaN`, and `NaN` satisfies a non-finite test. That signal's cause belongs to
+  the field, was already reported against the field, and is the case the `SCALE_UNAVAILABLE`
+  wording is true of — so the fallback stays reachable and stays honest.
+- This is the same divergence 0.3.111 fixed between the two entry points, in the one arm nobody
+  mirrored, so the count is now checked rather than trusted: a test reads `header/scale.ts` and
+  asserts it abandons a scale in exactly five places, against the five cases the contract covers.
+
 ## 0.4.508
 
 - **Added** an enforcement of the `grid` prefix rule. `migrating-to-0-3.md` explains why three
