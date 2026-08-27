@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.522
+
+- **Added** the reading/scaling/decimating agreement checks to the offline suite — the third group
+  in `tests/corpus/whole-api.test.ts`, which skips without the corpus. These are four calls a
+  viewer makes in sequence: read a window, join the chunks, convert to units, draw a decimated
+  envelope. Each can be individually right while contradicting the one before it.
+- The envelope is where that bites. `readEnvelope` reads and reduces on its own path rather than
+  decimating what `readWindow` returned, so its extremes and the samples' extremes are two
+  independent answers to the same question about the same window, and only comparing them says
+  they agree.
+- Running it on built files covers more than running it on real ones. The shapes include a file
+  with no data signal at all and one with a zero record duration, where the honest answer to "read
+  a window of it" is nothing — and a helper that returns nothing where its neighbour throws is
+  exactly the disagreement this group exists to find. The corpus reaches those shapes by luck.
+- Every case returns early on a file it cannot apply to, so the file ends by asserting how many
+  times it got through: windows read, envelopes compared, samples located. Without that the whole
+  run could return early and report green.
+- The **annotation-helper** group lands with it, since it is the same argument about a different
+  four calls: a census, a text filter, a formatter and two time lookups, all describing one list.
+  Each is asked about every event's OWN onset, which puts every event on the boundary of the
+  half-open interval it is being looked for in rather than hoping one lands there — and half-open
+  boundaries are where five of the comparisons this project has had to fix went wrong. Four of the
+  eight shapes carry no annotations channel, and two empty lists agree about everything, so that
+  file also counts the events it reached.
+
 ## 0.4.521
 
 - **Added** the timeline-helper agreement checks to the offline suite, the second group in
