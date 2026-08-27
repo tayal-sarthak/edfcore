@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.514
+
+- **Added** a check of what is in the six columns `edfcore signals` prints. `cli.md` tabulates them
+  by name and position and ends the sixth row with the instruction the command exists for — "the
+  authoritative count; index by this, never by the rate" — and the only test was that there are six
+  columns and one line per signal, which six columns of anything satisfy.
+- That is the defect the page records against itself. Until 0.2.42 it described a column list the
+  command did not emit: samples per record where the command printed `kind`, and the authoritative
+  field in no column at all. A count of six would not have caught it then either. The order is now
+  read out of the page's table rather than written in the test, so the two cannot drift apart.
+- The fixture gives its two data signals different sample counts and different units, so 4 Hz, 1.5
+  Hz, 8 and 3 are all distinct — no pair of columns can be swapped and still match.
+- The three qualified rows are checked as qualified. `sampleRateHz` is empty on a legal zero record
+  duration, where `undefined`, `0` and `NaN` would each be a number a script divides by. `label`
+  and `physicalDimension` are both called trimmed, and are trimmed by different things: the parser
+  strips EDF padding from both, the command adds `String.trim` to the dimension — which reaches a
+  tab — and passes the label through `printable`, which turns a tab into `.`. Removing either
+  fails now; before this, removing the first put a tab in the dimension and removing the second put
+  a seventh column in the row, handing `cut -f6` a unit where it expected a sample count.
+
 ## 0.4.513
 
 - **Added** a bounds check on the evidence a diagnostic points at: the byte range is inside the
