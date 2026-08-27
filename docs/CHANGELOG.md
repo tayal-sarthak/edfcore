@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.526
+
+- **Added** the callout on `diagnostics.md` that stops a reader gating a read on the wrong number:
+  "`report.ok` is `severity !== 'error'` over a superset of `header.diagnostics`". It says three
+  things, each a claim about behaviour, and `diagnostic-docs.test.ts` checked only that the page
+  still words it that way.
+- The superset half is the one that could rot in silence. `validateRecording` builds its own list,
+  so a header diagnostic dropped on the way in leaves the report describing a cleaner file than the
+  header did — and the report is the stricter of the two by construction, which is the direction
+  nobody thinks to check. Every diagnostic is now matched by severity, code and message, so two
+  occurrences of one code are two entries rather than one.
+- `ok` is asserted as the sentence the page writes it as, twice over: directly against the report's
+  own diagnostics, and through `summarizeDiagnostics(...).errors === 0`, which is what a caller
+  actually counts with.
+- The last clause is checked on the file it is about. A signal with a degenerate digital range
+  carries an `error`-severity diagnostic and makes `report.ok` false — and the file reads perfectly,
+  including that channel's samples, which is the deferred-fatal contract and the entire reason the
+  callout exists. Both verdicts are reached across the eight shapes, so neither is a constant.
+
 ## 0.4.525
 
 - **Added** a check that what the CLI prints is what the library reports, over the eight awkward
