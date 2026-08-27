@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.519
+
+- **Added** an offline check of the claim `api-helpers.md` makes for `streamRecords`: "a streamed
+  chunk and a read chunk are the same object in every respect, diagnostics included". It is what
+  lets a caller develop against `readWindow` and switch to streaming for the twenty-two-hour file
+  without touching their own downstream code.
+- It was checked in exactly one place, `tests/corpus/large-file.test.ts`, which skips without
+  `npm run corpus:fetch` — so on a fresh clone nothing compared the two at all. And that comparison
+  is of samples, which is the half that survives a chunk losing its diagnostics, its
+  `precededByGap` or its byte accounting.
+- "Every respect" is now taken literally: each streamed chunk is compared field for field with the
+  chunk `readRecords` returns for the same records, at four chunk sizes. The fixture makes the
+  usually-empty fields non-empty — a gap in the middle so one chunk carries a `precededByGap`, a
+  malformed TAL onset so one carries a diagnostic — because a chunk whose optional fields are all
+  absent compares equal to a chunk that dropped them, and the run asserts both were populated.
+- The two claims in the same sentence are checked beside it: the chunks arrive in time order, and
+  none spans a gap at any chunk size. The second is what makes `durationTicks` mean what a reader
+  thinks — `readRecords` will hand back a chunk straddling a discontinuity, because you named the
+  records, and a streamed chunk must never be one.
+
 ## 0.4.518
 
 - **Added** the other convention `api-types.md` states in bold: "Anything checkable against the
