@@ -30,6 +30,9 @@ import { buildEdf } from '../support/writer.js';
 
 const PAGE = DOCS_PAGES.get('cli.md') ?? '';
 
+/** The page as one line, because every sentence quoted below wraps in the source. */
+const PROSE = PAGE.replace(/\s+/g, ' ');
+
 /** Every command the page's synopsis block offers, in the order it offers them. */
 const COMMANDS: readonly string[] = (() => {
   const found = [...PAGE.matchAll(/^npx edfcore ([a-z]+) <file>/gm)].map((match) => match[1] ?? '');
@@ -45,16 +48,27 @@ const NAMED_BY: ReadonlyMap<string, readonly string[]> = (() => {
   const at = PAGE.indexOf('Flags: ');
   if (at === -1) throw new Error('cli.md no longer has a Flags paragraph');
   const paragraph = PAGE.slice(at, PAGE.indexOf('\n\n', at));
+  // Split at each flag rather than matching one pattern across the whole paragraph: only two of
+  // the three carry a parenthesised list, and a single regex reads the third one's list as the
+  // second one's.
+  const starts = [...paragraph.matchAll(/`(--[a-z]+)/g)];
   const map = new Map<string, readonly string[]>();
-  for (const match of paragraph.matchAll(/`(--[a-z]+)[^`]*`[^(]*\(([^)]*)\)/g)) {
-    const commands = (match[2] ?? '')
+  for (const [position, start] of starts.entries()) {
+    const flag = start[1] ?? '';
+    const from = start.index ?? 0;
+    const to = starts[position + 1]?.index ?? paragraph.length;
+    const segment = paragraph.slice(from, to);
+    const parenthesised = /\(([^)]*`[^)]*)\)/.exec(segment);
+    // `events --list` is written that way in the prose, so the command is the entry's first word.
+    const entries = (parenthesised?.[1] ?? segment.slice(flag.length + 1))
       .split(',')
-      .map((entry) => entry.trim().replaceAll('`', '').split(' ')[0] ?? '')
-      .filter((entry) => entry.length > 0);
-    map.set(match[1] ?? '', commands);
+      .flatMap((entry) => {
+        const quoted = /`([a-z]+)[^`]*`/.exec(entry);
+        return quoted === null ? [] : [quoted[1] ?? ''];
+      })
+      .filter((entry) => entry.length > 0 && !entry.startsWith('-'));
+    map.set(flag, parenthesised === null ? entries.slice(0, 1) : entries);
   }
-  // `--list` names `events` without a parenthesised list, because the sentence about it says so.
-  if (!map.has('--list')) map.set('--list', ['events']);
   return map;
 })();
 
@@ -93,8 +107,8 @@ async function invoke(argv: readonly string[]): Promise<{ code: number; out: str
 
 describe('the page still makes the claim these tests are about', () => {
   it('says the flags are accepted and ignored elsewhere', () => {
-    expect(PAGE).toContain('Each is accepted and ignored by the commands it does not name');
-    expect(PAGE).toContain('the counted `events` output is never capped');
+    expect(PROSE).toContain('Each is accepted and ignored by the commands it does not name');
+    expect(PROSE).toContain('the counted `events` output is never capped');
   });
 
   it('reads a flag table with something in it, so the matrix below is not empty', () => {
@@ -121,6 +135,9 @@ describe('a flag a command does not name', () => {
     it(`${command} accepts ${flag} and prints exactly what it prints without it`, async () => {
       const plain = await invoke([command, 'a.edf']);
       const flagged = await invoke([command, 'a.edf', ...argv]);
+      // Two empty strings are equal, so the fixture has to make this command say something
+      // before "unchanged" means anything.
+      expect(plain.out.length, `${command} printed nothing to compare`).toBeGreaterThan(0);
       expect(flagged.code, `${command} ${flag} changed the exit code`).toBe(plain.code);
       expect(flagged.out, `${command} ${flag} changed the output`).toBe(plain.out);
     });

@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.515
+
+- **Added** the thirteen pairs behind one sentence on `cli.md`: "Each is accepted and ignored by
+  the commands it does not name." It is the only claim on the page about pairs rather than about a
+  command, it is what lets a wrapper pass one fixed flag set to every command instead of branching,
+  and nothing checked it.
+- The two halves rot differently. "Accepted" fails loudly — `parseArgs` refuses an unknown flag, so
+  a flag dropped from the parser exits 2. "Ignored" fails silently, and in the worst direction:
+  `--patient` gates identification, so a flag that started reaching `events`, `signals` or `gaps`
+  would print the identification a caller passed it to withhold. Each pair now runs the command
+  twice and compares the bytes, having first asserted the command printed something — two empty
+  outputs are equal.
+- The last clause is the same test in the same shape: the counted `events` listing is never capped,
+  so `--limit 1` must return it unchanged, while `events --list --limit 1` must not. A cap on a
+  census truncates it into something that reads as complete.
+- Which commands each flag names is read out of the page's own "Flags:" paragraph, not written in
+  the test, so a flag that gains or loses a command in the prose changes what is checked. The
+  paragraph needs splitting at each flag to read: only two of the three carry a parenthesised list,
+  and one pattern across the whole paragraph reads the third one's list as the second one's.
+
 ## 0.4.514
 
 - **Added** a check of what is in the six columns `edfcore signals` prints. `cli.md` tabulates them
