@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.513
+
+- **Added** a bounds check on the evidence a diagnostic points at: the byte range is inside the
+  file, the signal index names a signal, and the record index is inside the records that were
+  read. 0.4.510 checks that `raw` matches the bytes at the offset, which settles the offset for
+  every diagnostic carrying text to compare. `PARTIAL_FINAL_RECORD` and `TRAILING_BYTES` carry
+  none — they point at samples, and quoting samples as text says nothing — so nothing reached
+  their offsets at all beyond three hand-picked sizes.
+- An offset past the end of the file is not a crash. `subarray` clamps, so an evidence block
+  renders short or empty and the reader concludes the bytes were empty. Both codes are now checked
+  across a range of truncations and appends, including one byte and one byte short of a whole
+  record, and both are asserted to end exactly at the end of the file — which is what "the rest of
+  the file after the last whole record" means.
+- The TAL side is read from record 2 rather than record 0. A TAL diagnostic reports
+  `records.start + position` while its buffer offset uses `position` alone, and on a read starting
+  at record 0 those are the same number — which is what almost every fixture does, so the one
+  arithmetic that can confuse a file position with a buffer position was exercised only where the
+  two agree.
+
 ## 0.4.512
 
 - **Added** a read behind each of the four header-recovery diagnostics. When the header's numbers
