@@ -42,9 +42,17 @@ const VALID = minimalEdfPlus({
   annotationSignals: [{ samplesPerRecord: 40 }],
 });
 
+/**
+ * How many reports came back carrying a header. The consistency claims below all sit behind
+ * `header !== undefined`, and damaged bytes reach that branch far less often than they reach the
+ * call — so the count is asserted at the end rather than assumed.
+ */
+let headersReported = 0;
+
 /** Everything the report says, checked for shapes a reader could believe and should not. */
 function assertBelievable(inspection: Awaited<ReturnType<typeof inspectEdf>>): void {
   expect(typeof inspection.ok).toBe('boolean');
+  assertAccounted(inspection);
   for (const diagnostic of inspection.diagnostics) {
     expect(typeof diagnostic.code).toBe('string');
     expect(diagnostic.message.length).toBeGreaterThan(0);
@@ -55,19 +63,46 @@ function assertBelievable(inspection: Awaited<ReturnType<typeof inspectEdf>>): v
   }
   const header = inspection.header;
   if (header === undefined) return;
+  headersReported += 1;
   // A header it chose to report has to be internally coherent, or the report is garbage that
   // happens not to have thrown.
   expect(Number.isSafeInteger(header.recordCount)).toBe(true);
   expect(header.recordCount).toBeGreaterThanOrEqual(0);
   expect(Number.isSafeInteger(header.headerByteLength)).toBe(true);
   expect(Number.isNaN(header.recordDurationSeconds)).toBe(false);
-  expect(header.signals.length).toBe(
-    header.signals.filter((signal) => signal !== undefined).length,
+  // NOT `signals.length` against `signals.filter(s => s !== undefined).length`, which is what
+  // stood here: a `readonly EdfSignal[]` has no holes, so the filter drops nothing and the line
+  // compared a number with itself. The same assertion was written in `whole-api.test.ts` and
+  // found there in 0.3.101 — in the test that file's docblock calls the strongest promise in the
+  // package — and the copy here outlived it. These are the four consistency claims that one now
+  // makes, over damaged bytes rather than over six real files.
+  //
+  // The two index arrays PARTITION the signals: every signal is data or annotations, none is
+  // both, and none is missing from both.
+  expect(header.dataSignalIndices.length + header.annotationSignalIndices.length).toBe(
+    header.signals.length,
   );
-  for (const signal of header.signals) {
+  expect(new Set([...header.dataSignalIndices, ...header.annotationSignalIndices]).size).toBe(
+    header.signals.length,
+  );
+  // The header length it reports is the one its own signal count implies. A report where those
+  // two disagree describes a file whose data records begin somewhere it did not say.
+  expect(header.headerByteLength).toBe(256 * (header.signals.length + 1));
+  for (const [position, signal] of header.signals.entries()) {
+    expect(signal.index).toBe(position);
     expect(Number.isSafeInteger(signal.samplesPerRecord)).toBe(true);
     expect(Number.isNaN(signal.scale?.bitValue ?? 0)).toBe(false);
   }
+}
+
+/** The claims the report makes about the READ, which hold whether or not a header came back. */
+function assertAccounted(inspection: Awaited<ReturnType<typeof inspectEdf>>): void {
+  // `ok` is defined as "no error-severity diagnostic", and a reader gates on it.
+  expect(inspection.ok).toBe(inspection.diagnostics.every((d) => d.severity !== 'error'));
+  // Triage never reads more than the file holds, nor more than its own ceiling.
+  expect(inspection.bytesRead).toBeGreaterThanOrEqual(0);
+  expect(inspection.bytesRead).toBeLessThanOrEqual(inspection.byteLength);
+  expect(inspection.bytesRead).toBeLessThanOrEqual(128 * 1024);
 }
 
 describe('uniformly random bytes', () => {
@@ -132,5 +167,14 @@ describe('what it reports when it succeeds', () => {
     const inspection = await inspectEdf(byteSource(new Uint8Array(64)));
     expect(inspection.ok).toBe(false);
     expect(inspection.diagnostics.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the consistency claims were reached', () => {
+  it('saw a header come back from the damaged bytes, not only from the clean file', () => {
+    // Everything from `header !== undefined` onwards is skipped when triage could not parse one,
+    // and random bytes almost never produce one. A run where nothing got past that line would
+    // report green having checked only that nothing threw.
+    expect(headersReported).toBeGreaterThan(100);
   });
 });

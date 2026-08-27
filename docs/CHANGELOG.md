@@ -6,6 +6,34 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.523
+
+- **Fixed** a vacuous assertion in `inspect-safety.test.ts`, the property test for the strongest
+  promise in the package. It read `header.signals.length` against
+  `header.signals.filter((signal) => signal !== undefined).length` — a `readonly EdfSignal[]` has
+  no holes, so the filter drops nothing and the line compared a number with itself.
+- It is the same line, in the same words, that `whole-api.test.ts` carried until 0.3.101, where its
+  own docblock records finding it. The copy here outlived the fix by four hundred releases, and it
+  was the one line in the file claiming to check that a report is internally coherent rather than
+  merely present.
+- In its place are the four consistency claims the corpus test now makes, and here they run over
+  damaged bytes rather than six real files: the two index arrays partition the signals (each is
+  data or annotations, none is both, none is missing from both), each signal's `index` is its
+  position, the reported `headerByteLength` is the one its own signal count implies, `ok` is
+  exactly "no error-severity diagnostic", and `bytesRead` exceeds neither the file nor the 128 KiB
+  ceiling. All of them hold today under bit flips, truncation at every length, and uniformly
+  random bytes.
+- Everything from `header !== undefined` onwards is skipped when triage could not parse one, and
+  random bytes almost never produce one — so the run now counts how many reports came back with a
+  header and asserts the count. A run that got past that line zero times would report green having
+  checked only that nothing threw, which is how the assertion it replaces survived.
+- The suite-size figure moves from 2,500 to 2,700, in the three places that state it — the README's
+  status line, the foot of `installation.md`, and the docblock of `browser-safety.test.ts`. The
+  tests added over 0.4.520-0.4.522 pushed the written-out count past it, which is the direction
+  `test-count-claims.test.ts` exists to catch: "N or more" stays true forever once it is true, so
+  the property that makes it safe is the property that makes it worthless. It refused the release
+  rather than letting the number quietly describe a smaller repository.
+
 ## 0.4.522
 
 - **Added** the reading/scaling/decimating agreement checks to the offline suite — the third group
