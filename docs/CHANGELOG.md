@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.524
+
+- **Added** the six CLI commands over the eight awkward shapes, without the corpus. The CLI is
+  where an unfamiliar file arrives — that is the argument `cli.md` makes for it, "so you can look
+  at a file before writing any code" — and the test that runs it over unfamiliar REAL files,
+  `tests/corpus/cli-corpus.test.ts`, skips on a fresh clone. Offline the commands had been run over
+  `minimalEdf` and `minimalEdfPlus`: two tidy files.
+- Forty-eight invocations, and each must not throw, must not write to stderr on a file that parsed,
+  must print something, must end its last line, and must print no control byte. The shapes are the
+  ones a command can be surprised by: no data signal at all makes `signals` an empty listing and
+  `gaps` a question about a recording that has none, a zero record duration takes the time axis
+  from `gaps` and the rate from `signals`, a duplicate label breaks the one lookup `header` does by
+  name.
+- The exit code is checked against its meaning rather than against a constant. `validate` returns 1
+  for a file carrying an error-severity diagnostic and 0 otherwise — the CI gate the page documents
+  — and a final case asserts the eight shapes produce both codes, or the rule is a constant in
+  disguise.
+- No rendered value may be the word `undefined`, and that needs a precise form: the word appears
+  legitimately in prose, since `ZERO_RECORD_DURATION` says "it makes every sample rate undefined",
+  which is the sentence a reader needs. What is refused is a value SLOT — a field of the
+  tab-separated listing, a leaf of the JSON, the right-hand side of a `label: value` line. Those
+  mean `String(undefined)` reached the output, and a zero record duration is exactly the file that
+  would produce one.
+
 ## 0.4.523
 
 - **Fixed** a vacuous assertion in `inspect-safety.test.ts`, the property test for the strongest
