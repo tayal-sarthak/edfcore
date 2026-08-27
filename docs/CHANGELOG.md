@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.516
+
+- **Added** the third column of the `EdfHeader` and `EdfSignal` tables on `api-types.md`, executed.
+  `type-tables.test.ts` already checks that both tables list every member of their interface in
+  declaration order, which settles the first column. The third is where the tables do their work:
+  most rows do not describe a field, they derive it — `dataByteLength` is
+  `recordCount * recordByteLength`, `sampleCount` is `samplesPerRecord * header.recordCount`,
+  `recordByteOffset` is an offset "within one data record" rather than within the file, and
+  `sampleRateHz` is `undefined` "exactly when that duration is `0`". None of it had been run.
+- A wrong rule there is worse than a missing one, because these are the sentences a reader uses
+  instead of measuring. Someone who takes `recordByteOffset` for a file offset writes a seek that
+  lands in the header; someone who divides by `sampleRateHz` because the table did not warn them
+  gets `Infinity` on a legal annotations-only recording.
+- Each rule is asserted twice: that the page still states it, quoting the row's own words, and that
+  the library obeys it. The quote is what makes the pair worth anything — a rule reworded on the
+  page fails here instead of drifting away from a test that only knew the behaviour.
+- Reading the rows needs two things the obvious parser gets wrong. `recordByteLength` is a row in
+  BOTH tables and means different things in each, so a row is looked up under its `###` heading;
+  and a type cell writes a union as `number \| undefined`, so cells split on an unescaped pipe or
+  the rest of that row lands in the wrong column.
+
 ## 0.4.515
 
 - **Added** the thirteen pairs behind one sentence on `cli.md`: "Each is accepted and ignored by
