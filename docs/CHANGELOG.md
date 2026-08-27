@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.4.520
+
+- **Added** the header-helper agreement checks to the offline suite. `tests/corpus/whole-api.test.ts`
+  runs essentially the whole barrel over six real files and asserts the results agree with each
+  other; its own docblock says why that is a class of its own — a function can be individually
+  correct and still disagree with its neighbour, and six releases of this project were exactly
+  that. All of it skips without `npm run corpus:fetch`, so a fresh clone had never run any of it.
+- What the corpus contributes to those properties is not realness. None of them cares where the
+  bytes came from; what they need is AWKWARDNESS — a zero record duration, a duplicated channel
+  label, a file with no data signal at all, 24-bit samples, a signal with no usable scale. The new
+  `tests/support/awkward-files.ts` builds eight such shapes, each named after what makes it
+  awkward rather than after the corpus file it stands in for.
+- The properties are the ones that can only fail as a disagreement: `matchSignals` returning a
+  different set of channels than `header.dataSignalIndices`, `physicalRangeOf` ordering bounds the
+  signal does not declare, `getSignal` answering where `findSignals` found two, the covered
+  duration exceeding the span, `summarizeDiagnostics` counting a severity the array does not carry.
+- A final case asserts the shapes really are awkward — that one has no data signals, one has no
+  rate anywhere, one repeats a label, one is 24-bit, one has an unscalable signal. Without it the
+  run could pass on eight tidy files and prove nothing about the shapes it is named for.
+
 ## 0.4.519
 
 - **Added** an offline check of the claim `api-helpers.md` makes for `streamRecords`: "a streamed
