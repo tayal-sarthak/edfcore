@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.1
+
+- **Added** the `out` contract as one check over every primitive that takes one.
+  `api-primitives.md` writes it once and refers back to it — "`out` behaves exactly as in
+  `decodeDigital`: reused when long enough, narrowed with `subarray` when longer, a plain
+  `RangeError` when shorter" — and `envelope.ts` restates it in its own words. Each of the four was
+  tested on its own; that the four agree was not.
+- `out` exists for the render loop, where a viewer redraws on every pan and zoom, so the caller
+  holds the buffer across frames and reads it after the call. Each rule fails silently without
+  that: a function that allocated its own array would work perfectly and leave a caller reading
+  last frame's numbers; one that returned the whole buffer instead of a narrowed view would append
+  stale values from the previous, longer frame; one that filled a short array part-way would draw a
+  frame half from this window and half from the last. All three are checked by identity of the
+  underlying buffer rather than by contents.
+- The refusal is asserted to be a plain `RangeError` with `isEdfError` false, on all four. A
+  wrong-sized array the caller allocated is a bug in the calling code, not a problem with the file,
+  and that is the kind of distinction a later refactor tidies into the error hierarchy one function
+  at a time.
+- The four are enumerated from `src/` rather than listed, so a fifth primitive that takes an `out`
+  fails this file until it joins it.
+
 ## 0.5.0
 
 The public API is unchanged: nothing was added, removed or renamed, and no arithmetic moved. This
