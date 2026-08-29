@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.7
+
+- **Added** the one worked `readWindow` result on `api-reading.md`, built and run. The page shows a
+  65-second window over a discontinuous file coming back as two chunks — `{ start: 498, count: 2 }`
+  at 498 s and `{ start: 500, count: 3 }` at 560 s with a gap before it — and it is the only place
+  the page shows what "one chunk per contiguous run" produces. Every figure in it was prose.
+- The counts are the part worth running. 2 and 3 are not the same number and neither is 5, so a
+  reader can see from them that the window did not return every record between its ends. Both fall
+  out of the half-open rule: record 499 ends exactly at 500 s and is in, record 503 starts exactly
+  at 563 s and is out — the rule that decides whether consecutive epochs partition or overlap. The
+  run asserts the excluded record starts exactly at the window's end.
+- `startSeconds: 560` is the other half: sixty seconds of the window lie inside the gap, so the
+  second chunk starts 62 seconds after the first while being only 2 records later. A consumer that
+  assumed `startSeconds` advanced with the record number would place three records a minute early.
+- The window and both chunks are parsed out of the page, anchored to the printed line rather than
+  to the first `startSeconds` on it — an unanchored pattern picked up an earlier example's window
+  and built one nothing on the page describes, which passed its own parse and tested a different
+  file.
+
 ## 0.5.6
 
 - **Fixed** two lines of the `EdfSignal` block on `api-types.md` describing a different file from
