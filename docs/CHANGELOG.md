@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.3
+
+- **Added** the claim `api-reading.md` makes in one clause: "that makes `startSeconds` trustworthy
+  on an EDF+D file even when the index is only probed". A chunk decodes its start from the
+  timekeeping TALs in its own bytes, so an index that has read two records cannot make it wrong.
+- It is worth checking because the cheap answer is available and wrong. Every record has a nominal
+  position, `start + r * recordDuration`, that a reader can compute without touching the file — and
+  on a contiguous file it is right. On an EDF+D file it is short by every gap before it, which is
+  the number nobody notices: the samples are fine, the record numbers are fine, and only the clock
+  has moved.
+- The fixture puts a seven-second hole after record 3 and reads a chunk on each side of it through
+  an index that has never looked. The far chunk is asserted not to report the nominal position, to
+  report the true one in ticks, and to report the same value the scanned index does — which is what
+  "trustworthy" has to mean. The near chunk reports a position where the two answers coincide,
+  which is why testing only that half would conclude the nominal grid was fine.
+- `precededByGap` is asserted `undefined` on the same chunk, deliberately. It is the field a probed
+  index genuinely cannot fill, and the one `mergeChunks` stopped keying its refusal on in 0.2.19 —
+  before that, two chunks a minute apart on an EDF+D file joined in silence.
+
 ## 0.5.2
 
 - **Added** the map of how far `strict` reaches on a read, which has three cells rather than the
