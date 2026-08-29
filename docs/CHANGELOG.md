@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.6
+
+- **Fixed** two lines of the `EdfSignal` block on `api-types.md` describing a different file from
+  the other five. The page prints one running example — six one-second records, one 100-sample
+  signal — and its test builds that file and checks `index`, `kind`, `samplesPerRecord`,
+  `sampleRateHz` and `sampleCount`. It stopped there, and the two lines it stopped before are the
+  two that would have failed: `signal.scale` prints a bitValue of `0.1221001221001221` and
+  `signal.raw.digitalMinimum` prints `'-2048   '`, while the fixture took the writer's defaults and
+  produced `0.015259021896696421` and `'-32768  '`.
+- The page is the specification and the fixture is the reconstruction, so the fixture moved: the
+  printed values imply 500 µV over 4,095 digital steps and nothing else, and the conventions
+  paragraph at the top of the page introduces the "exposed twice" rule with the same `-2048` as its
+  example. Declaring `-250`..`250` over `-2048`..`2047` makes every line of the block true of one
+  file, and makes the sentence at the top true of it too.
+- `bitValue` is re-derived through the pinned expression from the declared fields rather than
+  compared against the printed float. It is the number a reader checks their own port against, and
+  copying the page's sixteen digits into the test would make the two agree without either being
+  right.
+- The whole block is now under test, including the raw field with its padding intact — compared
+  against the page without collapsing whitespace, since collapsing turns `'-2048   '` into
+  `'-2048 '` and quietly passes the check the sentence exists to make.
+
 ## 0.5.5
 
 - **Added** the table under "Files with several sample rates" on `reading-signals.md`, and the

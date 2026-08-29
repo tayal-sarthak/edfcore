@@ -51,7 +51,21 @@ const FILE = buildEdf({
   startTime: '22.30.00',
   startDate: '02.03.02',
   recordingId: 'Startdate 02-MAR-2002 X X X',
-  signals: [{ label: 'EEG Fpz-Cz', samplesPerRecord: 100 }],
+  // The declared range the page's own values imply. `signal.scale` prints a bitValue of
+  // 0.1221001221001221 and `signal.raw.digitalMinimum` prints '-2048   ', which is 500 uV over
+  // 4,095 digital steps and nothing else; the conventions paragraph at the top of the page uses
+  // the same -2048 as its example of a raw field. Until 0.5.6 this fixture took the writer's
+  // defaults, so those two lines of the block described a different file from the other five.
+  signals: [
+    {
+      label: 'EEG Fpz-Cz',
+      samplesPerRecord: 100,
+      physicalMinimum: -250,
+      physicalMaximum: 250,
+      digitalMinimum: -2048,
+      digitalMaximum: 2047,
+    },
+  ],
   annotationSignals: [
     {
       samplesPerRecord: 30,
@@ -104,6 +118,38 @@ describe('the header', () => {
     // "samplesPerRecord * header.recordCount", asserted as the product as well as the value.
     expect(signal.sampleCount).toBe(number('signal.sampleCount'));
     expect(signal.sampleCount).toBe(signal.samplesPerRecord * header.recordCount);
+  });
+
+  it('derives the gain the page prints, from the range the page prints', async () => {
+    const { header } = await opened();
+    const signal = getSignal(header, 'EEG Fpz-Cz');
+
+    // The pinned expression, re-derived here from the declared fields rather than compared with
+    // a recorded float: `bitValue` is what a reader checks their own port against, and copying
+    // the page's digits into the test would make the two agree without either being right.
+    const bitValue =
+      (signal.physicalMaximum - signal.physicalMinimum) /
+      (signal.digitalMaximum - signal.digitalMinimum);
+    const offset = signal.physicalMaximum / bitValue - signal.digitalMaximum;
+    expect(signal.scale).toEqual({ bitValue, offset });
+
+    const printed = shows('signal.scale');
+    expect(printed).toBe(`{ bitValue: ${bitValue}, offset: ${offset} }`);
+  });
+
+  it('keeps the raw digital minimum the page prints, padding included', async () => {
+    const { header } = await opened();
+    const signal = getSignal(header, 'EEG Fpz-Cz');
+
+    // Quoted on the page twice: here, and in the conventions paragraph that introduces the
+    // "exposed twice" rule with this exact field as its example.
+    expect(`'${signal.raw.digitalMinimum}'`).toBe(shows('signal.raw.digitalMinimum'));
+    expect(signal.digitalMinimum).toBe(-2048);
+    // NOT whitespace-collapsed: the padding inside the quotes is the whole point of the
+    // sentence, and collapsing it turns `'-2048   '` into `'-2048 '` before the comparison.
+    expect(PAGE.replace(/\n/g, ' ')).toContain(
+      "`signal.digitalMinimum` is `-2048`; `signal.raw.digitalMinimum` is `'-2048   '`",
+    );
   });
 
   it('carries the start time as fields, never as a Date', async () => {
