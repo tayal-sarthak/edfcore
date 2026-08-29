@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.12
+
+- **Added** the six mistakes `AGENTS.md` tells a code generator to avoid, run. That file carries two
+  lists: "Things that look like bugs and are not" is bound to tests by `agents-rules.test.ts`, which
+  fails if a rule is added without one; the other list had only `agents-snippet.test-d.ts`, which
+  compiles the fence beneath it. Whether the six sentences are true of a running file was
+  established nowhere.
+- They are the sentences most likely to be acted on without being read carefully, because they are
+  written for something generating code rather than for someone reading. Each describes a mistake
+  that produces OUTPUT rather than an error: microvolts that are really ADC counts, a chunk that is
+  really an array, an index computed from a rate that does not exist, an event compared on the wrong
+  axis, one rate assumed for a file with three, a defect reported as a value and never looked at.
+- The fourth has arithmetic in it and is checked as arithmetic. The two annotation onset fields
+  "differ by record 0's sub-second offset", so the fixture declares a quarter-second one and the
+  difference is asserted against it. On a file with no offset the two are equal, and a test written
+  against such a file would pass while the sentence was wrong.
+- The sixth is checked with the console replaced: the diagnostics arrive as values on the header,
+  nothing throws, and no `log`, `warn`, `error`, `info`, `debug` or `trace` is called.
+- The list is enumerated from `AGENTS.md` and bound by content rather than position, so a reordered
+  list keeps its bindings, a rewritten entry loses one loudly, and a seventh mistake is a mistake
+  with no test until it has one.
+
 ## 0.5.11
 
 - **Added** the sentence `api-helpers.md` gives as the entire reason `readEnvelopeAtResolution`
