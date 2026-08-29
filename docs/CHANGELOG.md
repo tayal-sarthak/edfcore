@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.10
+
+- **Added** the hex dump line `diagnostics.md` prints. The page shows one line — `bytes: 63 61 66
+  e9  |caf.|` — and says one thing about it, "a hex dump of up to 24 bytes". It had no test, and it
+  is the line a bug report is pasted from: the one place in the package where a reader is looking at
+  bytes rather than at edfcore's reading of them.
+- The interesting byte is the last. `0xe9` is `é` through the decoder every header field uses, so
+  the obvious gutter for those four bytes is `|cafe|` with an accent. The page prints `|caf.|`,
+  because the gutter is printable ASCII and nothing else — a reader comparing the dump against a hex
+  editor needs each column to mean one byte, and a byte that renders as one character in one
+  decoding and another in a different one is worse than a dot. It is the package's one deliberate
+  exception to its own Latin-1 rule, and it was carried by an example rather than an assertion. The
+  boundaries are checked too: space is in, DEL is out.
+- The cap is stated on the page as a number and lives in `format.ts` as a constant; the two are now
+  compared. Beyond it the dump says how many bytes it withheld, because a truncated dump that did
+  not say so reads as a complete one — the same defect the diagnostic limit and the CLI listing each
+  had to have fixed.
+- The gutter is asserted to stay the same length as the hex, which is what makes the two columns
+  readable side by side at all.
+
 ## 0.5.9
 
 - **Added** the row of `data-sources.md`'s "When a 200 is first seen" table that had no test. The
