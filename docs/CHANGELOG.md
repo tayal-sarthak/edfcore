@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.9
+
+- **Added** the row of `data-sources.md`'s "When a 200 is first seen" table that had no test. The
+  page refuses a `200 OK` answer to a Range request by default — the server sent the whole resource
+  rather than the bytes asked for — and tabulates when that is discovered, three ways.
+  `hardening.test.ts` covers the two the page calls "the ordinary shape of this failure": a CDN
+  that answers `HEAD` and then ignores `Range` constructs cleanly and refuses the first read.
+- The uncovered row is the one a caller reaches deliberately. Passing `options.byteLength` skips
+  both the `HEAD` and the probe, so nothing is asked while constructing — the run asserts zero
+  requests — and the refusal lands on the first `read()` instead.
+- Which matters for where a `try`/`catch` goes. A source that constructs and then refuses needs the
+  guard around the read; one that refuses at construction needs it around the constructor. Getting
+  that wrong is not a crash, it is an unhandled rejection somewhere a page never expected one.
+- The same row is checked with `allowFullDownload`, where the body is buffered at the point the 200
+  arrives: the first read returns real bytes, a second read is served from what is already held, and
+  only one `GET` is ever issued — "one download rather than two", as the page puts it. The rows are
+  read out of the table, so a row added to it is a row with no test until it has one.
+
 ## 0.5.8
 
 - **Added** the tie between the three places that count the ways a scale can be refused.
