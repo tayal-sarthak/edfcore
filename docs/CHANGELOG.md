@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.4
+
+- **Added** the rest of the block `discontinuous.md` prints for `index.segments` and `index.gaps`.
+  The page prints three objects in full — fifteen fields between them — and the tests checked four:
+  the two record ranges and the two `startSeconds`. Each segment's own `index`, its `startTicks`,
+  its `endSeconds`, and the gap's `beforeSegmentIndex`/`afterSegmentIndex` were printed and never
+  run.
+- Those are the fields most worth running. `startTicks` is the exact value the whole time model
+  rests on and the only one a reader cannot check by eye against the diagram above it;
+  `endSeconds` is derived from two other printed numbers, so a page printing all three can
+  contradict itself while every individual number matches something; and the gap's two segment
+  indices are what make it a gap between a specific pair rather than a free-floating interval.
+- The fields are enumerated from the page rather than listed in the test — the block is parsed into
+  objects and each `name: value` compared against the object the scan produced — so a field added to
+  the block is checked by having been printed. Adding `1n` to a segment's `startTicks` fails it.
+- The derived fields are also checked against each other rather than only against the page:
+  `endSeconds` is `startSeconds + durationSeconds` on every segment and gap, and the gap runs from
+  where the earlier segment ends to where the later one starts, in ticks.
+
 ## 0.5.3
 
 - **Added** the claim `api-reading.md` makes in one clause: "that makes `startSeconds` trustworthy
