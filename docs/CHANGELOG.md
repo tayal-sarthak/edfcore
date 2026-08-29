@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.11
+
+- **Added** the sentence `api-helpers.md` gives as the entire reason `readEnvelopeAtResolution`
+  exists separately from `readEnvelope`: "Widths that disagree cannot be drawn on one axis." Above
+  it the page lists the two ways that went wrong, each with the numbers it produced — a window of
+  11 s asked at 1 s per bucket coming back as 0.27 s per bucket in one chunk and 0.09 s in the
+  other (0.2.31), and a 100 s run at 30 s per bucket giving four buckets of 25 s while a 60 s run in
+  the same call gave two of 30 s (0.3.9). Both were history, and neither was pinned.
+- The existing envelope tests cover the bucket COUNT — that it is not always what you asked for, and
+  why the two entry points clamp differently — which is the field a caller loops over. The WIDTH is
+  the field a caller draws with. A viewer placing bucket `b` at `startSeconds + b * secondsPerBucket`
+  gets a plot whose x-axis changes scale halfway across if two chunks disagree; nothing looks wrong,
+  the second half of the trace is simply drawn at a different rate from the first.
+- Both ways one call ends up with runs of different lengths are exercised: a window spanning a gap,
+  and a window that does not begin on a record boundary and so produces a first run wider than it
+  asked for. The run lengths are asserted to differ, or the check is one run repeated.
+- The grid is also asserted to cover its run and not sprawl past it — the span of the buckets is at
+  least the chunk's duration and overhangs it by less than one bucket — which is what makes the
+  reported width usable for placing them.
+
 ## 0.5.10
 
 - **Added** the hex dump line `diagnostics.md` prints. The page shows one line — `bytes: 63 61 66
