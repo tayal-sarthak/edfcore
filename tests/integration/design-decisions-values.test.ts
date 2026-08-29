@@ -20,6 +20,7 @@
  *    read the way the reference implementation does.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { clampToDigitalRange } from '../../src/decode/physical.js';
 import { formatStartTimeNaive } from '../../src/header/dates.js';
@@ -152,3 +153,81 @@ async function readRecordsFor(recording: Awaited<ReturnType<typeof openEdf>>): P
   if (series === undefined) throw new Error('no signal in the chunk');
   return series.digital;
 }
+
+// ---------------------------------------------------------------------------
+// How many ways a scale can be refused, counted in three places
+// ---------------------------------------------------------------------------
+
+/**
+ * "Four header conditions ... A fifth condition catches a derived gain."
+ *
+ * `design-decisions.md` counts the refusals one way and `physical-values.md` tabulates them
+ * another — five rows under "Five conditions produce it, checked in this order" — and
+ * `header/scale.ts` is what actually decides. Three statements of one number, and only one of them
+ * was checked: `scaling-page-arithmetic.test.ts` runs the table, and nothing tied the decision
+ * record to it.
+ *
+ * The split wording is deliberate rather than stale. Four of the five are conditions a header
+ * DECLARES and a reader can see in the fields; the fifth is a property of the gain those fields
+ * imply, which no field states, so calling it a header condition would be wrong. What has to hold
+ * is that four plus one is the five the other page tabulates and the five the source refuses in —
+ * and that is the part a later release breaks by adding a sixth to one place.
+ *
+ * The refusal sites are counted from `header/scale.ts` the same way `physical.test.ts` counts them,
+ * so all three move together or this fails.
+ */
+const DECISIONS = DOCS_PAGES.get('design-decisions.md') ?? '';
+const SCALING_PAGE = DOCS_PAGES.get('physical-values.md') ?? '';
+
+const WORDS: Readonly<Record<string, number>> = {
+  Two: 2,
+  Three: 3,
+  Four: 4,
+  Five: 5,
+  Six: 6,
+};
+
+describe('the number of ways a scale is refused', () => {
+  it('is written as a word on the decision record, with the fifth called out separately', () => {
+    const stated = /(\w+) header conditions make a linear conversion impossible or wrong/.exec(
+      DECISIONS,
+    );
+    expect(stated?.[1], 'design-decisions.md no longer counts the header conditions').toBeDefined();
+    expect(WORDS[stated?.[1] as string]).toBe(4);
+    // The fifth is named, and named as derived rather than declared — which is why it is not one
+    // of the four.
+    expect(DECISIONS.replace(/\s+/g, ' ')).toContain(
+      'A fifth condition catches a derived gain that is not a usable float64 number',
+    );
+  });
+
+  it('is the same total the scaling page tabulates', () => {
+    const stated = /(\w+) conditions produce it, checked in this order/.exec(SCALING_PAGE);
+    expect(stated?.[1], 'physical-values.md no longer counts them').toBeDefined();
+    expect(WORDS[stated?.[1] as string]).toBe(5);
+    // Four declared plus the one derived. Written as the sum so that changing either page alone
+    // fails rather than leaving two pages quietly disagreeing about one number.
+    expect(4 + 1).toBe(WORDS[stated?.[1] as string]);
+  });
+
+  it('is the number of places buildScale abandons a scale', () => {
+    const source = readFileSync(new URL('../../src/header/scale.ts', import.meta.url), 'utf8');
+    // Every refusal ends the same way: report the diagnostic, then abandon the scale.
+    const refusals = source.match(/\n {4}\);\n {4}return undefined;\n/g) ?? [];
+    expect(refusals).toHaveLength(5);
+  });
+
+  it('names the four declared ones in the words the fields use', () => {
+    // The four are identified by the field comparison a reader can make by eye, so a page that
+    // renamed one into something the header does not say would stop being usable as a checklist.
+    const flat = DECISIONS.replace(/\s+/g, ' ');
+    for (const named of [
+      '`digitalMinimum === digitalMaximum`',
+      'a degenerate physical range',
+      'an inverted digital range',
+      'physical dimension is exactly `Filtered`',
+    ]) {
+      expect(flat, named).toContain(named);
+    }
+  });
+});

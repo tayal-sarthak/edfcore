@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.8
+
+- **Added** the tie between the three places that count the ways a scale can be refused.
+  `design-decisions.md` says "Four header conditions ... A fifth condition catches a derived gain",
+  `physical-values.md` tabulates five under "Five conditions produce it, checked in this order", and
+  `header/scale.ts` is what actually decides. Only the table was checked; nothing tied the decision
+  record to it or to the source.
+- The split wording is deliberate, not stale, and the test says so rather than flattening it. Four
+  of the five are conditions a header DECLARES and a reader can see in the fields; the fifth is a
+  property of the gain those fields imply, which no field states, so calling it a header condition
+  would be wrong. What has to hold is that four plus one is the five the other page tabulates and
+  the five the source abandons a scale in.
+- That is the part a later release breaks by adding a sixth in one place. 0.4.509 and 0.4.511 were
+  the previous instalment of exactly this: the fifth refusal existed in the source, the throw path
+  re-derived four of them, and the page documented the gap as permanent.
+- The four declared conditions are also checked to still be named in the words the header fields
+  use — `digitalMinimum === digitalMaximum` and the rest — because the page is usable as a
+  checklist only while a reader can match each line against a field by eye.
+
 ## 0.5.7
 
 - **Added** the one worked `readWindow` result on `api-reading.md`, built and run. The page shows a
