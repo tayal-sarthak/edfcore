@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.5
+
+- **Added** the table under "Files with several sample rates" on `reading-signals.md`, and the
+  sentence after it. Nine numbers — three channels' `samplesPerRecord`, `sampleCount` and
+  `firstSampleIndex` over `[10, 14)`, then three more counts after trimming the same chunk to
+  `[10.5, 12.5)` — and none had been run. `multi-signal-cost.test.ts` covers a different table on
+  the same page and `reading-signals-arithmetic.test.ts` the section above it.
+- The last sentence is the one worth having under test: "The temperature channel's trimmed window
+  starts at 11 s rather than 10.5 s. At 1 Hz there's no sample at 10.5, and the first one inside the
+  window is the one at 11." That is `startSeconds` becoming genuinely per-signal — before the trim
+  all three share a value, because a record-aligned read starts every channel at the same record,
+  and the run asserts that too so the change is visible as a change.
+- It is the difference between a boundary computed on each channel's own grid and one computed from
+  a rate. A viewer that reused the requested 10.5 for all three would draw the temperature trace
+  half a sample to the left, on the one channel where half a sample is half a second. The boundary
+  is checked in ticks as well as seconds.
+- Every figure is read out of the page's own table and prose, so neither side can drift, and the
+  row arithmetic is checked against itself: a sample count is the rate times the window, a first
+  index is the rate times the start.
+
 ## 0.5.4
 
 - **Added** the rest of the block `discontinuous.md` prints for `index.segments` and `index.gaps`.
