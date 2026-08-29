@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.2
+
+- **Added** the map of how far `strict` reaches on a read, which has three cells rather than the
+  two a reader assumes. `openEdf` probes exactly two records for their timekeeping onsets, so a
+  malformed TAL in record 0 or the last record throws under `strict` and one in a middle record
+  does not — the file opens, and every sample reads back either way.
+- The middle cell is not a defect. A probed index has read two records, so `strict` can only reject
+  what it saw; rejecting a file for a defect nobody looked for would be a claim the probe cannot
+  make, and `validateRecording` is the call that reads every record. It is written down because
+  "strict rejects a file with any defect" is what a reader assumes, and it is wrong in a way no
+  error message will correct.
+- The reason a read is never strict is checked as the structural fact it is rather than as
+  carefulness: `ReadOptions` declares no `strict` member, so a read cannot be asked for it even by
+  a caller who wants it. `recording.ts` says exactly that at the call site — "not because the flag
+  was lost" — and a member added later would compile, be ignored, and leave `api-reading.md`
+  describing an option that exists.
+- In all three cells the samples come back and `TAL_MALFORMED` lands on `chunk.diagnostics` naming
+  the record it was found in. That is what the read path exists to protect: a malformed TAL in the
+  annotations channel is not a reason to return no EEG.
+
 ## 0.5.1
 
 - **Added** the `out` contract as one check over every primitive that takes one.
