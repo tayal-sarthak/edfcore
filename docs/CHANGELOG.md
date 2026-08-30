@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.13
+
+- **Added** a `NaN` budget driven through every entry point that reads one. `options.ts` exists
+  because `maxMaterializeBytes` is typed `number`, which admits `NaN`, and `NaN` arrives without
+  anyone writing it — `Number(process.env.EDF_BUDGET)`, an absent query parameter, a missing JSON
+  key. Its docblock states the reach the guard needs: the option is resolved in six modules and read
+  raw and handed on in two more, and "a guard that only one of the eight applies is not a guard".
+- Nothing checked the eight. `options.test.ts` checks the resolver in isolation, and
+  `budget-boundary.test.ts` enumerates the five sites that compare a REQUIREMENT against the budget
+  — a different set, reached only by a request large enough to refuse. A `NaN` is refused earlier
+  than that, by the resolver, in modules that list names: `record-index.ts` compares nothing, and
+  `biosemi.ts` resolves nothing.
+- The eight are now read out of `src/` and split by what they do with the option, with the counts
+  checked against the sentence in the docblock that states them. Each is then driven through its own
+  public entry point — `readRecordBytes`, `readRecords`, `decodeDigital`, `toPhysical`,
+  `readEnvelope`, `buildRecordIndex`, `validateRecording` on both its branches, and `readTriggers`,
+  which owns no resolver and borrows the scan chunker's.
+- The eighth is stated rather than asserted away: `cachedSource` hands the option to the source it
+  wraps, so a `NaN` survives it and is refused by the first resolving module downstream. That is the
+  design — a cache is not the layer that owns a materialisation budget — and it is now a fact the
+  suite records instead of a gap in it.
+
 ## 0.5.12
 
 - **Added** the six mistakes `AGENTS.md` tells a code generator to avoid, run. That file carries two
