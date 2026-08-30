@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.30
+
+- **Added** what `diagnostics.md` prints for one header, printed. The page introduces the two ways of
+  looking at a diagnostics array by showing both on the same file: `formatDiagnostics` renders one
+  entry in full, five detail lines and all, and `summarizeDiagnostics` reduces the same four
+  diagnostics to `total 4, errors 1, warnings 1, infos 2`. Neither transcript was run.
+  `diagnostics.test.ts` covers the vocabulary and the sink, `diagnostic-message-lines.test.ts` the
+  line discipline, and `summarize-diagnostics.test.ts` the counting rules — all against fixtures of
+  their own.
+- The rendered block is the one worth comparing whole. It is what a user pastes into an issue, and
+  every part of it is load-bearing differently: the severity and code a reader greps for, the
+  message, the byte offset they take to a hex editor, the raw bytes as written, the expected/actual
+  pair, and the spec clause. The page is the only place the whole shape appears.
+- The paragraph under it makes four smaller claims and each is now checked: no ANSI escapes unless
+  you ask; `color` adds them, and stripping them gives back the uncoloured text exactly, so colour
+  is decoration and not content; `maxItems` caps the blocks and appends `... and N more`, dimmed
+  with SGR 2 when colour is on; and `formatDiagnostics([])` returns the empty string rather than a
+  blank line, which is what lets it concatenate into a larger report.
+- The fixture is built to the page's own numbers rather than to a convenient shape — one error, one
+  warning and two infos is what the summary transcript says, and the two infos come from two
+  different codes because `byCode` is printed beside them.
+
 ## 0.5.29
 
 - **Added** the contract `signalIndices` has to keep at all five reads that take one.
