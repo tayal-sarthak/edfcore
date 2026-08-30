@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.19
+
+- **Added** the table on `diagnostics.md` that says which calls take `strict`. Eleven functions in
+  two columns, and nothing read it. `strict-decision.test.ts` covers what `strict` does — the info
+  exemption, the four always-fatal conditions — and `strict-reaches.test.ts` how far into a file it
+  reaches. Which entry points accept it at all was prose.
+- It is the kind of table that goes stale silently, in both directions. A function that grows a
+  `ParseOptions` parameter joins the left column without anyone editing the page, and a caller
+  reading the right column concludes it cannot be made strict. A function whose options type is
+  narrowed leaves the left column the same way, and a caller passing `strict` to it gets one that is
+  quietly ignored — an option that type-checks, runs, and does nothing.
+- The two columns are checked by different means, because they are different claims. The six on the
+  left are **driven**: each is given a file with a real non-`info` defect — a non-standard reserved
+  field for the header three, a malformed TAL for the annotation three — and each must throw
+  `EdfFormatError` carrying that code under `strict: true` and collect the same diagnostic without
+  it. That is the only way to catch a `strict` that is accepted and dropped.
+- The five on the right are checked **structurally**, out of `src/`: each function's options
+  parameter is resolved to its declared type, the `extends` and `&` chain is followed, and `strict`
+  must not be reachable through it. A behavioural check cannot prove that negative — passing an
+  option a signature does not declare is a compile error, not a runtime one. The same resolver is
+  then pointed at the left column, which is what keeps the two halves honest.
+
 ## 0.5.18
 
 - **Added** the unscalable signal `diagnostics.md` walks through, run from the throw to the read.
