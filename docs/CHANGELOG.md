@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.14
+
+- **Added** the CLI's default print cap driven at all four places it is applied.
+  `cli-limit-default.test.ts` covers the NUMBER — twenty, and the four documents that promise it —
+  and its own docblock names the failure that made `DEFAULT_ITEM_LIMIT` a constant in 0.4.390: the
+  literal `20` at four separate call sites, "`header` printing twenty diagnostics while
+  `events --list` prints fifty, with both pages still saying twenty". It then exercised one of the
+  four. The three the sentence is about had never been run with the flag left off.
+- They are not reachable by accident. Each needs more than twenty of one kind of diagnostic in one
+  particular array: `header.diagnostics`, then `timeline.diagnostics` under "From the record
+  probes:" — a second application of the same local, added in 0.3.94 — and `report.diagnostics`
+  through `formatValidationReport`, which is a different formatter with its own `maxItems`. The
+  fixtures are built for it: thirty signals declaring `physicalMinimum == physicalMaximum`, thirty
+  annotation signals each carrying a malformed slot-0 TAL that both record probes see, and a
+  malformed TAL in every one of forty records.
+- Every count is compared against the cap the CLI was observed to apply rather than against a
+  literal, so this file names no number of its own and the two files move together. An explicit
+  `--limit 3` is then driven through all four as well, which is what separates a site that reads
+  `args.limit` from one that fell through to the constant.
+
 ## 0.5.13
 
 - **Added** a `NaN` budget driven through every entry point that reads one. `options.ts` exists
