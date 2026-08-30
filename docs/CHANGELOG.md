@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.24
+
+- **Added** "the whole flow" at the end of `discontinuous.md`, run, and the diagram at the top of it.
+  That page opens with an ASCII timeline of one file and closes with a four-step program over the
+  same file printing six lines. `discontinuous-page.test.ts` covers the objects in between — the
+  `index.segments` and `index.gaps` blocks, and `locate(13.5)`. Both ends of it were prose.
+- The diagram is the page's premise: six one-second records, a ten-second hole after record 2, and a
+  row of byte offsets — 768, 1400, 2032, 2664, 3296, 3928 — which is "they are still stored back to
+  back on disk" written as numbers. A reader takes those to a hex editor. Both rows are now read out
+  of the diagram and checked, and the same offsets appear again in the four-read block under
+  "openEdf never scans", where they are the ranges the open actually issues.
+- Three of the program's six lines come from `console.log` inside loops the page writes itself, so
+  they are composed here by the same expressions and compared against the page's text.
+  `256 samples from 2 s` and `256 samples from 13 s` are the ones worth having: that is
+  `trimToWindow` applied to a window spanning a gap, and the second is the whole point of the page —
+  a reader trusting the nominal grid would expect the second chunk to start at 4 s.
+- `index.locate(5)` goes with them. It returns `undefined` for an instant inside the hole, which is
+  the answer the page prints and the one a caller has to handle: there is no sample there, and no
+  index can invent one. Step 1 is checked to reach its verdict without issuing a read, which is what
+  "no extra I/O" in its own comment claims.
+
 ## 0.5.23
 
 - **Added** the conformance report `validation.md` prints, printed. That page ends with a whole
