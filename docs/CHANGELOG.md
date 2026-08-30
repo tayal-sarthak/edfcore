@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.20
+
+- **Added** the lifetime contract `api-sources.md` states in five words: of `close?()`, "edfcore
+  never calls it for you." A caller who opened a file handle, or a source wrapping a pooled
+  connection, is entitled to decide when it is released — and a library that closed it on their
+  behalf would be releasing a resource they may still be using, with the failure arriving later and
+  somewhere else. Nothing checked it. `cache.test.ts` covers the other direction, that
+  `cachedSource.close()` forwards to the source it wraps, which is the case where a caller did ask.
+- Every reading entry point that takes a source is now driven over a spy that records whether it was
+  closed: `readHeader`, `openEdf`, `inspectEdf`, `readRecordBytes`, `readRecords`, `readWindow`,
+  `readAnnotations`, `buildRecordIndex`, `validateRecording`, `streamRecords`, and one wrapped in
+  `cachedSource`. Each is checked to have actually read, so a passing run is not a source nobody
+  touched.
+- The failure paths are checked too, because a `finally` added for cleanup is exactly how this
+  contract gets broken: a file that is not an EDF at all, a read refused before it is issued, and a
+  read naming records the file does not have.
+- A behavioural sweep only covers the paths it thought to drive, so the `close` call sites are
+  enumerated out of `src/` as well. There are four, in two modules. Three are inside a `close()`
+  implementation of a source edfcore hands back; the fourth is `fileSource` releasing a handle that
+  never reached a caller, which is the exception its own docblock documents. `fileHandleSource` is
+  then checked to close its handle exactly once — when the caller calls it, and not while reading.
+
 ## 0.5.19
 
 - **Added** the table on `diagnostics.md` that says which calls take `strict`. Eleven functions in
