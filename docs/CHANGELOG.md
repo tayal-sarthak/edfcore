@@ -6,6 +6,35 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.16
+
+- **Added** the last program on `annotations.md`, run. That page ends with the conversion it exists
+  to teach — an event onset to a sample index, in integers, because `Math.round(onset * sampleRateHz)`
+  drifts and the rate is `undefined` outright when the record duration is zero. It is thirty lines,
+  it prints two lines of output, and it is the thing a reader copies. `annotations-page.test.ts`
+  runs the top of the page and stops before it.
+- The fixture is the page's own file, reconstructed from numbers the page already prints elsewhere
+  on it: `region.recordByteOffset` is 768, so the data signals hold 384 two-byte samples a record,
+  and the worked example's `256n` at one second fixes `EEG Fpz-Cz` at 256 of them, leaving 128 for
+  the second channel. One fixture now produces the four-event transcript at the top and the two
+  output lines at the bottom, both compared against text read out of the page.
+- The printed float turns out to be load-bearing. `0.007629510948348211` is `bitValue * offset` on a
+  ±500 µV signal against the standard 16-bit digital range — the physical value of digital zero,
+  which is the first sample of every record — and it is printed twice because both events land on a
+  record boundary. It is asserted as that expression rather than as sixteen copied digits.
+- Four claims in the prose under the program are checked with it. The `floorDiv` the page tells you
+  to write is compared character for character against the body of `floorDiv` in `src/tal/ticks.ts`.
+  Step 4's own recommendation — that `firstSampleIndex` comes back as `recordIndex x samplesPerRecord`
+  — is asserted rather than assumed. The floor "matters for negative onsets" is checked off the
+  sample grid, where the sentence has content: the page's own `-0.75` is an exact multiple at 256
+  samples a second, so both roundings agree on it, and a `-0.7501` onset is where truncation lands
+  one sample later, toward the file start, exactly as the page says.
+- The Warning at the end is checked too, and it is the sharpest of the four. On an EDF+D file with a
+  five-second hole the formula answers for an instant inside it with `640n` — an ordinary index,
+  well inside the samples the file holds — while `index.locate(2.5)` correctly returns `undefined`.
+  For an instant past the gap that IS in the file, the formula names record 7 in a four-record file
+  and the scanned index names record 2.
+
 ## 0.5.15
 
 - **Added** direct tests for `floorDiv` and `ceilDiv`, which had none. `tal/ticks.ts` owns them, and
