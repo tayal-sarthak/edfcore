@@ -6,6 +6,32 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.33
+
+- **Added** an overlap driven through every surface that could call it a gap. This is the defect the
+  changelog has fixed four times. An overlap travels in `index.gaps` with a NEGATIVE duration —
+  0.2.69 decided that and `api-reading.md` documents it — so every consumer of that array has to
+  branch on the sign, and each one that did not printed "a gap of -0.2 s": a gap of negative
+  duration, with an explanation that inverts what an overlap does. Across a gap two samples are
+  seconds apart; across an overlap they cover the same time, so concatenating duplicates it rather
+  than skipping it.
+- 0.3.3 partitioned `edfcore gaps`. 0.3.33 applied the rule to "the two places that still said it
+  was". 0.3.41 found a third in `src/chunks.ts`, which mentioned an overlap nowhere. 0.3.59 found a
+  fourth forty lines below the third, on the branch a probed index actually reaches. Every fix was
+  local, and no test treated it as one rule over one file.
+- One overlapping recording now goes through all of them — both `mergeChunks` branches, the
+  validation report on an EDF+D and on an EDF+C that claims to be continuous, the CLI's summary line
+  and its tab-separated row, and the record probes at open — and each is asserted to use the word
+  `overlap` and to present no negative magnitude as a duration. The second is what would have failed
+  all four times: `gap of -0.2 s` is what the defect looked like on screen, at every one of them.
+- A blanket ban on the word "gap" would be wrong, and the test says so: the diagnostics correctly use
+  it in the rule they cite — "a discontinuous file may leave gaps between records but never overlaps
+  them" — which is the sentence that makes them understandable. The check is about how the observed
+  boundary is described, not about a vocabulary.
+- The three modules that partition a gap's own duration by its sign are read out of `src/`, so a
+  fourth consumer fails here until it is driven. That is the part that stops this being a fifth
+  local fix.
+
 ## 0.5.32
 
 - **Added** a lattice check over the ten microvolt values `quick-start.md` prints. That page prints
