@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.22
+
+- **Added** the scrolling table on `large-files.md`, measured. `large-files-cost.test.ts` runs the
+  two tables above it — what opening costs, and what one ten-second window costs. This is the third,
+  and the one that carries an argument rather than a figure: thirty consecutive ten-second windows
+  over an 8-channel EDF+C cost 30 reads and 1,246,800 bytes from a bare source, and 1 read of
+  1,048,576 bytes through `cachedSource`.
+- The sentence under it is why the table is there. "Removing `cachedSource` changes the number of
+  reads and nothing else" is a debugging instruction — if a bug appears with the cache in place,
+  delete the wrapper; if it survives, the cache was not involved — and it is only as good as the
+  "nothing else". The two runs are now compared sample for sample, all 153,600 of them, with the
+  count of non-zero values asserted too: a fixture decoding to zeros throughout would make an exact
+  match mean nothing.
+- The page also says which block the single read is — "the second 1 MiB block. The first was already
+  resident because the header read at open pulled it in, so the reads that come with opening a file
+  are not wasted." That is checked as an offset, because it is what a reader plans an HTTP range
+  budget around, and because a cache issuing one read of the right size at the wrong place would
+  satisfy every other assertion here.
+- The neighbouring claim goes with it: thirty ten-second windows cost thirty reads, and one
+  300-second window over the same records costs one, for the same 1,246,800 bytes.
+
 ## 0.5.21
 
 - **Added** the census `reading-signals.md` takes of the derived sample rate. `samplesPerRecord` is
