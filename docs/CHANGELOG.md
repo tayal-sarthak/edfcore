@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.28
+
+- **Added** an already-aborted signal driven through every entry point that takes one.
+  `api-sources.md` says edfcore "polls `.aborted` before and after each read and throws an `Error`
+  whose `name` is `'AbortError'`"; `data-sources.md` adds that every bundled adapter checks it
+  before it starts, and that the rejection "is a plain `Error` ... not an `EdfError`.
+  `isEdfError` returns false for it, so a `catch` that re-throws aborts stays simple."
+- `http-abort-signal.test.ts` covers the adapter with the most to go wrong. What nothing covered is
+  the sentence's scope. The guard lives in the SOURCES, and every reading function reaches it only
+  by issuing a read — so whether each of them actually does, before allocating, before scanning,
+  before decoding, is a property of thirteen call paths rather than of the four adapters. A function
+  that resolved its window or sized its buffer first would do that work for a caller who had already
+  cancelled.
+- All thirteen are now driven, and each must reject with `name === 'AbortError'` and `isEdfError`
+  false — the discriminator the page says consumers branch on, chosen because `DOMException` cannot
+  be named without the DOM lib. The four adapters are driven directly alongside them, and each is
+  also shown to read normally when the signal is simply not aborted.
+- The one place it does not fire is checked with them, because it is documented rather than
+  accidental: `api-reading.md` says a record range with `count: 0` "issues no read at all", and a
+  call that reads nothing has nothing to abort.
+- The last block is the other half of `ReadOptions`' own docblock — "cancelling a read and capping an
+  allocation never alter what a completed call returns". A signal that is never aborted leaves every
+  result identical to one passed no options at all.
+
 ## 0.5.27
 
 - **Added** a non-finite bound driven through every entry point that takes a time in seconds.
