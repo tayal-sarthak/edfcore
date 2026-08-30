@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.35
+
+- **Added** the resolution of every name a `Next:` clause points at. `next-clause.test.ts` proves
+  every thrown message and every diagnostic has one; 0.5.34 follows the eight whose advice is a
+  concrete instruction. This is the mechanical half between them: of the 166 clauses in `src/`, most
+  name something — a function to call instead, an option to raise, a field to read — and a name that
+  no longer exists is how this rots. Nothing renames a public export without noticing, but a message
+  is a string, so a clause mentioning one is not a reference and no compiler follows it.
+- Three kinds of name, each checked against the thing it would have to be true of. A bare
+  `something()` must be exported from one of the three entry points, or be a method on a value
+  edfcore hands back — `locate` on the index and `read` on a source are the two clauses that name a
+  method rather than an export, and both are resolved on the real object. An `options.something`
+  must be a field some options type declares; the two misdiagnoses `options.ts` records were both of
+  that shape, a message naming a lever the caller does not hold. A `header.something`,
+  `signal.something` or `index.something` must exist on a recording opened from a fixture, checked
+  with `in` rather than against a type: a field that is declared and never populated would satisfy a
+  type check and still leave the reader looking for something that is not there.
+- The extraction is narrow about what counts as advice, and says so. Comments are stripped first, so
+  a helper mentioned in a note beside a message is not mistaken for a name the message uses.
+  `${...}` interpolations are stripped too — `Next: ${adapterFor(source)}` names no function to the
+  reader, since the function is how the sentence was built rather than what it says. And the capture
+  crosses the `'…' + '…'` seams a long clause is written in, because stopping at the first would
+  read half of every one of them, and the half that names the field is usually the second.
+
 ## 0.5.34
 
 - **Added** the `Next:` clause, followed. Every message edfcore throws ends with one, and
