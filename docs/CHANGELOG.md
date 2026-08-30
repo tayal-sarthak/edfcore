@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.31
+
+- **Added** the record-range contract at the five calls that take one. `RecordRange` is the other
+  half of the selection contract 0.5.29 covered, and it reaches three layers — `readRecordBytes` in
+  the I/O layer, `readRecords` and `readAnnotations` in the recording layer, `decodeDigital` and
+  `decodeAnnotations` in the decoders. Unlike the signal selections, they do not share a validator:
+  each asserts the range for itself.
+- That is the reason to check them together. `api-reading.md` documents one behaviour — an
+  `EdfRangeError` when the range is not inside `header.recordCount` — and a caller who tested against
+  `readRecords` has no way to know whether `decodeDigital` agrees. The error also carries `requested`
+  and `available` so a caller can clamp and retry, and those have to hold the same two ranges at
+  every site or the retry computes the wrong one; that is now asserted as one set rather than five
+  times over.
+- Six bad ranges run at all five: a start past the end, a count that runs past it, a negative start,
+  a negative count, a fractional start and a fractional count. The last two are the ones a caller
+  reaches without noticing — a `Math.floor` left off a division, a range built from `seconds * rate`
+  — and they are refused rather than truncated, because a range that silently became
+  `{ start: 0, count: 1 }` would return real samples for a question nobody asked.
+- `count: 0` is accepted at all five, including at the end of the file where a count of one is not,
+  which is the case the page singles out. The two decoders check something else as well — the buffer
+  they were handed against the range they were given — and that second check is exercised rather
+  than worked around, since it is the one that catches a caller pairing a range with the wrong bytes.
+
 ## 0.5.30
 
 - **Added** what `diagnostics.md` prints for one header, printed. The page introduces the two ways of
