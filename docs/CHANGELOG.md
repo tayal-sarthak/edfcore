@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.21
+
+- **Added** the census `reading-signals.md` takes of the derived sample rate. `samplesPerRecord` is
+  authoritative and `sampleRateHz` is "provided for display"; the page argues that with one file —
+  256 samples in a 3-second record is 85.333… Hz, no float holds it, and the error grows with *t* —
+  and then counts how often the two ways of finding a sample disagree: "1,000 of the first 3,001"
+  integer second boundaries, "always by exactly one sample", with the float answer landing one
+  sample early.
+- Nothing computed it. `sample-grid.test.ts` covers the grid functions and `trim-window.test.ts` the
+  window arithmetic, both against exact expectations; neither compares either against
+  `Math.round(t * sampleRateHz)`, which is the expression a reader would otherwise have written and
+  the one the whole section exists to talk them out of.
+- The three printed values are checked first — `85.33333333333333`, `8534` from `trimToWindow`, and
+  `8533` from the float, whose sample really does start at 99.996 s — and then the census is run over
+  all 3,001 boundaries through `trimToWindow` rather than through a reimplementation of it. Each
+  clause of the Note is a separate assertion, because they fail separately: a count that is right
+  with the direction wrong would be a worse page than one with no number at all.
+- The page shows `trimToWindow` twice, and the earlier example is on a 256 Hz file with its own
+  `exact.firstSampleIndex`. Every lookup is scoped to the fence that mentions the derived rate, so
+  the test cannot pass by reading the wrong example.
+
 ## 0.5.20
 
 - **Added** the lifetime contract `api-sources.md` states in five words: of `close?()`, "edfcore
