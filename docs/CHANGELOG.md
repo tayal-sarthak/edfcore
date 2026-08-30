@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.15
+
+- **Added** direct tests for `floorDiv` and `ceilDiv`, which had none. `tal/ticks.ts` owns them, and
+  `ticks.test.ts` — the file named for that module — covers the onset parsers and the tick
+  conversions and neither of these. Five modules import them: `envelope.ts`, `biosemi.ts`,
+  `format-annotations.ts`, `sample-locate.ts` and `time/window.ts`. Every assertion they had was
+  incidental, made through a caller that happens to divide.
+- The whole content of both functions is the negative side. Bigint `/` truncates toward zero, so on
+  a negative numerator it is neither floor nor ceiling. Both are now checked against `Math.floor`
+  and `Math.ceil` over a grid crossing zero — 85 cells, small enough that float division is an exact
+  oracle — with `ceilDiv(a, b) === -floorDiv(-a, b)` asserted across it so the pair cannot drift
+  apart. The operator is then shown to disagree on every negative non-multiple **and only there**,
+  which is what stops the grid from proving nothing.
+- The docblock's reason for their living in `ticks.ts` — "three modules had grown their own copies
+  of the same four lines" — is enumerated out of `src/`: exactly one module declares them, five
+  call them, and each of the five imports them rather than redeclaring.
+- The last block pins the operand that makes this ordinary rather than an edge case. `trimToWindow`
+  selects sample `j` through `floorDiv((R - 1) * S, D) + 1`, and a window beginning at its own
+  chunk's start makes `R` zero — so the numerator is `-S`, negative for every file, with no unusual
+  geometry and nothing pre-stimulus about it. Truncation there returns `1` where the floor returns
+  `0`, and the window loses the first sample the caller aligned it to.
+
 ## 0.5.14
 
 - **Added** the CLI's default print cap driven at all four places it is applied.
