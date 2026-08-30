@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.27
+
+- **Added** a non-finite bound driven through every entry point that takes a time in seconds.
+  `secondsToTicks` is the one place a caller's seconds become the integers everything else works in,
+  and it refuses a non-finite one; `ticks.test.ts` covers that, once, on the resolver.
+- The resolver is not the guarantee. The guarantee is that a `NaN` cannot get past it, and `NaN`
+  reaches a time bound the way it reaches a byte budget: `Number(searchParams.get('t'))`, a slider
+  whose value has not been set, an absent key in a saved view. What makes it worth a sweep is what
+  happens if one entry point misses. `NaN` compares false against everything, so a window bound that
+  skipped the resolver would not throw — it would return `[]`, which is the legitimate answer for a
+  window past the end of a recording and indistinguishable from one. That contrast is asserted
+  rather than described.
+- The entry points are enumerated out of `src/` the way `nan-budget-reaches.test.ts` enumerates the
+  budget's: sixteen exported functions declare one of `seconds`, `startSeconds`, `durationSeconds`
+  or `secondsPerBucket`, directly or through a selection type whose `extends` chain is followed.
+  Two of the sixteen take a `startSeconds` edfcore itself produced — `envelopeOfSamples` and
+  `toPhysicalEnvelope`, on an `EdfChunkSignal` and an `EdfEnvelopeSignal` — and that is stated
+  rather than filtered out silently.
+- Each of the remaining thirteen, plus `index.locate`, is driven with `NaN`, `Infinity` and
+  `-Infinity`, and each must throw a plain `RangeError` — `isEdfError` false, since a bad bound is a
+  caller's mistake and never a file's — whose message names the value it was given and ends with a
+  `Next:` clause.
+
 ## 0.5.26
 
 - **Added** the two sentences that promise nothing changes when you run it again. `validation.md`:
