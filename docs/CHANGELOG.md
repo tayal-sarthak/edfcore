@@ -6,6 +6,34 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.25
+
+- **Added** the three option tables on `api-helpers.md` and the defaults they promise. Seven fields
+  across `FormatHeaderOptions`, `FormatAnnotationsOptions` and `FormatReportOptions`, each with a
+  stated default — the part of an option nobody passes and everybody depends on.
+- One of them had never appeared in a test at all. `diagnosticsHint` defaults to `true` and appends
+  "Call formatDiagnostics(header.diagnostics) for the detail" under the counts; `edfcore header`
+  turns it off because it is already printing that detail. Both halves — that it is on by default,
+  and that turning it off removes exactly that line and leaves the counts it sits under — were
+  documented in two places and asserted in none.
+- The page argues about two of them together: "The two defaults point opposite ways on purpose.
+  `includePatientId` withholds until asked, because the cost of forgetting is a person's name in an
+  issue tracker. `diagnosticsHint` prints until told not to, because the cost of forgetting is one
+  redundant line." That is a claim about a pair, so it is asserted as a pair.
+- `FormatReportOptions.maxItems` is checked against the constant in `format-report.ts` rather than
+  against a literal, `header` is shown to be the difference between "signal 0" and the label, and
+  `redactFields` is exercised on a report that really does quote the identification — the default
+  prints "Haagse Harry" in full, and asking replaces it with `[redacted]` while the codes, counts
+  and advice survive.
+- The hypnogram transcript above the tables runs with them, since it is the same formatter at its
+  defaults: `00:00:00.000                Sleep stage W` and
+  `08:30:30.000  00:02:00.000  Sleep stage 1`, compared to the page character for character,
+  including the column the missing duration leaves blank.
+- **Changed** the suite-size figure the README, `installation.md` and `browser-safety.test.ts` state
+  from 2,700+ to 4,000+. `test-count-claims.test.ts` failed this release rather than after it: it
+  compares the written figure against the count the suite actually declares, in the direction that
+  rots, and names which page to raise.
+
 ## 0.5.24
 
 - **Added** "the whole flow" at the end of `discontinuous.md`, run, and the diagram at the top of it.
