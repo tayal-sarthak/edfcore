@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.18
+
+- **Added** the unscalable signal `diagnostics.md` walks through, run from the throw to the read.
+  That page uses one file for three separate arguments and prints values for all three — the
+  `strict` transcript, the callout headed "`errors > 0` does not mean the file failed to read", and
+  the `EdfScalingError` block at the bottom. They are the same signal seen from three angles, and
+  none of the three was run.
+- The `strict` transcript is four fields off a thrown error and a fifth off the diagnostic inside
+  it: `DEGENERATE_DIGITAL_RANGE digitalMinimum 504 1`, then `EDF+ additional specification 5`. The
+  `504` is the sharpest of them — the byte at which signal 1's `digitalMinimum` field starts in a
+  two-signal file, `256 + 2 x 120 + 8`, and the number a reader would take to a hex editor. It is
+  now asserted against that arithmetic as well as against the page. `error-fields.test.ts` checks
+  the fields exist and `spec-references.test.ts` that every diagnostic cites something; neither was
+  pointed at this file.
+- "The error carries the whole `diagnostic` it would otherwise have recorded, so nothing is lost by
+  throwing" is checked by comparing what the strict throw carries against what the non-strict parse
+  of the same bytes collected.
+- The callout is the part worth having pinned. It says `errors > 0` **and** `report.ok === false`
+  are both true of a file that reads perfectly, and tells the reader to gate on the thrown
+  `EdfError` instead — three values agreeing on one file, asserted in prose. All three are now read
+  off that file, alongside the other signal converting to eight finite microvolt values.
+
 ## 0.5.17
 
 - **Added** the record onsets that quietly stop being true when a read is narrowed to a secondary
