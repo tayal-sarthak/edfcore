@@ -6,6 +6,32 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.23
+
+- **Added** the conformance report `validation.md` prints, printed. That page ends with a whole
+  program and the output it produces on one file: a header line, a summary line, two diagnostic
+  blocks, and two per-signal stat lines. `validate-page.test.ts` covers the code table higher up and
+  `validation-report.test.ts` the `report.ok` rule; the transcript — the thing a reader compares
+  their own terminal against — was prose.
+- The stat lines are the reason it is worth running. They are not printed by edfcore at all: the
+  page composes them from `report.signalStats`, `getSignal` and arithmetic of its own, and the
+  paragraph under them is an argument built on the result. "The first channel uses half a percent of
+  the range its header declares, which is legal and lossy." "81,806 of its 153,600 samples fall
+  outside the range the header declares, so that declaration is wrong." A change to
+  `observedDigitalMin`, `outOfDigitalRangeCount` or `sampleCount` would leave the page arguing from
+  figures the library no longer produces.
+- The snippet is now run rather than restated: the stat lines are built by the same expression the
+  page shows and compared against the page's own text character for character, along with the
+  summary line's `no errors, 4 diagnostics, 600 records and 650400 bytes read`.
+- The fixture is built to the page's description and its geometry falls out of the transcript —
+  600 one-second records at 650,400 bytes is 1,084 a record, which is two 256-sample channels and a
+  30-sample annotation region, and 153,600 samples is 600 x 256. The one number that cannot be
+  derived is how many fall outside; that is read off the page and built into the sample generator,
+  which is what makes the count an assertion about the counter rather than about the waveform.
+- The last sentence of the paragraph is checked too. "Any consumer that clamps to it returns
+  different numbers for this file than edfcore does" — a read returns the bytes as written, at
+  -150..150 outside the declared -100..100, and `clampToDigitalRange` returns something else.
+
 ## 0.5.22
 
 - **Added** the scrolling table on `large-files.md`, measured. `large-files-cost.test.ts` runs the
