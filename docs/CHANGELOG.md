@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.32
+
+- **Added** a lattice check over the ten microvolt values `quick-start.md` prints. That page prints
+  two `Float64Array` blocks — five values from a window at `t = 0` in the browser example, five more
+  from `t = 60` in the Node one. They are the first numbers anyone sees from this library, and
+  `quick-start-page.test.ts` runs everything around them: the header listing, the sample count, the
+  byte count, the annotation lines, the three refusals. The values themselves it did not touch.
+- They cannot be reproduced from the page, which names its file's geometry and not its waveform.
+  What they can be checked against is the scale that geometry implies, and that turns out to be the
+  check worth having: a physical value is `bitValue * (offset + digital)` for an integer `digital`,
+  so on a given declaration the reachable values are a lattice, and a float that is not on it was
+  produced by a different expression or a different range.
+- That is not hypothetical. 0.5.6 found exactly that on `api-types.md` — two printed values belonged
+  to a file with a different digital range from the one the rest of the page's example used, and the
+  existing test checked five of seven lines and stopped before them. A lattice check catches it
+  without needing the waveform, and would have caught it there. The last test makes the point
+  concretely by converting the same digital sample on a 12-bit declaration and showing it lands
+  somewhere else.
+- Each of the ten is inverted through the declared scale, asserted to be a whole number inside the
+  declared range, and put back through `toPhysical` on a real signal, compared with `Object.is` —
+  `toBeCloseTo` would pass on a value from the wrong scale. The page's own argument for the array
+  type goes with them: every one of the ten changes under `Math.fround`, so "a sample scaled into
+  float32 loses about a quarter of a quantisation step" is true of the very values printed beneath
+  it. And the first value is asserted to be what digital zero converts to, which is not zero.
+
 ## 0.5.31
 
 - **Added** the record-range contract at the five calls that take one. `RecordRange` is the other
