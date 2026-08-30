@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.26
+
+- **Added** the two sentences that promise nothing changes when you run it again. `validation.md`:
+  "It does not modify the recording, the header or the source. `validateRecording` reads and
+  returns; call it twice and you get the same report." `diagnostics.md`: the formatter output "is
+  deterministic ... so it's safe to snapshot in a test." Both are properties of every read in the
+  package rather than of one call, and neither had a test — nothing in the suite called anything
+  twice and compared, and nothing checked that a read leaves the header it was given alone.
+- They are easy properties to lose and hard to notice losing. A parse that memoises a derived value
+  onto the header it returns, a formatter that sorts its input in place, a scan that fills in
+  `segments` on the index it was handed: each is a reasonable-looking optimisation, each makes the
+  second call disagree with the first, and none fails anything until a caller compares two runs. The
+  failure then looks like a file that changed.
+- So both are swept over the whole shape matrix rather than asserted on one fixture. For each of the
+  eight `AWKWARD` files — a zero record duration, no data signal at all, duplicate labels, a signal
+  with no usable scale — every read and every formatter runs twice and the results are compared; the
+  source's bytes are compared before and after; and the header, timeline and index are compared
+  through a walk that handles the `bigint`s and typed arrays `JSON.stringify` refuses.
+- The stronger form goes with it: a second recording opened over a copy of the same bytes must agree
+  with the first, so the output is a function of the file rather than merely stable per object. And
+  the probed index stays probed — `buildRecordIndex` returns a new one rather than filling in the
+  one it was handed.
+
 ## 0.5.25
 
 - **Added** the three option tables on `api-helpers.md` and the defaults they promise. Seven fields
