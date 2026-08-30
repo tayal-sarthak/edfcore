@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.29
+
+- **Added** the contract `signalIndices` has to keep at all five reads that take one.
+  `duplicate-signal-indices.test.ts` covers two of the rules `api-reading.md` states — duplicates are
+  dropped, the order given is the order returned — over `readRecords`, `readWindow` and
+  `streamRecords`. It does not reach the two envelope entry points, and nothing covered what the
+  option does when it is wrong.
+- The refusals are the part worth pinning, because there are two of them and they are deliberately
+  different classes. An index the file does not have is an `EdfChannelNotFoundError`, an `EdfError`
+  carrying `selector` and `availableLabels` so a caller can offer the right one. An index naming the
+  annotations channel is a plain `RangeError`, because it can only be a caller's mistake and never a
+  file's — the bytes there are TAL text, and decoding them as samples produces numbers that look
+  exactly like a signal. `isEdfError` is the split, and a caller writing one `catch` for bad files
+  and another for bad calls depends on it holding at every entry point rather than at the one they
+  tested against.
+- There is no reason for five functions to diverge — they share `resolveSignals` — which is exactly
+  why it is worth a test: a sixth entry point, or one that grows its own validation to report
+  something friendlier, is how a shared rule stops being one. All nine functions in `src/` that take
+  a `signalIndices` are enumerated by resolving their parameter types, and split into the five under
+  test, the two shared helpers, and the two annotation reads whose `signalIndices` selects annotation
+  signals and inverts both rules.
+- Nine cases run at every one of the five: out of range, negative, fractional, the annotations
+  channel alone and mixed with a real signal, a repeat, a repeat out of order, a reversal, and an
+  empty selection — which returns no signals rather than all of them.
+
 ## 0.5.28
 
 - **Added** an already-aborted signal driven through every entry point that takes one.
