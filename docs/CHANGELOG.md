@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.34
+
+- **Added** the `Next:` clause, followed. Every message edfcore throws ends with one, and
+  `next-clause.test.ts` proves that — it enumerates the throws out of `src/` and fails on a message
+  without one. What it cannot check is whether the sentence is any good. A clause naming a function
+  that was renamed, or advising something the API no longer allows, still passes, and advice that
+  does not work is worse than none: the reader spends their time on it before doubting it.
+- The package's own docblocks record two of those. `options.ts`: a `NaN` budget was refused with
+  "read fewer records per call", "advice no record count can satisfy", and elsewhere with "clamp the
+  range against header.recordCount", "a range neither function takes as a parameter" (0.3.21).
+  `validate.ts`: offering "drop scanSamples" on an EDF+ file "sent the reader round a loop" (0.3.77).
+  Both were caught by reading, not by a test.
+- Eight refusals whose advice is a concrete instruction now have it followed: build the index and
+  pass it, for both `readWindow` and `sampleAt`; merge each contiguous run separately; read fewer
+  records **or** raise the budget, both levers exercised against the numbers the refusal reported;
+  call `readAnnotations` and pass `header.dataSignalIndices` instead; `findSignals` or an index for a
+  duplicate label; `decodeDigital` on a signal with no scale; one of the annotation signals or none
+  of them; and omitting `--limit` after a bad one.
+- Each case reads the clause off the message it actually threw before following it, so advice that
+  is reworded has to stay true rather than stay identical.
+
 ## 0.5.33
 
 - **Added** an overlap driven through every surface that could call it a gap. This is the defect the
