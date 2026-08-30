@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.17
+
+- **Added** the record onsets that quietly stop being true when a read is narrowed to a secondary
+  annotations signal. EDF+ permits several and reserves timekeeping to the first;
+  `annotations.md` documents the consequence in a sentence that reads like a footnote: "Leaving out
+  the file's first annotations signal means no timekeeping TAL is read at all. Every entry of
+  `result.recordOnsetTicks` then falls back to the nominal grid, and no diagnostic is emitted for
+  it."
+- On an EDF+D file that is the difference between the truth and a fiction. The same page calls
+  `recordOnsetTicks` "the primitive every timeline in edfcore is built from", and
+  `{ signalIndices: [2] }` — a narrowing a caller reaches for to make a read cheaper, or because the
+  events they want are on the second channel — turns it into `recordIndex * recordDuration` for a
+  file whose records are nowhere near that. The fixture has a five-second hole after record 1, so
+  the true onsets are 0, 1, 7, 8 s and the narrowed read returns 0, 1, 2, 3 s.
+- Nothing throws and nothing is logged: `diagnostics` is empty in both readings, the array has the
+  right length and the right type, and the events of the second signal come back byte-identical to
+  the ones a full read returns. Only the onsets are wrong, which is why this is worth a test rather
+  than a sentence. The page's remedy — read them all — is asserted to recover them.
+- The two refusals the same option reaches are checked with it: a plain `RangeError` for a data
+  signal, compared word for word against the transcript the page prints, and
+  `EdfChannelNotFoundError` carrying `selector` and `availableLabels` for an index the file does not
+  have. `isEdfError` tells them apart, which is the distinction the page draws — parsing samples as
+  text is a caller's mistake and never a file's.
+
 ## 0.5.16
 
 - **Added** the last program on `annotations.md`, run. That page ends with the conversion it exists
