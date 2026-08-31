@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.59
+
+- **Added** the round trip a streaming pipeline actually performs: stream a window in pieces, merge
+  the pieces, and get the window. `merge-split.test.ts` proves it for `readWindow`. `streamRecords`
+  is the other way to get a window in pieces and is different code — a `readRecords` per piece, a
+  seam check between them, and a `chunkRecords` knob that decides how many pieces there are. Its
+  docblock says the pieces must be "the same object in every respect" as a read chunk, and
+  `stream-equals-read.test.ts` checks that one piece at a time. Whether they reassemble was not
+  checked.
+- If they do not join, the memory bound the call exists for is bought with an answer the caller
+  cannot reconstruct — which is the whole point of streaming a twelve-hour recording and then
+  running a filter over it.
+- The stream is merged at four chunk sizes, from one piece per record to a single piece, and
+  compared against `readWindow` on the same window: the samples, the record range, the byte offset
+  and length, the exact start and duration in ticks, `precededByGap` and the diagnostics.
+- On a discontinuous file the answer changes, correctly. The stream crosses the gap in pieces, so
+  merging all of them is refused with the message `chunks.ts` produces — and the advice that refusal
+  ends with is followed: grouped by run, each run reassembles into exactly the chunk `readWindow`
+  returns for it.
+
 ## 0.5.58
 
 - **Added** the composition rule for `trimToWindow`: trimming to A and then to B is trimming once to
