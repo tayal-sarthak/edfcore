@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.51
+
+- **Added** the promise `annotations.md` makes about partial reads, and the thing it costs.
+  `readAnnotations` "supplies the rebasing origin from the timeline, so a partial range answers the
+  same as a whole-file one" — and could not derive that origin on its own, because "a range that
+  does not contain record 0 has to infer it from an observed onset, which only works while the
+  records in between are contiguous". Before 0.2.28 the pairing the page recommends,
+  `readAnnotations(recording, chunk.records)`, reported the same event a quarter of a second later
+  than a whole-file decode did.
+- Three behaviours, one of them a defect that shipped, and none under test: `readAnnotations` was
+  checked on whole files and on single ranges, and nothing partitioned a file and compared.
+- The property runs first. For any partition of the record range into contiguous pieces, the reads
+  concatenate to the whole-file read — every field of every event, both axes, both exact tick counts
+  and `recordOnsetTicks` — over a contiguous file, one with a quarter-second start offset, and an
+  EDF+D file with a twenty-second hole.
+- Then the three-way comparison that shows the origin doing the work, on the post-gap range of that
+  EDF+D file. `readAnnotations` puts the event at 26.5 s on the record axis. `decodeAnnotations`
+  called directly on the same bytes puts it at 26.75 — its inferred origin lands outside `[0, 1)`,
+  so rebasing switches off and the two axes come back equal, exactly as documented. Passing
+  `startOffsetTicks` by hand restores 26.5. And on the same shape without the hole the inference
+  works unaided, which is what makes the failure about EDF+D rather than about partial ranges.
+
 ## 0.5.50
 
 - **Added** three ways a header can be written and mean the same thing. Each is documented, each is
