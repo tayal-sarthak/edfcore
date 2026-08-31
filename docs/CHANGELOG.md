@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.52
+
+- **Added** the sweep for a selection that came from JSON. `io/read.ts` says why this is not a
+  type-system question: "`records` is typed, and the type is not the only way in: a selection built
+  from JSON, from a config file or from a JavaScript call site arrives at run time." It then records
+  what used to happen — every wrong shape reached a refusal with a next step, "while `undefined` and
+  `null` threw `TypeError: Cannot read properties of undefined (reading 'start')` ... which names
+  neither the option nor anything to do about it" (fixed in 0.4.443).
+- That is a whole class and it had one test. A saved view, a URL parameter, a job on a queue: all of
+  them arrive as `JSON.parse` output, where a number written as a string stays a string and an
+  omitted field is simply absent. `record-range-contract.test.ts` covers ranges that are well formed
+  and out of bounds; this covers ranges that are not ranges.
+- Nine malformed `records` shapes — absent, null, empty, half-filled, an array, a string,
+  string-valued fields, a null field — are each refused at all three entry points with an
+  `EdfRangeError` carrying the same next step, and absent and null are asserted not to raise the
+  `TypeError` they once did. A valid range survives a JSON round-trip, extra properties and all.
+- Four malformed `signalIndices` shapes are a plain `RangeError`, since a selection that is not an
+  array is a caller's mistake and not a file's.
+- One shape is accepted, and it is named rather than left to be discovered: an array holding the
+  canonical decimal string for an index — `['0']`, which is what `JSON.parse('["0"]')` from a query
+  string gives — resolves to that signal. It is ordinary array-index coercion and it is tight:
+  `'00'`, `' 0'`, `'0.0'`, `'+0'` and a label are each an `EdfChannelNotFoundError` naming the
+  selector verbatim, and the chunk reports `signalIndex` as a number, so nothing downstream carries
+  the string.
+
 ## 0.5.51
 
 - **Added** the promise `annotations.md` makes about partial reads, and the thing it costs.
