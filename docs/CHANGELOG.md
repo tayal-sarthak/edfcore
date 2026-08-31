@@ -6,6 +6,33 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.36
+
+- **Added** the `ByteSource` `data-sources.md` tells you to write, written and read through. "Writing
+  your own ByteSource" is the section that makes the interface a promise rather than an
+  implementation detail — "the whole job is: know the length, return exactly the bytes asked for, and
+  reject otherwise" — and it prints a complete forty-line adapter over a range-returning object
+  store, with four rules under it "in order of how badly they bite". None of it was run.
+  `source-contract.test.ts` covers the contract from edfcore's side, with sources written for the
+  test; the adapter a reader would copy had nothing.
+- It is now transcribed and used: a recording is opened over it, a window is read, and the samples
+  are compared against the same file through `byteSource`. The store streams in irregular pieces —
+  7, 1, 4096, 3 — which is the whole reason the adapter has a loop, and a test that returned each
+  range in one go would never reach it. That is asserted too: no single piece the store hands back
+  is a whole read.
+- Each of the four rules is then broken on purpose, in an adapter of its own. A short return is
+  caught by the adapter, which can name the key and the range, and by edfcore anyway for a source
+  that does not check. A padded one is the dangerous case: on a plain EDF every sample of every
+  record comes back as a legal zero with no diagnostic at all, and only the annotation region of an
+  EDF+ notices, with `TIMEKEEPING_TAL_MISSING`. A reused buffer is shown corrupting an array a
+  caller had already been handed, which the page's own per-read allocation does not.
+- The fourth is the page's Warning, and it is the one worth having under test: "edfcore itself does
+  not poll the signal between reads. A custom `ByteSource` that ignores `options.signal` makes
+  cancellation a complete no-op, including for a long `validateRecording` sweep that issues hundreds
+  of reads." A whole-file sweep and a chunked index traversal both run to completion over an
+  already-aborted signal, serving twenty reads after the abort. A stated limitation nobody checks is
+  indistinguishable from a bug.
+
 ## 0.5.35
 
 - **Added** the resolution of every name a `Next:` clause points at. `next-clause.test.ts` proves
