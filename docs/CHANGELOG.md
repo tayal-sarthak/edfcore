@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.42
+
+- **Added** the transformation that changes what the samples MEAN without changing the samples.
+  Rewriting `physicalMinimum`/`physicalMaximum` in the header leaves every stored integer identical
+  — `decodeDigital` never looks at the range and `toPhysical` never looks at the bytes — and moves
+  everything derived from it onto the new scale. Nothing tested the two against each other:
+  `physical-values.md` is checked against printed numbers and `out-of-range.test.ts` against the
+  digital path, and the relationship between them was prose.
+- The interesting half is the part that does **not** hold. Multiplying the declared range by ten
+  multiplies `bitValue` by exactly ten and leaves `offset` untouched — both exact in float64 — and
+  yet a quarter of the converted values are not exactly ten times their counterpart.
+  `bitValue * (offset + digital)` is a float64 multiply, and scaling an operand is not the same
+  operation as scaling the result.
+- That is worth pinning because it is a mistake a caller makes on purpose. Given microvolts and
+  wanting millivolts, the obvious move is to divide the values, and the obvious check is that
+  dividing the declared range agrees. It does not, in the last place, for a quarter of the range —
+  and the last place is what `physical-values.md` spends a page refusing to be casual about.
+- So four things are asserted together: the digital path is bit-identical under the transformation
+  and so are the structural numbers and the observed digital range; the scale moves by exactly the
+  factor the declaration moved by; every converted value is on its own declared scale exactly; and
+  the rescaling identity fails, by at most one unit in the last place and for neither none nor all
+  of the values. Distributing the multiply in `toPhysical` — an algebraically equivalent
+  rearrangement — fails three of them.
+
 ## 0.5.41
 
 - **Added** a metamorphic test: reordering the signals in a header changes where the bytes are and
