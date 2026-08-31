@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.37
+
+- **Added** the safety property for the CLI. `fuzz.test.ts` states it for the library — for any byte
+  sequence, edfcore either parses it or throws an `EdfError`, never a bare `TypeError`, never a
+  hang, never believable garbage. The CLI is a second surface over the same parser, with its own
+  formatting, six commands and exit codes, and nothing had ever pointed it at bytes nobody chose.
+  Every CLI test in the suite feeds it a file written to make a point.
+- That matters because of how `cli.ts` ends. `main()` catches everything and reports
+  `edfcore: ${error.message}` with exit 1, so a `TypeError` escaping `runCli` does not crash — it
+  arrives as a line with no code, no byte offset and no `Next:` clause, wearing the prefix a real
+  diagnostic wears. The failure is indistinguishable from a working refusal unless something checks
+  the class.
+- Two properties now run over ~1,300 cases — random bytes, single-bit flips of a good file,
+  truncation at every length, and each header and per-signal field replaced with something that
+  breaks it. Every rejection is an `EdfError` whose message opens with a bracketed code and ends
+  with a `Next:` clause. And nothing reaches stdout before a rejection, so
+  `edfcore json big.edf > out.json` either writes a whole document or writes nothing — a redirect
+  cannot leave a half-written file beside a non-zero exit.
+- The exit codes are checked for reachability rather than assumed: 0 for a clean file, 1 for one
+  that reads and fails validation, 2 for bad usage. `parseArgs` over 500 arbitrary argv arrays
+  throws nothing but `CliUsageError`, which is what keeps 2 distinguishable from 1.
+
 ## 0.5.36
 
 - **Added** the `ByteSource` `data-sources.md` tells you to write, written and read through. "Writing
