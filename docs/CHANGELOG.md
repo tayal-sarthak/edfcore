@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.57
+
+- **Added** the property that makes an envelope exhaustive: the buckets are a partition. `readEnvelope`
+  reduces a window to a min and a max per bucket, and the whole value of it is that nothing is lost —
+  a spike between two sampled points is what subsampling misses and an envelope does not.
+  `envelope.test.ts` states that as "equals an exhaustive reduction of the same samples", on one
+  fixture at one bucket count. The general form — the buckets cover every sample exactly once, in
+  order — was never written down.
+- It is checked against `counts`, the field that says how many samples each bucket reduced. Walking
+  the window's samples and taking `counts[b]` at a time, every bucket's `min` and `max` must be the
+  exact minimum and maximum of the slice it took: at six bucket counts from one to one-per-sample,
+  and over arbitrary windows and counts with a constant seed.
+- The last block is the case `readEnvelopeAtResolution` has and `readEnvelope` does not. Asked for a
+  bucket width finer than the sample interval it returns the grid its width implies and leaves the
+  columns with nothing in them empty rather than dropping them — 200 buckets over 32 samples, 168 of
+  them empty, and the ones that did take samples still bounding them exactly.
+- In the digital domain an empty bucket reads `min: 0, max: 0`, which is a perfectly ordinary
+  reading. So `counts` is the only field that tells it from a channel that really was flat at zero,
+  and that is asserted by building the flat channel and comparing the two.
+
 ## 0.5.56
 
 - **Added** the rule `precededByGap` carries, checked however the chunk was asked for. It is stated
