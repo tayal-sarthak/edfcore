@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.39
+
+- **Added** the rule that every array edfcore hands back is frozen. `src/` calls `Object.freeze`
+  forty-three times, in seventeen modules, and the suite asserted `Object.isFrozen` twice. That is a
+  policy held by convention across every module that returns a list, checked at two of its sites —
+  and a policy with one hole is not one, because the hole is exactly where a caller's `push` lands.
+- The reason is sharing. `header.diagnostics` is the same array on every reference to that header,
+  `readWindow` hands one array of chunks to whoever asked, and `findSignals` returns a view of
+  `header.signals`. A caller who sorts one in place, or appends to it, changes what the next reader
+  sees — and the next reader is often the same program, later, through a different function. There
+  is no copy-on-read anywhere in this package, and freezing is what makes that safe.
+- It is now checked as a rule: every object every entry point returns is walked to a depth of nine,
+  over the eight `AWKWARD` shapes and a file with a gap, and every plain `Array` found anywhere in
+  the graph must be frozen. 240 of them — roughly six times the number of `Object.freeze` calls,
+  because one call freezes an array that reaches many results.
+- Two things are deliberately not frozen, and both are asserted so the rule reads as a rule rather
+  than as "everything is frozen". The containing objects are not: a chunk, a segment, a report are
+  values the caller owns, and freezing them would break the `{ ...recording, index }` spread
+  `discontinuous.md` tells every reader to write. Neither are the typed arrays:
+  `chunk.signals[0].digital` is the data, and `toPhysical(signal, digital, out)` writes into a
+  buffer the caller supplied.
+- What the freezing buys is asserted too — a `push` and an in-place `reverse` on a shared list both
+  throw, and the list another reference is holding is unchanged.
+
 ## 0.5.38
 
 - **Added** a sweep over every `…Ticks` edfcore publishes against the `…Seconds` beside it. The
