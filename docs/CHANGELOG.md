@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.44
+
+- **Added** reading one recording from several places at once. Everything in the suite reads
+  sequentially, and nothing in the API documents an ordering requirement — a recording is a plain
+  struct, `readWindow` takes it and returns a value, and the obvious thing to write in a viewer is
+  `Promise.all` over the channels or the visible range. That was untested territory: the reads share
+  a source, an index whose `onsetTicks` memoises, and a timeline every rebasing path consults.
+- Correctness holds. Five overlapping windows resolved together give what the same five give one at
+  a time, and so does the whole API at once — a window, a record range, the annotations, an index
+  build and a full validation sweep, launched together and compared against the same five in order.
+  It also holds over a source that resolves reads in **reverse order of arrival**, which is the case
+  worth having: a network returns what it returns when it returns it, and a reader that assumed its
+  own issue order would come apart exactly there.
+- Then the one place concurrency costs something, which is worth naming because it is invisible.
+  `record-index.ts` says `onsetTicks(r)` "reads that ONE record and memoises the answer", and
+  `locate-cost.test.ts` checks that a second call is free. It memoises on **resolution** rather than
+  on request, so ten calls for the same record launched together issue ten reads. The eleventh,
+  after they settle, issues none.
+- That is a cost rather than a defect, and the package already documents the remedy: `cachedSource`
+  exists so that "concurrent reads wanting the same block issue ONE underlying read". Wrapped in it,
+  the same ten calls issue none at all — the block was already resident from the open, which is the
+  observation `large-files.md` makes about the reads that come with opening a file not being wasted.
+  The answer is identical either way.
+
 ## 0.5.43
 
 - **Added** the two halves of what a sample width decides, written side by side. EDF stores each
