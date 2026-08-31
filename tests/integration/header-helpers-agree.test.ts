@@ -34,7 +34,7 @@ import { AWKWARD } from '../support/awkward-files.js';
 
 describe('the shapes under test', () => {
   it('are the eight awkward-files.ts builds, so a removed one fails rather than vanishing', () => {
-    expect(AWKWARD).toHaveLength(8);
+    expect(AWKWARD).toHaveLength(10);
     expect(new Set(AWKWARD.map((file) => file.name)).size).toBe(AWKWARD.length);
   });
 });

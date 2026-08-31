@@ -138,4 +138,30 @@ export const AWKWARD: readonly AwkwardFile[] = [
       ],
     }),
   },
+  {
+    name: 'no records at all',
+    awkward:
+      'recordCount is 0, so every span is zero, every window is empty, and openEdf probes nothing',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'C',
+      recordCount: 0,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    }),
+  },
+  {
+    name: 'a single record',
+    awkward:
+      'the first record and the last are the same one, so the two probes openEdf makes are one',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'C',
+      recordCount: 1,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    }),
+  },
 ];

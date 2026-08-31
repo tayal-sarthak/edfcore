@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.48
+
+- **Added** two shapes to the `AWKWARD` matrix: a file with no records at all, and a file with
+  exactly one. Both are legal, both are reachable, and neither was in the matrix — so the thirteen
+  sweeps built on it had never seen either.
+- They are the two the record probes are about. `openEdf` reads the first record and the last;
+  `open-cost.test.ts` states in prose that it "probes once when there is only one record to probe"
+  and "probes nothing when there are no records at all", and every other sweep assumed a file with
+  several. A zero-record file makes every span zero, every window empty and every record range out
+  of bounds; a single-record file makes the first record and the last the same one, which is the
+  case where a two-probe path can quietly become a one-probe path or a double-count.
+- Adding them exercised nine existing sweeps and four added this batch at no further cost, and one
+  test needed changing: `reads-and-returns.test.ts` (0.5.26) hard-coded a one-record range for
+  `readAnnotations`, which a file with no records correctly refuses. It now clamps against
+  `header.recordCount` — which is the advice that refusal's own `Next:` clause gives.
+- That is the matrix working as its docblock says it should: "anything using this list should assert
+  `AWKWARD.length` rather than trusting it", so a shape added here lands in every sweep at once and
+  a sweep that cannot take it says so.
+
 ## 0.5.47
 
 - **Added** the transformation of appending bytes after the last record: exactly one diagnostic, and

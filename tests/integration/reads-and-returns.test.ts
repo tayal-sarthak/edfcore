@@ -69,7 +69,11 @@ function render(value: unknown, depth = 0): string {
   return typeof value === 'string' ? JSON.stringify(value) : String(value);
 }
 
-const RECORDS = { start: 0, count: 1 } as const;
+/** Clamped, because the matrix includes a file with no records at all to clamp against. */
+const firstRecord = (header: { recordCount: number }): { start: number; count: number } => ({
+  start: 0,
+  count: Math.min(1, header.recordCount),
+});
 
 /** Everything this file runs twice. Each returns something `render` can compare. */
 async function everything(recording: EdfRecording): Promise<readonly string[]> {
@@ -78,14 +82,14 @@ async function everything(recording: EdfRecording): Promise<readonly string[]> {
 
   out.push(render(await validateRecording(recording)));
   out.push(render(await validateRecording(recording, { scanSamples: true })));
-  out.push(render(await readAnnotations(recording, RECORDS)));
+  out.push(render(await readAnnotations(recording, firstRecord(header))));
   out.push(render(await buildRecordIndex(recording)));
 
   if (header.dataSignalIndices.length > 0) {
     out.push(
       render(
         await readRecords(recording, {
-          records: RECORDS,
+          records: firstRecord(header),
           signalIndices: [...header.dataSignalIndices],
         }),
       ),
@@ -93,7 +97,7 @@ async function everything(recording: EdfRecording): Promise<readonly string[]> {
   }
 
   const report = await validateRecording(recording, { scanSamples: true });
-  const { annotations } = await readAnnotations(recording, RECORDS);
+  const { annotations } = await readAnnotations(recording, firstRecord(header));
   out.push(formatHeader(header));
   out.push(formatHeader(header, { includePatientId: true, diagnosticsHint: false }));
   out.push(formatDiagnostics(header.diagnostics));
@@ -112,7 +116,7 @@ describe('the claim', () => {
   });
 
   it('has a matrix wide enough to be worth sweeping', () => {
-    expect(AWKWARD).toHaveLength(8);
+    expect(AWKWARD).toHaveLength(10);
   });
 });
 
