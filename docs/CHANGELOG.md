@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.46
+
+- **Added** the same recording cut into records four different ways. "The record is the unit of I/O,
+  never the channel" is a heading in `design-decisions.md` and the premise of `concepts.md`. The
+  corollary is what a caller has to believe and nothing checked: the record geometry is a property
+  of how the file was written, and it decides the cost and the shape of a read while deciding
+  nothing about the signal.
+- A writer with 128 samples at 16 Hz may store them as 8 records of 16 at one second each, or 16 of
+  8 at half a second, or 2 of 64 at four seconds. Those are four different files — different record
+  size, different count, `recordByteLength` from 96 to 208 bytes — and one recording. All four are
+  built and compared: the sample stream over the whole file is identical, and so are `sampleRateHz`,
+  `signal.sampleCount` and `timeline.spanSeconds`, none of which is stored and all of which are
+  derived from the geometry that differs.
+- The window is what makes this a test rather than a paragraph. Asking for `[1.25, 3.75)` — inside a
+  record in all four — returns four **different** chunks: record 1 plus 3 in one file, record 0 plus
+  1 in another, because a read is record-aligned and the records are not the same size.
+  `trimToWindow` then gives the same 40 samples starting at 1.25 s in every one of them. That is the
+  architecture in one comparison: the chunk is the I/O and the trim is the answer.
+
 ## 0.5.45
 
 - **Added** the relationship between `inspectEdf` and the call it is triage for. `diagnostics.md`
