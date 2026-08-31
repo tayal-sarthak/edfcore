@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.58
+
+- **Added** the composition rule for `trimToWindow`: trimming to A and then to B is trimming once to
+  their overlap. The call returns a `subarray` view rather than a copy — "so trimming allocates
+  nothing and the two share storage" — which makes its result a chunk signal like any other, and a
+  caller who has one narrows it again as a matter of course: a viewer that has read a minute and is
+  now drawing ten seconds of it does exactly that.
+- `trim-window.test.ts` covers the rule for one trim, against the closed form the source derives.
+  Composing two was not covered, and it is where a narrowing that treated its input's
+  `firstSampleIndex` as zero would show — the second trim measured from the wrong origin, coming
+  back with the right number of samples from the wrong place. The fixture's samples are a ramp over
+  the whole recording, so a sample's value names its position and a wrong origin is a different
+  number rather than a different length.
+- The property runs over 300 arbitrary window pairs with a constant seed, including pairs that do
+  not nest and pairs that miss each other entirely.
+- **Found while writing it,** and now stated rather than asserted away: an empty trim has no
+  position to agree about. The docblock promises a window that misses the chunk "yields a
+  zero-length result rather than an error" and says nothing about where that result sits, so two
+  routes to an empty answer report different `firstSampleIndex` and `startSeconds` — each being
+  where its own arithmetic stopped. `sampleCount` is the field to branch on, and the property
+  compares positions only where there are samples in them.
+
 ## 0.5.57
 
 - **Added** the property that makes an envelope exhaustive: the buckets are a partition. `readEnvelope`
