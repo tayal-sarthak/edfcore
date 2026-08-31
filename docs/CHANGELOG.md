@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.45
+
+- **Added** the relationship between `inspectEdf` and the call it is triage for. `diagnostics.md`
+  calls it "the first call" for an unfamiliar file: at most 128 KiB, never throws about content,
+  returns `ok`, `variant`, `header`, `bytesRead` and a diagnostics list. Every one of those is
+  tested — `inspect-safety.test.ts` over bytes nobody chose, `inspect-validate.test.ts` on the
+  ceiling — and the relationship to `openEdf` was not.
+- That relationship is the whole point. Running `inspectEdf` over a directory decides which files
+  are worth opening, and the decision is worthless if the header it shows you is not the header you
+  will get. Over the eight `AWKWARD` shapes, wherever it returns a header it is now compared field
+  for field against `openEdf`'s — diagnostics and variant included.
+- `ok` is checked as the rule the page states rather than as a value: "true only when the header
+  parsed **and** carried no error-severity diagnostic", verified against `summarizeDiagnostics` over
+  the same header, with both branches reached in the matrix. A signal with no usable scale gives
+  `ok: false` on a header that is perfectly readable and a file that opens — the distinction the
+  callout on the same page draws.
+- `variant` is checked as the "separate best effort" the page says it is. The version block and the
+  reserved field are the first 8 and 44 bytes and "stay readable long after everything else has
+  stopped making sense": a file whose signal count is garbage has no header at all and is still
+  reported as `BDF+C`, or `EDF+D`, rather than as nothing. That is the sentence the section ends
+  with, and nothing had run it.
+- The cost is bounded from both sides: never above the 128 KiB ceiling, and never above what opening
+  the same file costs, in bytes and in reads — because it skips the record probes.
+
 ## 0.5.44
 
 - **Added** reading one recording from several places at once. Everything in the suite reads
