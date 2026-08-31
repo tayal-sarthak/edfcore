@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.47
+
+- **Added** the transformation of appending bytes after the last record: exactly one diagnostic, and
+  nothing else moves. `header-recovery-advice.test.ts` covers what the two codes claim — that the
+  extra bytes are never decoded and that reaching them by record number is refused. Nothing covered
+  the transformation itself.
+- It matters because the recovery is arithmetic on the file's length. `parseHeader` computes the
+  record count the file can actually hold and compares it with the declared one, so a change in
+  length reaches `recordCount`, `dataByteLength`, the timeline and everything derived from them.
+  Getting the recovery right and the arithmetic around it wrong would look, from any single
+  assertion, like the recovery working.
+- The boundary is checked at the byte. Fewer bytes than a record is `PARTIAL_FINAL_RECORD` — a
+  writer that stopped mid-record. A whole record's worth or more is `TRAILING_BYTES` — something
+  else appended after a complete file. One byte either side of `recordByteLength` decides which, and
+  edfcore never reports both.
+- Everything else is compared against the untouched file at six append sizes: the samples of every
+  record, the annotations and the record onsets, `recordCount`, `dataByteLength`, `spanSeconds` and
+  `coveredSeconds` — and the header and a full validation sweep each gain exactly one code and lose
+  none.
+
 ## 0.5.46
 
 - **Added** the same recording cut into records four different ways. "The record is the unit of I/O,
