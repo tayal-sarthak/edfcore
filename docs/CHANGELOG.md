@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.41
+
+- **Added** a metamorphic test: reordering the signals in a header changes where the bytes are and
+  nothing else. EDF interleaves — every data record holds each signal's samples end to end in header
+  order, and a signal's block begins at the sum of the widths declared before it — so a channel's
+  position decides the offset every read of it is computed from, and decides nothing about what that
+  channel contains.
+- That makes signal order a transformation with unusual reach: it changes every offset in the
+  de-interleaving arithmetic and must change no value anywhere. A fixture with one signal, or with
+  several of equal width, cannot tell the difference. The arithmetic only has room to be wrong when
+  the widths differ — which is exactly the file the format exists for, EEG at 256 Hz beside a
+  temperature channel at 1 Hz.
+- The suite tested reading against expected values, per fixture; nothing tested it against itself
+  under a transformation. A `recordByteOffset` computed from the wrong running total, an off-by-one
+  in the signal loop, or a decode that assumed uniform width would survive every fixture in the
+  suite and fail here.
+- Both directions are asserted, because half of it would be worthless. The offsets really do move —
+  three orders give three different offset sets, and `EEG Fpz-Cz` moves from byte 0 to byte 18 while
+  `Temp rectal` moves from 80 to 0 — and every per-label result stays identical: samples, physical
+  values, envelope buckets, sample counts, the range the sweep observes, and what `getSignal` and
+  `findSignals` return.
+- The last block is the property over arbitrary widths and arbitrary rotations, with a constant seed.
+
 ## 0.5.40
 
 - **Added** the resolution of every index and byte offset edfcore publishes. The API is full of
