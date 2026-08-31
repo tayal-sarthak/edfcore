@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.53
+
+- **Added** the CLI's half of determinism. `diagnostics.md` says of the formatter underneath it that
+  "the output is deterministic (no locale-sensitive formatting, no ANSI escapes unless you ask), so
+  it's safe to snapshot in a test", and 0.5.26 checked that for the library. The CLI is a second
+  surface over those formatters, with joins, sorts, caps and column padding of its own, and the
+  claim that matters for it is the one a script depends on: run it twice on the same bytes and you
+  get the same bytes back.
+- That is what `edfcore signals big.edf | sort | diff -` is built on and what makes `edfcore json`
+  usable in a build. It is easy to lose in ways no single-run test would see — a `Map` iterated
+  where a `Set` was meant, a sort that is not total, a count formatted from a float — and each
+  produces output that is right most of the time.
+- Every command now runs twice over every shape in the matrix: sixty pairs over ten files, with the
+  exit code and the full text of both streams compared. The stronger form runs too — a second
+  recording opened over a copy of the bytes gives the same output, so it is a function of the file
+  rather than stable per process. And the totals are asserted, so sixty pairs of empty strings could
+  not pass.
+
 ## 0.5.52
 
 - **Added** the sweep for a selection that came from JSON. `io/read.ts` says why this is not a
