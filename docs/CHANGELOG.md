@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.56
+
+- **Added** the rule `precededByGap` carries, checked however the chunk was asked for. It is stated
+  in three places and was tested in one. `chunks.ts`: the field is `undefined` "in two different
+  situations: no gap, and nobody looked". `stream.ts`: a streamed chunk carries "the same
+  `precededByGap` a `readWindow` chunk would". `biosemi.ts` states the sharpest form — the gap
+  "precedes the RUN, not whichever sample the window happened to admit first, which could be a whole
+  record later", a rule narrowed in 0.3.67 after 0.3.92 wrote down a wider one.
+- Four entry points produce chunks, and the field is computed from the index rather than from the
+  read — so what it says must be the same whichever asked, for the same records.
+- One file with a twenty-second hole after record 4, and every way of naming the records around it:
+  `readRecords` by number, `readWindow` by time, `streamRecords` in pieces smaller than the run, and
+  `readEnvelope`. The gap appears on exactly one chunk in each — the one whose first record is
+  record 5 — and on none of the others, including the chunk starting at record 6, which is inside
+  the run and after it, and the chunk starting at record 4, which spans the hole by record number
+  and is not preceded by it. At four different `chunkRecords`, exactly one streamed chunk carries it
+  every time.
+- The other of the two situations is checked beside it: on a probed index the same read gives
+  `undefined`, which is "nobody looked" rather than "no gap" — and the samples are identical either
+  way, so only the field about structure differs.
+
 ## 0.5.55
 
 - **Added** the window that begins before the recording does. "A window that starts before record 0
