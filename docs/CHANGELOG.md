@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.54
+
+- **Added** the claim the `index` option on `validateRecording` is only worth having if it holds: a
+  sweep that was handed an index says what a sweep that read one says. `api-validate.md` prices the
+  option — a supplied complete index is the difference between a scan of every record and no
+  traversal at all — and `inspect-validate.test.ts` checks that it does skip the traversal and that
+  a probed index is not accepted as a substitute. Nothing checked that the report is the same.
+- It is a real risk rather than a formality. The two paths reach `segmentCount` and `gaps` through
+  different code — one from `buildSegmentation` over onsets it just read, the other from the
+  `segments` and `gaps` already on the supplied index — and everything the report says about
+  structure is derived from those two. A supplied index that produced a different segment count
+  would be a faster answer to a different question.
+- Both now run over every shape in the matrix and are compared whole, with `scanSamples` on so the
+  sample statistics are in it: `ok`, every diagnostic and every entry of `signalStats`. The matrix
+  is asserted to reach both verdicts and to produce real statistics, so the comparison is of
+  something.
+- `bytesRead` is the one number that legitimately differs, and it is asserted to be lower — on the
+  files where there is anything to skip, which is the reason the option exists.
+
 ## 0.5.53
 
 - **Added** the CLI's half of determinism. `diagnostics.md` says of the formatter underneath it that
