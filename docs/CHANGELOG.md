@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.38
+
+- **Added** a sweep over every `…Ticks` edfcore publishes against the `…Seconds` beside it. The
+  package's central arithmetic decision is that time is a `bigint` count of 100 ns ticks and the
+  seconds are derived from it. Twenty field pairs in `types.ts` are written that way — on the
+  header, the timeline, a segment, a gap, a location, a chunk, a chunk signal, an envelope chunk, an
+  envelope signal and an annotation — each produced by different code, and one of them was checked.
+  `timebase.test.ts` asserts "an exact tick counterpart for every second on a chunk", on chunks.
+- The other nine kinds were computed somewhere and never compared, and the failure they would
+  produce is the quiet kind: the two fields sit next to each other in an autocomplete list, a caller
+  picks whichever the surrounding code already uses, and a disagreement shows up as a plot drawn a
+  fraction of a second from where the arithmetic says it is.
+- The pairs are now enumerated out of `types.ts` and every object every entry point returns is
+  walked, over the eight `AWKWARD` shapes plus a file with a gap and a file with an overlap: 270
+  pairs, compared with `Object.is` against `ticksToSeconds`. `toBeCloseTo` would pass on a pair that
+  had drifted by exactly the thing this arithmetic exists to prevent. Every enumerated field is
+  asserted to have been reached, so none is checked in absentia, and the visited set is asserted to
+  include a negative tick count and a hundred non-zero ones.
+- `EdfAnnotation` is the pair that cannot be inferred from the names, and it is why the rule is
+  spelled out: its four onset fields are two axes, `onsetTicks` with `onsetSecondsFromHeaderStart`
+  and `onsetTicksFromFirstRecord` with `onsetSecondsFromFirstRecord`. Crossing them passes on every
+  file with no sub-second start offset, which is most of them — so the last block builds one that
+  has an offset and shows the crossed pairing failing by exactly that offset. That is the trap
+  `annotations.md` warns about, and it is what makes this pairing a rule rather than a coincidence.
+
 ## 0.5.37
 
 - **Added** the safety property for the CLI. `fuzz.test.ts` states it for the library — for any byte
