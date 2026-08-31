@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.43
+
+- **Added** the two halves of what a sample width decides, written side by side. EDF stores each
+  sample in two bytes and BDF in three; that is the whole difference between the families as far as
+  the data records go, and `decodeDigital` keeps it where it belongs. The suite tested each width
+  against expected values and never one against the other.
+- For a value both widths can hold, the two files disagree about everything except the number: the
+  record is half again as long, the declared digital range is 256 times wider, `bitValue` differs by
+  the same factor — and the decoded samples are bit-identical. That is "the width is an encoding",
+  asserted where it could fail.
+- For a value only BDF can hold, the EDF file does not hold it. Two bytes cannot carry −300,000, so
+  what is written is the low sixteen bits and what comes back is those bits sign-extended: 27,680.
+  edfcore reports it with no diagnostic and no `outOfDigitalRangeCount`, which is correct and worth
+  writing down — the file is well formed, 27,680 is inside its declared range, and the loss happened
+  before edfcore saw a byte. Nothing in an EDF header can record that a writer had a number it could
+  not store.
+- The whole low-bits sequence is asserted rather than the first value, and the same waveform in the
+  two families is shown to be two different recordings carrying identical diagnostics — which is the
+  point. `out-of-range.test.ts` covers the other case, a sample outside the DECLARED range in a
+  width that can hold it; this is the case where the width itself is the limit.
+
 ## 0.5.42
 
 - **Added** the transformation that changes what the samples MEAN without changing the samples.
