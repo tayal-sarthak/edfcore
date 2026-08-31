@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.40
+
+- **Added** the resolution of every index and byte offset edfcore publishes. The API is full of
+  numbers that are addresses rather than measurements: `signalIndex` names a row of
+  `header.signals`, `recordIndex` a record, `firstSampleIndex` a position on a signal's own grid,
+  and `byteOffset`/`byteLength` a range a reader is expected to take to a hex editor. A measurement
+  that is wrong is wrong; an address that is wrong sends someone to look at the wrong bytes.
+- They were checked one at a time where they are produced and nowhere as a class. Every object every
+  entry point returns is now walked over the eight `AWKWARD` shapes and a file with a gap — 1,500
+  numbers across 51 field names — and each is resolved against the file it came from. A
+  `signalIndex` must name a signal whose own `index` is that number; a `recordIndex` a record the
+  file has; `firstSampleIndex + sampleCount` must land inside the signal's `sampleCount`.
+- The strongest check re-decodes. A chunk's `byteOffset` and `byteLength` are used to slice the
+  fixture and decode it again, and the samples that come back must be the samples the chunk carries.
+  A range check would pass on an offset that is inside the file and points at the wrong record.
+- **Found while writing it:** that re-decode was vacuous on every shared fixture. `writer.ts`
+  defaults its sample generator to `(_record, index) => index % 100` — the same ramp in every record
+  — which is right for a fixture about a header and makes a byte-offset check unable to fail: a
+  chunk reporting the offset of the wrong record decodes to identical samples. The resolution now
+  runs against a file whose every record is distinguishable, asserts that it is before relying on
+  it, and shows that shifting the offset by one record changes what comes back.
+
 ## 0.5.39
 
 - **Added** the rule that every array edfcore hands back is frozen. `src/` calls `Object.freeze`
