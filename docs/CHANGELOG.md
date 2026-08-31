@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.50
+
+- **Added** three ways a header can be written and mean the same thing. Each is documented, each is
+  reached by real writers, and each was tested for the thing it produces rather than for the
+  equivalence it implies.
+- **A record count of `-1`.** `types.ts` says of the field: "Verbatim. `-1` means the writer never
+  closed the file." `parseHeader` recovers the count from the source's length and says so with
+  `RECORD_COUNT_RECOVERED` and `recordCountSource: 'sourceByteLength'`. `parse.test.ts` checks the
+  recovery; nothing checked that the recovered file is the same recording as one that declares its
+  count — which is the only reason recovering beats refusing.
+- **Either family's annotation label.** `annotations.md`: "edfcore accepts either label in either
+  family, because the label names the channel's *role*." `isAnnotationLabel` is tested on the
+  strings; whether a BDF+ file whose channel says `EDF Annotations` reads its events was not. Both
+  crossings now do, with the same events, the same record onsets and the same data indices — and the
+  label reported verbatim, which is the one thing that differs.
+- **NUL padding.** EDF pads with spaces; real writers pad with NUL, which is why `trimEdfField`
+  exists and why five docblocks in `src/` warn that `String.prototype.trim` does not strip it. The
+  function is tested. That the two paddings give the same header, with no diagnostic between them,
+  was not — and the test asserts that `.trim()` on the raw field really would have got it wrong, so
+  the equivalence is not a coincidence of the fixture.
+- Each is asserted as a whole-recording equivalence — every sample, every event, every derived
+  number — with the one legitimately differing field named beside it.
+
 ## 0.5.49
 
 - **Added** the two things about an EDF+ annotations channel that are decisions of the writer rather
