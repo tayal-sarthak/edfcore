@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.55
+
+- **Added** the window that begins before the recording does. "A window that starts before record 0
+  is how a pre-stimulus epoch is spelled" is the sentence `tal/ticks.ts` uses to justify `floorDiv`
+  and `ceilDiv` existing at all, and `annotations.md` builds a section on negative onsets around the
+  same idea. 0.5.15 tested the two divisions; what a caller actually writes —
+  `readWindow(recording, { startSeconds: -2, durationSeconds: 4 })` — was tested for its bounds and
+  not for the negative side of them.
+- There are three outcomes and only one is an error, and it is not the one a reader expects. A
+  window straddling t = 0 is read, clamped to the samples that exist. A window entirely before the
+  recording comes back as `[]` — the same empty array a window past the end gives, which
+  `api-reading.md` says in as many words. Nothing throws for either: a negative bound is a
+  legitimate question with a possibly empty answer, and only a non-finite one is a mistake.
+- The trimmed result is where it matters, and it is asserted sample for sample.
+  `trimToWindow(header, series, -2, 4)` starts at 0 rather than at -2 and holds exactly the samples
+  in `[0, 2)` — the arithmetic that needs a floor rather than a truncation, on operands that are
+  negative for the whole first half of the window. A bound that is not a whole second is checked
+  with it, and `sampleAt` is checked either side of the boundary.
+
 ## 0.5.54
 
 - **Added** the claim the `index` option on `validateRecording` is only worth having if it holds: a
