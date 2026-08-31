@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.49
+
+- **Added** the two things about an EDF+ annotations channel that are decisions of the writer rather
+  than facts about the recording: how wide the channel is declared, and which record a given TAL was
+  put in. `annotations.md` says the second in as many words — "`recordIndex` is where the event was
+  *stored*, which is not necessarily the record its onset falls in. Writers usually put an event in
+  the record covering it, but nothing in the format requires that" — and says the first by
+  implication: `samplesPerRecord` on that channel is what buys the writer room for text.
+- Neither was tested as a transformation. `tal/annotations.test.ts` reads events out of fixtures and
+  `annotations-page.test.ts` runs the page's file; both hold the layout fixed.
+- The same event is now written three ways — into record 0, into record 3 where its onset falls, and
+  into record 5, after it — and the resulting annotation must differ in exactly two fields:
+  `recordIndex`, which is the provenance the page tells you to use it for, and `byteOffsetInRecord`.
+  Onset, duration, text, channel, both axes and both exact tick counts are identical, and so is
+  every entry of `recordOnsetTicks` — a timekeeping TAL is not moved by where an ordinary one sits.
+- Then the width: the same events in a 20-sample region and in a 120-sample one, which is a record
+  200 bytes longer with every data offset moved, produce the same event list, the same record onsets
+  and the same samples.
+
 ## 0.5.48
 
 - **Added** two shapes to the `AWKWARD` matrix: a file with no records at all, and a file with
