@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.64
+
+- **Added** the reading half of "edfcore reads, it does not write". `reads-not-writes.test.ts`
+  checks the five places the package SAYS so — the README, AGENTS.md, `comparison.md`,
+  `design-decisions.md` and the npm keywords — and all five are about the missing feature: edfcore
+  produces no EDF files. None of them is about the bytes you already have, which is the exposure a
+  caller has without reading a page.
+- It is structural rather than hypothetical. `byteSource` is zero-copy, so `readRecordBytes` hands
+  `decodeInt16` a `subarray` of the caller's own array, and a decode loop that wrote where it meant
+  to read would corrupt the caller's copy of their recording in place — with nothing downstream
+  looking wrong, because the samples returned would still be the samples that were there.
+- `we-never-write-your-bytes.test.ts` captures the buffer, runs open, index, a full validation
+  sweep, inspect, annotations, records, windows, envelopes, a stream and scaling over it, and
+  requires it byte for byte afterwards — over all ten `AWKWARD` shapes and a gapped file, in two
+  wirings.
+- The two wirings are the point. Behind `cachedSource` every decode runs over the cache's own copy,
+  so a write in the decoder can never reach the caller and that half of the sweep would pass
+  regardless. Unwrapped is the case that carries the property. Putting an in-place write in
+  `decodeInt16` fails the unwrapped half on eight files and leaves the cached half green, which is
+  what makes the distinction worth spelling out rather than wiring one and moving on.
+- `fileSource` is asked the same thing of the filesystem, where a write would be worse: the bytes
+  on disk and the file's modification time both survive a full read. And the one buffer edfcore
+  does write into is asserted to BE written — `out` on `toPhysical` — so the rule reads as a rule
+  and not as a tautology.
+
 ## 0.5.63
 
 - **Added** the other half of the zero-copy bargain. `byteSource` is documented as handing out
