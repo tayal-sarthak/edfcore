@@ -389,6 +389,10 @@ async function scanOnsets(
 
   const chunkRecords = scanChunkRecords(header, options?.maxMaterializeBytes);
   let scanned = 0;
+  // A file with no records has a traversal that is already complete, and the branch above says
+  // what to do about that: report it once "so a caller's bar finishes". The loop cannot, because
+  // it never runs — so the caller who asked for progress on an empty file was told nothing at all.
+  if (recordCount === 0) options?.onProgress?.(0, 0);
   while (scanned < recordCount) {
     const records: RecordRange = {
       start: scanned,

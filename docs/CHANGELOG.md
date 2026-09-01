@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.67
+
+- **Fixed** `buildRecordIndex` never calling `onProgress` for a file with no data records. A
+  caller who passed one — the option exists for "the one operation in edfcore whose cost is
+  proportional to the file", and a progress bar is what it is for — got no call at all, so the bar
+  stayed at zero through an operation that had already finished.
+- `scanOnsets` states the rule for its other early exit, four lines up: a file with no annotation
+  signal is not scanned, and "`onProgress` is still called once, with the traversal complete, so a
+  caller's bar finishes". The chunk loop below it cannot say the same thing for an empty file,
+  because it never runs — `scanned < recordCount` is false on the first test.
+- It reports `(0, 0)` once now, before the loop. A caller dividing `done / total` for a percentage
+  should keep guarding against a zero total, which is the same thing `header.recordCount` has
+  always been able to be.
+
 ## 0.5.66
 
 - **Fixed** a bare `TypeError` escaping `byteSource`. When the caller's buffer was transferred away

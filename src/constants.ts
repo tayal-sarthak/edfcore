@@ -93,4 +93,4 @@ export const SIGNAL_FIELD_BLOCK_OFFSETS = {
 } as const;
 
 /** Published package version. Kept in sync with package.json by a test. */
-export const VERSION = '0.5.66';
+export const VERSION = '0.5.67';
