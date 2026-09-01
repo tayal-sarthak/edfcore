@@ -152,6 +152,22 @@ export const AWKWARD: readonly AwkwardFile[] = [
     }),
   },
   {
+    name: 'a gap and a sub-second start at once',
+    awkward:
+      'the two things that hide each other: t = 0 is not the header start time, AND the onsets ' +
+      'are not the nominal grid, so a derivation that gets either one right alone is still wrong',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      startOffsetSeconds: 0.25,
+      recordOnsetSeconds: (r) => (r < 3 ? 0.25 + r : 0.25 + r + 5),
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [{ samplesPerRecord: 40 }],
+    }),
+  },
+  {
     name: 'a single record',
     awkward:
       'the first record and the last are the same one, so the two probes openEdf makes are one',

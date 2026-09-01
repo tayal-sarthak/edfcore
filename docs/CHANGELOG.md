@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.74
+
+- **Added** an eleventh shape to the `AWKWARD` matrix: a file with a gap AND a sub-second start
+  offset at the same time. Fifteen test files run their sweeps over that matrix, and every one of
+  them now sees it.
+- It is the fixture this project's longest-running defect class hides from. Seven separate versions
+  fixed one function deriving a time from the nominal grid while every other function used the
+  record's true onset — 0.1.4, 0.2.10, 0.2.18, 0.2.19, 0.2.28, the sample-grid family in 0.2.32,
+  and 0.2.68, where the function ADDED to fix the class shipped with the defect itself. Several of
+  them survived their own review because the fixtures had one of the two properties and never both:
+  with only a gap, `t = 0` is still the header start time and a nominal derivation looks right;
+  with only a sub-second start, the onsets are still the nominal grid and it looks right again.
+- The matrix had `EDF+D with a gap`, which starts at zero, and no shape with a sub-second start at
+  all. The new one starts at 0.25 s and skips five seconds after its third record, so `t = 0` is
+  neither the header start time nor a record boundary of the second segment.
+- Every sweep passes over it unchanged, which is the answer that was wanted and not one anybody
+  could state before. The two length assertions that pin the matrix size move from ten to eleven.
+
 ## 0.5.73
 
 - **Added** the day the network hiccups. `index.onsetTicks(r)` memoises, which is why `locate()`
