@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.60
+
+- **Added** the boundary six documentation pages talk about and nothing executed: `postMessage`.
+  `api-errors.md`, `diagnostics.md`, `concepts.md`, `api-reading.md`, `api-primitives.md` and
+  `data-sources.md` each tell a reader that a value crossing a worker or an iframe fails
+  `instanceof` and that `edfErrorKind` is what to branch on instead.
+  `cross-realm-errors.test.ts` executes the case those pages name — two copies of the module in one
+  dependency tree — where the object is passed by REFERENCE and only its constructor identity
+  differs. Nothing is passed by reference out of a worker: it goes through the structured clone
+  algorithm, which is a different question with different answers.
+- `what-crosses-a-worker.test.ts` clones every value a worker would hand back, over all ten
+  `AWKWARD` shapes and a gapped file — 109 checks. Every DATA result survives and compares equal,
+  `Int32Array` samples and `bigint` ticks included, and the sweep asserts it is carrying both so a
+  pass is not a JSON round trip in disguise.
+- Three things do not survive, and each is pinned with the workaround beside it. The record index
+  is refused outright, because `locate` is a function — `index.segments` and `index.gaps` cross
+  fine, and those are what a viewer wants. So is the recording, because a `ByteSource` has a
+  `read`; the header crosses instead. And `Object.freeze` is dropped, so the guarantee
+  `every-array-is-frozen.test.ts` pins is a within-realm one.
+- An `EdfError` does not cross as an edfcore error at all. The algorithm keeps `name`, `message`,
+  `stack` and `cause` and drops every own property, so `code`, `field`, `byteOffset`, `diagnostic`
+  — and `edfErrorKind` itself — are gone, and `isEdfError` returns false on the far side. The
+  string beats `instanceof` for a second copy in the tree; across a `postMessage` neither works,
+  and a sender has to post the discriminator rather than the error.
+
 ## 0.5.59
 
 - **Added** the round trip a streaming pipeline actually performs: stream a window in pieces, merge
