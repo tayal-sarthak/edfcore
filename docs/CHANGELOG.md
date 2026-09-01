@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.66
+
+- **Fixed** a bare `TypeError` escaping `byteSource`. When the caller's buffer was transferred away
+  after the source was built — `postMessage(bytes, [bytes.buffer])`, which is how a recording gets
+  handed to a worker — the next read reached `view.subarray()` on a detached view and threw
+  `Cannot perform Construct on a detached ArrayBuffer`. 0.5.62 refuses a buffer that is already
+  detached at construction; this is the same buffer detached one line later, and construction
+  cannot see it coming.
+- The escape is the part that matters. `tests/README.md` states the safety property as "for any
+  byte sequence, edfcore either parses it or throws an `EdfError`", and `fuzz.test.ts` calls
+  anything else a leak: "a bare `TypeError`, an 'undefined is not a function', or a `RangeError`
+  out of an allocation are all failures, not tolerated outcomes". A `catch` branching on
+  `isEdfError` fell through to a rethrow, from a source that was perfectly good when it was made.
+- `view.byteLength` follows the buffer — it reads 0 once the bytes are gone, and it follows a
+  `resize` — so the read now hands the empty result to the same guard a buffer that shrank already
+  goes through. The refusal is an `EdfSourceError` with `offset`, `requestedLength` and
+  `receivedLength: 0` on it, which is what it was for every other way of losing the bytes. A
+  zero-length read still succeeds, because it asked for nothing.
+
 ## 0.5.65
 
 - **Added** the question two of the three bundled adapters already answer, asked of the third.

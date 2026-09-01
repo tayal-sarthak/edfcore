@@ -160,6 +160,30 @@ describe('a buffer that was transferred away', () => {
     expect(error?.message).toContain('detached');
     expect(error?.message).toContain('Next:');
   });
+
+  it('is refused as a short read when it happens after the source was built', async () => {
+    // Construction cannot catch this one: the source was built over a buffer that still had its
+    // bytes, and the transfer happened later. `view.byteLength` follows the buffer, so the read
+    // sees nothing and says so with the numbers — rather than letting `subarray` throw the bare
+    // `TypeError` a detached buffer produces, which is outside the error model entirely.
+    const { view, buffer } = resizableRecording();
+    const source = byteSource(view);
+    transferAway(buffer);
+
+    const error = await refusal(() => source.read(0, 256));
+    expect(error.offset).toBe(0);
+    expect(error.requestedLength).toBe(256);
+    expect(error.receivedLength).toBe(0);
+    expect(error.edfErrorKind).toBe('source');
+  });
+
+  it('still answers a zero-length read, which asks for nothing and can have it', async () => {
+    const { view, buffer } = resizableRecording();
+    const source = byteSource(view);
+    transferAway(buffer);
+
+    expect((await source.read(0, 0)).byteLength).toBe(0);
+  });
 });
 
 describe('a buffer that grew', () => {

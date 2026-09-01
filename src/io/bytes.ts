@@ -112,6 +112,13 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
     async read(offset: number, length: number, options?: ReadOptions): Promise<Uint8Array> {
       throwIfAborted(options);
       assertReadRange(offset, length, byteLength);
+      // `view.byteLength` is live: it follows a `resize`, and it reads 0 once the buffer has
+      // been transferred away. A detached view makes `subarray` throw a bare `TypeError` —
+      // "Cannot perform Construct on a detached ArrayBuffer" — which is outside the error model
+      // this package promises, and it escapes from a source that was perfectly good when it was
+      // built. Handed to the guard below instead, it is the same short read a buffer that shrank
+      // already earns, with the same message and the same fields on it.
+      if (view.byteLength === 0) return assertExactRead(new Uint8Array(0), offset, length);
       // `subarray` is relative to this view, so a Uint8Array handed in with a non-zero
       // byteOffset over a larger buffer is respected with no offset arithmetic here.
       return assertExactRead(view.subarray(offset, offset + length), offset, length);
