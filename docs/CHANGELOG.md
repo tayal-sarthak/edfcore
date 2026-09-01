@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.70
+
+- **Added** the third thing a caller hands edfcore that edfcore does not own. The buffer is checked
+  twice over now — what comes back pointing at it (0.5.63) and what gets written into it (0.5.64).
+  The ARGUMENTS were not checked at all, and they are the ones most likely to be reused: a
+  `signalIndices` array built once and passed to every read in a loop, an options object shared
+  across a session, a `RecordRange` walked forward by a scheduler.
+- A function that sorted `signalIndices` in place, normalised `records.start`, or wrote a default
+  into the options object it was handed would work perfectly and change the caller's NEXT call.
+  That is a defect with no failing test anywhere near it.
+- `Object.freeze` makes it checkable without inspecting anything. Every module here is an ES module
+  and therefore strict, so a write to a frozen argument throws rather than being ignored: freeze
+  the arguments, make the call, and a call that resolves has proved it wrote to none of them. All
+  24 resolve.
+- The list is derived, not written down. Every exported function in `src/` whose parameters mention
+  `Options`, `Selection` or `RecordRange` must appear in the table or in `EXEMPT` with a reason,
+  and the exemptions are checked back against the source so one for a function that no longer takes
+  such an argument fails too. Adding an export with a `ReadOptions` parameter fails this file until
+  it is accounted for.
+- A last check is about retention rather than mutation: emptying a `signalIndices` array after the
+  read changes nothing about the chunk already returned, and the next call reads the array as it is
+  then — not from anything held over.
+
 ## 0.5.69
 
 - **Added** the comparison the two `onProgress` declarations never got. `types.ts` declares the
