@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.22
+
+- **Added** the four declared range numbers and `scale` to each signal in `edfcore json`, so the
+  document is enough to reach physical units on its own. It emitted `physicalDimension` and nothing
+  that gets you to it: a reader learned the samples were microvolts and had no gain to apply, and
+  the one thing a script most wants from a header — turn these stored integers into the units the
+  file names — needed a second tool. `edfcore header` printed the range to a person the whole time.
+- `scale` is absent rather than null when the header has no usable gain — a degenerate or inverted
+  range, or the `Filtered` dimension. That is the convention `sampleRateHz` already uses here for
+  the legal zero-duration file, and it is the honest shape: `JSON.stringify` drops `undefined`, and
+  a reader checking for the key gets the answer the library gives, which is that there is none.
+- **Added** `signalIndex` to each diagnostic, where the library has one. A real file earns one code
+  many times — `chb01_01.edf` reports `LABEL_CONVENTION_NONCONFORMANT` twenty-three times, once per
+  channel — so a script could count them and not name one. A number, not the field's bytes: this
+  command still emits no diagnostic text, because an identification diagnostic quotes the name it
+  is complaining about.
+- `json-is-enough-to-convert.test.ts` proves the claim rather than the keys: it converts a record
+  using only the numbers in the document, in EDFlib's exact expression, and compares the result
+  with `toPhysical` on the same samples.
+
 ## 0.6.21
 
 - **Added** the check that calling twice gives the same answer. Every function in the reading API is

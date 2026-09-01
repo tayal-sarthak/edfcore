@@ -72,6 +72,7 @@ interface JsonReport {
     readonly code: string;
     readonly severity: string;
     readonly source: string;
+    readonly signalIndex?: number;
   }>;
 }
 
@@ -106,17 +107,20 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
     // Both sets the library holds, each saying which it came from, in the order this command
     // prints them: the header's, then the record probes'. Dropping the second was the 0.3.94
     // defect, fixed here in 0.6.12.
+    // `signalIndex` since 0.6.22, and only where there is one: JSON drops `undefined`, so a
+    // diagnostic about the file carries no key rather than a null.
+    const entry = (
+      diagnostic: { code: string; severity: string; signalIndex: number | undefined },
+      source: string,
+    ) => ({
+      code: diagnostic.code,
+      severity: diagnostic.severity,
+      source,
+      ...(diagnostic.signalIndex === undefined ? {} : { signalIndex: diagnostic.signalIndex }),
+    });
     expect(report.diagnostics).toEqual([
-      ...header.diagnostics.map((diagnostic) => ({
-        code: diagnostic.code,
-        severity: diagnostic.severity,
-        source: 'header',
-      })),
-      ...timeline.diagnostics.map((diagnostic) => ({
-        code: diagnostic.code,
-        severity: diagnostic.severity,
-        source: 'recordProbe',
-      })),
+      ...header.diagnostics.map((diagnostic) => entry(diagnostic, 'header')),
+      ...timeline.diagnostics.map((diagnostic) => entry(diagnostic, 'recordProbe')),
     ]);
 
     // Identification is opt-in, and what --patient prints is the raw field with padding trimmed.

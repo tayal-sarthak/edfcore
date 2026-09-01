@@ -500,6 +500,18 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
                   recording: trimEdfField(header.recording.raw),
                 }
               : {}),
+            /*
+             * The four declared range numbers and the derived gain, which is what makes this
+             * output enough to act on rather than only enough to read. Without them a script has
+             * the samples' units and no way to reach the units: `toPhysical` needs the scale, and
+             * `edfcore header` shows the range to a human while this showed a script nothing.
+             *
+             * `scale` is absent rather than null when the header has no usable gain — a degenerate
+             * or inverted range, or the `Filtered` dimension — which is the same convention
+             * `sampleRateHz` already uses here for the legal zero-duration file. An absent key is
+             * the honest shape: `JSON.stringify` drops `undefined`, and a reader who checks for
+             * the key gets the same answer the library gives, which is that there is no gain.
+             */
             signals: header.signals.map((signal) => ({
               index: signal.index,
               label: signal.label,
@@ -507,6 +519,11 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
               samplesPerRecord: signal.samplesPerRecord,
               sampleRateHz: signal.sampleRateHz,
               physicalDimension: signal.physicalDimension,
+              physicalMinimum: signal.physicalMinimum,
+              physicalMaximum: signal.physicalMaximum,
+              digitalMinimum: signal.digitalMinimum,
+              digitalMaximum: signal.digitalMaximum,
+              scale: signal.scale,
             })),
             /*
              * The probe's findings too, which is the fix 0.3.94 made to `edfcore header` and did
@@ -525,15 +542,27 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
              * own heading. One array, because a consumer filtering by severity wants one array.
              */
             diagnostics: [
+              /*
+               * `signalIndex` too, absent when the diagnostic is about the file rather than a
+               * channel. A real file earns one code many times — `chb01_01.edf` reports
+               * LABEL_CONVENTION_NONCONFORMANT twenty-three times, once per channel — and without
+               * the index a script could count them and not name one.
+               *
+               * A number, not the field's bytes: `json-command-privacy.test.ts` holds the line
+               * that this command emits no diagnostic text, because an identification diagnostic
+               * quotes the name it is complaining about.
+               */
               ...header.diagnostics.map((d) => ({
                 code: d.code,
                 severity: d.severity,
                 source: 'header' as const,
+                signalIndex: d.signalIndex,
               })),
               ...recording.timeline.diagnostics.map((d) => ({
                 code: d.code,
                 severity: d.severity,
                 source: 'recordProbe' as const,
+                signalIndex: d.signalIndex,
               })),
             ],
           },

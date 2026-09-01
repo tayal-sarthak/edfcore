@@ -33,6 +33,7 @@ interface Entry {
   readonly code: string;
   readonly severity: string;
   readonly source: string;
+  readonly signalIndex?: number;
 }
 
 /** The reserved field says continuous; the onsets say there is a twenty-second hole. */
@@ -110,17 +111,20 @@ describe('on that file', () => {
 describe.each(FILES)('for %s', (_name, bytes) => {
   it('json reports every diagnostic the library holds, from both places', async () => {
     const recording = await openEdf(byteSource(bytes));
+    // `signalIndex` only when the diagnostic has one: JSON drops `undefined`, so a diagnostic
+    // about the file carries no key rather than a null.
+    const entry = (
+      one: { code: string; severity: string; signalIndex: number | undefined },
+      source: string,
+    ) => ({
+      code: one.code,
+      severity: one.severity,
+      source,
+      ...(one.signalIndex === undefined ? {} : { signalIndex: one.signalIndex }),
+    });
     const expected = [
-      ...recording.header.diagnostics.map((one) => ({
-        code: one.code,
-        severity: one.severity,
-        source: 'header',
-      })),
-      ...recording.timeline.diagnostics.map((one) => ({
-        code: one.code,
-        severity: one.severity,
-        source: 'recordProbe',
-      })),
+      ...recording.header.diagnostics.map((one) => entry(one, 'header')),
+      ...recording.timeline.diagnostics.map((one) => entry(one, 'recordProbe')),
     ];
     expect(await diagnosticsOf(bytes)).toEqual(expected);
   });

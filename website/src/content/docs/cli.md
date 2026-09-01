@@ -32,7 +32,7 @@ The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every 
 `t = 0` is the start of record 0. A truncated listing says how many events it withheld, because a
 silently cut one reads as a complete one.
 
-`json` emits the geometry, the start, one entry per signal and the diagnostic codes. It reports
+`json` emits the geometry, the start, one entry per signal and the diagnostic codes. A signal entry carries the four declared range numbers and `scale`, so the document is enough to reach physical units on its own — `scale.bitValue * (scale.offset + digital)`. The key is absent when the header has no usable gain, the way `sampleRateHz` is absent for a legal zero record duration. A diagnostic carries `signalIndex` when it is about a channel rather than the file. It reports
 `spanSeconds` and `coveredSeconds` as a pair: they differ by the gaps, which is the only thing in
 the document that finds a hole without believing the file's own `variant`. The
 diagnostics are both sets the library holds — the header's and the record probes' — each entry
