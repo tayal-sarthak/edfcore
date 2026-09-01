@@ -1,0 +1,50 @@
+# The 116 tests `npm run check` cannot reach.
+#
+# `tests/corpus/` compares edfcore against bytes real hardware and real software produced —
+# EDFlib's generator, a PhysioNet polysomnogram, a CHB-MIT seizure recording — including the
+# parity goldens generated from pyEDFlib and MNE. Every one of them skips when
+# `tests/corpus/files/` is empty, which is the right default: a plain `git clone && npm test`
+# must not reach the network, and the files are gitignored because one of them is a real
+# person's overnight recording that must never be committed or published.
+#
+# The consequence was that they ran nowhere. `ci.yml` never fetches, `scripts/release.mjs` runs
+# `npm run check`, and neither downloads anything — so the suite that exists to check this
+# library against the real world executed only when a developer happened to have run
+# `corpus:fetch` on their own machine. 0.4.219 worked around it by ungating one check; this
+# gives the other 116 somewhere to run.
+#
+# Weekly rather than per-push, and cached on the manifest hash, because the files come from
+# third-party servers that owe this project nothing. A run that hits the cache downloads
+# nothing at all. Nothing here gates a merge: a corpus host being down is not a broken library,
+# and a red cross on a scheduled job is the honest way to say so.
+name: Corpus
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Keyed on the manifest, which carries every URL and every hash: a file added, removed or
+      # re-pointed changes the key and the next run fetches. `fetch-corpus.mjs` verifies each
+      # file against its sha256 either way, so a restored cache is checked, not trusted.
+      - uses: actions/cache@v4
+        with:
+          path: tests/corpus/files
+          key: corpus-${{ hashFiles('tests/corpus/manifest.json') }}
+      - run: npm run corpus:fetch
+      # The whole suite, not the corpus directory alone: several files outside it read a corpus
+      # file when one is there, and the point is the run that has them.
+      - run: npm test

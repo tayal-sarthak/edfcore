@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.9
+
+- **Added** `corpus.yml`, so the corpus suite is run by something other than a developer
+  remembering to. `tests/corpus/` is the only place this library is checked against bytes it did
+  not write itself — EDFlib's generator, a PhysioNet polysomnogram, a CHB-MIT seizure recording,
+  and the parity goldens generated from pyEDFlib and MNE — and every test in it skips when
+  `tests/corpus/files/` is empty. `ci.yml` never fetched and `scripts/release.mjs` runs
+  `npm run check`, which does not either, so those tests executed only on a machine where someone
+  had happened to run `corpus:fetch`.
+- 0.4.219 has the bug report in it. It records ungating one check "because CI never fetches, so a
+  gated version would have been the one check there that runs nowhere" — a workaround for one
+  check, with the other hundred-odd left where they were.
+- Weekly and cached on the manifest hash, not per-push: the files come from third-party servers
+  that owe this project nothing, a run that hits the cache downloads nothing, and a corpus host
+  being down is not a broken library. It gates no merge and no release. `fetch-corpus.mjs` checks
+  every file against its `sha256` either way, so a restored cache is verified rather than trusted.
+- `the-corpus-runs-somewhere.test.ts` checks that a workflow fetches, that the same workflow runs
+  the suite afterwards rather than only fetching, that no workflow fetching the corpus runs on a
+  push or a pull request, and that `corpus:fetch` is still unreachable from `npm run check` — which
+  is the premise the whole arrangement rests on. It also checks the offline default from the other
+  side: every corpus file that opens something in the download directory asks whether it is there
+  first, so a clone with no corpus skips rather than fails.
+- No library change.
+
 ## 0.6.8
 
 - **Fixed** `AGENTS.md` quoting the corpus download as ~59 MB. It is ~102 MB, which is what

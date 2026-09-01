@@ -45,6 +45,7 @@ npm test            # vitest, ~10s
 npm run build       # tsc to dist/
 npm run format      # biome, formatting and import order; `lint` reports the same as errors
 npm run corpus:fetch # ~102 MB, gitignored — without it the corpus tests skip rather than fail
+                     # corpus.yml runs it weekly; nothing on a push or a PR fetches
 npm run dev --prefix website
 npm run release -- patch -m "What changed"   # one commit, one tag, waits for CI and for npm
 npm run announce     # ONE GitHub release for every tag since the last one
