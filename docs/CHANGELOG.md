@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.69
+
+- **Added** the comparison the two `onProgress` declarations never got. `types.ts` declares the
+  same callback twice, on `BuildIndexOptions` and on `ValidateOptions`, and two consumers implement
+  it. Each had its own tests; the pair had none — which is the shape this project keeps meeting,
+  and the reason 0.5.67 and 0.5.68 exist.
+- The contract is not written down in one place either. `scanOnsets` states the half that matters,
+  in a comment about the case where it has nothing to read: report once, "so a caller's bar
+  finishes". The rest follows from being a bar, and `progress-means-one-thing.test.ts` asks all six
+  questions of both consumers over every shape in the matrix: that it reports at all, that `total`
+  is the record count on every call so a percentage has a fixed divisor, that `done` never goes
+  backwards, that it stays inside its total, that the last call says finished, and that nothing
+  arrives after the promise resolved.
+- Reverting either fix from this week fails it: seven cases without the validation call, and the
+  empty-file case without the index one. A last check has the two agree on the same file, since one
+  option answered by two calls that finish at different numbers is the defect stated directly.
+- The consumers are found by scanning `src/` for the call rather than listed, so a third fails this
+  file until it joins it.
+
 ## 0.5.68
 
 - **Fixed** `validateRecording` never calling `onProgress` for the two sweeps that read nothing:
