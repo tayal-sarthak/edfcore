@@ -464,11 +464,26 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
                   : formatClockTime(header.startTime.clock),
               clockSource: header.startTime.clockSource,
             },
-            // Patient identification is opt-in here for the same reason it is in formatHeader:
-            // the obvious thing to do with this output is pipe it somewhere.
-            // `trimEdfField`, for the reason formatHeader uses it: `.trim()` leaves NUL padding
-            // in place, and JSON.stringify escapes it into a run of `\u0000` in the value.
-            ...(args.patient ? { patient: trimEdfField(header.patient.raw) } : {}),
+            /*
+             * Identification is opt-in here for the same reason it is in `formatHeader`: the
+             * obvious thing to do with this output is pipe it somewhere.
+             *
+             * BOTH fields, on the one flag. `redaction()` above states the rule — the two must be
+             * gated together, by the same flag, in every command that prints either — and until
+             * 0.6.7 this command printed one of them. `header --patient` shows a `recording` line
+             * and `json --patient` did not, so the same flag meant two different things two
+             * commands apart, and the field holding the technician code, the equipment code and
+             * the only unambiguous startdate was unreachable from the machine-readable output.
+             *
+             * `trimEdfField`, for the reason formatHeader uses it: `.trim()` leaves NUL padding
+             * in place, and JSON.stringify escapes it into a run of `\u0000` in the value.
+             */
+            ...(args.patient
+              ? {
+                  patient: trimEdfField(header.patient.raw),
+                  recording: trimEdfField(header.recording.raw),
+                }
+              : {}),
             signals: header.signals.map((signal) => ({
               index: signal.index,
               label: signal.label,

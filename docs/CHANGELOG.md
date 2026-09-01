@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.7
+
+- **Fixed** `edfcore json --patient` reporting one identification field where every other command
+  reports two. The rule is `cli-run.ts`'s own, written above the helper that implements it: the two
+  must be gated together, by the same flag, in every command that prints either. `header --patient`
+  shows a `recording` line beside the `patient` line; `json --patient` showed `patient` alone.
+- So the same flag meant two different things two commands apart, and the field carrying the
+  technician code, the equipment code and the only unambiguous startdate could not be reached from
+  the machine-readable output at all. The direction of the mistake is the safe one — nothing
+  leaked — which is why nothing found it.
+- `one-flag-two-fields.test.ts` checks both directions over a file whose identification fields are
+  populated and non-conformant, so every command has a diagnostic quoting them as well as a field
+  holding them: without the flag neither string appears in any of the six commands' output, and
+  with it the two commands that report identification report both fields.
+- The docs said "patient identification", which named the EDF field rather than what the flag does.
+  They now say both.
+
 ## 0.6.6
 
 - **Added** `start` to `edfcore json`: the resolved date and clock, each beside the field they came
