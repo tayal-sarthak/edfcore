@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.68
+
+- **Fixed** `validateRecording` never calling `onProgress` for the two sweeps that read nothing:
+  one over a plain EDF with `scanSamples` off, where the onsets are arithmetic and the traversal is
+  skipped outright, and one over a file with no data records, where the traversal runs and its
+  chunk loop never enters. Both finish; neither said so, so a bar over `validateRecording` sat at
+  zero for exactly the files it had the least to do.
+- The option is documented in one place for both of its consumers, and `scanOnsets` — the other
+  one — states what it owes a caller when it skips: report once, "with the traversal complete, so a
+  caller's bar finishes". Validation had the same early exit and not the same call. This is the
+  shape edfcore has hit before, a rule written down at one of two sites that implement it.
+- It reports `(recordCount, recordCount)` once when the traversal was skipped or the file has no
+  records, so a bar over a fast verdict finishes at 100% rather than staying where it started.
+  Nothing changes for a sweep that does read: the loop's per-chunk call is still the only one.
+
 ## 0.5.67
 
 - **Fixed** `buildRecordIndex` never calling `onProgress` for a file with no data records. A

@@ -786,6 +786,12 @@ export async function validateRecording(
   const mustReadOnsets = supplied === undefined && !onsetsAreArithmetic;
   const traversal =
     scanSamples || mustReadOnsets ? await traverse(recording, options, scanSamples) : undefined;
+  // A sweep that read nothing still finished. `scanOnsets` owns the rule for this same option and
+  // states it: a file it does not need to scan is still reported once, "with the traversal
+  // complete, so a caller's bar finishes". Neither case here could say so — a sweep that skipped
+  // its traversal never entered the loop, and a file with no records entered it and stopped — so a
+  // progress bar over `validateRecording` sat at zero for exactly the files that finished fastest.
+  if (traversal === undefined || recordCount === 0) options?.onProgress?.(recordCount, recordCount);
   if (traversal !== undefined) appendDiagnostics(diagnostics, traversal.diagnostics);
 
   let segmentCount: number;
