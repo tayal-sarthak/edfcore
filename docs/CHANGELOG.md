@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.21
+
+- **Added** the check that calling twice gives the same answer. Every function in the reading API is
+  documented as a question about a file, and a question about a file has one answer — and nothing
+  checked it. The suite calls each of them once per test, which is exactly the shape that cannot see
+  state left behind by the first call: a memo filled with the wrong key, a cursor advanced and not
+  reset, an array handed out and then written into by the next caller.
+- Two axes, because they catch different things. The same recording asked twice catches state on the
+  recording; two recordings over the same bytes catch state shared beneath them. Over all thirteen
+  shapes, for `buildRecordIndex`, `readAnnotations`, `validateRecording`, `readRecords`, `readWindow`
+  and `readEnvelope`, plus `inspectEdf` on the bytes.
+- And a third claim the first two cannot make: a second call hands back arrays of its own. Equal
+  contents, different objects, different buffers — because two callers reading one recording must not
+  be able to write into each other's results. `nothing-points-at-your-buffer` says a result never
+  points into the caller's bytes; this says a second result never points into the first one's.
+- `buildRecordIndex` returns methods as well as data, so results are compared through a projection
+  that drops function-valued properties — two calls necessarily build two closures, and whether they
+  are the same function is not the question. `locate` and `onsetTicks` are then exercised directly at
+  every record and at five instants, which is the half that projection drops.
+- Nothing disagreed. No behaviour changed.
+
 ## 0.6.20
 
 - **Added** a thirteenth shape to the `AWKWARD` matrix: a record duration with no exact binary
