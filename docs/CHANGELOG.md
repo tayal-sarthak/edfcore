@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.72
+
+- **Added** the case none of the four caller-supplied callbacks documents: what happens when yours
+  throws. edfcore calls a `ByteSource.read`, an `onProgress` on each of the two traversals, and a
+  predicate on the two matching helpers. Three of the four say what they should RETURN and none of
+  the four says what a throw does — which is not exotic: a progress callback writes to a DOM node
+  that has been removed, a label predicate calls `toLowerCase` on a signal with no label.
+- Two answers matter and they pull opposite ways. The error must arrive UNCHANGED — the same
+  object, not wrapped, not turned into a diagnostic — because wrapping it makes the caller's own bug
+  look like a problem with the file, and `isEdfError` has to say false for it. And the recording
+  must SURVIVE it: every one of these calls happens partway through something with state, and a
+  throw unwinds through all of it.
+- `when-your-callback-throws.test.ts` checks both for the three that had nothing;
+  `source-contract.test.ts` already covers the source. After a callback throws mid-scan, the same
+  recording rebuilds to the same index, validates to the same verdict, and leaves the annotation
+  array it was given untouched — each compared against a recording that never saw a failure.
+- One check is about the failure a memoised promise would produce: a second attempt has to reach
+  the callback again rather than a remembered rejection, or one bad progress callback breaks the
+  operation for the life of the recording. Wrapping the progress call in a `try`/`catch` that
+  swallows fails three of the nine.
+
 ## 0.5.71
 
 - **Added** the case every diagnostic test avoids: a file with more than one thing wrong with it.
