@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.12
+
+- **Fixed** `edfcore json` dropping what the record probes found. `openEdf` reads record 0 and the
+  last record and puts what it learned on `recording.timeline.diagnostics`; this command's
+  `diagnostics` came from `header.diagnostics` alone. It is the defect 0.3.94 fixed in
+  `edfcore header`, on the same file, unfixed in the sibling command.
+- It cost more here. An EDF+C file with a real hole emitted one `info` and never mentioned
+  `DISCONTINUITY_IN_CONTINUOUS_FILE`, so a pipeline doing
+  `select(.severity == "warning")` saw a clean file — while `edfcore gaps` on the same bytes
+  printed a 20-second gap and `spanSeconds`, two keys up in the same document, read 24 against
+  four records covering 4 s.
+- `variant` is not a substitute and cannot be: that code exists precisely for the file whose
+  reserved field says `EDF+C` while its onsets say otherwise, so the field a script would check is
+  the field that is wrong.
+- **Changed**: every entry in `diagnostics` now carries `source`, `"header"` or `"recordProbe"`.
+  One array rather than two, because a consumer filtering by severity wants one array; the field
+  keeps the distinction `edfcore header` shows by printing the probe's findings under their own
+  heading. A consumer reading `code` and `severity` is unaffected, and one counting entries sees
+  more of them on a file that had something to say.
+
 ## 0.6.11
 
 - **Fixed** `--help` still describing `--patient` as "include patient identification" after 0.6.7

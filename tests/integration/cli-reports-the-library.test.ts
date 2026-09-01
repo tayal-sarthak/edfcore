@@ -67,7 +67,12 @@ interface JsonReport {
   readonly spanSeconds: number;
   readonly patient?: string;
   readonly signals: readonly JsonSignal[];
-  readonly diagnostics: ReadonlyArray<{ readonly code: string; readonly severity: string }>;
+  readonly recording?: string;
+  readonly diagnostics: ReadonlyArray<{
+    readonly code: string;
+    readonly severity: string;
+    readonly source: string;
+  }>;
 }
 
 describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
@@ -98,13 +103,21 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
         expect(printed?.sampleRateHz).toBe(signal.sampleRateHz);
     }
 
-    // The diagnostics list is the header's, code and severity, in the order the header carries.
-    expect(report.diagnostics).toEqual(
-      header.diagnostics.map((diagnostic) => ({
+    // Both sets the library holds, each saying which it came from, in the order this command
+    // prints them: the header's, then the record probes'. Dropping the second was the 0.3.94
+    // defect, fixed here in 0.6.12.
+    expect(report.diagnostics).toEqual([
+      ...header.diagnostics.map((diagnostic) => ({
         code: diagnostic.code,
         severity: diagnostic.severity,
+        source: 'header',
       })),
-    );
+      ...timeline.diagnostics.map((diagnostic) => ({
+        code: diagnostic.code,
+        severity: diagnostic.severity,
+        source: 'recordProbe',
+      })),
+    ]);
 
     // Identification is opt-in, and what --patient prints is the raw field with padding trimmed.
     expect(Object.hasOwn(report, 'patient')).toBe(false);
@@ -112,6 +125,8 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
       await output(['json', 'a.edf', '--patient'], bytes),
     ) as JsonReport;
     expect(withPatient.patient).toBe(trimEdfField(header.patient.raw));
+    // Both fields on the one flag since 0.6.7.
+    expect(withPatient.recording).toBe(trimEdfField(header.recording.raw));
   });
 
   it(`counts and lists the annotations the library reads, where ${awkward}`, async () => {

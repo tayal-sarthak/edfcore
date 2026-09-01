@@ -84,14 +84,16 @@ describe('without --patient', () => {
 });
 
 describe('the diagnostics it prints', () => {
-  it('carry a code and a severity and nothing else', async () => {
+  it('carry a code, a severity and where it came from, and nothing else', async () => {
     const { parsed } = await jsonOf(['json', 'night.edf']);
     const diagnostics = parsed.diagnostics as ReadonlyArray<Record<string, unknown>>;
     expect(diagnostics.length).toBeGreaterThan(0);
     for (const diagnostic of diagnostics) {
-      // Named rather than counted: a spread would add every field at once, and the two that
-      // matter are the ones quoting the file.
-      expect(Object.keys(diagnostic).sort()).toEqual(['code', 'severity']);
+      // Named rather than counted: a spread would add every field at once, and the ones that
+      // matter are the ones quoting the file. `source` (0.6.12) is one of two literals chosen by
+      // the command, so it carries nothing out of the header.
+      expect(Object.keys(diagnostic).sort()).toEqual(['code', 'severity', 'source']);
+      expect(['header', 'recordProbe']).toContain(diagnostic.source);
     }
   });
 

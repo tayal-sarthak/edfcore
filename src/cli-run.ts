@@ -492,7 +492,34 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
               sampleRateHz: signal.sampleRateHz,
               physicalDimension: signal.physicalDimension,
             })),
-            diagnostics: header.diagnostics.map((d) => ({ code: d.code, severity: d.severity })),
+            /*
+             * The probe's findings too, which is the fix 0.3.94 made to `edfcore header` and did
+             * not make here. `openEdf` reads record 0 and the last record and puts what it learned
+             * on `recording.timeline.diagnostics`; this command has already paid for that read and
+             * reports the span it produced two lines up.
+             *
+             * Dropping them cost more here than it did there. An EDF+C file with a real hole
+             * reported one `info` and never mentioned DISCONTINUITY_IN_CONTINUOUS_FILE, while
+             * `edfcore gaps` on the same file printed a 20-second gap — and this is the output a
+             * pipeline branches on, so `select(.severity == "warning")` saw a clean file. The
+             * `variant` field is not a substitute: the whole point of that code is a file whose
+             * reserved field says continuous when its onsets do not.
+             *
+             * `source` keeps the distinction `edfcore header` shows by printing them under their
+             * own heading. One array, because a consumer filtering by severity wants one array.
+             */
+            diagnostics: [
+              ...header.diagnostics.map((d) => ({
+                code: d.code,
+                severity: d.severity,
+                source: 'header' as const,
+              })),
+              ...recording.timeline.diagnostics.map((d) => ({
+                code: d.code,
+                severity: d.severity,
+                source: 'recordProbe' as const,
+              })),
+            ],
           },
           null,
           2,

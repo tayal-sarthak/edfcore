@@ -32,7 +32,11 @@ The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every 
 `t = 0` is the start of record 0. A truncated listing says how many events it withheld, because a
 silently cut one reads as a complete one.
 
-`json` emits the geometry, the start, one entry per signal and the diagnostic codes. The start
+`json` emits the geometry, the start, one entry per signal and the diagnostic codes. The
+diagnostics are both sets the library holds — the header's and the record probes' — each entry
+carrying `source: "header"` or `source: "recordProbe"`. Before 0.6.12 only the header's were
+emitted, so an EDF+C file with a real hole reported nothing about it here while `edfcore gaps`
+reported the gap. The start
 carries `dateSource` and `clockSource` alongside the values, because a `null` clock and a file that
 starts at midnight are otherwise the same output, and a date resolved from the EDF+ recording
 identification is the unambiguous one. It was added in 0.6.6; before that the command reported
