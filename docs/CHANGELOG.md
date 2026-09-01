@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.19
+
+- **Added** a twelfth shape to the `AWKWARD` matrix: a file whose record count field says `-1`, so
+  the count is recovered from the source length. `types.ts` says of that field "`-1` means the
+  writer never closed the file", and it is not a rare accident — it is what a recorder writes while
+  it is still recording, and what stays there if the software crashes or the disk fills.
+- The recovery itself was covered — `parse.test.ts` for the arithmetic,
+  `one-recording-two-spellings.test.ts` for the equivalence — and the shape had never been put in
+  front of the twenty-two sweeps that run over the matrix: every index resolves, ticks and seconds
+  agree, every array is frozen, nothing points at the caller's buffer, the five source spellings,
+  and the rest. It is the only shape in the matrix whose geometry rests on arithmetic rather than
+  on a number the file states, and each of those sweeps asks a question of a whole file.
+- They all pass over it. That is the result: the properties were stated to hold for any file, and
+  until now none of them had seen one whose record count nobody wrote down.
+- `a-count-the-header-never-gave.test.ts` pins what makes it that shape — `-1` in the field, five in
+  the header, `recordCountSource: 'sourceByteLength'`, and the diagnostic that says so — and checks
+  it is the only shape in the matrix that recovers. A fixture drifting into an ordinary file would
+  otherwise leave twenty-two sweeps looking as though they cover something they no longer do.
+
 ## 0.6.18
 
 - **Fixed** the same thing in the two files 0.6.17 could not see. `README.md` and `AGENTS.md` are

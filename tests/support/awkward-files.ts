@@ -16,6 +16,7 @@
  * removed from here fails the test that was relying on it.
  */
 
+import { setHeaderField } from './corrupt.js';
 import { buildEdf, type EdfSpec } from './writer.js';
 
 export interface AwkwardFile {
@@ -166,6 +167,25 @@ export const AWKWARD: readonly AwkwardFile[] = [
       signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
       annotationSignals: [{ samplesPerRecord: 40 }],
     }),
+  },
+  {
+    name: 'a record count the header never gave',
+    awkward:
+      'the count came from the source length rather than from the field, so header.recordCount ' +
+      'disagrees with the bytes at offset 236 and every derived span rests on arithmetic instead ' +
+      'of on a number the file states',
+    bytes: setHeaderField(
+      spec({
+        format: 'EDF',
+        plus: 'C',
+        recordCount: 5,
+        recordDurationSeconds: 1,
+        signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+        annotationSignals: [{ samplesPerRecord: 20 }],
+      }),
+      'recordCount',
+      '-1',
+    ),
   },
   {
     name: 'a single record',
