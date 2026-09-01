@@ -136,8 +136,8 @@ function holdsBigInt(value: unknown, seen = new Set<unknown>()): boolean {
 }
 
 describe('the matrix this file sweeps', () => {
-  it('is the twelve shapes it was written against', () => {
-    expect(AWKWARD).toHaveLength(12);
+  it('is the thirteen shapes it was written against', () => {
+    expect(AWKWARD).toHaveLength(13);
   });
 });
 

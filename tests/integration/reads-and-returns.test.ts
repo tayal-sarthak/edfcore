@@ -116,7 +116,7 @@ describe('the claim', () => {
   });
 
   it('has a matrix wide enough to be worth sweeping', () => {
-    expect(AWKWARD).toHaveLength(12);
+    expect(AWKWARD).toHaveLength(13);
   });
 });
 

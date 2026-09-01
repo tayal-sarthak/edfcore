@@ -103,9 +103,9 @@ describe('the shapes reached both answers', () => {
 });
 
 describe('the matrix this file sweeps', () => {
-  it('is the twelve shapes it was written against', () => {
+  it('is the thirteen shapes it was written against', () => {
     // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
     // quietly removes cases from here instead of failing anything.
-    expect(AWKWARD).toHaveLength(12);
+    expect(AWKWARD).toHaveLength(13);
   });
 });

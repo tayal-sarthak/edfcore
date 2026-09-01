@@ -55,7 +55,7 @@ describe('the matrix is used widely enough for the rule to matter', () => {
   });
 
   it('has a shape for each thing it claims to cover, with no name used twice', () => {
-    expect(AWKWARD).toHaveLength(12);
+    expect(AWKWARD).toHaveLength(13);
     expect(new Set(AWKWARD.map((file) => file.name)).size).toBe(AWKWARD.length);
     // Every entry says what it breaks. An entry without that is a file nobody can reason about.
     expect(AWKWARD.filter((file) => file.awkward.length < 20)).toEqual([]);

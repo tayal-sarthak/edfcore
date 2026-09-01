@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.20
+
+- **Added** a thirteenth shape to the `AWKWARD` matrix: a record duration with no exact binary
+  form. `formatHeader` carries the story in a comment beside the function it forced — "100 records
+  of 0.29 s is exactly 29 s and computes as 28.999999999999996, which floors to 28. The header line
+  then reports a recording a whole second shorter than it is (fixed in 0.2.67)."
+- That file is exactly this one, and the matrix had never held it. Every sweep over `AWKWARD` ran
+  on durations of 1 s and 0 s — the two values where the float and the rational agree — so the
+  arithmetic this whole package is written in ticks to avoid was never exercised by any of them.
+  Twenty-three sweeps see it now, and they all pass.
+- `a-duration-float64-cannot-hold.test.ts` spells the hazard out in both directions on the fixture
+  itself: the float product is less than 29 and floors to 28, the tick product is exactly
+  `29n * TICKS_PER_SECOND`, and the header line reads `00:00:29`. It also checks this is the only
+  shape in the matrix whose duration is inexact, and that its derived rate is a clean 100 Hz — an
+  inexact duration does not have to make the rate inexact, and a fixture where both were awkward
+  would not tell the two apart.
+
 ## 0.6.19
 
 - **Added** a twelfth shape to the `AWKWARD` matrix: a file whose record count field says `-1`, so

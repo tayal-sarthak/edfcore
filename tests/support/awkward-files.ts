@@ -169,6 +169,21 @@ export const AWKWARD: readonly AwkwardFile[] = [
     }),
   },
   {
+    name: 'a record duration with no exact binary form',
+    awkward:
+      '0.29 s cannot be written in float64, so recordCount * recordDurationSeconds lands just ' +
+      'under the true span and floors to a whole second less — the arithmetic every duration in ' +
+      'this package is computed in ticks to avoid',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'C',
+      recordCount: 100,
+      recordDurationSeconds: 0.29,
+      signals: [{ label: 'Fp1', samplesPerRecord: 29 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    }),
+  },
+  {
     name: 'a record count the header never gave',
     awkward:
       'the count came from the source length rather than from the field, so header.recordCount ' +
