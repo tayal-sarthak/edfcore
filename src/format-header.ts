@@ -58,9 +58,34 @@ function dimensionSuffix(signal: EdfHeader['signals'][number]): string {
   return dimension === '' ? '' : ` ${dimension}`;
 }
 
+/**
+ * The rate for the table, rounded when the exact value would not fit in a column.
+ *
+ * `sampleRateHz` is `samplesPerRecord / recordDurationSeconds`, and that division does not have to
+ * come out. A 0.29 s record holding 20 samples is 68.96551724137932 Hz, and interpolating it raw
+ * put seventeen digits into a nine-character column — pushing `range` off its position on that row
+ * alone, which is the alignment `formatHeader` was fixed for once already in 0.3.96, arriving by a
+ * different route. It also stated a derived quotient to the last bit of a float64, in a table whose
+ * other numbers are what the file says.
+ *
+ * `~` rather than a silently rounded number, because this module promises never to invent a value.
+ * The exact rate is on `signal.sampleRateHz`, `edfcore signals` prints it unrounded for scripts,
+ * and `samplesPerRecord` is the authoritative field either way — `cli.md` says to index by that and
+ * never by the rate.
+ *
+ * A rate whose exact spelling already fits is printed exactly, so the ordinary file is unchanged
+ * and the tilde means something when it appears. A rate too small to survive two decimal places
+ * falls back to the exact value rather than printing `~0 Hz`, which would be a claim rather than a
+ * rounding.
+ */
 function formatRate(signal: EdfHeader['signals'][number]): string {
+  const rate = signal.sampleRateHz;
   // undefined is the honest answer for a zero record duration, which is legal EDF.
-  return signal.sampleRateHz === undefined ? '—' : `${signal.sampleRateHz} Hz`;
+  if (rate === undefined) return '—';
+  const exact = `${rate}`;
+  if (exact.length <= 6) return `${exact} Hz`;
+  const rounded = Number(rate.toFixed(2));
+  return rounded === 0 ? `${exact} Hz` : `~${rounded} Hz`;
 }
 
 /**

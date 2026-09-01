@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.23
+
+- **Fixed** a derived sample rate blowing the column it is printed in. `sampleRateHz` is
+  `samplesPerRecord / recordDurationSeconds` and that division does not have to come out: a 0.29 s
+  record holding 20 samples is 68.96551724137932 Hz, seventeen digits in a nine-character column.
+  `edfcore header` printed it raw, so `range` moved off its position on that row and no other, and
+  a reader comparing two rows found the last column of one of them somewhere else.
+- It is the defect 0.3.96 fixed for the heading, arriving by a different route: that one was a
+  hand-spaced literal disagreeing with the widths beneath it, this one is a value wider than the
+  width. Both make the same table unreadable in the same place.
+- A rate whose exact spelling fits is printed exactly, so the ordinary file is unchanged. One that
+  does not is rounded to two decimals and marked `~`, because this module promises never to invent
+  a value — and a rate too small to survive two decimals falls back to the exact spelling rather
+  than printing `~0 Hz`, which would be a claim rather than a rounding.
+- Nothing a script reads moved. `signal.sampleRateHz` is untouched, `edfcore signals` prints it
+  unrounded, `edfcore json` carries it in full, and `samplesPerRecord` is the authoritative field
+  either way. A table for a person is the one place four significant figures beat seventeen.
+- `a-rate-that-does-not-divide.test.ts` checks the property rather than the site: every row's
+  `range` starts at the same column as every other row's and as the heading's, over all thirteen
+  shapes. The matrix only reaches this because 0.6.20 put a 0.29 s record in it — before that every
+  shape had a duration of 1 s or 0 s, and every rate was a whole number.
+
 ## 0.6.22
 
 - **Added** the four declared range numbers and `scale` to each signal in `edfcore json`, so the
