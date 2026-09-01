@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.62
+
+- **Fixed** `byteSource` accepting a detached `ArrayBuffer` and building a zero-byte source over
+  it. `openEdf` then reported `[SOURCE_TOO_SMALL] the header is 0 bytes` — blaming the FILE for an
+  argument the caller no longer owns, which is the one confusion this constructor's own comment
+  says it exists to avoid. It refuses at construction now, with a message naming the transfer.
+- A detached view is not an exotic input: `postMessage(bytes, [bytes.buffer])` is the ordinary way
+  to hand a recording to a worker, and it detaches the SENDER's buffer. A worker page that posts
+  the bytes and then opens them locally, or that transfers by mistake where it meant to copy, gets
+  a diagnostic about a file that is fine.
+- Nothing else about the guard moves. A view over a detached buffer keeps its `Uint8Array` tag and
+  reports a `byteLength` of 0, so neither the tag test nor a length check can tell it from an empty
+  array — and a genuinely empty `Uint8Array` is still accepted and still reaches `SOURCE_TOO_SMALL`,
+  which for zero bytes you actually hold is the truthful answer. A `SharedArrayBuffer` never
+  detaches and is unaffected.
+- The check is `buffer.slice(0, 0)` rather than `ArrayBuffer.prototype.detached`, which says it in
+  one word and arrives in ES2024 — above the ES2022 floor `browser-floor.test.ts` pins.
+
 ## 0.5.61
 
 - **Fixed** a sentence both `api-errors.md` and `diagnostics.md` end their cross-realm advice with,

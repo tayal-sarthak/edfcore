@@ -45,6 +45,24 @@ function describe(value: unknown): string {
 const BUFFER_TAGS = new Set(['[object ArrayBuffer]', '[object SharedArrayBuffer]']);
 
 /**
+ * Whether a buffer's bytes have been transferred away — `postMessage(bytes, [bytes.buffer])`, or
+ * `ArrayBuffer.prototype.transfer()`. A view over one keeps its tag and reports a `byteLength` of
+ * 0, so nothing else here can tell it apart from an empty array.
+ *
+ * `slice` rather than `ArrayBuffer.prototype.detached`, which says this in one word and arrives in
+ * ES2024 — above the ES2022 floor `browser-floor.test.ts` pins. A `SharedArrayBuffer` never
+ * detaches and answers false.
+ */
+function isDetachedBuffer(buffer: ArrayBufferLike): boolean {
+  try {
+    buffer.slice(0, 0);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * A `ByteSource` over bytes already in memory, for a file you fetched yourself or a fixture in a
  * test. The signedness of the view is checked at construction rather than at first read: an
  * `Int8Array` has one byte per element and would decode into plausible, wrong sample values.
@@ -66,6 +84,20 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
         'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or the ' +
         'ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, so it ' +
         'would pass every length check and then decode to fabricated sample values.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
+
+  // Refused at construction for the same reason, and it is the case the worker story produces:
+  // transferring bytes to a worker detaches the sender's buffer, and a view over it is still a
+  // Uint8Array with the right tag and a byteLength of 0. Building a source over that reports
+  // `[SOURCE_TOO_SMALL] the header is 0 bytes` — blaming the FILE for an argument the caller no
+  // longer owns.
+  if (isDetachedBuffer(isByteArray(bytes) ? bytes.buffer : (bytes as ArrayBuffer))) {
+    throw new EdfSourceError(
+      'byteSource() received a detached ArrayBuffer: its bytes were transferred to another ' +
+        'realm, so this one holds none of them. Next: read the file on the side that owns the ' +
+        'bytes now, or post them without a transfer list so both sides keep a copy.',
       { offset: 0, requestedLength: 0 },
     );
   }
