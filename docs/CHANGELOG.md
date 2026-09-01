@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.24
+
+- **Fixed** the signal-index column being three characters wide whatever the file, so signal 1000
+  sat one column to the right of signal 999 — in the middle of the same table, with the rows either
+  side of that boundary putting their last three columns in different places. That is worse than a
+  table that is uniformly wrong: nothing about it looks like a formatting decision.
+- EDF's signal-count field is four characters, so 9999 signals is a legal file, and a
+  thousand-channel recording is ordinary high-density work rather than a corner case. `inspect.ts`
+  already discusses a 512-signal file as the realistic one.
+- The width comes from the largest index in the file and is never narrower than the three it has
+  always used, so every file with fewer than a thousand signals prints exactly what it printed
+  before. The heading is built from that width rather than spaced by hand, which is the rule 0.3.96
+  established for the other four columns.
+- `a-rate-that-does-not-divide.test.ts` now reads the range column off the heading instead of from
+  a constant, which is what lets one property cover a width that depends on the file: every row's
+  `range` starts where the heading's does, on all thirteen shapes and on a 1200-signal file. The
+  0.6.23 rate fix and this one are the same defect in two columns — a value wider than the width it
+  was given — and they are checked by the same property now.
+
 ## 0.6.23
 
 - **Fixed** a derived sample rate blowing the column it is printed in. `sampleRateHz` is

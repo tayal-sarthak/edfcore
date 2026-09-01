@@ -165,13 +165,26 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   }
 
   lines.push('');
+  /*
+   * Wide enough for the largest index in THIS file, never narrower than the three the heading has
+   * always used. EDF's signal-count field is four characters, so 9999 signals is a legal file and
+   * a thousand-channel one is an ordinary high-density recording — and a fixed width of three put
+   * signal 1000 one column to the right of signal 999, in the middle of the same table. Rows
+   * either side of that boundary had their last three columns in different places, which is worse
+   * than a table that is uniformly wrong: nothing about it looks like a formatting decision.
+   *
+   * A file with fewer than a thousand signals prints exactly what it printed before (0.6.24).
+   */
+  const indexWidth = Math.max(3, `${Math.max(0, header.signals.length - 1)}`.length);
   // Built from the SAME widths as the data rows below, not spaced by hand. The hand-spaced literal
   // had one space too many after `label` and one after `kind`, so `kind` sat at column 27 over data
   // at 26 and `rate` and `range` were two out — on every file, in the output whose whole purpose is
   // being read in a terminal (fixed in 0.3.96).
-  lines.push(`  #  ${'label'.padEnd(21)}${'kind'.padEnd(12)}${'rate'.padEnd(9)} range`);
+  lines.push(
+    `${'#'.padStart(indexWidth)}  ${'label'.padEnd(21)}${'kind'.padEnd(12)}${'rate'.padEnd(9)} range`,
+  );
   for (const signal of header.signals) {
-    const index = String(signal.index).padStart(3);
+    const index = String(signal.index).padStart(indexWidth);
     // Control characters are replaced, not printed. A label holding a newline would otherwise
     // render as two rows and forge a signal the file does not contain; a tab would shift every
     // column after it. EDF pads labels with spaces and says nothing about what else may be in

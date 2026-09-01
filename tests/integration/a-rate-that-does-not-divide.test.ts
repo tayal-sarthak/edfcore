@@ -19,6 +19,12 @@
  *
  * The matrix reaches this because 0.6.20 put a 0.29 s record in it. Before that every shape had a
  * duration of 1 s or 0 s, and every rate was a whole number.
+ *
+ * The index column is here too (0.6.24). It was three characters wide whatever the file, so signal
+ * 1000 sat one column to the right of signal 999 in the middle of the same table — and EDF's
+ * signal-count field is four characters, so a thousand-channel file is legal and a high-density
+ * recording is not exotic. The property below is read off the heading rather than from a constant,
+ * which is what lets it cover a width that now depends on the file.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,13 +32,14 @@ import { formatHeader } from '../../src/format-header.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { openEdf } from '../../src/recording.js';
 import { AWKWARD } from '../support/awkward-files.js';
+import { buildEdf } from '../support/writer.js';
 
-/** Where `range` begins on a row: after the index, the label, the kind, the rate and one space. */
-const RANGE_COLUMN = 3 + 2 + 21 + 12 + 9 + 1;
+/** Where `range` begins, taken from the heading rather than assumed. */
+const rangeColumn = (heading: string): number => heading.indexOf('range');
 
 function tableRows(printed: string): readonly string[] {
   const lines = printed.split('\n');
-  const heading = lines.findIndex((line) => line.startsWith('  #  '));
+  const heading = lines.findIndex((line) => /^ *# {2}label/.test(line));
   if (heading === -1) throw new Error('formatHeader stopped printing a signal table');
   const rows: string[] = [lines[heading] as string];
   for (const line of lines.slice(heading + 1)) {
@@ -53,13 +60,12 @@ describe.each(AWKWARD)('$name', ({ bytes }) => {
     const { header } = await openEdf(byteSource(bytes));
     const rows = tableRows(formatHeader(header));
     expect(rows.length).toBe(header.signals.length + 1);
+    const at = rangeColumn(rows[0] as string);
+    expect(at).toBeGreaterThan(40);
     for (const row of rows) {
-      // Everything before the range column is padding or a padded field, so the character at the
-      // boundary is where the range begins and the one before it is a space.
-      expect({ row, at: row.length <= RANGE_COLUMN ? ' ' : row[RANGE_COLUMN - 1] }).toEqual({
-        row,
-        at: ' ',
-      });
+      // Everything before the range column is padding or a padded field, so the character before
+      // the boundary is a space on every row, including the heading's own.
+      expect({ row, before: row.length <= at ? ' ' : row[at - 1] }).toEqual({ row, before: ' ' });
     }
   });
 
@@ -67,7 +73,8 @@ describe.each(AWKWARD)('$name', ({ bytes }) => {
     const { header } = await openEdf(byteSource(bytes));
     for (const [position, row] of tableRows(formatHeader(header)).slice(1).entries()) {
       const rate = header.signals[position]?.sampleRateHz;
-      const cell = row.slice(3 + 2 + 21 + 12, 3 + 2 + 21 + 12 + 9).trimEnd();
+      const heading = tableRows(formatHeader(header))[0] as string;
+      const cell = row.slice(heading.indexOf('rate'), rangeColumn(heading) - 1).trimEnd();
       if (rate === undefined) {
         expect(cell).toBe('—');
         continue;
@@ -105,6 +112,40 @@ describe('the shape that made this necessary', () => {
     const { header } = await openEdf(byteSource(shape.bytes));
     // The field itself is untouched. The rounding belongs to one table, for one reader.
     expect(header.signals[1]?.sampleRateHz).toBe(68.96551724137932);
+  });
+});
+
+describe('the index column, which is the same story one column over', () => {
+  const wide = (count: number): Uint8Array =>
+    buildEdf({
+      recordCount: 2,
+      recordDurationSeconds: 1,
+      signals: Array.from({ length: count }, (_, index) => ({
+        label: `S${index}`,
+        samplesPerRecord: 1,
+      })),
+    });
+
+  it('keeps a thousand-channel table in line, where three characters could not', async () => {
+    const { header } = await openEdf(byteSource(wide(1200)));
+    const rows = tableRows(formatHeader(header));
+    const at = rangeColumn(rows[0] as string);
+    // Signal 999 and signal 1000 are the pair that used to disagree.
+    for (const row of rows) {
+      expect({ row: row.slice(0, 12), before: row[at - 1] }).toEqual({
+        row: row.slice(0, 12),
+        before: ' ',
+      });
+    }
+    expect(rows).toHaveLength(1201);
+  });
+
+  it('leaves a file with fewer than a thousand signals exactly as it was', async () => {
+    // The width is `max(3, …)`, so every ordinary file prints what it printed before.
+    const { header } = await openEdf(byteSource(wide(999)));
+    const rows = tableRows(formatHeader(header));
+    expect(rows[0]).toBe(`  #  ${'label'.padEnd(21)}${'kind'.padEnd(12)}${'rate'.padEnd(9)} range`);
+    expect(rows[999]).toMatch(/^998 {2}S998 /);
   });
 });
 
