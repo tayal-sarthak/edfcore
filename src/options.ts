@@ -39,6 +39,32 @@ export function requireFiniteOption(
 }
 
 /**
+ * `maxItems`, resolved against the number of items there actually are.
+ *
+ * The same class as `requireFiniteOption` and a different answer for `Infinity`, which is why it
+ * is a second function rather than a call to that one. `formatValidationReport` caps at 20 by
+ * default, so `Infinity` is the only spelling of "print all of them" a caller has; clamped against
+ * `total` it is exact, and refusing it would remove the option's only way to say that.
+ *
+ * `NaN` is refused. It used to mean the same as `Infinity` — both were `!Number.isFinite`, both
+ * returned `total` — so a limit computed from an absent config key printed the whole list, which
+ * is the opposite of what the caller asked for and looks like a file with a great deal wrong with
+ * it. `parseArgs` has refused a `NaN --limit` since the flag existed, and says why in a comment;
+ * the library function underneath it did the thing that comment describes.
+ */
+export function requireItemLimit(value: number | undefined, total: number): number {
+  if (value === undefined) return total;
+  if (Number.isNaN(value)) {
+    throw new RangeError(
+      'options.maxItems must be a number, but was NaN. Next: check the expression that produced ' +
+        'it — Number() on an absent environment variable, query parameter or config key yields ' +
+        'NaN. Pass Infinity for no cap.',
+    );
+  }
+  return Math.max(0, Math.min(total, Math.floor(value)));
+}
+
+/**
  * `maxMaterializeBytes`, or the 256 MiB default.
  *
  * The two ways a `NaN` budget used to surface, neither of which named the budget:

@@ -10,6 +10,7 @@
  */
 
 import { trimEdfField } from '../bytes/latin1.js';
+import { requireItemLimit } from '../options.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
 
@@ -61,7 +62,7 @@ export function formatDiagnostics(
   options?: FormatDiagnosticsOptions,
 ): string {
   const color = options?.color === true;
-  const shown = resolveLimit(options?.maxItems, diagnostics.length);
+  const shown = requireItemLimit(options?.maxItems, diagnostics.length);
   const lines: string[] = [];
 
   const redact = new Set(options?.redactFields ?? []);
@@ -77,11 +78,6 @@ export function formatDiagnostics(
   if (hidden > 0) lines.push(paint(`... and ${hidden} more`, ANSI_DIM, color));
 
   return lines.join('\n');
-}
-
-function resolveLimit(maxItems: number | undefined, total: number): number {
-  if (maxItems === undefined || !Number.isFinite(maxItems)) return total;
-  return Math.max(0, Math.min(total, Math.floor(maxItems)));
 }
 
 const REDACTED = '[redacted]';

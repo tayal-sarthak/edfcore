@@ -16,6 +16,7 @@
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
+import { requireItemLimit } from './options.js';
 import { floorDiv } from './tal/ticks.js';
 import { printable } from './text/printable.js';
 import type { EdfAnnotation } from './types.js';
@@ -87,10 +88,7 @@ export function formatAnnotations(
 ): string {
   if (annotations.length === 0) return '';
 
-  const limit =
-    options?.maxItems === undefined || !Number.isFinite(options.maxItems)
-      ? annotations.length
-      : Math.max(0, Math.min(annotations.length, Math.floor(options.maxItems)));
+  const limit = requireItemLimit(options?.maxItems, annotations.length);
 
   const rows: string[] = [];
   for (let i = 0; i < limit; i += 1) {

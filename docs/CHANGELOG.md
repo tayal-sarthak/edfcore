@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.1
+
+- **Fixed** `maxItems: NaN` disabling the cap instead of being refused. `formatDiagnostics`,
+  `formatAnnotations` and `formatValidationReport` all resolved the option with
+  `!Number.isFinite(maxItems)`, which is true of `NaN` and of `Infinity` alike, and all three
+  answered it with the total — so a limit computed from an absent environment variable, query
+  parameter or config key printed the whole list. It throws `RangeError` naming `options.maxItems`
+  now.
+- The rule was already written down one layer up. `parseArgs` refuses a `NaN --limit` and the
+  comment beside that guard says why: "a NaN limit would disable the cap silently, which is the
+  opposite of what was asked for". The library functions that flag reaches did exactly that, and
+  it is the class `options.ts` exists for — an omitted option means "use the default", a `NaN`
+  means a caller computed something and got nothing, and treating them alike applies the default
+  to a real mistake.
+- It costs most where the cap matters most: a sweep over a damaged file can produce six figures of
+  diagnostics, `TIMEKEEPING_TAL_MISSING` is one per record, and the caller who asked for twenty
+  got all of them with no sign a limit had ever been applied.
+- **Changed**: `maxItems: -Infinity` showed everything and now shows nothing, which is what every
+  other negative value already did. `Infinity` still means "no cap" and is what the refusal
+  recommends — `formatValidationReport` caps at twenty by default, so it is the only spelling a
+  caller has for printing the lot. That is why this is a second resolver in `options.ts` rather
+  than a call to `requireFiniteOption`, which refuses `Infinity` too.
+
 ## 0.6.0
 
 The public API is unchanged: nothing was added, removed or renamed, and no arithmetic moved. This

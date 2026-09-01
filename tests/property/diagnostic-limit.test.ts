@@ -8,9 +8,14 @@
  * they have seen all of it.
  *
  * By example that is a handful of cases at round numbers, and the rounding is where the cases are
- * not round. `resolveLimit` floors a fractional `maxItems`, clamps a negative one to zero, and
- * treats `undefined` and any non-finite value as "no cap" — four behaviours reachable from a CLI
- * flag, a config file or a caller's arithmetic, and each one changes what N should be.
+ * not round. `requireItemLimit` floors a fractional `maxItems`, clamps a negative one to zero,
+ * reads `undefined` and `Infinity` as "no cap", and refuses `NaN` — five behaviours reachable from
+ * a CLI flag, a config file or a caller's arithmetic, and each one changes what N should be.
+ *
+ * `NaN` is the one that is not a number of items at all. It used to be folded in with `Infinity`
+ * by a single `!Number.isFinite`, which meant a limit computed from an absent config key printed
+ * the whole list; it throws now (0.6.1), and the generator still produces it so that the refusal
+ * is part of this property rather than a case it stopped covering.
  *
  * Three invariants, and the third is what makes the other two mean anything: the blocks shown are
  * the resolved limit, the notice appears exactly when something was withheld, and shown plus
@@ -48,9 +53,9 @@ function diagnosticAt(index: number): EdfDiagnostic {
   };
 }
 
-/** What `resolveLimit` promises, written out here rather than imported: it is not exported. */
+/** What `requireItemLimit` promises for the values it accepts. `NaN` is not one of them. */
 function expectedShown(maxItems: number | undefined, total: number): number {
-  if (maxItems === undefined || !Number.isFinite(maxItems)) return total;
+  if (maxItems === undefined) return total;
   return Math.max(0, Math.min(total, Math.floor(maxItems)));
 }
 
@@ -67,6 +72,10 @@ describe('however many there are and however many are asked for', () => {
     fc.assert(
       fc.property(fc.nat({ max: 40 }), maxItems, (total, limit) => {
         const diagnostics = Array.from({ length: total }, (_, index) => diagnosticAt(index));
+        if (limit !== undefined && Number.isNaN(limit)) {
+          expect(() => formatDiagnostics(diagnostics, { maxItems: limit })).toThrow(RangeError);
+          return;
+        }
         const out = formatDiagnostics(diagnostics, limit === undefined ? {} : { maxItems: limit });
 
         const shown = out.match(BLOCKS)?.length ?? 0;
@@ -110,5 +119,10 @@ describe('the generator reaches the cases the property is about', () => {
     expect(formatDiagnostics(diagnostics, { maxItems: 5 })).not.toContain('more');
     expect(formatDiagnostics(diagnostics)).not.toContain('more');
     expect(formatDiagnostics(diagnostics, { maxItems: 0 })).toBe('... and 5 more');
+    // And the two non-finite spellings, which are no longer the same answer.
+    expect(formatDiagnostics(diagnostics, { maxItems: Number.POSITIVE_INFINITY })).not.toContain(
+      'more',
+    );
+    expect(() => formatDiagnostics(diagnostics, { maxItems: Number.NaN })).toThrow(RangeError);
   });
 });

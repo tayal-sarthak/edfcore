@@ -680,12 +680,14 @@ describe('formatDiagnostics', () => {
       expect(unlimited).not.toContain('more');
     });
 
-    it('treats a non-finite limit as no limit', () => {
+    it('treats Infinity as no limit, and NaN as a mistake', () => {
       const all = manyDiagnostics(3);
       const unlimited = formatDiagnostics(all);
 
       expect(formatDiagnostics(all, { maxItems: Number.POSITIVE_INFINITY })).toBe(unlimited);
-      expect(formatDiagnostics(all, { maxItems: Number.NaN })).toBe(unlimited);
+      // The two used to be one branch, `!Number.isFinite`, so a limit that came out of an absent
+      // config key printed everything. Only one of them is a number of items (0.6.1).
+      expect(() => formatDiagnostics(all, { maxItems: Number.NaN })).toThrow(RangeError);
     });
   });
 
