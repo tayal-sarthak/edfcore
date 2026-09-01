@@ -41,13 +41,17 @@ Two header fields, and one comparison on the timeline:
 import { openEdf } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./overnight.edf'));
+const source = await fileSource('./overnight.edf');
+const recording = await openEdf(source);
 
 recording.header.variant;              // 'EDF+D'
 recording.header.continuity;           // 'discontinuous'
 
 recording.timeline.spanSeconds;        // 16 — last record's end minus record 0's start
 recording.timeline.coveredSeconds;     //  6 — the sum of the record durations
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 `variant` is the reserved field's marker, one of `EDF`, `EDF+C`, `EDF+D`, `BDF`, `BDF+C`, `BDF+D`.
@@ -301,7 +305,8 @@ import {
 } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./overnight.edf'));
+const source = await fileSource('./overnight.edf');
+const recording = await openEdf(source);
 const { header, timeline } = recording;
 
 // 1. Is there anything to worry about? Two fields and one comparison, no extra I/O.
@@ -352,6 +357,9 @@ for (const chunk of chunks) {
 // 4. A single instant, rather than a window.
 await index.locate(5);     // undefined — inside the gap
 await index.locate(13.5);  // { recordIndex: 3, recordStartSeconds: 13, offsetInRecordSeconds: 0.5 }
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 Step 2 is the shape worth copying. Building a complete index over a continuous file is a full

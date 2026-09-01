@@ -6,6 +6,39 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.17
+
+- **Fixed** `await source.close()` not compiling. `api-sources.md` tells a reader "After that,
+  **closing is yours**. Call `source.close()` when you're done", and `fileSource` was declared as
+  returning a plain `ByteSource`, where `close` is optional — so the documented line was an
+  invocation of a possibly-undefined member and every strict project got `TS2722` on it. Both
+  `fileSource` and `fileHandleSource` return `ClosableByteSource` now, a new exported type whose
+  `close` is required.
+- `close` stays optional on `ByteSource` itself, which is right: most sources own nothing.
+  `byteSource` holds an array the caller already had and `blobSource` holds a `Blob`. A source over
+  a file descriptor is not like that, and now the type says which kind it is.
+- **Fixed** the seven documentation snippets that opened a file and never closed it — which was not
+  a coincidence, because the line to add did not compile. Five of them used the shape that makes it
+  impossible anyway, `await openEdf(await fileSource(path))`, where the source is never bound to
+  anything a reader could close.
+- It stopped being a tidiness point. Node 26 turns a `FileHandle` collected while still open into an
+  uncaught `ERR_INVALID_STATE`, where earlier versions printed a deprecation notice. edfcore
+  declares 22.12 as its floor and its CI matrix runs 22.12, 24 and 26 — so the newest supported
+  runtime crashes on the code these pages tell people to copy, at whatever moment the collector
+  happens to run, which in a loop over a directory of recordings is somewhere in the middle.
+- That is how it was found. The five-source sweep added in 0.6.16 opened one source per shape per
+  spelling, passed locally and on 22.12 and 24, and failed on 26 with twenty uncaught exceptions
+  naming the temporary files by path.
+- Same class as the snippet `AGENTS.md` carried until 0.4.259, which ended
+  `chunks[0].signals[0].digital` and did not compile: the file people are told to copy from taught
+  a line the toolchain rejects.
+- `a-file-you-open-is-a-file-you-close.test.ts` checks every fenced block on every page that calls
+  a source constructor holding a handle, and refuses the inline form as well as the missing close —
+  because a snippet that cannot be fixed by adding a line is the one that produced this.
+  `documented-examples.test-d.ts` keeps a compiled twin of one of those snippets and compares it
+  line for line, so the twin moved with it: the example on the page and the example the compiler
+  sees are one thing.
+
 ## 0.6.16
 
 - **Added** the check that the five source constructors are interchangeable, which is what

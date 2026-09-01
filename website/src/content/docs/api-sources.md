@@ -200,7 +200,7 @@ Blocks are **byte-aligned, not record-aligned**. This module never sees a header
 ## fileSource
 
 ```ts
-function fileSource(path: string): Promise<ByteSource>
+function fileSource(path: string): Promise<ClosableByteSource>
 ```
 
 From `edfcore/node`. Opens a file for reading and exposes it as a `ByteSource`.
@@ -208,6 +208,8 @@ From `edfcore/node`. Opens a file for reading and exposes it as a `ByteSource`.
 The size comes from the open handle rather than from a separate `stat(path)` call. The size and the bytes therefore describe the same file even if the path is replaced between the two, which happens on a rotating log or an rsync target. When the operating system reports a size that is not a safe non-negative integer, `fileSource` throws `EdfSourceError`. Its message tells you to check that the path names a regular file rather than a directory, a pipe or a device.
 
 The handle is closed if anything goes wrong before it has an owner. After that, **closing is yours**. Call `source.close()` when you're done. edfcore has no other lifetime mechanism yet; `Symbol.asyncDispose` is not Baseline yet.
+
+Not closing is no longer a warning. Node 26 turns a `FileHandle` collected while still open into an uncaught `ERR_INVALID_STATE`, where earlier versions printed a deprecation notice — so a loop over a directory of recordings that never closes will bring the process down, at whatever moment the collector happens to run. Every snippet on this site that opens a `fileSource` closes it, and a test refuses one that does not.
 
 ```ts
 import { fileSource } from 'edfcore/node';
@@ -232,7 +234,10 @@ try {
 ## fileHandleSource
 
 ```ts
-function fileHandleSource(handle: FileHandleLike, byteLength: number): ByteSource
+function fileHandleSource(
+  handle: FileHandleLike,
+  byteLength: number,
+): ClosableByteSource
 ```
 
 From `edfcore/node`. Wraps a file handle you already hold. `close()` on the returned source closes the handle.
@@ -253,6 +258,21 @@ const source = fileHandleSource(handle, size);
 const header = await readHeader(source);
 await source.close?.();
 ```
+
+### ClosableByteSource
+
+```ts
+interface ClosableByteSource extends ByteSource {
+  close(): Promise<void>;
+}
+```
+
+What `fileSource` and `fileHandleSource` return. `close` is optional on `ByteSource` because most
+sources own nothing — `byteSource` holds an array you already had, `blobSource` holds a `Blob` — and
+a source over a file descriptor is not like that. Until 0.6.17 both were declared as returning a
+plain `ByteSource`, so `await source.close()`, the line this page tells you to write, was an
+invocation of a possibly-undefined member and failed to compile under `strictNullChecks`. Every
+snippet on this site that opened a file went on to not close it, which was not a coincidence.
 
 ### FileHandleLike
 

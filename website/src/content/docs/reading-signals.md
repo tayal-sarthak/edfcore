@@ -12,7 +12,8 @@ lead: An EDF file stores its channels interleaved inside fixed-size data records
 import { openEdf, getSignal, readWindow, toPhysical } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./overnight.edf'));
+const source = await fileSource('./overnight.edf');
+const recording = await openEdf(source);
 const fp1 = getSignal(recording.header, 'Fp1');
 
 const [chunk] = await readWindow(recording, {
@@ -24,6 +25,9 @@ const [chunk] = await readWindow(recording, {
 if (chunk?.signals[0] === undefined) throw new Error('no data in that window');
 
 const microvolts = toPhysical(fp1, chunk.signals[0].digital);
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 That guard is not ceremony. `readWindow` returns an array and `chunk.signals` is indexed, so under

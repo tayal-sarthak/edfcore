@@ -51,7 +51,8 @@ and decoding them as text produces annotations that aren't in the file.
 import { openEdf, readAnnotations } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./study.edf'));
+const source = await fileSource('./study.edf');
+const recording = await openEdf(source);
 
 const { annotations, recordOnsetTicks, diagnostics } = await readAnnotations(recording, {
   start: 0,
@@ -65,6 +66,9 @@ for (const event of annotations) {
 // 1     30        Sleep stage W
 // 1.25  undefined spike
 // 2     30        Sleep stage 1
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 The record range is required and has no default. Annotation regions are interleaved with the
@@ -380,7 +384,8 @@ Do it in integers instead. Every quantity below comes from the header as written
 import { openEdf, readAnnotations, readRecords, getSignal, toPhysical } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./study.edf'));
+const source = await fileSource('./study.edf');
+const recording = await openEdf(source);
 const { header, timeline } = recording;
 const signal = getSignal(header, 'EEG Fpz-Cz');
 
@@ -427,6 +432,9 @@ for (const event of annotations) {
 }
 // Sleep stage W 256n 0.007629510948348211
 // Sleep stage 1 512n 0.007629510948348211
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 Step by step:

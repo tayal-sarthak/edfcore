@@ -94,10 +94,14 @@ function byteOfSample(header: EdfHeader, signal: EdfSignal, sampleIndex: number)
   );
 }
 
-const recording = await openEdf(await fileSource('./overnight.edf'));
+const source = await fileSource('./overnight.edf');
+const recording = await openEdf(source);
 const signal = recording.header.signals[1]!;      // 'Resp', 16 samples per record
 
 byteOfSample(recording.header, signal, 20);       // 1832 — record 1, sample 4 of that signal
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 edfcore does that arithmetic for you. The function is here because seeing it once is the fastest way to understand the layout. If you do write it yourself, keep every offset in plain floating-point numbers, which are exact to 2^53. A data offset in a multi-gigabyte BDF routinely exceeds 2^31, and every bitwise operator in JavaScript truncates its operand to 32 bits first. Past that point `|0` and `<<` wrap the offset negative without warning. `>>>` is unsigned, so it does not go negative — it keeps returning a plausible offset until 2^32 and a wrong one after that, which is the harder of the two to notice.

@@ -165,9 +165,14 @@ export async function quickStart(): Promise<Float64Array> {
 // The same shape as the README quick start and broken the same way until 0.4.261. `fileSource`
 // makes this one the Node twin: it is the first complete program on the page a reader lands on
 // from "how do I read a signal".
+//
+// The source is bound and closed since 0.6.17. It used to read `openEdf(await fileSource(path))`,
+// which leaves the descriptor unreachable — and on Node 26 a FileHandle collected while still open
+// is an uncaught ERR_INVALID_STATE rather than a deprecation notice.
 
 export async function readingSignals(): Promise<Float64Array> {
-  const recording = await openEdf(await fileSource('./overnight.edf'));
+  const source = await fileSource('./overnight.edf');
+  const recording = await openEdf(source);
   const fp1 = getSignal(recording.header, 'Fp1');
 
   const [chunk] = await readWindow(recording, {
@@ -179,6 +184,9 @@ export async function readingSignals(): Promise<Float64Array> {
   if (chunk?.signals[0] === undefined) throw new Error('no data in that window');
 
   const microvolts = toPhysical(fp1, chunk.signals[0].digital);
+
+  // fileSource opens a descriptor and closing it is yours.
+  await source.close();
   return microvolts;
 }
 

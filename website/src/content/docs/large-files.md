@@ -88,6 +88,9 @@ await readWindow(recording, {
 });
 
 console.log(reads, reads.reduce((total, r) => total + r.length, 0));
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 On an eight-hour, 30-channel, 256 Hz EDF (28,800 one-second records, 15,360 bytes each,

@@ -45,7 +45,7 @@
 import * as nodeFsPromises from 'node:fs/promises';
 import { EdfSourceError } from './errors.js';
 import { assertExactRead, assertReadRange, throwIfAborted } from './io/source.js';
-import type { ByteSource, ReadOptions } from './types.js';
+import type { ClosableByteSource, ReadOptions } from './types.js';
 
 /**
  * The RETURN type of both functions below, and the option bag their `read` takes.
@@ -54,7 +54,7 @@ import type { ByteSource, ReadOptions } from './types.js';
  * `fileSource` hands back — the subpath's whole output — and had to reach into the root entry to
  * write a single annotation (added in 0.3.44).
  */
-export type { ByteSource, ReadOptions } from './types.js';
+export type { ByteSource, ClosableByteSource, ReadOptions } from './types.js';
 
 /**
  * A positional reader with a lifetime. A real `fs.promises.FileHandle` satisfies this.
@@ -94,7 +94,7 @@ const fs: NodeFsPromises = nodeFsPromises as unknown as NodeFsPromises;
  * `Symbol.asyncDispose` is not Baseline yet — so a caller that opened a file is the one that
  * closes it.
  */
-export function fileHandleSource(handle: FileHandleLike, byteLength: number): ByteSource {
+export function fileHandleSource(handle: FileHandleLike, byteLength: number): ClosableByteSource {
   return {
     byteLength,
     async read(offset: number, length: number, options?: ReadOptions): Promise<Uint8Array> {
@@ -159,7 +159,7 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): By
  * The handle is closed if anything goes wrong before it has an owner; after that, closing is the
  * caller's job through `source.close()`.
  */
-export async function fileSource(path: string): Promise<ByteSource> {
+export async function fileSource(path: string): Promise<ClosableByteSource> {
   const handle = await fs.open(path, 'r');
   try {
     const stats = await handle.stat();

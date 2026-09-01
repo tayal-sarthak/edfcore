@@ -130,6 +130,23 @@ export interface ByteSource {
 }
 
 /**
+ * A `ByteSource` that owns something and therefore has a `close`.
+ *
+ * `close` is optional on `ByteSource` because most sources own nothing: `byteSource` holds an array
+ * the caller already had, and `blobSource` holds a `Blob`. A source over a file descriptor is not
+ * like that, and `api-sources.md` says so — "After that, **closing is yours**. Call
+ * `source.close()` when you're done."
+ *
+ * That sentence did not typecheck. `fileSource` was declared as returning a plain `ByteSource`, so
+ * the documented call was an invocation of a possibly-undefined member and every strict project
+ * got `TS2722` on the line the page told them to write. Every snippet on the site that opened a
+ * file went on to not close it, which is not a coincidence (fixed in 0.6.17).
+ */
+export interface ClosableByteSource extends ByteSource {
+  close(): Promise<void>;
+}
+
+/**
  * Configuration for `httpSource`, which needs the server to honour range requests. Concurrency
  * belongs here rather than in the reading calls: a source owns how many requests it issues, so
  * the read pattern a caller observes stays the one they asked for.
