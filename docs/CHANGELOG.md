@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.14
+
+- **Fixed** two spellings of a byte in one sentence. `header/variant.ts` and `header/fields.ts`
+  each had a private `hexBytes`, under the same name, giving different answers — `44 6f 77` against
+  `0x4b 0x61 0x9f` — and the message the first one builds goes on to say "nor BDF's 0xFF followed
+  by BIOSEMI". Both spellings, three words apart, in the diagnostic a reader is likeliest to meet
+  first: `NOT_AN_EDF_FILE` is what a zip, a gzip or a text file earns.
+- Without the prefix the list reads as a decimal number until the eye reaches a digit above 9,
+  which on that message is the fifth byte. `0x` per byte is what the author reached for the moment
+  a single byte had to be named, and a list is the same claim repeated. The literal in that
+  sentence is lower case now too, matching the bytes beside it.
+- One renderer, in `src/bytes/hex.ts` at layer 0, replacing both copies. The ellipsis behaviour of
+  the surviving one is kept and stated: a caller pointing at the first bad byte forty bytes into an
+  eighty-byte identification field is showing a window, and a window that does not say so is a
+  claim about the whole field.
+- The `rawBytes` dump under a diagnostic is deliberately not this. `30 20 20 20  |0   |` has an
+  ASCII column beside it and the columns are the point; a prefix on every byte would push it off
+  the line. Both are checked, so the difference is a decision rather than an oversight.
+- The rule is enforced from `src/`: every `toString(16)` in the package is a byte becoming text,
+  there are three files with one, and each is named with what it is for. A fourth fails.
+
 ## 0.6.13
 
 - **Added** `coveredSeconds` to `edfcore json`, beside the `spanSeconds` that was there alone.

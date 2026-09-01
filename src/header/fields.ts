@@ -11,6 +11,7 @@
  * needs the bytes as written, so every field is exposed as text before it is interpreted.
  */
 
+import { hexBytes } from '../bytes/hex.js';
 import { hasNonPrintableAscii } from '../bytes/latin1.js';
 import { type EdfNumberParse, parseEdfInteger, parseEdfNumber } from '../bytes/numbers.js';
 import { readAsciiField, sliceBytes } from '../bytes/view.js';
@@ -109,15 +110,6 @@ function contentBounds(raw: string): { readonly start: number; readonly end: num
   return { start, end };
 }
 
-function hexBytes(bytes: Uint8Array, from = 0): string {
-  const shown = bytes.subarray(from, from + RAW_EVIDENCE_MAX_BYTES);
-  const parts: string[] = [];
-  for (const byte of shown) parts.push(`0x${byte.toString(16).padStart(2, '0')}`);
-  const head = from > 0 ? '... ' : '';
-  const tail = from + shown.length < bytes.length ? ' ...' : '';
-  return head + parts.join(' ') + tail;
-}
-
 /** Index of the first byte outside printable ASCII, or 0 when the caller says there is one. */
 function firstNonPrintable(bytes: Uint8Array): number {
   for (let i = 0; i < bytes.length; i += 1) {
@@ -143,7 +135,7 @@ function evidenceWindow(content: Uint8Array): { readonly hex: string; readonly a
   const at = firstNonPrintable(content);
   // A few bytes of lead-in, so the offending byte has context rather than sitting at the edge.
   const from = Math.max(0, Math.min(at - 4, content.length - RAW_EVIDENCE_MAX_BYTES));
-  return { hex: hexBytes(content, Math.max(0, from)), at };
+  return { hex: hexBytes(content, Math.max(0, from), RAW_EVIDENCE_MAX_BYTES), at };
 }
 
 /**

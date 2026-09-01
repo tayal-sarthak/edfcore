@@ -13,6 +13,7 @@
  * - BDF's version block is not ASCII: byte 0 is 0xFF, then `'BIOSEMI'`.
  */
 
+import { hexBytes } from '../bytes/hex.js';
 import { trimEdfField } from '../bytes/latin1.js';
 import { readAsciiField, sliceBytes } from '../bytes/view.js';
 import {
@@ -122,12 +123,6 @@ function markerFamily(marker: EdfReservedMarker): EdfFamily {
   return marker === 'EDF+C' || marker === 'EDF+D' ? 'EDF' : 'BDF';
 }
 
-function hexBytes(bytes: Uint8Array): string {
-  const parts: string[] = [];
-  for (const byte of bytes) parts.push(byte.toString(16).padStart(2, '0'));
-  return parts.join(' ');
-}
-
 function variantOf(
   family: EdfFamily,
   isPlus: boolean,
@@ -170,7 +165,7 @@ export function detectVariant(headerBytes: Uint8Array, sink: DiagnosticSink): Ed
       message:
         `version field (8 bytes at offset ${HEADER_FIELDS.version.offset}) is ` +
         `${JSON.stringify(raw)}, bytes ${hexBytes(versionBytes)}: this is neither EDF's ` +
-        `"0" followed by seven spaces nor BDF's 0xFF followed by "BIOSEMI". ` +
+        `"0" followed by seven spaces nor BDF's 0xff followed by "BIOSEMI". ` +
         'EDF specification, header record bytes 0-7 (version of this data format). ' +
         'Next: confirm the bytes are an uncompressed EDF or BDF recording — a gzip, zip or ' +
         'vendor container has to be unpacked before edfcore sees it.',
@@ -179,7 +174,7 @@ export function detectVariant(headerBytes: Uint8Array, sink: DiagnosticSink): Ed
       byteLength: HEADER_FIELDS.version.length,
       rawBytes: versionBytes,
       raw,
-      expected: '"0       " (EDF) or 0xFF "BIOSEMI" (BDF)',
+      expected: '"0       " (EDF) or 0xff "BIOSEMI" (BDF)',
       actual: hexBytes(versionBytes),
       specReference: 'EDF specification, header record bytes 0-7',
     });
