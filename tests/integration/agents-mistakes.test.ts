@@ -70,8 +70,8 @@ const BYTES = buildEdf({
 const opened = async (): Promise<EdfRecording> => openEdf(byteSource(BYTES));
 
 describe('the list was read', () => {
-  it('found six mistakes, so a passing run is not a vacuous one', () => {
-    expect(MISTAKES).toHaveLength(6);
+  it('found seven mistakes, so a passing run is not a vacuous one', () => {
+    expect(MISTAKES).toHaveLength(7);
     expect(new Set(MISTAKES).size).toBe(MISTAKES.length);
   });
 
@@ -84,6 +84,7 @@ describe('the list was read', () => {
     expect(MISTAKES[3]).toContain('Compare event times in `bigint` ticks');
     expect(MISTAKES[4]).toContain('Signals have different sample rates');
     expect(MISTAKES[5]).toContain('Diagnostics are values on the result');
+    expect(MISTAKES[6]).toContain('holds a descriptor and closing it is yours');
   });
 });
 

@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.18
+
+- **Fixed** the same thing in the two files 0.6.17 could not see. `README.md` and `AGENTS.md` are
+  not pages the docs collection loads, so the sweep over the site missed both — and the README is
+  what npm renders, which makes its snippets the ones most people meet first. Two of them opened a
+  `fileSource` inline and never closed it.
+- **Added** a seventh entry to the mistakes list in `AGENTS.md`: a `fileSource` holds a descriptor
+  and closing it is yours. It names the shape that makes closing impossible —
+  `await openEdf(await fileSource(path))` — and says why `blobSource` and `byteSource` need none of
+  it, so the canonical snippet above it is not read as an omission.
+- `a-file-you-open-is-a-file-you-close.test.ts` sweeps both files now, and ignores a mention inside
+  a comment: that snippet says `// or fileSource() from 'edfcore/node'` beside a `blobSource`,
+  which is prose about an alternative rather than a file being opened.
+
 ## 0.6.17
 
 - **Fixed** `await source.close()` not compiling. `api-sources.md` tells a reader "After that,

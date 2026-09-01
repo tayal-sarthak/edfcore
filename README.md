@@ -52,11 +52,15 @@ In Node, swap the source and nothing else changes:
 import { openEdf, getSignal, readWindow, toPhysical } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./overnight.edf'));
+const source = await fileSource('./overnight.edf');
+const recording = await openEdf(source);
 
 console.log(recording.header.variant);                  // 'EDF+C'
 console.log(recording.header.signals.map((s) => s.label));
 console.log(recording.timeline.spanSeconds);
+
+// fileSource opens a descriptor and closing it is yours.
+await source.close();
 ```
 
 Reading those ten seconds out of a twelve-hour recording reads roughly ten seconds' worth of
@@ -198,7 +202,8 @@ read.
 import { openEdf, readWindow, resolveTimeWindow } from 'edfcore';
 import { fileSource } from 'edfcore/node';
 
-const recording = await openEdf(await fileSource('./overnight.edf'));
+const source = await fileSource('./overnight.edf');
+const recording = await openEdf(source);
 
 // resolveTimeWindow is pure and does no I/O, so you can audit the cost first.
 const ranges = resolveTimeWindow(recording.timeline, recording.index, 3600, 30);
@@ -208,6 +213,8 @@ const chunks = await readWindow(recording, {
   startSeconds: 3600,
   durationSeconds: 30,
 });
+
+await source.close();
 ```
 
 Chunks are record-aligned and may be slightly wider than requested. `trimToWindow()` narrows

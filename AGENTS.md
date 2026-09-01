@@ -137,6 +137,12 @@ The mistakes to avoid, in order of how often they happen:
 5. **Signals have different sample rates.** There is no single rate for a recording.
 6. **Diagnostics are values on the result**, not exceptions and not log output. Check
    `recording.header.diagnostics`; edfcore never writes to the console.
+7. **A `fileSource` holds a descriptor and closing it is yours.** Bind it —
+   `const source = await fileSource(path)` — and `await source.close()` when you are done.
+   `await openEdf(await fileSource(path))` reads well and leaves the descriptor unreachable, and
+   on Node 26 a `FileHandle` collected while still open is an uncaught `ERR_INVALID_STATE` rather
+   than the deprecation notice earlier versions printed. `blobSource` and `byteSource` own nothing
+   and need none of this, which is why the snippet above does not show it.
 
 ## Conventions
 
