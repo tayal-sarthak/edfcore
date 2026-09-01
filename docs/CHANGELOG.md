@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.16
+
+- **Added** the check that the five source constructors are interchangeable, which is what
+  `data-sources.md` promises and what nothing executed. Each was tested for the thing it does —
+  `file-source.test.ts` for descriptors and stat, the `http-*` files for Range and 200s and
+  concurrency, `cache-invisible.test.ts` for the block cache — and nothing ran the reading API over
+  all of them and compared the answers.
+- That is the claim a caller depends on: develop against `byteSource` in a test, ship `httpSource`
+  in a browser and `fileSource` in a batch job, and expect one recording. The seams are real.
+  `fileSource` reads through a descriptor at an offset, `httpSource` splits a read into Range
+  requests, `cachedSource` serves from blocks that never line up with a record — three paths to the
+  same bytes, each a place an off-by-one would show through one source and no other.
+- Header, timeline, segments, gaps, annotations, records, window, envelope and the validation
+  report, over every shape in the matrix, through all five. They agree.
+- `bytesRead` is compared exactly, cache included. A block cache reads whole blocks, but a full
+  conformance sweep reads the whole file whatever the blocking and no source may read it twice —
+  checked with a block size small enough to split every record. The over-reading a partial window
+  provokes is `cache.test.ts`'s subject and is not this one.
+- No behaviour changed. Nothing disagreed.
+
 ## 0.6.15
 
 - **Fixed** four copies of the definition of EDF field padding. `trimEdfField` states the rule and
