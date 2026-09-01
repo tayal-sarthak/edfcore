@@ -16,6 +16,7 @@ import { formatValidationReport } from './format-report.js';
 import { byteSource } from './io/bytes.js';
 import { buildRecordIndex } from './record-index.js';
 import { openEdf, readAnnotations } from './recording.js';
+import { pluralise } from './text/counted.js';
 import { printable } from './text/printable.js';
 import { validateRecording } from './validate.js';
 
@@ -350,7 +351,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       const index = await buildRecordIndex(recording);
       const gaps = index.gaps ?? [];
       if (gaps.length === 0) {
-        io.out(`no gaps in ${index.recordCount} records\n`);
+        io.out(`no gaps in ${pluralise(index.recordCount, 'record')}\n`);
         return 0;
       }
 
@@ -364,7 +365,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         overlaps === 0
           ? `${gaps.length} gap(s)`
           : `${gaps.length - overlaps} gap(s) and ${overlaps} overlap(s)`;
-      io.out(`${counted} in ${index.recordCount} records\n\n`);
+      io.out(`${counted} in ${pluralise(index.recordCount, 'record')}\n\n`);
 
       for (const gap of gaps) {
         const overlap = gap.durationSeconds < 0;

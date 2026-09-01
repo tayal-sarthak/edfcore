@@ -145,7 +145,12 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
 
     const printed = await output(['gaps', 'a.edf'], bytes);
     if (gaps.length === 0) {
-      expect(printed.trim()).toBe(`no gaps in ${index.recordCount} records`);
+      // The plural agrees with the count. Spelled out here rather than imported, because this
+      // file is checking the CLI's words against the library's answer and importing the CLI's own
+      // helper would make the two agree by construction. `a-count-of-one.test.ts` is the general
+      // form; until 0.6.4 this line asserted `1 records` on the one-record shape.
+      const records = index.recordCount === 1 ? 'record' : 'records';
+      expect(printed.trim()).toBe(`no gaps in ${index.recordCount} ${records}`);
       return;
     }
 

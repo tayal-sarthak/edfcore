@@ -16,6 +16,7 @@ import { trimEdfField } from './bytes/latin1.js';
 import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
 import { formatCalendarDate } from './header/dates.js';
+import { pluralise } from './text/counted.js';
 import { printable } from './text/printable.js';
 import type { EdfCalendarDate, EdfHeader, FormatHeaderOptions } from './types.js';
 
@@ -67,8 +68,13 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   const lines: string[] = [];
   const start = header.startTime;
 
+  // Through `pluralise`, which is the whole reason that helper is a module rather than a private
+  // function in the formatter next door. This is the first line of `edfcore header`, and on the
+  // one-signal file that most of this suite is built from it read `EDF · 1 signals · 6 records`
+  // while `edfcore validate` on the same file said `scanned 6 records` correctly (fixed in 0.6.4).
   lines.push(
-    `${header.variant} · ${header.signals.length} signals · ${header.recordCount} records`,
+    `${header.variant} · ${pluralise(header.signals.length, 'signal')} · ` +
+      `${pluralise(header.recordCount, 'record')}`,
   );
   // `unknown`, not a substituted midnight. The module promise two paragraphs up is that a field
   // edfcore could not resolve prints as `unknown` rather than as a plausible default, and the date
@@ -170,7 +176,9 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
       ] as const
     )
       .filter(([count]) => count > 0)
-      .map(([count, severity]) => `${count} ${severity}`)
+      // The 0.4.421 defect verbatim, in the other formatter: `2 warning`, under a heading that
+      // had already counted them. `formatValidationReport` was fixed then and this was not.
+      .map(([count, severity]) => pluralise(count, severity))
       .join(', ');
     lines.push(`${header.diagnostics.length} diagnostic(s): ${summary}`);
     if (options?.diagnosticsHint !== false) {

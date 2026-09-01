@@ -15,15 +15,12 @@
 
 import { assertRedactableFields, formatDiagnostics } from './diagnostics/format.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
+import { plural, pluralise } from './text/counted.js';
 import { printable } from './text/printable.js';
 import type { EdfHeader, FormatReportOptions, ValidationReport } from './types.js';
 
 /** Enough to see the pattern, few enough to read. Override with `maxItems`. */
 const DEFAULT_MAX_ITEMS = 20;
-
-function pluralise(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? '' : 's'}`;
-}
 
 /**
  * A multi-line summary of a validation report.
@@ -58,7 +55,8 @@ export function formatValidationReport(
           ] as const
         )
           .filter(([count]) => count > 0)
-          // Through `pluralise`, like the record count on the line below. Until 0.4.421 this
+          // Through `pluralise`, like the record count on the line below, and since 0.6.4 like
+          // every other count this package prints. Until 0.4.421 this
           // interpolated the severity name raw, so the first line of every `edfcore validate`
           // read "2 error, 1 warning, 2 info" above a line reading "scanned 12 records" — one
           // function, two conventions, and the ungrammatical one on the line a reader sees first.
@@ -67,7 +65,7 @@ export function formatValidationReport(
   lines.push(`${verdict} — ${severities}`);
   lines.push(
     `scanned ${pluralise(report.recordsScanned, 'record')}, ` +
-      `read ${report.bytesRead.toLocaleString('en-US')} bytes`,
+      `read ${report.bytesRead.toLocaleString('en-US')} ${plural('byte', report.bytesRead)}`,
   );
 
   if (summary.byCode.length > 0) {
@@ -94,7 +92,8 @@ export function formatValidationReport(
           : '';
       lines.push(
         `  ${name.slice(0, 20).padEnd(21)}${stats.observedDigitalMin}..${stats.observedDigitalMax}` +
-          ` over ${stats.sampleCount.toLocaleString('en-US')} samples${overflow}`,
+          ` over ${stats.sampleCount.toLocaleString('en-US')} ` +
+          `${plural('sample', stats.sampleCount)}${overflow}`,
       );
     }
   }

@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.4
+
+- **Fixed** six lines that followed a count of one with a plural. The first line of
+  `edfcore header` read `EDF · 1 signals · 6 records` on a one-signal file; the diagnostic summary
+  under it read `2 warning`; `edfcore gaps` said `no gaps in 1 records`; and
+  `formatValidationReport` said `over 1 samples` and would have said `read 1 bytes`.
+- 0.4.421 fixed exactly this once, inside `formatValidationReport`, and named the reason: one
+  function, two conventions, and the ungrammatical one on the line a reader sees first. The fix was
+  a private `pluralise`, so it reached that formatter and nothing else — and the line a reader sees
+  first is not in that formatter. Two commands over one file disagreed about the same number:
+  `validate` said `scanned 1 record` and `header` said `1 records`, eight lines apart.
+- The helper is now `src/text/counted.ts`, a layer down where every printer can reach it, beside
+  `printable.ts` — the other half of the same job, for the text edfcore reads rather than writes.
+  It is two functions, because two report lines group their number with `toLocaleString` and
+  cannot hand the count over and get the grouping back.
+- `a-count-of-one.test.ts` is the check, and it is not a list of the six. It scans the whole output
+  of every printer and all six commands over every shape in the matrix, plus a file that is one of
+  everything, for a count of one followed by a plural of anything this package counts — so a
+  seventh site fails there rather than being found by reading a terminal. The nouns are named,
+  because `signal 1 is labelled "Resp"` is a real diagnostic that no rule about the shape of the
+  text tells apart from `1 signals`.
+- `1 gap(s)` and `1 diagnostic(s)` are untouched. The parenthesised form is correct, and it is a
+  third convention rather than a defect.
+
 ## 0.6.3
 
 - **Documented and pinned** what `JSON.stringify` does to a result, which is two different things

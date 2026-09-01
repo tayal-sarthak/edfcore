@@ -1,8 +1,9 @@
 /**
  * Text from a file, on its way to a terminal.
  *
- * Layer 1, and the smallest module in the package: one function, used by everything that prints a
- * string edfcore read out of a file rather than wrote itself.
+ * Layer 1, and one function, used by everything that prints a string edfcore read out of a file
+ * rather than wrote itself. `counted.ts` beside it is the other half of the same job: the text
+ * edfcore writes itself, where the decision is a plural rather than a control character.
  *
  * The rule it enforces is that a value can never become structure. EDF pads a label to 16 bytes
  * with spaces and says nothing about what else may be in them, and EDF+ annotation text is
