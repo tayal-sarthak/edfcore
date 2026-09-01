@@ -9,7 +9,7 @@
  *
  * That relationship is what a caller relies on. The point of running `inspectEdf` over a directory
  * is to decide which files are worth opening, and the decision is worthless if the header it shows
- * you is not the header you will get. So: over the eight `AWKWARD` shapes, wherever `inspectEdf`
+ * you is not the header you will get. So: over the eleven `AWKWARD` shapes, wherever `inspectEdf`
  * returns a header it is compared field for field against `openEdf`'s, diagnostics included.
  *
  * `ok` is checked as the rule the page states rather than as a value — "true only when the header

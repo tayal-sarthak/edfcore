@@ -9,7 +9,7 @@
  *
  * They are checked one at a time where they are produced — `read-edf.test.ts` on a chunk,
  * `diagnostic-raw-points-there.test.ts` on a diagnostic's own quoted bytes — and nowhere as a class.
- * So this walks every object every entry point returns, over the eight `AWKWARD` shapes and a file
+ * So this walks every object every entry point returns, over the eleven `AWKWARD` shapes and a file
  * with a gap, and resolves every number it finds against the file it came from: 1,500 of them,
  * across 51 distinct field names.
  *
@@ -340,5 +340,13 @@ describe('a chunk’s byte range', () => {
         }
       }
     }
+  });
+});
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
   });
 });

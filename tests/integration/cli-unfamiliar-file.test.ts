@@ -10,7 +10,7 @@
  * signal at all makes `signals` an empty listing and `gaps` a question about a recording that has
  * none; a zero record duration takes the time axis away from `gaps` and the rate away from
  * `signals`; a duplicate label breaks the one lookup `header` does by name. Six commands over
- * eight shapes is forty-eight invocations, and what they must not do is throw, write to stderr on
+ * eleven shapes is sixty-six invocations, and what they must not do is throw, write to stderr on
  * success, or print a value that is the word `undefined`.
  *
  * That last one has a precise form, because the word appears legitimately in prose: the
@@ -152,5 +152,13 @@ describe('the run reached both exit codes', () => {
     );
     expect(codes).toContain(0);
     expect(codes).toContain(1);
+  });
+});
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
   });
 });

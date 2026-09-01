@@ -136,3 +136,11 @@ describe('the shapes exercised the calls', () => {
     expect(locationsChecked).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
+  });
+});

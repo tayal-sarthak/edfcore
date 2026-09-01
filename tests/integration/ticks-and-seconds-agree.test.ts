@@ -13,7 +13,7 @@
  * shows up as a plot drawn a fraction of a second from where the arithmetic says it is.
  *
  * So the pairs are enumerated out of `types.ts` and every object every entry point returns is
- * walked, over the eight `AWKWARD` shapes plus a file with a gap and a file with an overlap — 270
+ * walked, over the eleven `AWKWARD` shapes plus a file with a gap and a file with an overlap — 270
  * pairs in all, compared with `Object.is` against `ticksToSeconds`. `toBeCloseTo` would pass on a
  * pair that had drifted by exactly the thing this arithmetic exists to prevent.
  *
@@ -289,5 +289,13 @@ describe('the annotation onsets, which are two axes rather than one pair', () =>
     if (event === undefined) return;
     expect(recording.timeline.startOffsetTicks).toBe(0n);
     expect(event.onsetSecondsFromHeaderStart).toBe(event.onsetSecondsFromFirstRecord);
+  });
+});
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
   });
 });

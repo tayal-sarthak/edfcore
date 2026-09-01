@@ -13,7 +13,7 @@
  * is no copy-on-read anywhere in this package, and freezing is what makes that safe.
  *
  * So the rule is checked as a rule: every object every entry point returns is walked to a depth of
- * nine, over the eight `AWKWARD` shapes and a file with a gap, and every plain `Array` found
+ * nine, over the eleven `AWKWARD` shapes and a file with a gap, and every plain `Array` found
  * anywhere in the graph must be frozen. 240 of them, which is roughly six times the number of
  * `Object.freeze` calls — because one call freezes an array that appears on many results.
  *
@@ -218,5 +218,13 @@ describe('what is deliberately not frozen', () => {
     const out = new Float64Array(series.sampleCount);
     expect(toPhysical(signal, series.digital, out)).toBe(out);
     expect(out.some((value) => value !== 0)).toBe(true);
+  });
+});
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
   });
 });

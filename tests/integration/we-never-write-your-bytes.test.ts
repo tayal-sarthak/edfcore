@@ -15,7 +15,7 @@
  * So the rule is executed. The caller's buffer is captured byte for byte, the whole reading API
  * runs over it — open, index, validate with a full sample sweep, inspect, annotations, records,
  * windows, envelopes, scaling and a stream — and the buffer must be identical afterwards, over all
- * ten `AWKWARD` shapes and a gapped file.
+ * eleven `AWKWARD` shapes and a gapped file.
  *
  * `fileSource` gets the same question asked of the filesystem, where the answer would be worse:
  * the bytes on disk and the file's modification time both have to survive a full read.
@@ -175,5 +175,13 @@ describe('the one buffer edfcore does write into is the one you asked it to', ()
     const returned = toPhysical(header, signal.digital, out);
     expect(returned).toBe(out);
     expect([...out].every((value) => Number.isFinite(value))).toBe(true);
+  });
+});
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
   });
 });

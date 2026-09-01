@@ -20,7 +20,7 @@
  * those straight from the source with no copy anywhere. Take the `.slice()` out of the collector
  * and a `TAL_MALFORMED` diagnostic hands the caller a window into their own file.
  *
- * So it is checked as a rule. Every value every entry point returns is walked over all ten
+ * So it is checked as a rule. Every value every entry point returns is walked over all eleven
  * `AWKWARD` shapes and a gapped file, and every typed array found anywhere in the graph must be
  * backed by a buffer that is not the caller's. Then the caller's buffer is overwritten end to end
  * and every answer is compared against a clone taken before — which is the failure a caller would
@@ -210,5 +210,13 @@ describe('and the sweep reached the path where a missing copy would show', () =>
     expect(evidence.length).toBeGreaterThan(0);
     expect(ALL_PATHS.some((path) => path.endsWith('.digital'))).toBe(true);
     expect(ALL_PATHS.some((path) => path.endsWith('.recordOnsetTicks'))).toBe(true);
+  });
+});
+
+describe('the matrix this file sweeps', () => {
+  it('is the eleven shapes it was written against', () => {
+    // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
+    // quietly removes cases from here instead of failing anything.
+    expect(AWKWARD).toHaveLength(11);
   });
 });

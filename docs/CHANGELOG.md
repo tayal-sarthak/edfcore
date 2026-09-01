@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.75
+
+- **Fixed** the rule `awkward-files.ts` states and eleven of its eighteen readers did not follow.
+  Its docblock ends by telling every consumer to "assert `AWKWARD.length` rather than trusting it,
+  so a shape removed from here fails the test that was relying on it". Seven did. The other eleven
+  read the matrix and pinned nothing, and each now states the size it was written against.
+- The failure that prevents is quiet by construction. Almost every consumer is a
+  `for (const file of AWKWARD)` loop generating one `it` per shape, so deleting a shape fails
+  nothing — it removes cases. The suite goes green with less in it, the count in the terminal drops
+  by a number nobody has memorised, and the coverage a file was written to have is gone with no
+  evidence it ever existed.
+- `the-matrix-is-checked-by-its-users.test.ts` enforces it from the imports, so a nineteenth
+  consumer fails until it says the same, and it also refuses a stated size the matrix no longer has
+  — which is what turns "add a shape" into a change the author walks through the suite for. The
+  assertion has to live in each consumer rather than once here: one check that the matrix has
+  eleven entries keeps the number honest and says nothing about whether the file that needed a BDF
+  shape still gets one.
+- **Fixed** seven docblocks describing the matrix by a size it stopped having. Six said "the eight
+  `AWKWARD` shapes" — true until 0.5.48 added two — and one said ten, which was mine from 0.5.63.
+  `cli-unfamiliar-file.test.ts` had done the arithmetic in prose as well: six commands over eight
+  shapes is forty-eight invocations, and it has been running sixty-six.
+
 ## 0.5.74
 
 - **Added** an eleventh shape to the `AWKWARD` matrix: a file with a gap AND a sub-second start
