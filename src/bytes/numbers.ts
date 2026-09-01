@@ -1,13 +1,16 @@
 /**
  * The two EDF numeric grammars.
  *
- * Layer 0. Imports nothing. Sole owner of turning an 8-byte ASCII field into a number.
+ * Layer 0. Imports one predicate from `latin1.ts` and nothing else. Sole owner of turning an
+ * 8-byte ASCII field into a number.
  *
  * The spec says these fields are ASCII, left-justified and space-padded. Real files break
  * that in every way imaginable, so parsing reports *why* it failed rather than returning NaN
  * and leaving the caller to guess which diagnostic the bytes deserve: a comma decimal is
  * fatal, a right-justified field is a warning, and `'20 48'` is neither of those.
  */
+
+import { isEdfPadding } from './latin1.js';
 
 /**
  * The outcome of parsing one numeric field.
@@ -30,17 +33,12 @@ export interface EdfNumberParse {
 type EdfNumberProblem = EdfNumberParse['problem'];
 
 const CHAR_NUL = 0x00;
-const CHAR_SPACE = 0x20;
 
 /** No decimal point and no exponent — see `parseEdfInteger`. */
 const INTEGER_GRAMMAR = /^[+-]?[0-9]+$/;
 
 /** `'.5'`, `'+22'`, `'1E3'` and `'-1.23E-4'` are all emitted by real writers. */
 const NUMBER_GRAMMAR = /^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/;
-
-function isPadding(code: number): boolean {
-  return code === CHAR_SPACE || code === CHAR_NUL;
-}
 
 function failure(raw: string, problem: EdfNumberProblem): EdfNumberParse {
   return { ok: false, value: Number.NaN, raw, problem };
@@ -56,8 +54,8 @@ function containsNul(text: string): boolean {
 function parseField(raw: string, grammar: RegExp, integral: boolean): EdfNumberParse {
   let start = 0;
   let end = raw.length;
-  while (start < end && isPadding(raw.charCodeAt(start))) start++;
-  while (end > start && isPadding(raw.charCodeAt(end - 1))) end--;
+  while (start < end && isEdfPadding(raw.charCodeAt(start))) start++;
+  while (end > start && isEdfPadding(raw.charCodeAt(end - 1))) end--;
   const core = raw.slice(start, end);
 
   // Distinct from malformed: an all-space field is a writer omitting a value, not corrupting

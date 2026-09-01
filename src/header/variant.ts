@@ -14,7 +14,7 @@
  */
 
 import { hexBytes } from '../bytes/hex.js';
-import { trimEdfField } from '../bytes/latin1.js';
+import { isEdfPadding, trimEdfField } from '../bytes/latin1.js';
 import { readAsciiField, sliceBytes } from '../bytes/view.js';
 import {
   BDF_ANNOTATIONS_LABEL,
@@ -33,9 +33,6 @@ const EDF_VERSION_BYTE = 0x30;
 /** Not ASCII. This single byte is what separates a BDF file from an EDF one. */
 const BDF_VERSION_BYTE = 0xff;
 const BDF_VERSION_TEXT = 'BIOSEMI';
-
-const CHAR_NUL = 0x00;
-const CHAR_SPACE = 0x20;
 
 const EDF_BYTES_PER_SAMPLE = 2 as const;
 const BDF_BYTES_PER_SAMPLE = 3 as const;
@@ -93,7 +90,7 @@ export function isEdfVersionBlock(versionBytes: Uint8Array): boolean {
   if (versionBytes[0] !== EDF_VERSION_BYTE) return false;
   for (let i = 1; i < versionBytes.length; i++) {
     const byte = versionBytes[i];
-    if (byte !== CHAR_SPACE && byte !== CHAR_NUL) return false;
+    if (byte === undefined || !isEdfPadding(byte)) return false;
   }
   return true;
 }

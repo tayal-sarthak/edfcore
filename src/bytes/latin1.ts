@@ -61,7 +61,23 @@ export function hasNonPrintableAscii(bytes: Uint8Array): boolean {
   return false;
 }
 
-function isPadding(code: number): boolean {
+/**
+ * What EDF field padding is, once, for the four modules that act on it.
+ *
+ * `trimEdfField` below states the rule and the reason: only 0x20 and 0x00, because a trailing TAB
+ * or CR is not padding but content the file should not contain, and hiding it here would hide it
+ * from `NON_ASCII_HEADER_FIELD`. `bytes/numbers.ts` trims the same padding before parsing a number
+ * and `header/fields.ts` finds a field's content bounds inside its own bytes, `header/variant.ts` decides whether the version block is `'0'` and
+ * seven pad bytes, and each had grown a byte-identical copy of these two lines with its own pair
+ * of constants.
+ *
+ * Three copies of a rule are three chances for two of them to disagree, and the disagreement would
+ * not look like one: a field would trim one way for display and another way for its numeric parse,
+ * so `NUMERIC_FIELD_NOT_LEFT_JUSTIFIED` would fire on a field `trimEdfField` had already called
+ * clean. `padding.test.ts` checks the rule across all 256 byte values from both public
+ * sides, and that every module acting on it imports this rather than growing another.
+ */
+export function isEdfPadding(code: number): boolean {
   return code === CHAR_SPACE || code === CHAR_NUL;
 }
 
@@ -81,7 +97,7 @@ function isPadding(code: number): boolean {
 export function trimEdfField(text: string): string {
   let start = 0;
   let end = text.length;
-  while (end > start && isPadding(text.charCodeAt(end - 1))) end--;
-  while (start < end && isPadding(text.charCodeAt(start))) start++;
+  while (end > start && isEdfPadding(text.charCodeAt(end - 1))) end--;
+  while (start < end && isEdfPadding(text.charCodeAt(start))) start++;
   return text.slice(start, end);
 }

@@ -12,7 +12,7 @@
  */
 
 import { hexBytes } from '../bytes/hex.js';
-import { hasNonPrintableAscii } from '../bytes/latin1.js';
+import { hasNonPrintableAscii, isEdfPadding } from '../bytes/latin1.js';
 import { type EdfNumberParse, parseEdfInteger, parseEdfNumber } from '../bytes/numbers.js';
 import { readAsciiField, sliceBytes } from '../bytes/view.js';
 import { EDF_MAX_SIGNAL_COUNT, HEADER_FIELDS, TICKS_PER_SECOND } from '../constants.js';
@@ -22,9 +22,6 @@ import type { EdfRawHeaderFields } from '../types.js';
 
 /** The ten fixed fields. Same keys as `EdfRawHeaderFields`, by construction. */
 export type FixedHeaderFieldName = keyof typeof HEADER_FIELDS;
-
-const CHAR_NUL = 0x00;
-const CHAR_SPACE = 0x20;
 
 /** Enough bytes to recognise the problem in a message without pasting an 80-byte field. */
 const RAW_EVIDENCE_MAX_BYTES = 16;
@@ -90,10 +87,6 @@ export function readRawHeaderFields(headerBytes: Uint8Array): EdfRawHeaderFields
   };
 }
 
-function isPadding(code: number): boolean {
-  return code === CHAR_SPACE || code === CHAR_NUL;
-}
-
 /**
  * The bounds of a field's content inside its own bytes, stripping the same padding
  * `trimEdfField` does.
@@ -105,8 +98,8 @@ function isPadding(code: number): boolean {
 function contentBounds(raw: string): { readonly start: number; readonly end: number } {
   let start = 0;
   let end = raw.length;
-  while (end > start && isPadding(raw.charCodeAt(end - 1))) end--;
-  while (start < end && isPadding(raw.charCodeAt(start))) start++;
+  while (end > start && isEdfPadding(raw.charCodeAt(end - 1))) end--;
+  while (start < end && isEdfPadding(raw.charCodeAt(start))) start++;
   return { start, end };
 }
 

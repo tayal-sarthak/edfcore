@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.15
+
+- **Fixed** four copies of the definition of EDF field padding. `trimEdfField` states the rule and
+  why it is narrow — only 0x20 and 0x00, because a trailing TAB or CR is content the file should
+  not contain and stripping it there would hide it from `NON_ASCII_HEADER_FIELD` — and
+  `bytes/numbers.ts`, `header/fields.ts` and `header/variant.ts` each had a byte-identical copy of
+  the same two lines, with their own pair of constants. One owner now, in `bytes/latin1.ts`, which
+  is where the rule was already written down.
+- Four copies are four chances for two of them to disagree, and the disagreement would not look
+  like one. A field would trim one way for display and another way for its numeric parse, so
+  `NUMERIC_FIELD_NOT_LEFT_JUSTIFIED` would fire on a field `trimEdfField` had already called clean,
+  or an evidence window would point at a byte the message says is not there. Nothing would name
+  padding as the cause.
+- Same treatment `floorDiv` and `ceilDiv` got, and for the reason their docblock gives: one owner,
+  and a test saying every module doing the thing imports it.
+- `padding.test.ts` also checks the direction that is invisible. A padding byte kept is visible —
+  the value is wrong, the label does not match. A CONTENT byte stripped is not: the field parses,
+  the label compares equal, and the diagnostic that would have named the byte never fires. So it
+  checks that no byte outside the number grammar survives being appended to a numeric field, over
+  all 256 values, which can only happen if something stripped it.
+- No behaviour changed. The four copies agreed; this is about the fifth.
+
 ## 0.6.14
 
 - **Fixed** two spellings of a byte in one sentence. `header/variant.ts` and `header/fields.ts`
