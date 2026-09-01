@@ -6,6 +6,42 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.0
+
+The public API is unchanged: nothing was added, removed or renamed, and no arithmetic moved. This
+is a series marker, cut for the same reason 0.5.0 and 0.4.0 were — the 0.5.x patches carried
+observable changes that a consumer pinning `~0.5.x` would rather have been told about in a version
+number. There are four, and they are the whole list: across seventy-five patch releases the only
+files under `src/` that changed other than the version constant are `io/bytes.ts`,
+`record-index.ts` and `validate.ts`.
+
+- **A detached buffer is refused rather than opened.** `byteSource` used to accept a `Uint8Array`
+  whose buffer had been transferred away and build a zero-byte source over it, so `openEdf`
+  reported `[SOURCE_TOO_SMALL] the header is 0 bytes` — a diagnostic about the file, for an
+  argument the caller no longer owned. It now throws `EdfSourceError` at construction (0.5.62).
+  Code that caught the old shape sees a different one, and `postMessage(bytes, [bytes.buffer])` is
+  the ordinary way to reach it.
+- **A detached buffer mid-read stays inside the error model.** Transferring the bytes away after
+  the source was built used to surface as a bare `TypeError` from `subarray` — outside the "either
+  parses it or throws an `EdfError`" property this package states, so a `catch` branching on
+  `isEdfError` fell through to a rethrow. It is an `EdfSourceError` with `receivedLength: 0` now
+  (0.5.66).
+- **`onProgress` finishes.** `buildRecordIndex` never called it for a file with no data records
+  (0.5.67), and `validateRecording` never called it for a sweep that read nothing — a plain EDF
+  with `scanSamples` off, or a file with no records (0.5.68). Both report once now, so a caller's
+  progress bar reaches its total instead of sitting at zero for the files that finished fastest.
+  A caller counting calls, rather than reading the numbers in them, sees one more than before.
+
+Everything else in the line was tests and documentation. The suite went from 2,700 written-out
+cases at 0.5.0 to 4,000, and what it covers changed shape as much as size: the properties a caller
+depends on but no single function states are now checked as properties — that every array handed
+back is frozen, that every index resolves, that ticks and seconds agree on every pair of fields,
+that nothing returned points into the caller's buffer, that the caller's bytes are never written
+to, and that the caller's arguments come back untouched. The `AWKWARD` matrix those sweeps run over
+grew from eight shapes to eleven, including the one this project's longest-running defect class
+hides from: a gap and a sub-second start offset in the same file. None of that is visible from a
+`package.json`, which is the argument for saying it here.
+
 ## 0.5.75
 
 - **Fixed** the rule `awkward-files.ts` states and eleven of its eighteen readers did not follow.
