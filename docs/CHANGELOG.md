@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.71
+
+- **Added** the case every diagnostic test avoids: a file with more than one thing wrong with it.
+  Each code is demonstrated on a fixture broken in exactly one way, which is how you show which
+  defect produces which code — and real files are not like that. Defects come in families, because
+  they come from one mistaken program.
+- The header parse is a single pass over shared state: one sink, a pinned check order, and checks
+  that read fields other checks have already judged. That is the shape in which one defect swallows
+  another — an early return on the first bad field, a check skipped because its input was already
+  reported unusable — and the file would still open with a report that looked complete.
+- `a-second-defect-hides-nothing.test.ts` applies seven independent corruptions alone, then in all
+  twenty-one pairs, then in both orders, then all seven at once. Making the recording-identification
+  check skip itself once anything else has been reported fails six of them.
+- Six of the seven are independent in the file. The seventh is not, and finding that out is half of
+  what this is worth: a reserved field that is not a recognised marker makes the file plain EDF, and
+  `parse.ts` passes `edfPlus: variant.isPlus` into both identification grammars — so on that file
+  they are not checked and their two codes correctly disappear. Not masking; the file no longer
+  deserves them. Worth pinning anyway, because the visible effect is that one wrong five-byte field
+  silently stops the patient and recording identification from being examined at all, and nothing
+  in the report says so. Fixing the reserved field alone brings both codes back, which is what makes
+  it the cause rather than an ordering coincidence.
+
 ## 0.5.70
 
 - **Added** the third thing a caller hands edfcore that edfcore does not own. The buffer is checked
