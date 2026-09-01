@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.63
+
+- **Added** the other half of the zero-copy bargain. `byteSource` is documented as handing out
+  `subarray` views over the caller's own buffer, and `io/bytes.ts` argues that is safe because the
+  adapter retains nothing the caller does not already hold. That is a claim about the ADAPTER. The
+  values the reading API builds out of those views are what a caller keeps, and nothing said
+  whether any of them still points at the buffer.
+- Two sites state the rule for themselves and neither was checked: `header/parse.ts` copies the
+  header bytes so "a header that quietly changed under a hexdump" cannot happen, and
+  `diagnostics/collector.ts` copies a diagnostic's evidence because "a diagnostic outlives the read
+  that produced it".
+- The second is the one holding it up. `readHeader` joins its two reads into a buffer of its own,
+  so the header is copied twice over and the `copyBytes` there is belt on braces. The four
+  `rawBytes` in `tal/` are `sliceBytes` — a `subarray` of the record bytes — and `readRecordBytes`
+  returns those straight from the source. Removing the collector's `.slice()` makes a
+  `TAL_MALFORMED` diagnostic hand back a window into the caller's file, and this file fails.
+- `nothing-points-at-your-buffer.test.ts` walks every value every entry point returns over all ten
+  `AWKWARD` shapes, a gapped file and one whose TAL onsets are not numbers, and requires every
+  typed array to be backed by some other buffer. Then it overwrites the caller's bytes end to end
+  and compares each answer against a `structuredClone` taken before — the failure a caller would
+  actually meet, having reused the array they fetched into.
+- Two assertions keep it honest: that a `byteSource` read really does alias, so the risk is real,
+  and that the sweep reached a diagnostic quoting record bytes rather than only the header, so a
+  pass is not a pass on the one path that was never in question.
+
 ## 0.5.62
 
 - **Fixed** `byteSource` accepting a detached `ArrayBuffer` and building a zero-byte source over
