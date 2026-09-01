@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.11
+
+- **Fixed** `--help` still describing `--patient` as "include patient identification" after 0.6.7
+  made it gate both identification fields. The page was updated then and the help text was not —
+  and the help text is the documentation that ships inside the package and is read by people who
+  never open a website.
+- The drift was possible because the commands are checked three ways and the flags were checked
+  one and a half. `api-surface.test.ts` counts the `--help` command list against the README's
+  table, `cli-command-list.test.ts` asserts `--help` offers exactly what the dispatch switch
+  handles, and `documented-cli.test.ts` runs every `npx edfcore …` written across the docs.
+  `cli-flag-matrix.test.ts` reads the page's flag paragraph and checks the behaviour against it.
+  Nothing compared the page with the help text.
+- `help-and-the-page-agree.test.ts` compares the two on the two things a reader acts on: which
+  flags exist, and which commands each one names. Wording is deliberately not compared — the page
+  has paragraphs and `--help` has a column, and making them match word for word would make one of
+  them worse — so the specific drift is kept as its own case beside the set check, which would have
+  passed on the old wording because what changed was what the flag does rather than where it
+  applies.
+
 ## 0.6.10
 
 - **Fixed** the signal table in `edfcore header` ending a row in whitespace whenever a signal's
