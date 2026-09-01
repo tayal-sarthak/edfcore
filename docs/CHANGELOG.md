@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.3
+
+- **Documented and pinned** what `JSON.stringify` does to a result, which is two different things
+  depending on which value you hand it. `design-decisions.md` already said ticks "do not survive
+  `JSON.stringify` without a replacer"; that is the loud half, and a caller adds a replacer and
+  moves on. The quiet half is that a replacer does not make the result JSON-safe: `Int32Array`
+  samples, `BigInt64Array` onsets and a diagnostic's `rawBytes` serialise as objects keyed by
+  numeric strings, and a property whose value is `undefined` is dropped rather than kept.
+- So a round trip returns something with no `.length` where the caller expects one, `toPhysical`
+  will not take it, and `'durationSeconds' in annotation` is true before and false after. Nothing
+  fails at the call site; it fails wherever the value is next indexed into.
+- `what-crosses-json.test.ts` is the sibling of `what-crosses-a-worker.test.ts` and gives the same
+  treatment to the boundary people actually use — a cache entry, a log line, a POST body. Over
+  every shape in the matrix it pins the exact split: a graph throws if and only if it holds a
+  `bigint` JSON would reach, an empty `BigInt64Array` included on the "no" side because there is no
+  element to refuse. Six of the values a caller reaches for throw and two do not, and the two that
+  do not are the ones with bytes rather than ticks in them.
+- The shape that works is the one `edfcore json` already emits — named primitive fields — and that
+  command is now checked as the worked example of it.
+- No behaviour changed.
+
 ## 0.6.2
 
 - **Fixed** a misspelled `redactFields` name being ignored. Redaction matches exactly against

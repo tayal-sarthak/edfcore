@@ -130,6 +130,13 @@ The cost: `bigint` does not mix with `number` in arithmetic, does not survive `J
 without a replacer, and is slower per operation. The seconds fields are there for display and for
 arithmetic where a float is fine. Don't use them for equality.
 
+A replacer stops the throw and does not make a result JSON-safe. `Int32Array` samples,
+`BigInt64Array` onsets and a diagnostic's `rawBytes` all serialise as objects keyed by numeric
+strings rather than as arrays, and a property whose value is `undefined` is dropped rather than
+kept — so what parses back has no `.length` where a caller expects one, and `'durationSeconds' in
+annotation` is true before the round trip and false after. That failure is quiet, where the
+`bigint` one is loud. Name the fields you want, the way `edfcore json` does.
+
 ## `scale` is `undefined` rather than fabricated
 
 Four header conditions make a linear conversion impossible or wrong. They are a degenerate digital
