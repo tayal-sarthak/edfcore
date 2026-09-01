@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.73
+
+- **Added** the day the network hiccups. `index.onsetTicks(r)` memoises, which is why `locate()`
+  costs `O(log recordCount)` reads instead of repeating them — and memoising is the classic place
+  to store a FAILURE by accident. Cache the promise rather than the value and one dropped
+  connection is permanent: every later caller awaits the same rejection and no retry ever reaches
+  the network. Nothing tested a read that fails and is then tried again.
+- The distinction is invisible until it matters, and it is one small edit away. 0.5.44 pinned that
+  concurrent callers of `onsetTicks` all miss the memo, because it holds values and not promises —
+  and the obvious way to "fix" that is to hold the promise instead. Making exactly that change
+  fails three of the eight checks here, which is the point of writing them down.
+- `a-read-that-failed-is-not-remembered.test.ts` uses a source that rejects a stated number of
+  times and then behaves. An onset, a `locate`, and a window are each asked for while it is failing
+  and again after, and the answer after has to be the answer a source that never failed would have
+  given. The rejection arrives as the caller's own error — `isEdfError` is false for it, because a
+  dropped connection says nothing about the recording.
+- `cachedSource` gets the same question, provoked at the first read: it coalesces a small file into
+  one range, so by the time a recording is open there is nothing left for a later read to fail at.
+  A failed open leaves the cache holding nothing, and the retry through the same cache reads
+  correctly.
+- The other half is asserted so none of it passes on a package that simply never caches: a
+  SUCCESSFUL read is remembered, two calls for one record cost one read, and a record index that
+  cannot exist is refused out of the header without touching the source at all.
+
 ## 0.5.72
 
 - **Added** the case none of the four caller-supplied callbacks documents: what happens when yours
