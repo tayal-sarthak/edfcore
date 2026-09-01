@@ -134,7 +134,7 @@ describe('a continuous file that both skips and repeats time', () => {
     });
     const found = structural(report.diagnostics);
     expect(found, 'the file was not reported as discontinuous').toBeDefined();
-    expect(found?.message).toContain('1 gap(s) and 1 overlap(s) between them');
+    expect(found?.message).toContain('1 gap and 1 overlap between them');
   });
 
   it('says only "gap" when there is no overlap', async () => {
@@ -152,7 +152,8 @@ describe('a continuous file that both skips and repeats time', () => {
       index: await buildRecordIndex(recording),
     });
     const found = structural(report.diagnostics);
-    expect(found?.message).toContain('gap(s) between them');
-    expect(found?.message).not.toContain('overlap(s)');
+    expect(found?.message).toContain('1 gap between them');
+    // The count, not the word: the rule sentence names an overlap either way.
+    expect(found?.message).not.toMatch(/\d+ overlaps? between them/);
   });
 });

@@ -12,6 +12,7 @@
 
 import { EdfBudgetError, EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
 import { resolveMaterializeBudget } from '../options.js';
+import { pluralise } from '../text/counted.js';
 import type { EdfHeader, EdfSignal, RecordRange } from '../types.js';
 
 const BYTES_PER_INT32 = 4;
@@ -104,7 +105,8 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
   const wholeRecords =
     header.recordByteLength > 0 ? Math.floor(recordBytes.length / header.recordByteLength) : 0;
   throw new EdfRangeError(
-    `recordBytes is ${recordBytes.length} bytes — ${wholeRecords} whole record(s) — but ` +
+    `recordBytes is ${pluralise(recordBytes.length, 'byte')} — ` +
+      `${pluralise(wholeRecords, 'whole record')} — but ` +
       `${records.count} records of ${header.recordByteLength} bytes each are exactly ` +
       `${expectedBytes}. decodeDigital cannot tell which record a differently sized buffer ` +
       'begins at, so it will not guess. ' +

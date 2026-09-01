@@ -89,6 +89,7 @@ export type {
 } from './types.js';
 
 import { resolveMaterializeBudget } from './options.js';
+import { pluralise } from './text/counted.js';
 
 const LABEL_SPEC = 'EDF+ additional specification 9 (standard texts and labels)';
 const TIMEKEEPING_SPEC = 'EDF+ specification 2.2.1 (time keeping of data records)';
@@ -560,10 +561,10 @@ function reportStructure(
     const overlaps = gaps.length - holes;
     const between =
       overlaps === 0
-        ? `${holes} gap(s) between them`
+        ? `${pluralise(holes, 'gap')} between them`
         : holes === 0
-          ? `${overlaps} overlap(s) between them`
-          : `${holes} gap(s) and ${overlaps} overlap(s) between them`;
+          ? `${pluralise(overlaps, 'overlap')} between them`
+          : `${pluralise(holes, 'gap')} and ${pluralise(overlaps, 'overlap')} between them`;
     into.push(
       createDiagnostic({
         code: 'DISCONTINUITY_IN_CONTINUOUS_FILE',
@@ -686,7 +687,8 @@ async function traverse(
       const canSkipReading = header.annotationSignalIndices.length === 0;
       throw new EdfBudgetError(
         `Scanning samples needs a ${scratchBytes}-byte scratch buffer for ${scratchRecords} ` +
-          `record(s) of up to ${maxSamplesPerRecord} samples, above the ${budgetBytes}-byte ` +
+          `records of up to ${pluralise(maxSamplesPerRecord, 'sample')}, above the ` +
+          `${budgetBytes}-byte ` +
           'maxMaterializeBytes budget, so the scan was refused before anything was allocated. ' +
           'Next: raise options.maxMaterializeBytes' +
           (canSkipReading

@@ -24,6 +24,7 @@
 import { trimEdfField } from '../bytes/latin1.js';
 import { HEADER_FIELDS } from '../constants.js';
 import type { DiagnosticSink } from '../diagnostics/collector.js';
+import { pluralise } from '../text/counted.js';
 import type { EdfCalendarDate, EdfPatientId, EdfRecordingId } from '../types.js';
 import { parseSubfieldDate } from './dates.js';
 
@@ -127,7 +128,8 @@ export function parsePatientId(
         `${JSON.stringify(trimEdfField(raw))}, which does not follow the EDF+ grammar ` +
         `"${PATIENT_GRAMMAR}": four space-separated subfields, sex written F or M, ` +
         'birthdate written dd-MMM-yyyy such as 02-AUG-1951, X for anything unknown, and no ' +
-        `space inside a subfield. Found ${subfields.length} subfield(s). EDF+ additional ` +
+        `space inside a subfield. Found ${pluralise(subfields.length, 'subfield')}. EDF+ ` +
+        `additional ` +
         'specification 3. Next: header.patient.raw keeps the text verbatim and every subfield edfcore ' +
         'could read is still exposed; the rest are undefined.',
       field: 'patientId',
@@ -184,7 +186,8 @@ export function parseRecordingId(
         `"${RECORDING_GRAMMAR}": five space-separated subfields starting with the literal ` +
         'text Startdate, then the start date written dd-MMM-yyyy such as 02-AUG-1951, then ' +
         'the investigation, technician and equipment codes, with X for anything unknown. ' +
-        `Found ${subfields.length} subfield(s). EDF+ additional specification 4. Next: ` +
+        `Found ${pluralise(subfields.length, 'subfield')}. EDF+ additional specification 4. ` +
+        `Next: ` +
         'header.recording.raw keeps the text verbatim; a Startdate that could not be read ' +
         'leaves startTime.recordingIdDate undefined, so the two-digit header year is all ' +
         'that remains.',

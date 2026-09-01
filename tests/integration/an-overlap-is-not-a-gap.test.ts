@@ -189,9 +189,9 @@ describe('the validation report', () => {
     const report = await validateRecording(recording, { scanSamples: true });
     const text = formatValidationReport(report, { header: recording.header });
     callsItAnOverlap(text, 'formatValidationReport (EDF+C)');
-    expect(text).toContain('1 overlap(s) between them');
+    expect(text).toContain('1 overlap between them');
     // And does not add a phantom gap to the count beside it.
-    expect(text).not.toContain('1 gap(s) between them');
+    expect(text).not.toContain('1 gap between them');
   });
 });
 
@@ -199,7 +199,7 @@ describe('the CLI', () => {
   it('counts it as an overlap in the summary line', async () => {
     const text = await cliOutput(['gaps', 'a.edf'], overlapping('D'));
     callsItAnOverlap(text, 'edfcore gaps');
-    expect(text).toContain('0 gap(s) and 1 overlap(s)');
+    expect(text).toContain('0 gaps and 1 overlap');
   });
 
   it('labels the row itself, so a piped line says which it is', async () => {

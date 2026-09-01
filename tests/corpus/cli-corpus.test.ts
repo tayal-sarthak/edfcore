@@ -98,7 +98,7 @@ describe('a real scoring file', () => {
   maybe(HYPNOGRAM)('counts 154 sleep stages by their text', async () => {
     const { code, out } = await run(['events', HYPNOGRAM]);
     expect(code).toBe(0);
-    expect(out).toContain('154 annotation(s)');
+    expect(out).toContain('154 annotations');
     // Counted by text, most frequent first — the first thing worth knowing about a scoring file.
     expect(out).toMatch(/Sleep stage/);
   });

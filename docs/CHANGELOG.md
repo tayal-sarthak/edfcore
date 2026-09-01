@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.5
+
+- **Changed** thirteen lines that hedged a plural with `(s)` to say the number's own plural:
+  `1 gap(s) in 8 records` is now `1 gap in 8 records`, and `2 diagnostic(s):` is `2 diagnostics:`.
+  The hedge was correct rather than wrong, which is why 0.6.4 left it — but it was a third
+  convention for the same decision, written out in thirteen places because there was no helper to
+  reach for, and there is one now.
+- Five of the thirteen are inside thrown messages rather than command output — `mergeChunks`
+  counting signals, `decodeDigital` counting whole records, `readEnvelope` counting buckets and
+  signals, and the EDF+ identification grammar counting subfields — so this is not only what the
+  CLI prints.
+- `a-count-of-one.test.ts` keeps it gone from both. It scans everything the printers and the six
+  commands produce over every shape in the matrix, and it scans every string under `src/`, because
+  output alone cannot reach a message that needs a bad argument or a malformed file. Two code
+  idioms spell the same three characters and are named rather than pattern-matched; a comment
+  quoting the old output is evidence rather than output, and three of them do.
+- Output only. No code, no code path and no diagnostic changed, and a program branching on a
+  diagnostic's `code` sees nothing. A program matching a message with a regular expression will
+  need to match both spellings, which is what messages are documented not to be used for.
+
 ## 0.6.4
 
 - **Fixed** six lines that followed a count of one with a plural. The first line of

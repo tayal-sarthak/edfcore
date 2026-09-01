@@ -202,7 +202,7 @@ describe('gaps', () => {
     });
     const { code, out } = await invoke(['gaps', 'd.edf'], { 'd.edf': discontinuous });
     expect(code).toBe(0);
-    expect(out).toContain('1 gap(s)');
+    expect(out).toContain('1 gap ');
     expect(out).toContain('after segment 0');
     // The kind is the fourth column, and a real gap says so.
     expect(out.split('\n').find((l) => l.startsWith('after segment 0'))).toMatch(/\tgap$/);
@@ -223,7 +223,7 @@ describe('gaps', () => {
     });
     const { code, out } = await invoke(['gaps', 'o.edf'], { 'o.edf': overlapping });
     expect(code).toBe(0);
-    expect(out).toContain('1 gap(s) and 1 overlap(s)');
+    expect(out).toContain('1 gap and 1 overlap');
     expect(out).not.toContain('+-');
 
     const rows = out.split('\n').filter((line) => line.startsWith('after segment'));
@@ -270,7 +270,7 @@ describe('events --list', () => {
       ],
     });
     const { out } = await invoke(['events', 'a.edf', '--list', '--limit', '2'], { 'a.edf': many });
-    expect(out).toContain('6 annotation(s)');
+    expect(out).toContain('6 annotations');
     expect(out.split('\n').filter((line) => line.includes('\t'))).toHaveLength(2);
     expect(out).toContain('... 4 more');
   });
@@ -573,7 +573,7 @@ describe('header reports what the probe found, not only the header fields', () =
 
     // The other command's answer about the same file, so the two are checked against each other.
     const gaps = await invoke(['gaps', 'f.edf'], { 'f.edf': LYING });
-    expect(gaps.out).toContain('1 gap(s)');
+    expect(gaps.out).toContain('1 gap ');
   });
 
   it('says nothing extra when the probes found nothing', async () => {

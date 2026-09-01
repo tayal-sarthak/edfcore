@@ -551,8 +551,8 @@ describe('an overlap is not called a gap', () => {
         d.code === 'DISCONTINUITY_IN_CONTINUOUS_FILE' && d.message.includes('separate segments'),
     );
 
-    expect(structural?.message).toContain('1 overlap(s) between them');
-    expect(structural?.message).not.toContain('gap(s) between them');
+    expect(structural?.message).toContain('1 overlap between them');
+    expect(structural?.message).not.toContain('gap between them');
     // The neighbouring diagnostic has always got this right; now they agree.
     expect(report.diagnostics.some((d) => d.code === 'RECORD_ONSET_SPACING_VIOLATION')).toBe(true);
   });
@@ -601,7 +601,7 @@ describe('an overlap is not called a gap', () => {
     const report = await validateRecording(recording, {});
     expect(
       report.diagnostics.find((d) => d.message.includes('separate segments'))?.message,
-    ).toContain('1 gap(s) between them');
+    ).toContain('1 gap between them');
   });
 });
 

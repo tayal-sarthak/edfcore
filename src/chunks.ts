@@ -17,6 +17,7 @@
 
 import { appendDiagnostics } from './diagnostics/collector.js';
 import { ticksToSeconds } from './tal/ticks.js';
+import { pluralise } from './text/counted.js';
 import type { EdfChunk, EdfChunkSignal, EdfDiagnostic } from './types.js';
 
 /** Reads as one line at the call site, and keeps the `chunks[i]` non-null assertions out of it. */
@@ -122,7 +123,8 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
 
   if (next.signals.length !== previous.signals.length) {
     throw new RangeError(
-      `mergeChunks: chunk ${index} carries ${next.signals.length} signal(s), the chunk before it ` +
+      `mergeChunks: chunk ${index} carries ${pluralise(next.signals.length, 'signal')}, the chunk ` +
+        `before it ` +
         `${previous.signals.length}. Every chunk must have been read with the same signal ` +
         'selection. Next: reuse one signalIndices array across every read you intend to merge.',
     );

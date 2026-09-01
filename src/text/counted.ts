@@ -7,8 +7,8 @@
  * before this the package decided them three different ways. `formatValidationReport` had a
  * private `pluralise` and used it; `formatHeader` interpolated the noun raw, so the first line of
  * `edfcore header` read `EDF · 1 signals · 6 records` on a one-signal file and the diagnostic
- * summary under it read `2 warning`; and three other lines wrote `1 gap(s)`, which is right but is
- * a third convention. Two commands over one file disagreed about the same number — `validate` said
+ * summary under it read `2 warning`; and thirteen other lines wrote `1 gap(s)`, which is right
+ * but is a third convention. Two commands over one file disagreed about the same number — `validate` said
  * "scanned 1 record" while `header` said "1 records", eight lines apart in the same terminal.
  *
  * 0.4.421 fixed exactly this inside `formatValidationReport` and named the reason: one function,

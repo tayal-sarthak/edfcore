@@ -81,7 +81,7 @@ describe('the number the CLI applies', () => {
     // a deliberate change to the cap lands on this line and nowhere else.
     expect(rows).toHaveLength(20);
     // And the file really had more, so the cap is what stopped it rather than the fixture.
-    expect(out).toContain('60 annotation(s)');
+    expect(out).toContain('60 annotations');
   });
 
   it('is the same number --limit sets explicitly', async () => {

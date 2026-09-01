@@ -57,7 +57,7 @@ describe('a listing capped at nothing', () => {
   it('prints the count and the notice, and no rows between them', async () => {
     const { out, code } = await invoke(['events', 'night.edf', '--list', '--limit', '0']);
     expect(code).toBe(0);
-    expect(out).toContain(`${EVENTS} annotation(s)`);
+    expect(out).toContain(`${EVENTS} annotations`);
     expect(rowsIn(out)).toEqual([]);
     expect(out).toContain(`... ${EVENTS} more (raise --limit to see them)`);
   });
@@ -105,7 +105,7 @@ describe('the header command, which caps its diagnostics the same way', () => {
   it('withholds them all at zero and still says how many', async () => {
     const { out, code } = await invoke(['header', 'night.edf', '--limit', '0']);
     expect(code).toBe(0);
-    expect(out).toContain('diagnostic(s)');
+    expect(out).toMatch(/\d+ diagnostics?:/);
     expect(out).toMatch(/\.\.\. and \d+ more/);
     expect(out).toContain('Raise --limit to see the rest.');
     expect(out).not.toContain('\n\n\n');

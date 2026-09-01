@@ -180,7 +180,7 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
       // had already counted them. `formatValidationReport` was fixed then and this was not.
       .map(([count, severity]) => pluralise(count, severity))
       .join(', ');
-    lines.push(`${header.diagnostics.length} diagnostic(s): ${summary}`);
+    lines.push(`${pluralise(header.diagnostics.length, 'diagnostic')}: ${summary}`);
     if (options?.diagnosticsHint !== false) {
       lines.push('Call formatDiagnostics(header.diagnostics) for the detail.');
     }

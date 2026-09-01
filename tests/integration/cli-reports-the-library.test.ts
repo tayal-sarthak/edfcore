@@ -28,6 +28,13 @@ import { type CliIo, parseArgs, runCli } from '../../src/cli-run.js';
 import { buildRecordIndex, byteSource, openEdf, readAnnotations } from '../../src/index.js';
 import { AWKWARD } from '../support/awkward-files.js';
 
+/**
+ * The plural rule, written out here rather than imported from `src/text/counted.ts`. This file
+ * checks the CLI's words against the library's answer, and sharing the CLI's own helper would make
+ * the two agree by construction.
+ */
+const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? '' : 's'}`;
+
 const NEWLINE = String.fromCharCode(10);
 const TAB = String.fromCharCode(9);
 
@@ -119,7 +126,7 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
       expect(counted.trim()).toBe('no annotations');
       return;
     }
-    expect(counted.split(NEWLINE)[0]).toBe(`${annotations.length} annotation(s)`);
+    expect(counted.split(NEWLINE)[0]).toBe(plural(annotations.length, 'annotation'));
 
     // The listing is the same events on the same axis, one row each.
     const listed = await output(['events', 'a.edf', '--list'], bytes);
@@ -149,8 +156,7 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
       // file is checking the CLI's words against the library's answer and importing the CLI's own
       // helper would make the two agree by construction. `a-count-of-one.test.ts` is the general
       // form; until 0.6.4 this line asserted `1 records` on the one-record shape.
-      const records = index.recordCount === 1 ? 'record' : 'records';
-      expect(printed.trim()).toBe(`no gaps in ${index.recordCount} ${records}`);
+      expect(printed.trim()).toBe(`no gaps in ${plural(index.recordCount, 'record')}`);
       return;
     }
 
@@ -159,8 +165,9 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
     const overlaps = gaps.filter((gap) => gap.durationSeconds < 0).length;
     const expected =
       overlaps === 0
-        ? `${gaps.length} gap(s) in ${index.recordCount} records`
-        : `${gaps.length - overlaps} gap(s) and ${overlaps} overlap(s) in ${index.recordCount} records`;
+        ? `${plural(gaps.length, 'gap')} in ${plural(index.recordCount, 'record')}`
+        : `${plural(gaps.length - overlaps, 'gap')} and ${plural(overlaps, 'overlap')} ` +
+          `in ${plural(index.recordCount, 'record')}`;
     expect(printed.split(NEWLINE)[0]).toBe(expected);
 
     const rows = printed

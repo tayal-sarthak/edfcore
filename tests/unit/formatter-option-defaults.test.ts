@@ -118,7 +118,7 @@ describe('FormatHeaderOptions', () => {
     const off = formatHeader(recording.header, { diagnosticsHint: false }).split('\n');
     expect(on.filter((line) => !line.startsWith('Call formatDiagnostics'))).toEqual(off);
     // And the counts it sits under are still there, which is what makes it a hint and not the data.
-    expect(off.some((line) => /\d+ diagnostic\(s\)/.test(line))).toBe(true);
+    expect(off.some((line) => /\d+ diagnostics?:/.test(line))).toBe(true);
   });
 
   it('points the two defaults opposite ways, which the page says is deliberate', async () => {

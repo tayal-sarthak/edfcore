@@ -87,8 +87,8 @@ describe('the same channels in a different order', () => {
     const narrowed = await halves([0, 1], [0]);
     const reordered = refusal(() => mergeChunks(swapped));
     const fewer = refusal(() => mergeChunks(narrowed));
-    expect(fewer?.message).toContain('signal(s)');
-    expect(reordered?.message).not.toContain('signal(s)');
+    expect(fewer?.message).toContain('carries 1 signal,');
+    expect(reordered?.message).not.toContain('carries 1 signal,');
   });
 
   it('merges the identical selection, so the check is about order and not about reading twice', async () => {

@@ -15,15 +15,17 @@
  * plural — so a seventh site added later fails here rather than being found by reading a terminal.
  * That is what the private helper could not do.
  *
- * `1 gap(s)` and `1 diagnostic(s)` are not defects and are not flagged: the parenthesised form is
- * correct, just a third convention, and it is left for a change that is about consistency rather
- * than about grammar.
+ * The parenthesised hedge `1 gap(s)` is gone too (0.6.5), and the second half of this file is what
+ * keeps it gone. It was correct rather than wrong, which is why it survived the grammar fix — but
+ * it was a third convention for the same decision, written in ten places because there was no
+ * helper to reach for. There is one now.
  *
  * The scan looks only at text edfcore wrote itself. Annotation text and header fields come from
  * the file and are printed verbatim by design, so the fixtures below never spell a count in one —
  * asserted, rather than assumed, at the bottom.
  */
 
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { type CliIo, parseArgs, runCli } from '../../src/cli-run.js';
 import { formatDiagnostics } from '../../src/diagnostics/format.js';
@@ -36,6 +38,8 @@ import { openEdf, readAnnotations } from '../../src/recording.js';
 import { validateRecording } from '../../src/validate.js';
 import { AWKWARD } from '../support/awkward-files.js';
 import { buildEdf } from '../support/writer.js';
+
+const SRC = new URL('../../src/', import.meta.url);
 
 /** One of everything: one signal, one record, one sample, one annotation, one diagnostic. */
 const SINGULAR = buildEdf({
@@ -61,6 +65,7 @@ const SINGULAR = buildEdf({
  */
 const COUNTED_NOUNS = [
   'annotation',
+  'subfield',
   'byte',
   'bucket',
   'chunk',
@@ -162,6 +167,49 @@ describe('the scan itself', () => {
     expect(printed.length).toBeGreaterThan(10);
     expect(printed.join('\n')).toContain('· 1 record');
     expect(printed.join('\n')).toContain('scanned 1 record');
+  });
+});
+
+describe('the parenthesised hedge', () => {
+  it('appears in nothing edfcore prints', async () => {
+    for (const [name, bytes] of FILES) {
+      for (const text of await everythingPrinted(name, bytes)) {
+        expect({ name, hedged: text.includes('(s)') }).toEqual({ name, hedged: false });
+      }
+    }
+  });
+
+  it('appears in no string under src/, thrown messages included', () => {
+    // Output alone would not cover it: five of the ten sites were inside a message that only a
+    // bad argument or a malformed file reaches, and `mergeChunks` is not a command.
+    //
+    // Two code idioms spell the same three characters and are not prose. They are named rather
+    // than pattern-matched, so a third one has to be looked at rather than absorbed.
+    const CODE = ['((s) =>', 'BigInt(s)'];
+    const offenders: string[] = [];
+    const walk = (directory: URL, prefix: string): void => {
+      for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          walk(new URL(`${entry.name}/`, directory), `${prefix}${entry.name}/`);
+          continue;
+        }
+        if (!entry.name.endsWith('.ts')) continue;
+        for (const line of readFileSync(new URL(entry.name, directory), 'utf8').split('\n')) {
+          if (!line.includes('(s)')) continue;
+          // A comment quoting the old output is evidence, not output. Three of them do.
+          if (/^\s*(\*|\/\/|\/\*)/.test(line)) continue;
+          if (CODE.some((idiom) => line.includes(idiom))) continue;
+          offenders.push(`${prefix}${entry.name}: ${line.trim()}`);
+        }
+      }
+    };
+    walk(SRC, '');
+    expect(offenders).toEqual([]);
+  });
+
+  it('is the shape this looks for, so a passing run is not a vacuous one', () => {
+    expect('1 gap(s) in 8 records'.includes('(s)')).toBe(true);
+    expect('1 gap in 8 records'.includes('(s)')).toBe(false);
   });
 });
 

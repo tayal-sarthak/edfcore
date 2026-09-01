@@ -396,7 +396,7 @@ describe('the diagnostic summary is ordered like the validation report', () => {
     const line =
       formatHeader(header)
         .split('\n')
-        .find((l) => l.includes('diagnostic(s):')) ?? '';
+        .find((l) => l.includes('diagnostics:')) ?? '';
 
     const order = ['error', 'warning', 'info'].map((s) => line.indexOf(s)).filter((i) => i >= 0);
     expect(order.length).toBeGreaterThan(1);

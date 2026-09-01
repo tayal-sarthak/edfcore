@@ -494,7 +494,7 @@ describe('record range and buffer length', () => {
       const rangeError = error as EdfRangeError;
       expect(rangeError.requested).toEqual({ start: 0, count: 3 });
       // 19 bytes is two whole 8-byte records and a fragment; nothing is padded into existence.
-      expect(rangeError.message).toContain('2 whole record(s)');
+      expect(rangeError.message).toContain('2 whole records');
     }
   });
 

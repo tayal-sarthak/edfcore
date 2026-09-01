@@ -306,7 +306,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         io.out('no annotations\n');
         return 0;
       }
-      io.out(`${annotations.length} annotation(s)\n\n`);
+      io.out(`${pluralise(annotations.length, 'annotation')}\n\n`);
 
       if (args.list) {
         const limit = args.limit ?? DEFAULT_ITEM_LIMIT;
@@ -363,8 +363,8 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       const overlaps = gaps.filter((gap) => gap.durationSeconds < 0).length;
       const counted =
         overlaps === 0
-          ? `${gaps.length} gap(s)`
-          : `${gaps.length - overlaps} gap(s) and ${overlaps} overlap(s)`;
+          ? pluralise(gaps.length, 'gap')
+          : `${pluralise(gaps.length - overlaps, 'gap')} and ${pluralise(overlaps, 'overlap')}`;
       io.out(`${counted} in ${pluralise(index.recordCount, 'record')}\n\n`);
 
       for (const gap of gaps) {
