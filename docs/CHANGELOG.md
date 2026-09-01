@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.10
+
+- **Fixed** the signal table in `edfcore header` ending a row in whitespace whenever a signal's
+  physical dimension was blank. The separator was printed with the range rather than with the
+  dimension, so a signal with no dimension got the space and nothing after it.
+- Not a corner case: EDF requires nothing of that field, and two of the seven files in the
+  real-world corpus leave it empty on some signal, the PhysioNet polysomnogram among them. Its
+  `edfcore header` output had two such rows.
+- A trailing space is invisible where it is produced and visible everywhere it is pasted — a diff
+  paints it, a code fence keeps it, and a linter on someone else's repository rejects the file it
+  landed in. It is also the failure no amount of reading the output finds.
+- `no-line-ends-in-space.test.ts` checks every formatter and the four prose commands over every
+  shape in the matrix, plus a file with a blank dimension. The two tab-separated outputs are exempt
+  and get the stronger rule instead: a row of `events --list` ends in a tab whenever the event
+  names no channel, and that tab is the fourth column present and empty, which is what keeps
+  `cut -f4` reading a channel rather than the end of the line. Those two are checked for a constant
+  column count per row, which is what `cli.md` actually promises about them.
+
 ## 0.6.9
 
 - **Added** `corpus.yml`, so the corpus suite is run by something other than a developer

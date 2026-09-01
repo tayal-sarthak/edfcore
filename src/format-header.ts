@@ -52,6 +52,12 @@ function formatDurationTicks(ticks: bigint): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(rest)}`;
 }
 
+/** `' uV'`, or nothing at all for the blank field a plain EDF file is entitled to write. */
+function dimensionSuffix(signal: EdfHeader['signals'][number]): string {
+  const dimension = printable(signal.physicalDimension);
+  return dimension === '' ? '' : ` ${dimension}`;
+}
+
 function formatRate(signal: EdfHeader['signals'][number]): string {
   // undefined is the honest answer for a zero record duration, which is legal EDF.
   return signal.sampleRateHz === undefined ? '—' : `${signal.sampleRateHz} Hz`;
@@ -158,7 +164,12 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
             // this is the LAST thing on the line — so a newline in it puts everything after it at
             // column 0, where it reads as another signal. `edfcore signals` already sanitised this
             // field; `edfcore header` did not (fixed in 0.3.47).
-            `${signal.physicalMinimum}..${signal.physicalMaximum} ${printable(signal.physicalDimension)}`;
+            //
+            // The separator belongs to the dimension, not to the range. A blank physical dimension
+            // is ordinary — two of the seven files in the corpus have one, and EDF requires nothing
+            // of the field — and printing the space anyway left the row ending in whitespace, on
+            // the last thing on the line, where nothing shows it (fixed in 0.6.10).
+            `${signal.physicalMinimum}..${signal.physicalMaximum}` + dimensionSuffix(signal);
     lines.push(`${index}  ${label}${kind}${rate} ${range}`);
   }
 
