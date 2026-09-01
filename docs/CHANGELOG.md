@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.8
+
+- **Fixed** `AGENTS.md` quoting the corpus download as ~59 MB. It is ~102 MB, which is what
+  `tests/README.md` says on the same subject — so the two pages disagreed by more than the whole
+  rest of the corpus put together, and the wrong one was the page an agent reads before deciding
+  whether to run the command.
+- 59 MB is what the manifest held before `chb01_01.edf` was added to it. That is how this number
+  rots: on exactly the event that makes it matter.
+- `the-corpus-is-the-size-it-says.test.ts` reads the true figure out of `manifest.json`, which
+  records `bytes` per entry because `fetch-corpus.mjs` verifies each download against it, and
+  requires every `corpus:fetch` line anywhere in the repository to be within a megabyte of the
+  total. Megabytes rather than mebibytes, because that is the unit the script prints as it goes.
+  A third page quoting a size is checked the moment it is written.
+
 ## 0.6.7
 
 - **Fixed** `edfcore json --patient` reporting one identification field where every other command
