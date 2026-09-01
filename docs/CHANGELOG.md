@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.65
+
+- **Added** the question two of the three bundled adapters already answer, asked of the third.
+  `blobSource` is shrunk under an open source in `source-contract.test.ts` — "a `File` whose
+  backing file changed on disk since the picker ran" — and `fileHandleSource` gets the same
+  treatment against a file that turned out shorter than it was built for. `byteSource` was never
+  asked, because until recently there was nothing to ask: an `ArrayBuffer` was a fixed extent for
+  its whole life, so measuring it once at construction stayed true.
+- It is not fixed any more. `resize` changes the length in place and `transfer` takes the bytes
+  away, and both leave the caller holding a `Uint8Array` that looks exactly as it did.
+- `when-the-bytes-move.test.ts` gives the three outcomes, which differ. SHRINKING is caught by the
+  contract guard every read goes through, with both numbers on the refusal — including mid-
+  recording, where a header has already been read and a reader would otherwise decode whatever is
+  left as the records it asked for. TRANSFERRING is refused at construction, since 0.5.62. GROWING
+  is invisible, and that is the answer rather than a defect: `byteLength` is the extent the caller
+  presented, and a source that silently grew would change what `header.recordCount` means for a
+  file already open.
+- The adapters are read off `src/io/` rather than listed, so a fourth fails this file until it says
+  which of the three it does.
+
 ## 0.5.64
 
 - **Added** the reading half of "edfcore reads, it does not write". `reads-not-writes.test.ts`
