@@ -32,7 +32,9 @@ The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every 
 `t = 0` is the start of record 0. A truncated listing says how many events it withheld, because a
 silently cut one reads as a complete one.
 
-`json` emits the geometry, the start, one entry per signal and the diagnostic codes. The
+`json` emits the geometry, the start, one entry per signal and the diagnostic codes. It reports
+`spanSeconds` and `coveredSeconds` as a pair: they differ by the gaps, which is the only thing in
+the document that finds a hole without believing the file's own `variant`. The
 diagnostics are both sets the library holds — the header's and the record probes' — each entry
 carrying `source: "header"` or `source: "recordProbe"`. Before 0.6.12 only the header's were
 emitted, so an EDF+C file with a real hole reported nothing about it here while `edfcore gaps`

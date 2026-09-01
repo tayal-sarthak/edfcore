@@ -148,6 +148,7 @@ describe('what the addition must not have moved', () => {
       'recordCount',
       'recordDurationSeconds',
       'spanSeconds',
+      'coveredSeconds',
       'start',
       'signals',
       'diagnostics',

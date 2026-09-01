@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.13
+
+- **Added** `coveredSeconds` to `edfcore json`, beside the `spanSeconds` that was there alone.
+  A span is the last record's end minus the first record's start with the gaps included, which is
+  why `formatHeader` refuses to print it unlabelled: on a discontinuous file it switches the label
+  from `duration` to `covered` and adds two lines saying the gaps are not in the number. The
+  machine-readable output had the one number and no label, so a script sizing a buffer or counting
+  samples from it was out by the gaps, silently, and only on the files that have them.
+- The pair is also the only thing in the document that finds a hole without believing the file.
+  `variant` and `header.continuity` both carry the DECLARED claim — `EdfVariant`'s own docblock
+  says "neither is a promise" — and `DISCONTINUITY_IN_CONTINUOUS_FILE` exists for the file where
+  that claim is false. So the field a script would have branched on is the field that is wrong,
+  while two measured numbers that differ do so by exactly the gaps: on the fixture this was found
+  with, `spanSeconds` is 24, `coveredSeconds` is 4, and `variant` says `EDF+C`.
+- `continuity` was written and taken back out. It is the same declared claim `variant` already
+  carries, and a second spelling of a value that can be wrong is not worth a key.
+
 ## 0.6.12
 
 - **Fixed** `edfcore json` dropping what the record probes found. `openEdf` reads record 0 and the

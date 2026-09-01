@@ -435,6 +435,22 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
             recordDurationSeconds: header.recordDurationSeconds,
             spanSeconds: recording.timeline.spanSeconds,
             /*
+             * What the records COVER, beside what they SPAN.
+             *
+             * `spanSeconds` alone is the number `formatHeader` refuses to print unlabelled: on a
+             * file with a hole it is the last record's end minus the first's start, gaps included,
+             * so a script sizing a buffer or counting samples from it is out by the gaps.
+             * `edfcore header` switches its label from `duration` to `covered` and adds two lines
+             * saying where the span comes from; this had the one number and no label at all.
+             *
+             * The pair is also the only thing here that detects a hole without believing the file.
+             * `variant` and `header.continuity` both carry the DECLARED claim, and
+             * `DISCONTINUITY_IN_CONTINUOUS_FILE` exists for the file where that claim is false —
+             * so the field a script would have branched on is the field that is wrong. Two numbers
+             * that differ are measured, and they differ by exactly the gaps.
+             */
+            coveredSeconds: recording.timeline.coveredSeconds,
+            /*
              * The start, which this command was alone in not reporting. `header` prints it on its
              * second line and needs no flag for it, `signals` is per-signal and `gaps` is about
              * onsets, so the machine-readable output was the only one a script could not get the
