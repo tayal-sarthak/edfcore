@@ -30,6 +30,17 @@ The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every 
 `t = 0` is the start of record 0. A truncated listing says how many events it withheld, because a
 silently cut one reads as a complete one.
 
+`json` emits the geometry, the start, one entry per signal and the diagnostic codes. The start
+carries `dateSource` and `clockSource` alongside the values, because a `null` clock and a file that
+starts at midnight are otherwise the same output, and a date resolved from the EDF+ recording
+identification is the unambiguous one. It was added in 0.6.6; before that the command reported
+`DATE_CLIPPED_TO_1985_2084` and not the field that diagnostic tells you to read.
+
+```json
+"start": { "date": "2095-04-24", "dateSource": "recordingIdField",
+           "clock": "22:30:00", "clockSource": "headerField" }
+```
+
 `header` is for reading and `signals` is for piping. The second emits six tab-separated columns,
 in this order, annotations channel included:
 

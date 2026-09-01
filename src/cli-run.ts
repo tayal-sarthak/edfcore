@@ -13,6 +13,7 @@ import { VERSION } from './constants.js';
 import { formatDiagnostics } from './diagnostics/format.js';
 import { formatHeader } from './format-header.js';
 import { formatValidationReport } from './format-report.js';
+import { formatCalendarDate, formatClockTime } from './header/dates.js';
 import { byteSource } from './io/bytes.js';
 import { buildRecordIndex } from './record-index.js';
 import { openEdf, readAnnotations } from './recording.js';
@@ -433,6 +434,36 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
             recordCount: header.recordCount,
             recordDurationSeconds: header.recordDurationSeconds,
             spanSeconds: recording.timeline.spanSeconds,
+            /*
+             * The start, which this command was alone in not reporting. `header` prints it on its
+             * second line and needs no flag for it, `signals` is per-signal and `gaps` is about
+             * onsets, so the machine-readable output was the only one a script could not get the
+             * recording's date and time out of.
+             *
+             * That is worse than an omission, because of where the package sends people:
+             * DATE_CLIPPED_TO_1985_2084 fires on any file with a two-digit year and its Next:
+             * clause says to read the four-digit year the EDF+ recording identification spells
+             * out. `edfcore json` reported the diagnostic and not the field it points at.
+             *
+             * Both sources are named rather than resolved away. A date that came from the
+             * recording identification is the unambiguous one; a clock with `clockSource: 'none'`
+             * is a substituted midnight rather than a file that starts at midnight, and 0.3.17 is
+             * what happens when those two are one value. `null`, not an omitted key: JSON drops
+             * `undefined`, and a reader doing `.start.clock` should get the answer rather than
+             * nothing.
+             */
+            start: {
+              date:
+                header.startTime.resolvedDate === undefined
+                  ? null
+                  : formatCalendarDate(header.startTime.resolvedDate),
+              dateSource: header.startTime.dateSource,
+              clock:
+                header.startTime.clockSource === 'none'
+                  ? null
+                  : formatClockTime(header.startTime.clock),
+              clockSource: header.startTime.clockSource,
+            },
             // Patient identification is opt-in here for the same reason it is in formatHeader:
             // the obvious thing to do with this output is pipe it somewhere.
             // `trimEdfField`, for the reason formatHeader uses it: `.trim()` leaves NUL padding

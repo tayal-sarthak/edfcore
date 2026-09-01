@@ -15,7 +15,7 @@
 import { trimEdfField } from './bytes/latin1.js';
 import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
-import { formatCalendarDate } from './header/dates.js';
+import { formatCalendarDate, formatClockTime } from './header/dates.js';
 import { pluralise } from './text/counted.js';
 import { printable } from './text/printable.js';
 import type { EdfCalendarDate, EdfHeader, FormatHeaderOptions } from './types.js';
@@ -81,12 +81,11 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   // half has always honoured it. The clock half printed `00:00:00` for a starttime field that
   // failed its grammar — byte-identical to a file that genuinely started at midnight, which for a
   // sleep study is the most believable start there is (fixed in 0.3.17).
-  const clock =
-    start.clockSource === 'none'
-      ? 'unknown'
-      : `${String(start.clock.hour).padStart(2, '0')}:` +
-        `${String(start.clock.minute).padStart(2, '0')}:` +
-        `${String(start.clock.second).padStart(2, '0')}`;
+  // `formatClockTime`, not a second renderer, for the reason `formatDate` above gives about the
+  // date half: the private copy of THAT one padded the year differently and printed `985-04-24`
+  // here against `0985-04-24` eight lines below. This copy agreed with the shared one on every
+  // input, which is the state the date copy was in until it did not (0.6.6).
+  const clock = start.clockSource === 'none' ? 'unknown' : formatClockTime(start.clock);
   lines.push(`start        ${formatDate(start.resolvedDate)} ${clock} (local, no timezone)`);
   lines.push(
     `record       ${header.recordDurationSeconds} s · ${header.recordByteLength} bytes · ` +

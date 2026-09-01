@@ -6,6 +6,32 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.6
+
+- **Added** `start` to `edfcore json`: the resolved date and clock, each beside the field they came
+  from. It was the only command a script could not get the recording's date and time out of —
+  `header` prints them on its second line and needs no flag, `signals` is per-signal, `gaps` is
+  about onsets, and the machine-readable output had the geometry, the signals and the diagnostic
+  codes and no start.
+- The gap was worse than an omission because of where the package sends people. Every file with a
+  conformant two-digit year earns `DATE_CLIPPED_TO_1985_2084`, whose `Next:` clause says to read
+  the four-digit year the EDF+ recording identification spells out. `edfcore json` reported that
+  code and not the field it points at, so the advice could be read from the output and not acted
+  on from it.
+- `dateSource` and `clockSource` are reported rather than resolved away, for the reason 0.3.17
+  gives: a clock the file did not state is a substituted midnight, midnight is an entirely
+  believable start for a sleep study, and without the source those two are one value. Both are
+  `null` rather than absent when there is nothing to report — JSON drops `undefined`, and
+  `.start.clock` should answer.
+- `--patient` is untouched: the start is the recording's clock, not a person, and `header` has
+  always printed it unflagged.
+- **Fixed** `formatHeader` carrying its own clock renderer. `formatClockTime` has been in
+  `header/dates.ts` since the clock had a type; the copy in the formatter agreed with it on every
+  input, which is exactly the state the DATE half was in until a year below 1000 printed
+  `985-04-24` on the start line and `0985-04-24` in a diagnostic eight lines below it (0.3.110).
+  Both commands render through the one function now, and `json-reports-the-start.test.ts` checks
+  they agree on every shape in the matrix.
+
 ## 0.6.5
 
 - **Changed** thirteen lines that hedged a plural with `(s)` to say the number's own plural:
