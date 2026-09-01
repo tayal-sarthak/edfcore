@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.2
+
+- **Fixed** a misspelled `redactFields` name being ignored. Redaction matches exactly against
+  `diagnostic.field`, so `'patientID'`, `'patient'` and `'patient_id'` each withheld nothing and
+  reported nothing: the caller had asked for the one option in this package whose failure
+  discloses a person's name, and got a report with the name in it that looked like a report with
+  the name taken out. `formatDiagnostics` and `formatValidationReport` now throw `RangeError`
+  naming the value and listing the vocabulary.
+- A diagnostic quotes the bytes it is complaining about by design — that is what makes it
+  actionable — and for an identification field those bytes are a name and a date of birth. The
+  files that earn such a diagnostic are the ones a person runs a tool on and pastes the output of.
+- `parseArgs` has always refused a misspelled `--patinet`, with a comment saying why: a flag that
+  silently does nothing prints the output the caller was trying to avoid. The CLI was safe either
+  way because it passes the pair as a literal. A library caller spells the name themselves.
+- The check runs before anything is rendered, so an empty diagnostics list reports the typo too,
+  and `formatValidationReport` runs it itself rather than leaving it to the `formatDiagnostics`
+  underneath — that call sits inside `if (diagnostics.length > 0)`, so a PASS would have said
+  nothing and the same argument would have leaked on the next file.
+- The vocabulary is the fixed header layout, the per-signal layout, and the three names no layout
+  map covers (`dataRecords`, `header`, `recordByteLength`). `redaction-vocabulary.test.ts` rebuilds
+  it out of `src/` and refuses a difference, so a diagnostic that names a new field fails there
+  rather than telling a caller a real field does not exist.
+
 ## 0.6.1
 
 - **Fixed** `maxItems: NaN` disabling the cap instead of being refused. `formatDiagnostics`,

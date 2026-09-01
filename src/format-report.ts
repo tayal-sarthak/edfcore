@@ -13,7 +13,7 @@
  * thing are wrong and how much of the file is affected.
  */
 
-import { formatDiagnostics } from './diagnostics/format.js';
+import { assertRedactableFields, formatDiagnostics } from './diagnostics/format.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
 import { printable } from './text/printable.js';
 import type { EdfHeader, FormatReportOptions, ValidationReport } from './types.js';
@@ -37,6 +37,11 @@ export function formatValidationReport(
 ): string {
   const lines: string[] = [];
   const header = options?.header;
+
+  // Before anything is rendered, and outside the `diagnostics.length > 0` branch below. A report
+  // that passes still has to report a misspelled `redactFields`: the typo belongs to the call, and
+  // the clean file is the cheap place to find out about it.
+  assertRedactableFields(options?.redactFields);
 
   // One counting implementation, shared with the public `summarizeDiagnostics`.
   const summary = summarizeDiagnostics(report.diagnostics);

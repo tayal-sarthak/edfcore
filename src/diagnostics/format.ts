@@ -10,6 +10,7 @@
  */
 
 import { trimEdfField } from '../bytes/latin1.js';
+import { HEADER_FIELDS, SIGNAL_FIELD_WIDTHS } from '../constants.js';
 import { requireItemLimit } from '../options.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
@@ -39,6 +40,51 @@ export interface FormatDiagnosticsOptions {
   readonly redactFields?: readonly string[];
 }
 
+/**
+ * Every value `field` can hold on a diagnostic edfcore produces.
+ *
+ * Two of the three sources are the header layout itself, so a field added there is redactable the
+ * day it exists; the other three are the diagnostics that name something the layout has no entry
+ * for — the whole header block, the data-record region, and the record size the geometry implies.
+ * `redaction-vocabulary.test.ts` builds the same set out of `src/` and refuses a difference, which
+ * is what stops this from drifting behind a diagnostic that names a new field.
+ */
+const REDACTABLE_FIELDS: ReadonlySet<string> = new Set([
+  ...Object.keys(HEADER_FIELDS),
+  ...Object.keys(SIGNAL_FIELD_WIDTHS),
+  'dataRecords',
+  'header',
+  'recordByteLength',
+]);
+
+/**
+ * A name outside the vocabulary is refused rather than ignored.
+ *
+ * `redactFields` is the one option in this package whose silent failure sends a person's name
+ * somewhere it should not go, and matching is exact — `'patientID'`, `'patient'` and
+ * `'patient_id'` all withheld nothing and reported nothing, so the caller who asked for redaction
+ * got a report with the name in it and no way to tell. It is the same shape `parseArgs` refuses a
+ * misspelled `--patinet` for, and for the same reason: a flag that silently does nothing prints
+ * the output the caller was trying to avoid.
+ *
+ * Checked before anything is rendered, so an empty diagnostics array reports the typo too. A leak
+ * found on the first clean file costs nothing; found on the file that has a problem it is already
+ * on someone's screen — which is also why `formatValidationReport` calls this itself rather than
+ * relying on the `formatDiagnostics` below it: that call is inside an `if (length > 0)`, so a PASS
+ * would have said nothing and the same argument would have leaked on the next file.
+ */
+export function assertRedactableFields(fields: readonly string[] | undefined): void {
+  for (const field of fields ?? []) {
+    if (REDACTABLE_FIELDS.has(field)) continue;
+    throw new RangeError(
+      `options.redactFields names ${JSON.stringify(field)}, which is not a field any edfcore ` +
+        'diagnostic reports, so nothing would have been withheld for it. Next: pass names from ' +
+        `${[...REDACTABLE_FIELDS].sort().join(', ')} — "patientId" and "recordingId" are the two ` +
+        "that carry a person's name.",
+    );
+  }
+}
+
 const INDENT = '  ';
 
 /** A report is a summary, not a hex dump; longer runs are elided with a count. */
@@ -65,6 +111,7 @@ export function formatDiagnostics(
   const shown = requireItemLimit(options?.maxItems, diagnostics.length);
   const lines: string[] = [];
 
+  assertRedactableFields(options?.redactFields);
   const redact = new Set(options?.redactFields ?? []);
 
   for (let i = 0; i < shown; i++) {
