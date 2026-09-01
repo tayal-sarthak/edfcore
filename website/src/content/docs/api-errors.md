@@ -35,7 +35,14 @@ try {
 `instanceof` compares constructor identity, and constructor identity is per-realm. An error thrown
 inside a worker or an iframe and passed out fails `instanceof EdfFormatError` in the receiving
 context even though it is one. So does an error from a second copy of edfcore that some dependency
-pulled into the tree. A string property survives all three.
+pulled into the tree. A string property survives being passed a reference — which is what the
+second copy and a same-origin iframe you call into directly both are.
+
+It does not survive `postMessage`. That is a structured clone, and the algorithm keeps an Error's
+`name`, `message`, `stack` and `cause` and drops every own property, so `edfErrorKind`, `code` and
+`diagnostic` all arrive `undefined` and `isEdfError` says false. Nothing on the receiving side can
+recover them. A worker that wants the caller to branch has to send the discriminator itself —
+`postMessage({ kind: error.edfErrorKind, code: error.code, text: String(error) })`.
 
 > **Note**
 > No cast is needed in any branch. `isEdfError` narrows to `AnyEdfError`, a discriminated union over

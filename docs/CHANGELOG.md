@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.5.61
+
+- **Fixed** a sentence both `api-errors.md` and `diagnostics.md` end their cross-realm advice with,
+  and which is wrong for one of the three cases it names. "A string property survives all three"
+  covers `instanceof` failing across a worker, an iframe and a second copy of edfcore in one
+  dependency tree — and `edfErrorKind` survives the second copy, because that object is passed by
+  reference and only its constructor identity differs.
+- A worker is not passed by reference. Everything leaving one goes through `postMessage`, which is
+  a structured clone, and the algorithm keeps an `Error`'s `name`, `message`, `stack` and `cause`
+  and drops every own property. `edfErrorKind`, `code`, `field`, `byteOffset` and `diagnostic` all
+  arrive `undefined`, and `isEdfError` returns false — so the page's advice fails in exactly the
+  case a reader followed it for. `what-crosses-a-worker.test.ts` executed that in 0.5.60.
+- Both pages now separate the two ways a value crosses, and name what a worker has to do instead:
+  send the discriminator beside the error, because a string clones and the error does not.
+
 ## 0.5.60
 
 - **Added** the boundary six documentation pages talk about and nothing executed: `postMessage`.

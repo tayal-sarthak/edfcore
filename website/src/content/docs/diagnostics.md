@@ -380,9 +380,11 @@ try {
 `instanceof` compares constructor identity, and constructor identity is per-realm. An error thrown
 inside a worker or an iframe and passed out fails `instanceof EdfFormatError` in the receiving
 context even though it is one. So does an error from a second copy of edfcore that a dependency
-pulled into the tree. `edfErrorKind` is a string on the object, so it survives all three.
-`isEdfError(value)` is the single spelling of that check. It tests for a string `edfErrorKind` and
-nothing else.
+pulled into the tree. `edfErrorKind` is a string on the object, so it survives wherever the object
+itself does — but a `postMessage` is a structured clone, and that keeps only an Error's `name`,
+`message`, `stack` and `cause`. Across one, send the kind beside the error rather than expecting
+to read it off the other side. `isEdfError(value)` is the single spelling of that check. It tests
+for a string `edfErrorKind` and nothing else.
 
 > **Note**
 > Not everything edfcore throws is an `EdfError`, and `isEdfError` returns `false` for those.
