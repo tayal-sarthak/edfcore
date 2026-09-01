@@ -24,6 +24,10 @@ defect; those are called out below.
   conformance sweep reads the whole file whatever the blocking and no source may read it twice —
   checked with a block size small enough to split every record. The over-reading a partial window
   provokes is `cache.test.ts`'s subject and is not this one.
+- Every source is closed, in a `finally`. `fileSource` holds a descriptor and `close()` is optional
+  on the interface, so a sweep that opens one per shape per spelling leaks them — which on Node 26
+  is not a warning but an uncaught `ERR_INVALID_STATE` when the handle is collected. The three-way
+  Node matrix in CI is what said so, on a run that passed on 22.12 and 24.
 - No behaviour changed. Nothing disagreed.
 
 ## 0.6.15

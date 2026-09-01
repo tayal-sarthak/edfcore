@@ -22,6 +22,12 @@
  * The HTTP source is driven with a stub that honours Range, which is what `http-*.test.ts` shows
  * the real ones do. This file is not about what a server may do; it is about whether five paths to
  * the same bytes agree.
+ *
+ * Every source is closed. `fileSource` holds a descriptor and `close()` is optional on the
+ * interface, so a sweep that opens one per shape per spelling and walks away leaks them — which on
+ * Node 26 is not a warning but an uncaught `ERR_INVALID_STATE` when the handle is collected. The
+ * `finally` below is the reason this file passes on all three supported versions, and it is the
+ * same discipline `after-close.test.ts` is about from the other side.
  */
 
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -104,6 +110,14 @@ const SPELLINGS: readonly Spelling[] = [
 
 /** Everything the reading API answers about one file, as one comparable value. */
 async function everything(source: ByteSource): Promise<Record<string, unknown>> {
+  try {
+    return await readEverything(source);
+  } finally {
+    await source.close?.();
+  }
+}
+
+async function readEverything(source: ByteSource): Promise<Record<string, unknown>> {
   const recording = await openEdf(source);
   const index = await buildRecordIndex(recording);
   const located = { ...recording, index };
@@ -159,8 +173,13 @@ describe.each(AWKWARD)('$name', ({ bytes, name }) => {
 
   it('reads the same number of bytes, the cache included', async () => {
     const bytesRead = async (spelling: Spelling): Promise<number> => {
-      const recording = await openEdf(await spelling.open(bytes, name));
-      return (await validateRecording(recording, { scanSamples: true })).bytesRead;
+      const source = await spelling.open(bytes, name);
+      try {
+        const recording = await openEdf(source);
+        return (await validateRecording(recording, { scanSamples: true })).bytesRead;
+      } finally {
+        await source.close?.();
+      }
     };
     const baseline = await bytesRead(SPELLINGS[0] as Spelling);
     for (const spelling of SPELLINGS) {
