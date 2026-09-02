@@ -222,9 +222,9 @@ describe('what is deliberately not frozen', () => {
 });
 
 describe('the matrix this file sweeps', () => {
-  it('is the thirteen shapes it was written against', () => {
+  it('is the fourteen shapes it was written against', () => {
     // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
     // quietly removes cases from here instead of failing anything.
-    expect(AWKWARD).toHaveLength(13);
+    expect(AWKWARD).toHaveLength(14);
   });
 });

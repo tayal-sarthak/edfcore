@@ -42,7 +42,7 @@ const DECLARED = buildEdf({
 describe('the shape', () => {
   it('is in the matrix, which is twelve shapes', () => {
     expect(SHAPE).toBeDefined();
-    expect(AWKWARD).toHaveLength(13);
+    expect(AWKWARD).toHaveLength(14);
   });
 
   it('says -1 in the field and five in the header', async () => {
@@ -61,15 +61,21 @@ describe('the shape', () => {
     expect(codes).toContain('RECORD_COUNT_RECOVERED');
   });
 
-  it('is the only shape in the matrix that recovers its count', async () => {
-    // Non-vacuity from the other side: if a second shape started doing this, the sweeps would be
-    // covering it twice and this file would be describing the wrong one.
-    const sources: string[] = [];
+  it('is one of the two shapes that recover a count, and the raw field says which', async () => {
+    // Two causes, one mechanism. This shape declares `-1` — a writer that never closed the file —
+    // and 'a download that stopped part way' declares a real count the bytes do not reach. Both
+    // resolve through the source length, and `header.raw.recordCount` is what tells them apart,
+    // which is why that field is kept.
+    const recovered: Array<{ name: string; declared: string }> = [];
     for (const file of AWKWARD) {
       const recording = await openEdf(byteSource(file.bytes));
-      sources.push(recording.header.recordCountSource);
+      if (recording.header.recordCountSource !== 'sourceByteLength') continue;
+      recovered.push({ name: file.name, declared: recording.header.raw.recordCount.trim() });
     }
-    expect(sources.filter((one) => one === 'sourceByteLength')).toHaveLength(1);
+    expect(recovered).toEqual([
+      { name: 'a download that stopped part way', declared: '6' },
+      { name: 'a record count the header never gave', declared: '-1' },
+    ]);
   });
 });
 

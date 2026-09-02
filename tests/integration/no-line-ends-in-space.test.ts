@@ -105,9 +105,9 @@ describe('the fixture this was found on', () => {
     expect(row).toMatch(/\.\.\d+$/);
   });
 
-  it('is the thirteen shapes plus that one', () => {
-    expect(AWKWARD).toHaveLength(13);
-    expect(FILES).toHaveLength(14);
+  it('is the fourteen shapes plus that one', () => {
+    expect(AWKWARD).toHaveLength(14);
+    expect(FILES).toHaveLength(15);
   });
 });
 

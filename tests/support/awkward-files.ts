@@ -169,6 +169,21 @@ export const AWKWARD: readonly AwkwardFile[] = [
     }),
   },
   {
+    name: 'a download that stopped part way',
+    awkward:
+      'the header promises more records than the bytes hold, and the last of the bytes is half a ' +
+      'record — so recordCount is smaller than the field says, the final record is not exposed, ' +
+      'and every span is shorter than the file claims',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'C',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [{ samplesPerRecord: 20 }],
+    }).slice(0, -30),
+  },
+  {
     name: 'a record duration with no exact binary form',
     awkward:
       '0.29 s cannot be written in float64, so recordCount * recordDurationSeconds lands just ' +

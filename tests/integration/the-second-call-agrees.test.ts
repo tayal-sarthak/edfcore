@@ -126,8 +126,8 @@ function views(
 }
 
 describe('the matrix this file sweeps', () => {
-  it('is the thirteen shapes it was written against', () => {
-    expect(AWKWARD).toHaveLength(13);
+  it('is the fourteen shapes it was written against', () => {
+    expect(AWKWARD).toHaveLength(14);
   });
 });
 

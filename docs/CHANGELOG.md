@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.31
+
+- **Added** a fourteenth shape to the `AWKWARD` matrix: a file whose last record is half there.
+  It is the commonest damage a recording takes — a transfer drops, a disk fills, a copy is
+  interrupted, a recorder loses power mid-record — and what lands is a valid header promising more
+  records than the bytes hold, ending part way through one.
+- The diagnostics were covered since 0.1: `TRUNCATED_FILE` for the shortfall, `PARTIAL_FINAL_RECORD`
+  for the tail, and the rule that only whole records are exposed "because the padding would decode
+  as real samples". The shape had never been put in front of the sweeps that run over the matrix —
+  every index resolves, ticks and seconds agree, nothing points at the caller's buffer, the five
+  source spellings, the second call agrees, every column lines up. Each asks a question of a whole
+  file, and none had seen one whose bytes end before its header says they do. They all pass.
+- It makes a pair with 'a record count the header never gave'. Both resolve their count from the
+  source length, for different reasons: that one declares `-1`, a writer that never closed the file,
+  and this one declares a real count the bytes do not reach. `header.raw.recordCount` is what tells
+  them apart, which is why that field is kept beside the resolved one — and
+  `a-count-the-header-never-gave.test.ts` now says that rather than claiming to be the only shape
+  that recovers.
+
 ## 0.6.30
 
 - **Changed** the non-finite-seconds refusal to name the argument the caller passed. It ended

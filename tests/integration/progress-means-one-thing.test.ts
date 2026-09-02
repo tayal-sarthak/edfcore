@@ -110,7 +110,7 @@ async function observe(consumer: Consumer, bytes: Uint8Array): Promise<Run> {
 describe('the consumers this file covers are all of them', () => {
   it('finds the two modules that call onProgress, and no third', () => {
     expect(callSites()).toEqual(['record-index.ts', 'validate.ts']);
-    expect(AWKWARD).toHaveLength(13);
+    expect(AWKWARD).toHaveLength(14);
   });
 });
 
