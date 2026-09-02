@@ -431,6 +431,13 @@ They refuse a probed index on a file with gaps rather than guessing, for the rea
 does. `index.locate(seconds)` remains the read-based form; `contiguityOf(index)` tells you which
 regime you are in.
 
+There is a third regime, and it is the one to know about. Where records **overlap** — a file whose
+timeline earns `RECORD_ONSET_SPACING_VIOLATION` — two samples start at the same instant, so
+`sampleAt(sampleStartSecondsOf(recording, i, i))` can answer with a sample that is not `i`. It is
+not wrong and it is not `undefined`: the sample it names does start at the instant asked for, and
+there is no way to choose between two that do. If you are round-tripping an index through an
+instant, check `contiguityOf(index)` first, or compare the instants rather than the indices.
+
 `gridSampleStartTicks` rounds up to a whole tick. A sample boundary need not fall on one: 128 samples
 over 0.3 s puts sample 1 at 23,437.5 ticks, and 100 ns is the finest unit edfcore has. Truncating
 would return a tick lying inside the previous sample, and `gridSampleIndexAt` would send it straight

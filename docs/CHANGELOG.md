@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.38
+
+- **Documented** the third regime the sample helpers have. `api-helpers.md` described two: on a
+  contiguous file the recording-aware forms agree with the grid functions exactly, and on a
+  discontinuous one they differ by the gaps, with `sampleAt` able to answer `undefined` for an
+  instant in a hole.
+- A file whose records OVERLAP is neither. Two samples start at the same instant there, so
+  `sampleAt(sampleStartSecondsOf(recording, signal, i))` can answer with a sample that is not `i`
+  — on the shape added in 0.6.36 it does for twenty of the first forty-eight indices. No error, no
+  `undefined`: the sample it names does start at the instant asked for, and nothing can choose
+  between two that do. A caller round-tripping an index through an instant gets a different index
+  back, which is the answer the page did not prepare them for.
+- The page now names the regime, says how to detect it (`contiguityOf`, or the timeline's
+  `RECORD_ONSET_SPACING_VIOLATION`), and says to compare instants rather than indices.
+- `an-instant-two-samples-share.test.ts` executes the property in both forms over all seventeen
+  shapes: the weak one that holds everywhere — the sample found starts at the instant asked for —
+  and the strong one that holds on the sixteen whose records do not overlap. The overlapping shape
+  is asserted to be the only place they differ, and to differ on twenty indices rather than on one
+  edge case.
+- No library change: there is no better answer for it to give.
+
 ## 0.6.37
 
 - **Fixed** an incomplete sentence on `api-reading.md`. It said the index traversal "is chunked so
