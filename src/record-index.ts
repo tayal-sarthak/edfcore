@@ -207,7 +207,7 @@ function createIndex(input: IndexInput): EdfRecordIndex {
   async function locate(seconds: number, options?: ReadOptions): Promise<EdfLocation | undefined> {
     if (recordCount <= 0) return undefined;
     // `seconds` is elapsed recording time; stored onsets are relative to the header start time.
-    const targetTicks = secondsToTicks(seconds) + startOffsetTicks;
+    const targetTicks = secondsToTicks(seconds, 'seconds') + startOffsetTicks;
 
     const found = await findRecordAtOrBefore(targetTicks, options);
     if (found === undefined) return undefined;
@@ -517,7 +517,7 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
   // picks a segment through this function and then measures the offset from `segment.startTicks`,
   // so a boundary resolved on the seconds and an offset measured in ticks can disagree about
   // which segment an instant belongs to (fixed in 0.3.6).
-  const ticks = secondsToTicks(seconds);
+  const ticks = secondsToTicks(seconds, 'seconds');
   let low = 0;
   let high = segments.length - 1;
   while (low <= high) {
@@ -560,7 +560,7 @@ export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefine
 
   // In ticks, for the reason `segmentAt` states: these two must agree about every boundary, and
   // they can only be relied on to do that while they compare the same exact values.
-  const ticks = secondsToTicks(seconds);
+  const ticks = secondsToTicks(seconds, 'seconds');
   let low = 0;
   let high = gaps.length - 1;
   while (low <= high) {

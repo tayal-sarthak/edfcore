@@ -82,8 +82,8 @@ function selectedByTheRule(
 ): readonly number[] {
   const duration = header.recordDurationTicks;
   const perRecord = BigInt(header.signals[signal.signalIndex]?.samplesPerRecord ?? 0);
-  const relativeStart = secondsToTicks(startSeconds) - signal.startTicks;
-  const relativeEnd = relativeStart + secondsToTicks(durationSeconds);
+  const relativeStart = secondsToTicks(startSeconds, 'seconds') - signal.startTicks;
+  const relativeEnd = relativeStart + secondsToTicks(durationSeconds, 'seconds');
   const available = Math.min(signal.sampleCount, signal.digital.length);
 
   const chosen: number[] = [];

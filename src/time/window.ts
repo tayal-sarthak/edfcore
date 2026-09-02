@@ -76,8 +76,8 @@ export function resolveTimeWindow(
   const recordCount = timeline.recordCount;
   if (recordCount <= 0) return NO_RANGES;
 
-  const windowStartTicks = secondsToTicks(startSeconds);
-  const windowDurationTicks = secondsToTicks(durationSeconds);
+  const windowStartTicks = secondsToTicks(startSeconds, 'startSeconds');
+  const windowDurationTicks = secondsToTicks(durationSeconds, 'durationSeconds');
   if (windowDurationTicks <= 0n) return NO_RANGES;
   const windowEndTicks = windowStartTicks + windowDurationTicks;
 
@@ -276,8 +276,8 @@ export function trimToWindow(
   const durationTicks = header.recordDurationTicks;
   const available = Math.min(chunkSignal.sampleCount, chunkSignal.digital.length);
 
-  const windowStartTicks = secondsToTicks(startSeconds);
-  const windowDurationTicks = secondsToTicks(durationSeconds);
+  const windowStartTicks = secondsToTicks(startSeconds, 'startSeconds');
+  const windowDurationTicks = secondsToTicks(durationSeconds, 'durationSeconds');
   // The chunk's own start, as the chunk itself recorded it. Until 0.3.7 `EdfChunkSignal` published
   // only seconds, so this rounded them back — a round trip the comment here bounded at "any
   // recording shorter than ~28.5 years", which is where 10^7 ticks per second passes 2^53. The

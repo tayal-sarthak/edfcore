@@ -35,8 +35,8 @@ export function filterAnnotationsByTime(
   annotations: readonly EdfAnnotation[],
   window: EdfAnnotationWindow,
 ): readonly EdfAnnotation[] {
-  const from = secondsToTicks(window.startSeconds);
-  const to = from + secondsToTicks(window.durationSeconds);
+  const from = secondsToTicks(window.startSeconds, 'window.startSeconds');
+  const to = from + secondsToTicks(window.durationSeconds, 'window.durationSeconds');
   if (to <= from) return Object.freeze([]);
 
   return Object.freeze(
@@ -120,7 +120,7 @@ export function annotationsAt(
   annotations: readonly EdfAnnotation[],
   seconds: number,
 ): readonly EdfAnnotation[] {
-  const at = secondsToTicks(seconds);
+  const at = secondsToTicks(seconds, 'seconds');
   return Object.freeze(
     annotations.filter((annotation) => {
       const onset = annotation.onsetTicksFromFirstRecord;

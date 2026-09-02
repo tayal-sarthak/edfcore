@@ -305,30 +305,30 @@ describe('secondsToTicks rounds, so it is only ever for caller-supplied bounds',
 
   for (const [seconds, ticks] of cases) {
     it(`converts the window bound ${seconds} s to ${ticks} ticks`, () => {
-      expect(secondsToTicks(seconds)).toBe(ticks);
+      expect(secondsToTicks(seconds, 'seconds')).toBe(ticks);
     });
   }
 
   it("resolves a caller's 30 to exactly 300000000 ticks, not one ULP below", () => {
     // The whole reason this function rounds instead of truncating: `30 * 1e7` landing one ULP low
     // would put a window bound at 299999999 ticks and drop the sample exactly on the boundary.
-    expect(secondsToTicks(30)).toBe(300000000n);
-    expect(secondsToTicks(0.1)).toBe(1000000n);
+    expect(secondsToTicks(30, 'seconds')).toBe(300000000n);
+    expect(secondsToTicks(0.1, 'seconds')).toBe(1000000n);
   });
 
   it('rounds where the on-disk digit parsers truncate, which is why they are not interchangeable', () => {
     // A value read from a file must never come through here: the same decimal resolves to two
     // different tick counts, and only the truncating one matches the digits on disk.
-    expect(secondsToTicks(0.99999999)).toBe(10000000n);
+    expect(secondsToTicks(0.99999999, 'seconds')).toBe(10000000n);
     expect(parseSignedTicks('+0.99999999').ticks).toBe(9999999n);
   });
 
   it('throws RangeError for a non-finite bound instead of inventing 0', () => {
     // Inventing 0 would silently move the window to the file start, which reads as a valid
     // result. There is no tick count for NaN.
-    expect(() => secondsToTicks(Number.NaN)).toThrow(RangeError);
-    expect(() => secondsToTicks(Number.POSITIVE_INFINITY)).toThrow(RangeError);
-    expect(() => secondsToTicks(Number.NEGATIVE_INFINITY)).toThrow(RangeError);
+    expect(() => secondsToTicks(Number.NaN, 'seconds')).toThrow(RangeError);
+    expect(() => secondsToTicks(Number.POSITIVE_INFINITY, 'seconds')).toThrow(RangeError);
+    expect(() => secondsToTicks(Number.NEGATIVE_INFINITY, 'seconds')).toThrow(RangeError);
   });
 });
 
@@ -341,7 +341,7 @@ describe('the tick unit itself', () => {
 
   it('round-trips seconds -> ticks -> seconds for values a float64 can hold', () => {
     for (const seconds of [0, 0.5, 1.25, 30, 0.07, -0.5, -1.25, 86400]) {
-      expect(ticksToSeconds(secondsToTicks(seconds))).toBe(seconds);
+      expect(ticksToSeconds(secondsToTicks(seconds, 'seconds'))).toBe(seconds);
     }
   });
 });

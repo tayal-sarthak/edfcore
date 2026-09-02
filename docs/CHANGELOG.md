@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.30
+
+- **Changed** the non-finite-seconds refusal to name the argument the caller passed. It ended
+  "Next: check the window bound you passed in", and two of the four entry points that reach it take
+  an INSTANT rather than a window: `annotationsAt`, which a viewer calls on every mouse move, and
+  `index.locate`. Both sent the caller to check a bound they had never passed.
+- `secondsToTicks` now takes the caller's own word for the value and says
+  `seconds must be a finite number of seconds, but was NaN` or
+  `window.startSeconds must be …`, with the advice that names where a non-finite number comes from
+  — `Number()` on an absent key yields NaN, a division by zero yields Infinity — rather than a
+  bound to go and look at.
+- It is the pair `options.ts` documents from the other side about the same class: "One bad option,
+  two different wrong diagnoses. Resolving it in one place means the message names the argument
+  that is actually wrong" (0.3.21). `resolveSignals` reached the same place by the opposite route
+  and carries no caller prefix at all, "because a hard-coded name would be wrong for all but one of
+  them" — which is the choice available when the callers cannot say. These can.
+- The name is required rather than defaulted, and `it-names-the-seconds-you-passed.test.ts`
+  enumerates all fifteen call sites from `src/`, so a sixteenth that forgets fails there rather
+  than inheriting somebody else's noun. It also pins the callers that guard first with their own
+  message — `sampleAt`, `readEnvelopeAtResolution` and the rest — because that is the shape this
+  matches rather than departs from.
+
 ## 0.6.29
 
 - **Changed** `edfcore gaps` to cap its listing at twenty, like every other listing this CLI

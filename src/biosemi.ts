@@ -184,8 +184,9 @@ export async function readTriggers(
     selection.durationSeconds,
   );
 
-  const windowStartTicks = secondsToTicks(selection.startSeconds);
-  const windowEndTicks = windowStartTicks + secondsToTicks(selection.durationSeconds);
+  const windowStartTicks = secondsToTicks(selection.startSeconds, 'startSeconds');
+  const windowEndTicks =
+    windowStartTicks + secondsToTicks(selection.durationSeconds, 'durationSeconds');
   const durationTicks = header.recordDurationTicks;
   const samplesPerRecord = status.samplesPerRecord;
 

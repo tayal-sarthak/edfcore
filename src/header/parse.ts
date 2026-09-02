@@ -201,7 +201,7 @@ function resolveRecordCount(input: RecordCountInput, sink: DiagnosticSink): Reco
  */
 function recordDurationTicksOf(raw: string, seconds: number): bigint {
   const exact = parseUnsignedTicks(trimEdfField(raw));
-  return exact.ok ? exact.ticks : secondsToTicks(seconds);
+  return exact.ok ? exact.ticks : secondsToTicks(seconds, 'recordDurationSeconds');
 }
 
 /**

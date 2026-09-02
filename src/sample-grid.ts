@@ -89,7 +89,7 @@ export function gridSampleIndexAt(
 ): EdfSampleLocation {
   assertGrid(signal, recordDurationTicks);
 
-  const ticks = secondsToTicks(seconds);
+  const ticks = secondsToTicks(seconds, 'seconds');
   const perRecord = BigInt(signal.samplesPerRecord);
   // Exact integer arithmetic throughout: ticks * samplesPerRecord / recordDurationTicks, floored
   // toward negative infinity so a time before the start yields a negative index rather than

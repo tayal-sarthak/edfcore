@@ -263,8 +263,8 @@ describe('mergeChunks refuses a gap the index never looked for', () => {
 });
 
 describe('the joinability check reads the ticks off the chunks', () => {
-  // Until 0.3.7 it rounded them back out of the seconds — `secondsToTicks(startSeconds)` plus
-  // `secondsToTicks(durationSeconds)`, two independent roundings added together. The comment
+  // Until 0.3.7 it rounded them back out of the seconds — `secondsToTicks(startSeconds, 'seconds')` plus
+  // `secondsToTicks(durationSeconds, 'seconds')`, two independent roundings added together. The comment
   // bounded that round trip at "any recording shorter than ~28.5 years", which is where 10^7
   // ticks per second passes 2^53, and the library accepts declared spans three orders of
   // magnitude past it. A single lost tick produced a refusal naming a discontinuity of 1e-7 s

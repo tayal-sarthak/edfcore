@@ -251,7 +251,7 @@ describe('a non-finite bound is refused', () => {
         (s) => filterAnnotationsByTime(annotations, { startSeconds: s, durationSeconds: 1 }),
       ],
       ['annotationsAt', (s) => annotationsAt(annotations, s)],
-      ['secondsToTicks', (s) => secondsToTicks(s)],
+      ['secondsToTicks', (s) => secondsToTicks(s, 'seconds')],
     ];
   }
 

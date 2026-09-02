@@ -147,7 +147,7 @@ export function sampleAt(
 
   const duration = recording.header.recordDurationTicks;
   const perRecord = BigInt(signal.samplesPerRecord);
-  const ticks = secondsToTicks(seconds);
+  const ticks = secondsToTicks(seconds, 'seconds');
 
   // A SCANNED index takes precedence over any statement about net drift, the same order
   // `resolveTimeWindow` uses. Asking `probedIndexNeedsScan` first meant a file whose gap and

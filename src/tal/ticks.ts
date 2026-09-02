@@ -212,12 +212,25 @@ export function saturateToInt64(ticks: bigint): bigint {
  *
  * Throws `RangeError` for a non-finite argument: there is no tick count for NaN or Infinity, and
  * inventing 0 would silently move a window to the file start.
+ *
+ * `name` is the caller's own word for the value, and it is required rather than defaulted. The
+ * message used to end "check the window bound you passed in", which is right for five of the
+ * fifteen call sites and wrong for the rest: nine of them convert an INSTANT — a cursor position,
+ * a record onset, a sample start — and one converts `secondsPerBucket`, so a caller who passed a
+ * `NaN` bucket width was sent to look at their window (fixed in 0.6.30).
+ *
+ * It is the pair `options.ts` documents from the other side: "One bad option, two different wrong
+ * diagnoses. Resolving it in one place means the message names the argument that is actually
+ * wrong." `resolveSignals` reached the same place by the opposite route and carries NO caller
+ * prefix, "because a hard-coded name would be wrong for all but one of them" — which is the choice
+ * available when the callers cannot say. These can.
  */
-export function secondsToTicks(seconds: number): bigint {
+export function secondsToTicks(seconds: number, name: string): bigint {
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
-      `expected a finite number of seconds, received ${seconds}. ` +
-        'Next: check the window bound you passed in.',
+      `${name} must be a finite number of seconds, but was ${seconds}. Next: check the ` +
+        'expression that produced it — Number() on an absent environment variable, query ' +
+        'parameter or config key yields NaN, and a division by zero yields Infinity.',
     );
   }
   return BigInt(Math.round(seconds * TICKS_PER_SECOND_FLOAT));

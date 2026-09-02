@@ -640,7 +640,7 @@ export async function readEnvelopeAtResolution(
   // resolution that was neither what it requested nor the same between runs. That is the exact
   // failure this function was written to prevent, arriving by a second route (fixed in 0.3.5).
   const durationTicks = recording.header.recordDurationTicks;
-  const bucketTicks = secondsToTicks(secondsPerBucket);
+  const bucketTicks = secondsToTicks(secondsPerBucket, 'secondsPerBucket');
   const chunks: EdfEnvelopeChunk[] = [];
   for (const records of ranges) {
     // A run's span is exactly its record count times the record duration: records within one run
