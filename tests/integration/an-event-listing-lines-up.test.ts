@@ -121,8 +121,8 @@ describe('an ordinary listing', () => {
 });
 
 describe('over the matrix', () => {
-  it('is the sixteen shapes it was written against', () => {
-    expect(AWKWARD).toHaveLength(16);
+  it('is the seventeen shapes it was written against', () => {
+    expect(AWKWARD).toHaveLength(17);
   });
 
   it.each(AWKWARD)('$name lines its events up', async ({ bytes }) => {

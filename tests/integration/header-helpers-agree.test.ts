@@ -34,7 +34,7 @@ import { AWKWARD } from '../support/awkward-files.js';
 
 describe('the shapes under test', () => {
   it('are the eight awkward-files.ts builds, so a removed one fails rather than vanishing', () => {
-    expect(AWKWARD).toHaveLength(16);
+    expect(AWKWARD).toHaveLength(17);
     expect(new Set(AWKWARD.map((file) => file.name)).size).toBe(AWKWARD.length);
   });
 });
@@ -57,9 +57,25 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
       header.signals.length,
     );
 
-    // What the records COVER is never more than the span they are spread across. On the file with
-    // a gap the two differ; everywhere else they are equal, and neither may exceed the other.
-    expect(declaredDurationSeconds(header)).toBeLessThanOrEqual(timeline.spanSeconds + 1e-9);
+    /*
+     * What the records COVER against the span they are spread across.
+     *
+     * `declaredDurationSeconds` is the sum of the record durations and `spanSeconds` is the last
+     * record's end minus the first's start, so the two are equal on a contiguous file, the sum is
+     * SMALLER where there are gaps, and LARGER where records overlap — because an overlap counts
+     * the same instant twice. The one-sided claim held only because no shape in the matrix
+     * overlapped until 0.6.36 put one in it.
+     */
+    // Read off the probe's own finding rather than from the two numbers being compared, which
+    // would make the check circular. An overlapping file is the only shape that earns this code.
+    const overlapping = timeline.diagnostics.some(
+      (one) => one.code === 'RECORD_ONSET_SPACING_VIOLATION',
+    );
+    if (overlapping) {
+      expect(declaredDurationSeconds(header)).toBeGreaterThan(timeline.spanSeconds);
+    } else {
+      expect(declaredDurationSeconds(header)).toBeLessThanOrEqual(timeline.spanSeconds + 1e-9);
+    }
 
     // A physical range is ordered whichever way the file declared its bounds — an inverted
     // physical range is legal, and `physicalRangeOf` is the helper that hides that from a plot.

@@ -82,13 +82,41 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
         continue;
       }
       const inside = segment.startSeconds + Math.min(0.5, segment.durationSeconds / 2);
-      expect(segmentAt(index, inside)?.index, `inside segment ${segment.index}`).toBe(
-        segment.index,
-      );
+      /*
+       * `segmentAt` answers with A segment covering the instant, not necessarily this one.
+       *
+       * Segments are disjoint on every file whose records do not overlap, and the claim used to be
+       * that the answer is `segment.index` — which held only because no shape in the matrix
+       * overlapped until 0.6.36. Where records DO overlap, two segments contain the same instant
+       * and there is no single right answer; what there is is an answer that is not wrong.
+       */
+      const found = segmentAt(index, inside);
+      expect(found, `inside segment ${segment.index}`).toBeDefined();
+      expect(found?.startSeconds, `inside segment ${segment.index}`).toBeLessThanOrEqual(inside);
+      expect(
+        (found?.startSeconds ?? 0) + (found?.durationSeconds ?? 0),
+        `inside segment ${segment.index}`,
+      ).toBeGreaterThan(inside);
       expect(gapAt(index, inside), `inside segment ${segment.index}`).toBeUndefined();
     }
     for (const gap of index.gaps ?? []) {
+      /*
+       * An OVERLAP travels in this array with a negative duration — 0.2.69 documented that — so
+       * its interval runs backwards and its midpoint is before its start, inside the segment that
+       * has not ended yet. The two answers are the exact opposite of a gap's, which is the point:
+       * an instant no record covers is in a hole, and an instant two records claim is in a
+       * segment. The loop used to test only the first, because nothing in the matrix overlapped
+       * until 0.6.36.
+       */
       const inside = gap.startSeconds + gap.durationSeconds / 2;
+      if (gap.durationSeconds < 0) {
+        expect(gapAt(index, inside), 'an overlap is not a hole').toBeUndefined();
+        expect(
+          segmentAt(index, inside),
+          'an overlap is covered twice, not zero times',
+        ).toBeDefined();
+        continue;
+      }
       expect(gapAt(index, inside)?.beforeSegmentIndex).toBe(gap.beforeSegmentIndex);
       expect(segmentAt(index, inside)).toBeUndefined();
     }
@@ -109,9 +137,9 @@ describe('the shapes reach both answers', () => {
 });
 
 describe('the matrix this file sweeps', () => {
-  it('is the sixteen shapes it was written against', () => {
+  it('is the seventeen shapes it was written against', () => {
     // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
     // quietly removes cases from here instead of failing anything.
-    expect(AWKWARD).toHaveLength(16);
+    expect(AWKWARD).toHaveLength(17);
   });
 });

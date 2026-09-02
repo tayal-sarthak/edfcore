@@ -169,6 +169,22 @@ export const AWKWARD: readonly AwkwardFile[] = [
     }),
   },
   {
+    name: 'records that overlap in time',
+    awkward:
+      'each record starts before the one before it ended, so two records claim the same instant — ' +
+      'the case a gap list carries with a NEGATIVE duration, mergeChunks refuses to join, and a ' +
+      'window resolver cannot answer with one record index',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (record) => record * 0.5,
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [{ samplesPerRecord: 30 }],
+    }),
+  },
+  {
     name: 'BDF+D: 24-bit samples and a gap at once',
     awkward:
       'every other BDF shape here runs end to end and every other discontinuous one is 16-bit, so ' +

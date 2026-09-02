@@ -35,7 +35,7 @@ async function shape() {
 describe('the shape', () => {
   it('is in the matrix, which is sixteen shapes', () => {
     expect(SHAPE).toBeDefined();
-    expect(AWKWARD).toHaveLength(16);
+    expect(AWKWARD).toHaveLength(17);
   });
 
   it('is both things at once, which is what nothing else in the matrix is', async () => {

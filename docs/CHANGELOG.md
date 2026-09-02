@@ -6,6 +6,33 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.36
+
+- **Added** a seventeenth shape to the `AWKWARD` matrix: records that overlap in time, where a
+  record starts before the one before it ended and two records claim the same instant. edfcore has
+  always known about them — the gap list carries one with a negative duration (0.2.69),
+  `mergeChunks` refuses the join, `edfcore gaps` prints it in its own column, and the probe raises
+  `RECORD_ONSET_SPACING_VIOLATION`, a warning rather than an error because an overlapping file is
+  still readable.
+- **Fixed** four sweeps that were asserting things true only of files whose records do not overlap,
+  which nothing had ever supplied:
+  - `header-helpers-agree` said the sum of the record durations never exceeds the span. It exceeds
+    it by exactly the overlap, because an overlap counts an instant twice.
+  - `timeline-helpers-agree` said an instant inside a segment is answered with THAT segment, and
+    that a gap's midpoint is in no segment. Two segments contain an overlapped instant, and an
+    overlap's interval runs backwards, so its midpoint is inside a segment rather than in a hole.
+  - `reading-helpers-agree` said a window at a sample's start begins at that sample's record, and
+    that a window's chunks join. Neither holds here — and the second was the half of its own
+    comment the code had never run: "either join or are refused with a reason" had only ever seen
+    joining.
+- None of the four was a defect in `src/`. The library refuses the unindexed read with a message in
+  the file's own numbers ("records covering 6 s are packed into a 3.5 s span"), returns both
+  covering records in separate chunks once it has an index, and refuses to concatenate them. Each
+  sweep now states the weaker thing true of every file and the stronger thing true of this one,
+  rather than exempting the shape.
+- That is what a matrix is for: the claims were not wrong because anyone was careless, they were
+  claims with no counterexample.
+
 ## 0.6.35
 
 - **Added** the census that closes the class four releases in a row have been fixing. A sample rate

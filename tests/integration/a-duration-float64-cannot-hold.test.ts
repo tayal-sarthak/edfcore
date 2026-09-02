@@ -31,7 +31,7 @@ const SHAPE = AWKWARD.find((file) => file.name === 'a record duration with no ex
 describe('the shape', () => {
   it('is in the matrix, which is thirteen shapes', () => {
     expect(SHAPE).toBeDefined();
-    expect(AWKWARD).toHaveLength(16);
+    expect(AWKWARD).toHaveLength(17);
   });
 
   it('is the hazard: the float product is short and the tick product is not', async () => {

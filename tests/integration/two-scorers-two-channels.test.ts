@@ -31,7 +31,7 @@ async function shape() {
 describe('the shape', () => {
   it('is in the matrix, which is fifteen shapes', () => {
     expect(SHAPE).toBeDefined();
-    expect(AWKWARD).toHaveLength(16);
+    expect(AWKWARD).toHaveLength(17);
   });
 
   it('really has two annotation channels, of different widths', async () => {

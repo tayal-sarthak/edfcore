@@ -71,8 +71,26 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
     if (chunks.length === 0) return;
     windowsRead += 1;
 
-    // One window's chunks either join or are refused with a reason; there is no third answer.
-    const merged = chunks.length === 1 ? chunks[0] : mergeChunks(chunks);
+    /*
+     * One window's chunks either join or are refused with a reason; there is no third answer.
+     *
+     * The refusal half had never run. Until 0.6.36 no shape in the matrix produced two chunks from
+     * this window, so the line asserted only the joining half of its own comment — and the first
+     * file that did produce two was refused, correctly, because its records overlap and
+     * concatenating them "would store that time twice and date every sample after the join late
+     * by it". The rest of the checks below then run on the first chunk, which is a real chunk.
+     */
+    let merged = chunks[0];
+    if (chunks.length > 1) {
+      try {
+        merged = mergeChunks(chunks);
+      } catch (error) {
+        expect(error, 'chunks that do not join are refused with a reason').toBeInstanceOf(
+          RangeError,
+        );
+        expect(String((error as Error).message)).toContain('Next: ');
+      }
+    }
     const digital = merged?.signals[0]?.digital;
     expect(digital).toBeDefined();
     if (digital === undefined) return;
@@ -121,8 +139,29 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
       startSeconds: seconds,
       durationSeconds: recording.header.recordDurationSeconds,
     });
-    expect(chunks[0]?.records.start, 'a window at that sample reads its record').toBe(lastRecord);
-    expect(sampleAt(recording, signalIndex, seconds)?.sampleIndex).toBe(sampleIndex);
+    /*
+     * The window covers that record; it need not BEGIN at it.
+     *
+     * Where records overlap, the instant a sample starts at is claimed by more than one record, so
+     * a resolver may legitimately begin at the earlier one — and the claim that it begins at this
+     * one held only because no shape in the matrix overlapped until 0.6.36. What is true of every
+     * file is that the record is in the range that came back, and that the sample the locator finds
+     * starts at the instant asked for.
+     */
+    const range = chunks[0]?.records;
+    expect(range, 'a window at that sample reads a range').toBeDefined();
+    expect(
+      range?.start ?? -1,
+      'a window at that sample starts at or before its record',
+    ).toBeLessThanOrEqual(lastRecord);
+    expect(range?.count ?? 0, 'and reads something').toBeGreaterThan(0);
+
+    const located = sampleAt(recording, signalIndex, seconds);
+    expect(located).toBeDefined();
+    expect(
+      sampleStartSecondsOf(recording, signalIndex, located?.sampleIndex ?? -1),
+      'the sample it found starts at the instant asked for',
+    ).toBeCloseTo(seconds, 9);
     locationsChecked += 1;
   });
 });
@@ -138,9 +177,9 @@ describe('the shapes exercised the calls', () => {
 });
 
 describe('the matrix this file sweeps', () => {
-  it('is the sixteen shapes it was written against', () => {
+  it('is the seventeen shapes it was written against', () => {
     // `awkward-files.ts` asks every consumer for this: without it, a shape removed from the matrix
     // quietly removes cases from here instead of failing anything.
-    expect(AWKWARD).toHaveLength(16);
+    expect(AWKWARD).toHaveLength(17);
   });
 });

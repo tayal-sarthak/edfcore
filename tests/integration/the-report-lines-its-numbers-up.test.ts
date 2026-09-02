@@ -82,8 +82,8 @@ describe('a file whose channels observe very different ranges', () => {
 });
 
 describe('over the matrix', () => {
-  it('is the sixteen shapes it was written against', () => {
-    expect(AWKWARD).toHaveLength(16);
+  it('is the seventeen shapes it was written against', () => {
+    expect(AWKWARD).toHaveLength(17);
   });
 
   it.each(AWKWARD)('$name keeps its block square', async ({ bytes }) => {

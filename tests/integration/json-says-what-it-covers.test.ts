@@ -59,9 +59,9 @@ const FILES: ReadonlyArray<readonly [string, Uint8Array]> = [
 ];
 
 describe('the matrix this file sweeps', () => {
-  it('is the sixteen shapes plus one built here', () => {
-    expect(AWKWARD).toHaveLength(16);
-    expect(FILES).toHaveLength(17);
+  it('is the seventeen shapes plus one built here', () => {
+    expect(AWKWARD).toHaveLength(17);
+    expect(FILES).toHaveLength(18);
   });
 });
 
