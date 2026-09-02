@@ -46,8 +46,16 @@ identification is the unambiguous one. It was added in 0.6.6; before that the co
 
 ```json
 "start": { "date": "2095-04-24", "dateSource": "recordingIdField",
-           "clock": "22:30:00", "clockSource": "headerField" }
+           "clock": "22:30:00", "clockSource": "headerField",
+           "offsetSeconds": 0.25 }
 ```
+
+`offsetSeconds` is the sub-second start carried by record 0's timekeeping TAL, in `[0, 1)`, and it
+is what joins the two clocks in this document. `date` and `clock` are header fields, on the
+header's timebase; `spanSeconds`, `coveredSeconds` and the onsets `events` prints are on record
+0's. Adding a `clock` to an `events` onset without it lands up to a second early — silently, and
+only on the files that carry one. `formatHeader` cannot print it, because a header alone does not
+know it; this command opens the recording and has already paid for the probe that reads it.
 
 `header` is for reading and `signals` is for piping. The second emits six tab-separated columns,
 in this order, annotations channel included:

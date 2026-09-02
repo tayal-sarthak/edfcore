@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.41
+
+- **Added** `start.offsetSeconds` to `edfcore json`: the sub-second start carried by record 0's
+  timekeeping TAL, in `[0, 1)`. The document held two timebases and never said how far apart they
+  are. `start.date` and `start.clock` are header fields; `spanSeconds`, `coveredSeconds` and the
+  onsets `edfcore events` prints are on record 0's axis, where `t = 0` is the start of record 0.
+- What that cost: the obvious composition was wrong. Take the clock from `json`, take an onset from
+  `events`, add them, and on a file with an offset every event lands up to a second early —
+  silently, and only on those files. `edf-format.md` calls that fractional part the one piece of
+  sub-second timing the whole format has, and the machine-readable output was the one place it
+  could not be reached.
+- `formatHeader` still does not print it, and that stays correct: a header alone does not know the
+  offset, because it is in a record. `edfcore json` opens the recording, so it has already paid for
+  the probe that reads it — the same division 0.3.94 drew for the probe's own diagnostics.
+- Nothing else in the document moved. The key is added inside `start`, beside `clockSource`.
+
 ## 0.6.40
 
 - **Changed** `SOURCE_TOO_SMALL` to tell an empty source from a short one, because the byte count

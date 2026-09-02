@@ -497,6 +497,21 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
                   ? null
                   : formatClockTime(header.startTime.clock),
               clockSource: header.startTime.clockSource,
+              /*
+               * The sub-second start, which is the number that joins this document's two clocks.
+               *
+               * `date` and `clock` are header fields, on the header's timebase. Every other time
+               * in this document — `spanSeconds`, `coveredSeconds`, and the onsets `edfcore
+               * events` prints — is on record 0's, where `t = 0` is the start of record 0. Record
+               * 0's timekeeping TAL says how far apart those two are, in [0, 1), and it was the
+               * one number here a script could not get. Adding the clock to an event onset was
+               * therefore up to a second early, silently, and only on the files that carry an
+               * offset — the format's one piece of sub-second timing.
+               *
+               * From the probe `openEdf` already paid for, which is why `formatHeader` cannot
+               * print it and this command can: a header alone does not know it.
+               */
+              offsetSeconds: recording.timeline.startOffsetSeconds,
             },
             /*
              * Identification is opt-in here for the same reason it is in `formatHeader`: the
