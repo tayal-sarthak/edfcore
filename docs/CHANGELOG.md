@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.37
+
+- **Fixed** an incomplete sentence on `api-reading.md`. It said the index traversal "is chunked so
+  memory stays bounded whatever the file size: each chunk holds
+  `min(4 MiB, maxMaterializeBytes) / recordByteLength` records, and never fewer than one" — which
+  is true and reads as though a small budget only makes the scan slower. Below one record's worth
+  it does not: one record cannot be read within the budget and there is no smaller count to ask
+  for, so the scan is refused. The page says that now, and says the refusal names the record's size.
+- **Added** `the-page-says-always.test.ts`, which executes the five claims on that page that say
+  "always", "never" or "every" against all seventeen shapes. Each was written when the matrix held
+  eight, and a universal claim is only as checked as the widest file anyone pointed it at — 0.6.36
+  is what happens when one meets a shape it had not: four sweeps turned out to be asserting
+  something narrower than they said. The claims are read off the page, so a rewording fails here.
+- Two are worth naming. `readAnnotations` answers on a file with NO annotations channel, returning
+  one onset per record from the nominal grid — "always" includes the file with nowhere to store an
+  annotation. And on that same file a budget of one byte does not refuse, because the page's next
+  sentence says such a file "is not scanned at all, because its record onsets are arithmetic": the
+  two claims agree, and the test checks that they do rather than exempting one.
+- No library change.
+
 ## 0.6.36
 
 - **Added** a seventeenth shape to the `AWKWARD` matrix: records that overlap in time, where a

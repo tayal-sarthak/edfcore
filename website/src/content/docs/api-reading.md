@@ -354,7 +354,7 @@ function buildRecordIndex(
 
 Reads every record's onset and returns a `'complete'` index carrying the segments and gaps they imply. **This is one of only two functions that read the whole file — `validateRecording` is the other — and it is never called implicitly.**
 
-The traversal is chunked so memory stays bounded whatever the file size: each chunk holds `min(4 MiB, maxMaterializeBytes) / recordByteLength` records, and never fewer than one. `onProgress` fires once per chunk. A file with no annotations signal is not scanned at all, because its record onsets are arithmetic. `onProgress` still fires once with the traversal complete, so a progress bar finishes.
+The traversal is chunked so memory stays bounded whatever the file size: each chunk holds `min(4 MiB, maxMaterializeBytes) / recordByteLength` records, and never fewer than one. The floor is where the budget stops being a speed knob: a `maxMaterializeBytes` smaller than one record cannot be honoured and cannot be met by asking for fewer records, so the scan is refused with `EdfBudgetError` naming the record's size rather than chunked into nothing. `onProgress` fires once per chunk. A file with no annotations signal is not scanned at all, because its record onsets are arithmetic. `onProgress` still fires once with the traversal complete, so a progress bar finishes.
 
 The index's own diagnostics are not returned. An `EdfRecordIndex` is a structural answer, and `validateRecording` is the call that reports on a traversal. A non-monotonic timeline throws `EdfFormatError` with code `TIMELINE_NOT_MONOTONIC`.
 
