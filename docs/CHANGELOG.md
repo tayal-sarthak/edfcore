@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.44
+
+- **Fixed** a claim in `edf-format.md`: that onsets "parsed digit by digit are exact, and
+  `parseFloat` is the only thing that makes them inexact". The first half is what `tal/ticks.ts`
+  exists for. The second half is broken by the grammar printed nine lines above it — `Onset =
+  ("+" / "-") 1*DIGIT [ "." 1*DIGIT ]` puts no bound on the fraction, and a writer emitting full
+  double precision produces `+1234.5678901234`.
+- edfcore counts in 100 ns, so the eighth fractional digit onward is dropped: `+0.12345678` is
+  `1234567` ticks and `+1.00000009` is one second exactly, with `ok: true` either way, because a
+  resolution is not a parse failure. That is the right design — it is the unit `onsetTicks` and
+  every window in the library are counted in — and the wrong sentence. A reader told `parseFloat`
+  is the only lossy step concludes the digits survive, and `EdfAnnotation.onsetRaw`, the field that
+  actually keeps them, has no reason to exist.
+- No behaviour changed. The page now names both places precision goes, and points at `onsetRaw` and
+  `durationRaw` for the digits as written.
+
 ## 0.6.43
 
 - **Fixed** a claim in `cli.md`, in `cli-run.ts` and in the test that repeated it: that the

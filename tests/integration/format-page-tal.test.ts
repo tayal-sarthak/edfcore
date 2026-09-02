@@ -73,9 +73,14 @@ describe('the onset is signed and the duration is not', () => {
   });
 
   it('parses onsets exactly, which is what the page says parseFloat would not', () => {
-    // "Parsed digit by digit they are exact, and `parseFloat` is the only thing that makes them
-    //  inexact." 0.1 + 0.2 is the standard witness; in ticks it is one integer.
-    expect(FLAT).toContain('`parseFloat` is the only thing that makes them inexact');
+    // "Parsed digit by digit they are exact to the resolution you parse them into, and
+    //  `parseFloat` is the first thing that makes them inexact." 0.1 + 0.2 is the standard
+    //  witness; in ticks it is one integer.
+    //
+    // The page said "the only thing" until 0.6.44, and this assertion pinned it. It is not: the
+    // grammar bounds the fraction at nothing and edfcore counts in 100 ns, so the eighth
+    // fractional digit onward is dropped. `past-the-seventh-digit.test.ts` runs that half.
+    expect(FLAT).toContain('`parseFloat` is the first thing that makes them inexact');
     const tenth = parseSignedTicks('+0.1');
     const fifth = parseSignedTicks('+0.2');
     expect(tenth.ok && fifth.ok).toBe(true);
