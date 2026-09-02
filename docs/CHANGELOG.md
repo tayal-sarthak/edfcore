@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.35
+
+- **Added** the census that closes the class four releases in a row have been fixing. A sample rate
+  of `68.96551724137932` in a nine-character column (0.6.23), a signal index of 1000 in three
+  (0.6.24), a negative or hundred-hour clock in twelve (0.6.25), an observed range and sample count
+  that were not padded at all (0.6.34) — the same mistake in four formatters, each found by looking
+  at output rather than by anything failing.
+- `every-column-knows-its-width.test.ts` lists every `padStart` and `padEnd` in `src/` that lays
+  out a column, with one of three reasons its width is safe: MEASURED from the rows being printed,
+  bounded by the FILE FORMAT (a label is 16 bytes, `kind` is one of two words, a rate is rounded to
+  fit), or bounded by an ARGUMENT no test can build.
+- Two are in that last group and are named rather than assumed: the per-code diagnostic count and
+  the event count, with the arithmetic written out — seven digits is 9,999,999 of one code, and the
+  record count field is eight characters, so a per-record code on the largest file the format can
+  describe would need eight. They are not measured because no test can construct the report that
+  would show it, and saying so is better than a floor nobody can justify.
+- A new width fails until it says which of the three it is. Zero-padding is excluded by pattern: a
+  clock digit spelling itself is not a place in a table.
+- No behaviour changed.
+
 ## 0.6.34
 
 - **Fixed** the observed-ranges block in `edfcore validate` falling where the numbers left it. The
