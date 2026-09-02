@@ -281,8 +281,20 @@ narrowed with `subarray`, which shares memory, so `result.length` is still the t
 another, so the read pattern you observe is the one it asked for.
 
 **Build a complete index only when you need gaps located.** On a continuous file the probed index
-`openEdf` gives you already answers every window. On EDF+D it is the price of asking where the
-gaps are, and it's the only price in the library proportional to the file.
+`openEdf` gives you already answers every window. On EDF+D it is the price of asking where the gaps
+are, and it is the only one a *reading* call can make you pay by surprise: everything else on this
+page is proportional to the window you asked for, not to the file.
+
+It is not the library's only cost proportional to the file. `validateRecording` has two of its own,
+and neither is a surprise — you asked for a conformance sweep. On a discontinuous file it makes the
+same traversal `buildRecordIndex` makes, for the same onsets, unless you hand it a complete index;
+that is what the `index` option is for, and why [Validation](/docs/validation) puts it as
+"conformance costs one traversal rather than two". On top of that, `scanSamples` reads every sample
+of every record: `edfcore validate` on the 48 MB polysomnogram in the test corpus reports
+`scanned 2650 records, read 48,336,000 bytes`, and on a 13 GiB BDF it is 13 GiB.
+
+Neither fires unasked. Without `scanSamples`, validating a continuous file reads nothing at all —
+`recordsScanned` and `bytesRead` both come back `0`.
 
 ## Where to go next
 

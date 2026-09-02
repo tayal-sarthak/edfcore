@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.45
+
+- **Fixed** a claim in `large-files.md`: that building a complete index "is the only price in the
+  library proportional to the file". It is the only one a *reading* call can spring on you — every
+  other cost on that page follows the window you asked for — and that is the sentence the page now
+  makes. It is not the only one in the library.
+- `validateRecording` has two of its own, and `validation.md` describes both on the same site.
+  `scanSamples` reads every sample of every record: `edfcore validate` on the 48 MB polysomnogram
+  in the test corpus reports `scanned 2650 records, read 48,336,000 bytes`, and the validation page
+  says that on a 13 GiB BDF it is every record. On a discontinuous file the sweep also makes the
+  same traversal `buildRecordIndex` makes, for the same onsets, unless it is handed a complete
+  index — which is what the `index` option is for, and why the same page puts it as "conformance
+  costs one traversal rather than two", a sentence that presupposes there being two.
+- What the wrong one cost: a reader taking "the only price" at face value budgets a conformance
+  sweep as free. The two pages disagreed, and the cheaper claim was the one on the page about cost.
+- The paragraph now also says what neither price does unasked. Without `scanSamples`, validating a
+  continuous file reports `recordsScanned: 0` and `bytesRead: 0`, and a test measures all four
+  cells rather than quoting either page.
+
 ## 0.6.44
 
 - **Fixed** a claim in `edf-format.md`: that onsets "parsed digit by digit are exact, and
