@@ -6,6 +6,28 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.25
+
+- **Fixed** an event listing losing its columns to a time wider than twelve characters.
+  `formatAnnotations` padded the duration to twelve and did not pad the onset at all, which works
+  for exactly as long as every time is `hh:mm:ss.mmm`. Two documented cases are not.
+- A NEGATIVE onset spends one character on the sign. That file's own note argues at length that a
+  negative onset is legal — EDF+ measures from the header start time and a recording may begin
+  after its first annotation — and 0.3.45 exists to print one correctly. It is also how a
+  pre-stimulus baseline is spelled, so it sorts before everything: the misaligned row was usually
+  the first one in the listing.
+- A recording past 100 HOURS does it too. The hours are deliberately not wrapped at 24, because
+  "a 30-hour recording is a real thing and `30:12:00.000` is more useful than `06:12:00.000` on day
+  two" — and long-term epilepsy monitoring runs for a week, which is `168:00:00.000`. A duration
+  that long overflowed the padded column outright.
+- Both widths come from the rows being printed now, with twelve as the floor, so a listing whose
+  times all fit prints byte for byte what it printed before — including one where every event is
+  instantaneous and every duration is blank.
+- Same defect as the sample rate (0.6.23) and the signal index (0.6.24), in the third formatter: a
+  value wider than the width it was given. `an-event-listing-lines-up.test.ts` checks the property
+  rather than the three cases, over the matrix as well as the cases, because the property is what
+  survives the next column.
+
 ## 0.6.24
 
 - **Fixed** the signal-index column being three characters wide whatever the file, so signal 1000

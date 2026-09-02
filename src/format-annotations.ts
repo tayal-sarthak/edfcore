@@ -90,17 +90,42 @@ export function formatAnnotations(
 
   const limit = requireItemLimit(options?.maxItems, annotations.length);
 
-  const rows: string[] = [];
+  /*
+   * Both time columns are sized from the rows being printed, the way `formatHeader` sizes its
+   * index column, because both can hold a value wider than a fixed width.
+   *
+   * `hh:mm:ss.mmm` is twelve characters until it is not. A negative onset spends one on the sign —
+   * `-00:00:01.500`, which the note at the top of this file argues is legal and which 0.3.45
+   * exists to print correctly — and the hours are deliberately not wrapped at 24, so a week of
+   * long-term monitoring reads `168:00:00.000`. Either one on one row of a listing moved the text
+   * column on that row and no other, and the onset column was not padded at all, so the misaligned
+   * row was usually the first: a pre-stimulus baseline sorts before everything (fixed in 0.6.25).
+   *
+   * Twelve is the floor, so a listing whose times all fit prints exactly what it printed before —
+   * including one where every event is instantaneous and every duration is empty.
+   */
+  const cells = [];
   for (let i = 0; i < limit; i += 1) {
     const annotation = annotations[i];
     if (annotation === undefined) continue;
+    cells.push({
+      onset: clock(annotation.onsetTicksFromFirstRecord),
+      duration: duration(annotation),
+      annotation,
+    });
+  }
+  const onsetWidth = Math.max(12, ...cells.map((cell) => cell.onset.length));
+  const durationWidth = Math.max(12, ...cells.map((cell) => cell.duration.length));
+
+  const rows: string[] = [];
+  for (const { onset, duration: span, annotation } of cells) {
     // Annotation text is exposed verbatim by design — the TAL grammar reserves 0x00, 0x14 and
     // 0x15 and nothing else, so 0x0a and 0x09 reach `text` unchanged. One event holding a newline
     // would print as two rows, and the second would carry no time of its own, so it reads as an
     // event at the time above it. `annotation.text` still holds the bytes as written.
     const parts = [
-      clock(annotation.onsetTicksFromFirstRecord),
-      duration(annotation).padEnd(12),
+      onset.padEnd(onsetWidth),
+      span.padEnd(durationWidth),
       printable(annotation.text),
     ];
     if (options?.includeChannel === true && annotation.channelLabel !== undefined) {
