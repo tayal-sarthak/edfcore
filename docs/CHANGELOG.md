@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.27
+
+- **Changed** the "no signal is labelled" refusal to name the label that differs only in case or
+  spacing. `lookup.ts` explains why matching is exact and case-sensitive — `'Fp1'` and `'FP1'` are
+  written by different systems and edfcore has no montage vocabulary to decide they are the same
+  electrode — and the message said "matching is exact on the trimmed label and is case-sensitive"
+  while holding the label that proves that is what went wrong, and printing it somewhere in a list
+  of every other label for the reader to spot.
+- That decision is about which signal comes back, and it is unchanged: `getSignal(header, 'FP1')`
+  on a file with `'Fp1'` still throws. It was never a reason to make the reader do the comparison.
+  The near miss is named, put first in the list, and repeated in the `Next:` clause.
+- **Changed** the list of labels to be capped at twelve, saying how many it withheld. Every other
+  listing this package prints is capped — 24 bytes of hex, 16 of field evidence, twenty
+  diagnostics, `--limit` events — and this was the one that was not, in the one message whose
+  length grows with the file. A mistyped label on a 512-signal recording put five thousand
+  characters on one line behind `edfcore: `, and `inspect.ts` names a 512-signal file as the
+  realistic one.
+- `availableLabels` on the error still carries every label, so nothing a program reads was capped.
+  Case is folded with `toLowerCase` rather than `toLocaleLowerCase`, which would fold `'I'` to a
+  dotless `'ı'` under a Turkish locale and make this message depend on where it ran.
+
 ## 0.6.26
 
 - **Changed** `NOT_AN_EDF_FILE` to say which archive it was handed, when the first bytes say so.

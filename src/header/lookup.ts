@@ -35,8 +35,47 @@ export function findSignals(header: EdfHeader, label: string): readonly EdfSigna
   return Object.freeze(header.signals.filter((signal) => signal.label === wanted));
 }
 
-function quoteLabels(header: EdfHeader): string {
-  return header.signals.map((signal) => JSON.stringify(signal.label)).join(', ');
+/**
+ * Enough labels to recognise the file, few enough to read in a terminal.
+ *
+ * Every other listing this package prints is capped — 24 bytes of hex, 16 bytes of field evidence,
+ * twenty diagnostics — and this one was not, in the one message whose length grows with the file.
+ * A mistyped label on a 512-signal recording put five thousand characters on one line behind
+ * `edfcore: `, and `inspect.ts` names a 512-signal file as the realistic one. The full list is
+ * still on the error, as `availableLabels`, for a program that wants it.
+ */
+const LABELS_SHOWN = 12;
+
+/** The whole label list, capped, saying how many it withheld — never silently truncated. */
+function quoteLabels(header: EdfHeader, first?: string): string {
+  const labels = header.signals.map((signal) => signal.label);
+  const ordered =
+    first === undefined ? labels : [first, ...labels.filter((label) => label !== first)];
+  const shown = ordered.slice(0, LABELS_SHOWN).map((label) => JSON.stringify(label));
+  const hidden = ordered.length - shown.length;
+  return hidden > 0 ? `${shown.join(', ')}, and ${hidden} more` : shown.join(', ');
+}
+
+/**
+ * `String.prototype.toLowerCase`, not `toLocaleLowerCase`: the second one folds `'I'` to a dotless
+ * `'ı'` under a Turkish locale, and this package's output is deterministic and locale-free.
+ */
+const foldCase = (text: string): string => trimEdfField(text).toLowerCase().replace(/\s+/g, ' ');
+
+/**
+ * The label that differs from the selector only in case or in internal spacing, if there is one.
+ *
+ * The module note above says why matching is exact and case-sensitive: `'Fp1'` and `'FP1'` are
+ * written by different systems and edfcore has no montage vocabulary to decide they are the same
+ * electrode. That is a decision about MATCHING, not a reason to make the reader work out what
+ * happened — the message said "is case-sensitive" while holding the label that proves it is what
+ * bit them.
+ *
+ * Naming it changes nothing about which signal is returned. It is still refused.
+ */
+function differsOnlyInCase(header: EdfHeader, selector: string): string | undefined {
+  const wanted = foldCase(selector);
+  return header.signals.find((signal) => foldCase(signal.label) === wanted)?.label;
 }
 
 /**
@@ -62,10 +101,16 @@ export function getSignal(header: EdfHeader, selector: number | string): EdfSign
   const matches = findSignals(header, selector);
   const first = matches[0];
   if (first === undefined) {
+    const near = differsOnlyInCase(header, selector);
     throw new EdfChannelNotFoundError(
-      `no signal is labelled ${JSON.stringify(trimEdfField(selector))} in this file. Labels, ` +
-        `in signal order: ${quoteLabels(header)}. Matching is exact on the trimmed label and ` +
-        'is case-sensitive. Next: pass one of those labels, or select by index.',
+      `no signal is labelled ${JSON.stringify(trimEdfField(selector))} in this file. ` +
+        (near === undefined
+          ? ''
+          : `This file has ${JSON.stringify(near)}, which differs only in case or spacing. `) +
+        `Labels, in signal order: ${quoteLabels(header, near)}. Matching is exact on the ` +
+        'trimmed label and is case-sensitive. Next: pass ' +
+        (near === undefined ? 'one of those labels' : `${JSON.stringify(near)}`) +
+        ', or select by index.',
       { selector, availableLabels: header.signals.map((signal) => signal.label) },
     );
   }
