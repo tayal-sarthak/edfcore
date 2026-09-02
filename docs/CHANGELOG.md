@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.39
+
+- **Added** four more promises to the set that is executed rather than read, over all seventeen
+  shapes. `the-page-says-always.test.ts` did this for the five on `api-reading.md` and found one
+  that was true and incomplete; these four are spread over two pages and a module docblock:
+  `matchSignals` never returns an annotations channel, events outside a window are never returned
+  even though the scan is record-aligned, `onsetRaw` never loses precision the file had, and
+  ISO-8859-1 is the identity map onto U+0000..U+00FF — which is the whole argument for decoding
+  header text by hand rather than with `TextDecoder`.
+- All four hold. The one worth looking at is the first: on the file whose only channel is an
+  annotations channel, `matchSignals(/.*/)` returns nothing at all. A helper that answered "every
+  signal" with the one signal there is would be exactly the mistake `api-helpers.md` calls "the
+  usual way" a montage filter ends up decoding a TAL region as if it were samples, and the empty
+  answer is that rule at its sharpest.
+- The window check uses windows narrower than a record, so a record-aligned scan has to be trimmed
+  to answer them; the decoder check crosses the 4096-byte boundary it chunks on, which a maximal
+  2.56 MB header crosses hundreds of times.
+
 ## 0.6.38
 
 - **Documented** the third regime the sample helpers have. `api-helpers.md` described two: on a
