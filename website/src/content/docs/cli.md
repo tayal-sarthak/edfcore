@@ -33,12 +33,17 @@ The onset column is `onsetSecondsFromFirstRecord` — the axis `gaps` and every 
 silently cut one reads as a complete one.
 
 `json` emits the geometry, the start, one entry per signal and the diagnostic codes. A signal entry carries the four declared range numbers and `scale`, so the document is enough to reach physical units on its own — `scale.bitValue * (scale.offset + digital)`. The key is absent when the header has no usable gain, the way `sampleRateHz` is absent for a legal zero record duration. A diagnostic carries `signalIndex` when it is about a channel rather than the file. It reports
-`spanSeconds` and `coveredSeconds` as a pair: they differ by the gaps, which is the only thing in
-the document that finds a hole without believing the file's own `variant`. The
+`spanSeconds` and `coveredSeconds` as a pair, and two numbers that were measured rather than
+declared are worth more here than `variant`, which carries only the claim the writer made. Read
+their difference with its sign: `spanSeconds - coveredSeconds` positive is a hole, negative means
+records overlap. The
 diagnostics are both sets the library holds — the header's and the record probes' — each entry
 carrying `source: "header"` or `source: "recordProbe"`. Before 0.6.12 only the header's were
 emitted, so an EDF+C file with a real hole reported nothing about it here while `edfcore gaps`
-reported the gap. The start
+reported the gap. That release is why the pair is no longer the document's only measured answer:
+`DISCONTINUITY_IN_CONTINUOUS_FILE` and `RECORD_ONSET_SPACING_VIOLATION` both arrive with
+`source: "recordProbe"`, and both contradict a `variant` that says the file is continuous. The
+start
 carries `dateSource` and `clockSource` alongside the values, because a `null` clock and a file that
 starts at midnight are otherwise the same output, and a date resolved from the EDF+ recording
 identification is the unambiguous one. It was added in 0.6.6; before that the command reported

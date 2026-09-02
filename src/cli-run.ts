@@ -461,11 +461,17 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
              * `edfcore header` switches its label from `duration` to `covered` and adds two lines
              * saying where the span comes from; this had the one number and no label at all.
              *
-             * The pair is also the only thing here that detects a hole without believing the file.
-             * `variant` and `header.continuity` both carry the DECLARED claim, and
-             * `DISCONTINUITY_IN_CONTINUOUS_FILE` exists for the file where that claim is false —
-             * so the field a script would have branched on is the field that is wrong. Two numbers
-             * that differ are measured, and they differ by exactly the gaps.
+             * The pair is also measured rather than declared, which is what makes it worth more
+             * here than `variant`. `variant` and `header.continuity` both carry the CLAIM the
+             * writer made, and `DISCONTINUITY_IN_CONTINUOUS_FILE` exists for the file where that
+             * claim is false — so the field a script would have branched on is the field that is
+             * wrong. Read the difference with its sign: positive is a hole, negative means records
+             * overlap and the coverage double-counts the instants two of them share (0.6.42).
+             *
+             * Not the only measured answer in this document, and it stopped being one below:
+             * 0.6.12 added the record probes' diagnostics, so `DISCONTINUITY_IN_CONTINUOUS_FILE`
+             * and `RECORD_ONSET_SPACING_VIOLATION` now travel here with `source: "recordProbe"`
+             * and contradict the same `variant`.
              */
             coveredSeconds: recording.timeline.coveredSeconds,
             /*

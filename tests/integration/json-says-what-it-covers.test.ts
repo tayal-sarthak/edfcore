@@ -8,12 +8,13 @@
  * number, unlabelled, and a script sizing a buffer or computing a sample count from it was out by
  * the gaps — silently, and only on the files that have them.
  *
- * The pair is also the only thing in this document that detects a hole without believing the file.
- * `variant` and `header.continuity` both carry the DECLARED claim — `EdfVariant`'s own docblock
- * says so, "neither is a promise" — and `DISCONTINUITY_IN_CONTINUOUS_FILE` exists for the file
- * where that claim is false. So the field a script would have branched on is the field that is
- * wrong, while two measured numbers that differ do so by exactly the gaps. That file is built here
- * and is the case the rest of this file turns on.
+ * The pair is measured rather than declared, which is what makes it worth more here than the
+ * file's own `variant`. `variant` and `header.continuity` both carry the CLAIM the writer made —
+ * `EdfVariant`'s own docblock says so, "neither is a promise" — and
+ * `DISCONTINUITY_IN_CONTINUOUS_FILE` exists for the file where that claim is false. So the field a
+ * script would have branched on is the field that is wrong. That file is built here and is the
+ * case the rest of this file turns on. It is not the document's only measured answer: 0.6.12 put
+ * the record probes' diagnostics here too, and `the-pair-is-not-alone.test.ts` runs that.
  */
 
 import { describe, expect, it } from 'vitest';

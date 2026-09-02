@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.43
+
+- **Fixed** a claim in `cli.md`, in `cli-run.ts` and in the test that repeated it: that the
+  `spanSeconds`/`coveredSeconds` pair is "the only thing in the document that finds a hole without
+  believing the file's own `variant`". The sentence two lines below it, in the same paragraph, is
+  what makes that false. 0.6.12 put the record probes' diagnostics in the same document, so an
+  entry carrying `source: "recordProbe"` is a second measured answer — and neither
+  `DISCONTINUITY_IN_CONTINUOUS_FILE` nor `RECORD_ONSET_SPACING_VIOLATION` believes the reserved
+  field either.
+- What "the only" cost a reader: the pair is a NET comparison over two probes, so it is exactly the
+  thing that misses a gap a later overlap cancels — the page's own warning says so. A script told
+  it was the only measured signal compares two numbers and stops. The probe diagnostics are per
+  boundary, and on a file marked continuous whose onsets fall into separate segments both fire
+  while the subtraction can come out at zero.
+- The paragraph now says what the pair is good for — measured rather than declared — and reads its
+  difference with its sign, as 0.6.42 did for `discontinuous.md`.
+
 ## 0.6.42
 
 - **Fixed** a claim in `discontinuous.md`. It said that when `spanSeconds` and `coveredSeconds`
