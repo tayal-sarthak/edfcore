@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.40
+
+- **Changed** `SOURCE_TOO_SMALL` to tell an empty source from a short one, because the byte count
+  already does. It is the first thing a wrong path, a failed download or a half-written file earns,
+  and it offered one menu for all of them — "check that the whole file reached edfcore — an empty
+  file, a truncated download and a directory read all land here" — while printing, in the same
+  sentence, the number that says which. Nothing arrives here with zero bytes except a source that
+  has none, and nothing arrives with fifty except one that was cut short.
+- The two `Next:` clauses are now different actions, which is the point. Zero bytes is a question
+  about the path: does it name something that exists and has been written to. Two hundred bytes is
+  a question about the transfer: does the size edfcore was given match the size on disk. A reader
+  with the old message had to work out which of those they were in.
+- Same shape as 0.6.26, which stopped `NOT_AN_EDF_FILE` listing the containers a file might be
+  while holding the magic number that identifies it. Same code, same field, same evidence on the
+  diagnostic — `expected`, `actual` and the spec reference are untouched, so a program branching on
+  any of them sees nothing.
+
 ## 0.6.39
 
 - **Added** four more promises to the set that is executed rather than read, over all seventeen

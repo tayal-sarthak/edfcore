@@ -232,11 +232,30 @@ export function parseHeader(
   if (headerBytes.length < EDF_HEADER_BLOCK_BYTES) {
     throw sink.fatal({
       code: 'SOURCE_TOO_SMALL',
+      /*
+       * Empty and short are different findings, and the byte count already separates them.
+       *
+       * The message offered one menu for both — "an empty file, a truncated download and a
+       * directory read all land here" — while holding the number that says which. Nothing reaches
+       * this with zero bytes except a source that has none, and nothing reaches it with fifty
+       * except one that was cut short, so the reader was being asked to work out from a list what
+       * the first clause of the sentence had already told them.
+       *
+       * It is the shape 0.6.26 fixed for `NOT_AN_EDF_FILE`, which listed the containers it might
+       * be while printing the magic number that says which one it is (fixed in 0.6.40).
+       */
       message:
-        `the header is ${headerBytes.length} bytes, but every EDF and BDF file begins with a ` +
-        `${EDF_HEADER_BLOCK_BYTES}-byte fixed header. EDF specification, header record bytes ` +
-        '0-255. Next: check that the whole file reached edfcore — an empty file, a truncated ' +
-        'download and a directory read all land here.',
+        headerBytes.length === 0
+          ? 'the source is empty, and every EDF and BDF file begins with a ' +
+            `${EDF_HEADER_BLOCK_BYTES}-byte fixed header. EDF specification, header record bytes ` +
+            '0-255. Next: check that the path or URL names a file that exists and has been ' +
+            'written to — a failed download, an unflushed writer and a directory read all produce ' +
+            'no bytes at all.'
+          : `the source is ${headerBytes.length} bytes, which stops part way through the ` +
+            `${EDF_HEADER_BLOCK_BYTES}-byte fixed header every EDF and BDF file begins with. ` +
+            'EDF specification, header record bytes 0-255. Next: compare the size edfcore was ' +
+            'given with the size on disk — a transfer cut short and a truncated copy both land ' +
+            'here, and neither leaves anything to read.',
       field: 'header',
       byteOffset: 0,
       byteLength: headerBytes.length,
