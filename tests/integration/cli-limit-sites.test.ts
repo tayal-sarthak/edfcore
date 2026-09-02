@@ -124,18 +124,19 @@ async function observedCap(): Promise<number> {
 }
 
 describe('the sites that apply it', () => {
-  it('are the four in cli-run.ts, found by reading it', () => {
+  it('are the five in cli-run.ts, found by reading it', () => {
     // Two `maxItems: limit` inside `header`, one `maxItems: args.limit ?? …` inside `validate`,
-    // and the `slice` inside `events`. A fifth has to be driven below before this may grow.
+    // and a `slice` in each of `events --list` and `gaps` (0.6.29). A sixth has to be driven
+    // below before this may grow.
     const capped = CLI_SOURCE.match(/maxItems: (?:limit|args\.limit \?\? DEFAULT_ITEM_LIMIT)/g);
     const sliced = CLI_SOURCE.match(/\.slice\(0, limit\)/g);
     expect(capped).toHaveLength(3);
-    expect(sliced).toHaveLength(1);
+    expect(sliced).toHaveLength(2);
   });
 
   it('all read the same constant, so none of them is a literal again', () => {
     const body = CLI_SOURCE.slice(CLI_SOURCE.indexOf('switch (command)'));
-    expect(body.match(/args\.limit \?\? DEFAULT_ITEM_LIMIT/g)).toHaveLength(4);
+    expect(body.match(/args\.limit \?\? DEFAULT_ITEM_LIMIT/g)).toHaveLength(5);
     // The bug this replaced: a bare 20 standing in for the cap at one of them.
     expect(body).not.toMatch(/args\.limit \?\? 20\b/);
   });

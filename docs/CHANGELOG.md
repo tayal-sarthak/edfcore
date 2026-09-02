@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.29
+
+- **Changed** `edfcore gaps` to cap its listing at twenty, like every other listing this CLI
+  prints, and to say what it withheld. `--limit` reaches it now.
+- It was the one listing with no bound. `signals` is bounded by the header's signal count and the
+  spec caps that at 9999; the diagnostics blocks under `header` and `validate` and the
+  `events --list` rows have always capped. A gap list is bounded only by the record count, so an
+  ambulatory recorder that stops and restarts every minute across a night produces hundreds of rows
+  — which made the command written for discontinuous files the one that flooded on them.
+- Capping a tab-separated output by default is not new: `events --list` is tab-separated, "for grep
+  and awk", and has stopped at twenty with a notice underneath since it existed. The two behave the
+  same way now, from the same constant, and `--limit 0` prints neither rows nor the blank line above
+  the notice — the shape 0.4.181 fixed once already.
+- The summary line above the rows still counts every gap, because that is the file's answer and the
+  rows are a page of it. The four columns are unchanged, so an existing `cut -f3` still reads a
+  duration.
+- `cli-limit-sites.test.ts` counts the sites that apply the cap and now expects five rather than
+  four, so a sixth still has to be driven before that number may grow.
+
 ## 0.6.28
 
 - **Changed** the three budget refusals to say how many fit rather than "fewer". Reading records,

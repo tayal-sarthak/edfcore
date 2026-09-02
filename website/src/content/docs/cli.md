@@ -20,7 +20,7 @@ Flags: `--patient` includes both identification fields, local patient and local 
 (`header`, `validate`, `json`), and stops the diagnostics that quote them being redacted. `--list`
 makes
 `events` print one event per line instead of counting them by text, and `--limit <n>` caps the
-diagnostics or events printed (`header`, `validate`, `events --list`). Each is accepted and ignored
+diagnostics, events or gaps printed (`header`, `validate`, `events --list`, `gaps`). Each is accepted and ignored
 by the commands it does not name, and the counted `events` output is never capped.
 
 ```bash

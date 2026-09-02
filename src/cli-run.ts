@@ -71,8 +71,8 @@ Options
   --help, -h                      print this and exit 0
   --patient                       include both identification fields (header, validate, json)
   --list                          list events one per line instead of counting (events)
-  --limit <n>                     diagnostics or events to print, default ${DEFAULT_ITEM_LIMIT}
-                                  (header, validate, events --list)
+  --limit <n>                     diagnostics, events or gaps to print, default ${DEFAULT_ITEM_LIMIT}
+                                  (header, validate, events --list, gaps)
   --version, -v                   print the version and exit
 
 Exit codes: 0 success, 1 the file is unreadable or failed validation, 2 bad usage.
@@ -368,7 +368,18 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
           : `${pluralise(gaps.length - overlaps, 'gap')} and ${pluralise(overlaps, 'overlap')}`;
       io.out(`${counted} in ${pluralise(index.recordCount, 'record')}\n\n`);
 
-      for (const gap of gaps) {
+      /*
+       * Capped, like `events --list`, and for the reason that command gives: a silently truncated
+       * listing reads as a complete one.
+       *
+       * This was the one listing with no bound at all. `signals` is bounded by the header's signal
+       * count and the spec caps that at 9999; `events --list` and the diagnostics blocks have
+       * always capped. A gap list is bounded only by the record count, and a recorder that stops
+       * and restarts every minute across a night produces hundreds — so the command written for
+       * discontinuous files was the one that flooded on them (0.6.29).
+       */
+      const limit = args.limit ?? DEFAULT_ITEM_LIMIT;
+      for (const gap of gaps.slice(0, limit)) {
         const overlap = gap.durationSeconds < 0;
         // The kind is a FOURTH column, appended: columns 1-3 keep their meaning and position, so
         // an existing `cut -f3` still reads a duration. The duration carries its own sign, and
@@ -377,6 +388,13 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         io.out(
           `after segment ${gap.beforeSegmentIndex}\t${gap.startSeconds}s..${gap.endSeconds}s\t` +
             `${gap.durationSeconds}s\t${overlap ? 'overlap' : 'gap'}\n`,
+        );
+      }
+      // The blank line belongs to the rows above it, so `--limit 0` prints none and gets none —
+      // the shape 0.4.181 fixed for the events listing.
+      if (gaps.length > limit) {
+        io.out(
+          `${limit > 0 ? '\n' : ''}... ${gaps.length - limit} more (raise --limit to see them)\n`,
         );
       }
       /*
