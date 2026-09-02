@@ -55,15 +55,22 @@ interface DeinterleavePlan {
 function assertWithinBudget(
   requiredBytes: number,
   what: string,
+  bytesPerSample: number,
   options: MaterializeOptions | undefined,
 ): void {
   const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (requiredBytes <= budgetBytes) return;
+  // How many DO fit. The caller is being asked to divide by a width this message knows and does
+  // not print, from two numbers it does print.
+  const fits = Math.floor(budgetBytes / bytesPerSample);
+  const advice =
+    fits > 0
+      ? `decode at most ${fits} samples per call, reuse an \`out\` array, or raise options.maxMaterializeBytes.`
+      : 'this budget does not fit one sample — reuse an `out` array, or raise options.maxMaterializeBytes.';
   throw new EdfBudgetError(
     `Decoding ${what} needs a ${requiredBytes}-byte array, above the ${budgetBytes}-byte ` +
       'maxMaterializeBytes budget, so the allocation was refused before it was attempted. ' +
-      'Next: decode fewer records per call, reuse an `out` array, or raise ' +
-      'options.maxMaterializeBytes.',
+      `Next: ${advice}`,
     { requiredBytes, budgetBytes },
   );
 }
@@ -150,7 +157,12 @@ function resolveOut(
   options: MaterializeOptions | undefined,
 ): Int32Array {
   if (out === undefined) {
-    assertWithinBudget(sampleCount * BYTES_PER_INT32, `${sampleCount} digital samples`, options);
+    assertWithinBudget(
+      sampleCount * BYTES_PER_INT32,
+      `${sampleCount} digital samples`,
+      BYTES_PER_INT32,
+      options,
+    );
     return new Int32Array(sampleCount);
   }
   if (out.length < sampleCount) {

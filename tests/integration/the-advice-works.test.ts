@@ -148,8 +148,8 @@ describe('"merge each contiguous run separately"', () => {
   });
 });
 
-describe('"read fewer records per call, or raise options.maxMaterializeBytes"', () => {
-  it('offers two levers, and both of them work', async () => {
+describe('"read at most N records per call, or raise options.maxMaterializeBytes"', () => {
+  it('offers two levers, and both of them work — and N is the count that fits', async () => {
     const recording = await open(PLAIN);
     const { header } = recording;
     const budget = 2 * header.recordByteLength;
@@ -165,15 +165,18 @@ describe('"read fewer records per call, or raise options.maxMaterializeBytes"', 
       ),
     );
     const advice = adviceOf(error);
-    expect(advice).toContain('read fewer records per call');
+    // The count is named rather than left to the reader (0.6.28), so this follows the number the
+    // message gave rather than one this test worked out.
     expect(advice).toContain('raise options.maxMaterializeBytes');
+    const named = /read at most (\d+) records? per call/.exec(advice);
+    expect(named?.[1]).toBe('2');
 
-    // Lever one: fewer records, sized from the budget the message reported.
+    // Lever one: exactly the count the message named.
     await expect(
       readRecordBytes(
         recording.source,
         header,
-        { start: 0, count: 2 },
+        { start: 0, count: Number(named?.[1]) },
         {
           maxMaterializeBytes: budget,
         },

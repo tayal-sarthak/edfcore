@@ -24,6 +24,7 @@ import { EDF_HEADER_BLOCK_BYTES, EDF_MAX_SIGNAL_COUNT, HEADER_FIELDS } from '../
 import { EdfBudgetError, EdfRangeError } from '../errors.js';
 import { parseHeader } from '../header/parse.js';
 import { resolveMaterializeBudget } from '../options.js';
+import { pluralise } from '../text/counted.js';
 import type { ByteSource, EdfHeader, OpenOptions, ReadOptions, RecordRange } from '../types.js';
 import { assertExactRead } from './source.js';
 
@@ -121,10 +122,26 @@ function assertWithinBudget(
 ): void {
   const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (requiredBytes <= budgetBytes) return;
+  /*
+   * How many records DO fit, rather than "fewer".
+   *
+   * A caller told to read fewer records has to work out the record size, divide, and floor —
+   * from two numbers this message already prints and one it does not. The arithmetic is
+   * `requiredBytes / records.count` per record, exactly, because that is how `requiredBytes` was
+   * computed one line up.
+   *
+   * A count of zero cannot reach here: it needs no bytes, so it is never above the budget.
+   */
+  const perRecord = requiredBytes / records.count;
+  const fits = Math.floor(budgetBytes / perRecord);
+  const advice =
+    fits > 0
+      ? `read at most ${pluralise(fits, 'record')} per call, or raise options.maxMaterializeBytes.`
+      : `one record of this file needs ${perRecord} bytes, so no count fits — raise options.maxMaterializeBytes.`;
   throw new EdfBudgetError(
     `Reading records ${describeRange(records)} needs a ${requiredBytes}-byte buffer, above the ` +
       `${budgetBytes}-byte maxMaterializeBytes budget, so the read was refused before anything ` +
-      'was allocated. Next: read fewer records per call, or raise options.maxMaterializeBytes.',
+      `was allocated. Next: ${advice}`,
     { requiredBytes, budgetBytes },
   );
 }

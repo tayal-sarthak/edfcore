@@ -162,7 +162,7 @@ The message names both numbers and what to do:
 ```
 Reading records { start: 0, count: 28800 } needs a 442368000-byte buffer, above the
 268435456-byte maxMaterializeBytes budget, so the read was refused before anything was
-allocated. Next: read fewer records per call, or raise options.maxMaterializeBytes.
+allocated. Next: read at most 17476 records per call, or raise options.maxMaterializeBytes.
 ```
 
 A record range is the one allocation whose size *you* control directly, and decoded output is much

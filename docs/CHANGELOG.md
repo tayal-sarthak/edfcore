@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.28
+
+- **Changed** the three budget refusals to say how many fit rather than "fewer". Reading records,
+  decoding samples and converting samples all ended with a comparative — read fewer, decode fewer,
+  convert fewer — while printing the two numbers that answer the question and withholding the
+  third. The reader was being asked to divide by a width the message knows and does not print.
+- The count is exact, not an estimate: `requiredBytes / records.count` is the record size, because
+  that is how `requiredBytes` was computed one line above. `Reading records { start: 0, count:
+  28800 } … Next: read at most 17476 records per call, or raise options.maxMaterializeBytes.`
+- When nothing fits, it says that instead of advising a count of zero: `one record of this file
+  needs 15360 bytes, so no count fits — raise options.maxMaterializeBytes`.
+- `options.ts` records this shape going wrong twice already: a `NaN` budget refused with "read
+  fewer records per call", "advice no record count can satisfy", and elsewhere "clamp the range
+  against header.recordCount", "a range neither function takes as a parameter" (0.3.21). A
+  comparative with no quantity is the mild version of the same thing.
+- `the-advice-works.test.ts` follows the number the message gives now, rather than one the test
+  worked out itself, which is the check that matters: the advice has to be true, not just present.
+  `requiredBytes` and `budgetBytes` on the error are unchanged.
+
 ## 0.6.27
 
 - **Changed** the "no signal is labelled" refusal to name the label that differs only in case or

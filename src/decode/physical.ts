@@ -38,15 +38,22 @@ interface ScalingFailure {
 function assertWithinBudget(
   requiredBytes: number,
   what: string,
+  bytesPerSample: number,
   options: MaterializeOptions | undefined,
 ): void {
   const budgetBytes = resolveMaterializeBudget(options?.maxMaterializeBytes);
   if (requiredBytes <= budgetBytes) return;
+  // How many DO fit. The caller is being asked to divide by a width this message knows and does
+  // not print, from two numbers it does print.
+  const fits = Math.floor(budgetBytes / bytesPerSample);
+  const advice =
+    fits > 0
+      ? `convert at most ${fits} samples per call, reuse an \`out\` array, or raise options.maxMaterializeBytes.`
+      : 'this budget does not fit one sample — reuse an `out` array, or raise options.maxMaterializeBytes.';
   throw new EdfBudgetError(
     `Producing ${what} needs a ${requiredBytes}-byte array, above the ${budgetBytes}-byte ` +
       'maxMaterializeBytes budget, so the allocation was refused before it was attempted. ' +
-      'Next: convert fewer samples per call, reuse an `out` array, or raise ' +
-      'options.maxMaterializeBytes.',
+      `Next: ${advice}`,
     { requiredBytes, budgetBytes },
   );
 }
@@ -218,7 +225,12 @@ function resolveFloat64Out(
   options: MaterializeOptions | undefined,
 ): Float64Array {
   if (out === undefined) {
-    assertWithinBudget(length * BYTES_PER_FLOAT64, `${length} physical samples`, options);
+    assertWithinBudget(
+      length * BYTES_PER_FLOAT64,
+      `${length} physical samples`,
+      BYTES_PER_FLOAT64,
+      options,
+    );
     return new Float64Array(length);
   }
   if (out.length < length) {
@@ -238,7 +250,12 @@ function resolveInt32Out(
   options: MaterializeOptions | undefined,
 ): Int32Array {
   if (out === undefined) {
-    assertWithinBudget(length * BYTES_PER_INT32, `${length} clamped samples`, options);
+    assertWithinBudget(
+      length * BYTES_PER_INT32,
+      `${length} clamped samples`,
+      BYTES_PER_INT32,
+      options,
+    );
     return new Int32Array(length);
   }
   if (out.length < length) {
