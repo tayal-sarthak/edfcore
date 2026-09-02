@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.34
+
+- **Fixed** the observed-ranges block in `edfcore validate` falling where the numbers left it. The
+  range went straight after the padded label and the sample count straight after that, so both
+  columns moved per row. On the PhysioNet polysomnogram that is seven rows and three offsets:
+  `-2048..1819 over 7,950,000 samples`, `-54..1905 over 79,500 samples`, `136..980 over 79,500
+  samples`.
+- That block exists so a reader can compare channels down a column — it is called "observed sample
+  ranges" — and it was the one output where comparing meant re-finding the number on every line.
+- Same defect as the sample rate (0.6.23), the signal index (0.6.24) and the event clock (0.6.25),
+  in the fourth and last formatter that lays out a table: a value wider than the space it was
+  given. Same fix: measure the rows first. The count is right-aligned, because it is a number and
+  magnitudes compare down a column; the range is left-aligned, because `min..max` has no single
+  place to hang.
+- A single-signal file has one row, so its widths are its own and its report is byte for byte what
+  it was.
+
 ## 0.6.33
 
 - **Added** a sixteenth shape to the `AWKWARD` matrix: BDF+D, 24-bit samples and a discontinuity in

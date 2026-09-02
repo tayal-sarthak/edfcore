@@ -80,20 +80,44 @@ export function formatValidationReport(
   if (report.signalStats.length > 0) {
     lines.push('');
     lines.push('observed sample ranges:');
-    for (const stats of report.signalStats) {
+    /*
+     * The range and the count are sized from the rows, not left to fall where they land.
+     *
+     * An observed range is as wide as the numbers in it, and those differ per channel: on the
+     * PhysioNet polysomnogram the seven rows read `-2048..1819`, `-54..1905` and `136..980`, so
+     * the word `over` sat at three different columns in one block and the sample counts under it
+     * at three more. It is the same defect as the sample rate (0.6.23), the signal index (0.6.24)
+     * and the event clock (0.6.25) — a value wider than the space it was given — in the fourth
+     * formatter, and the same fix: measure the rows first.
+     *
+     * The count is right-aligned because it is a number and the eye compares magnitudes down a
+     * column. A single-signal file has one row, so its widths are its own and its output does not
+     * move.
+     */
+    const rows = report.signalStats.map((stats) => {
       const signal = header?.signals[stats.signalIndex];
       // Through `printable` for the reason `formatHeader` does it: a label is arbitrary bytes
       // from the file, and one holding a newline would open a row naming a signal that does not
       // exist — in a conformance report, which is read precisely because the file is suspect.
       const name = signal === undefined ? `signal ${stats.signalIndex}` : printable(signal.label);
-      const overflow =
-        stats.outOfDigitalRangeCount > 0
-          ? `  ${stats.outOfDigitalRangeCount} outside the declared range`
-          : '';
+      return {
+        name: name.slice(0, 20).padEnd(21),
+        range: `${stats.observedDigitalMin}..${stats.observedDigitalMax}`,
+        count: stats.sampleCount.toLocaleString('en-US'),
+        noun: plural('sample', stats.sampleCount),
+        overflow:
+          stats.outOfDigitalRangeCount > 0
+            ? `  ${stats.outOfDigitalRangeCount} outside the declared range`
+            : '',
+      };
+    });
+    const rangeWidth = Math.max(...rows.map((row) => row.range.length));
+    const countWidth = Math.max(...rows.map((row) => row.count.length));
+
+    for (const row of rows) {
       lines.push(
-        `  ${name.slice(0, 20).padEnd(21)}${stats.observedDigitalMin}..${stats.observedDigitalMax}` +
-          ` over ${stats.sampleCount.toLocaleString('en-US')} ` +
-          `${plural('sample', stats.sampleCount)}${overflow}`,
+        `  ${row.name}${row.range.padEnd(rangeWidth)} over ${row.count.padStart(countWidth)} ` +
+          `${row.noun}${row.overflow}`,
       );
     }
   }
