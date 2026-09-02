@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.33
+
+- **Added** a sixteenth shape to the `AWKWARD` matrix: BDF+D, 24-bit samples and a discontinuity in
+  one file. The matrix held both halves and never together — every BDF shape in it ran end to end,
+  and every discontinuous shape was 16-bit EDF — so a three-byte stride and a chunk boundary that
+  is not the nominal grid had never met.
+- They meet in one arithmetic. A read across a gap resolves a record range per contiguous run, and
+  each run's bytes are addressed as `headerByteLength + record * recordByteLength +
+  signal.recordByteOffset`, where every term is a multiple of `bytesPerSample` — 3 here and 2
+  everywhere else in the matrix — and a sign extension that is right for a 16-bit sample is wrong
+  for a 24-bit one. An off-by-one in either would show on this file and on no other.
+- Thirty sweeps run over the matrix and all of them pass over it. `twenty-four-bits-across-a-gap.
+  test.ts` checks the crossing is real rather than nominal: two segments, a seven-second hole, and
+  the same samples through `readWindow` across the join as through the whole record range.
+
 ## 0.6.32
 
 - **Added** a fifteenth shape to the `AWKWARD` matrix: a file with two annotation channels of

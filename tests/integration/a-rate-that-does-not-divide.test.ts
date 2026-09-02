@@ -50,8 +50,8 @@ function tableRows(printed: string): readonly string[] {
 }
 
 describe('the matrix this file sweeps', () => {
-  it('is the fifteen shapes it was written against', () => {
-    expect(AWKWARD).toHaveLength(15);
+  it('is the sixteen shapes it was written against', () => {
+    expect(AWKWARD).toHaveLength(16);
   });
 });
 

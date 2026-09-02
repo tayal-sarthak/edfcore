@@ -56,8 +56,8 @@ async function json(bytes: Uint8Array): Promise<Report> {
 }
 
 describe('the matrix this file sweeps', () => {
-  it('is the fifteen shapes it was written against', () => {
-    expect(AWKWARD).toHaveLength(15);
+  it('is the sixteen shapes it was written against', () => {
+    expect(AWKWARD).toHaveLength(16);
   });
 });
 

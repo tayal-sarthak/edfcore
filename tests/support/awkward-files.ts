@@ -169,6 +169,22 @@ export const AWKWARD: readonly AwkwardFile[] = [
     }),
   },
   {
+    name: 'BDF+D: 24-bit samples and a gap at once',
+    awkward:
+      'every other BDF shape here runs end to end and every other discontinuous one is 16-bit, so ' +
+      'a three-byte stride and a chunk boundary that is not the nominal grid had never met — and ' +
+      'a byte offset that is right for one is wrong for the other',
+    bytes: spec({
+      format: 'BDF',
+      plus: 'D',
+      recordCount: 6,
+      recordDurationSeconds: 1,
+      recordOnsetSeconds: (record) => (record < 3 ? record : record + 7),
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [{ samplesPerRecord: 30 }],
+    }),
+  },
+  {
     name: 'two annotation signals',
     awkward:
       'EDF+ allows more than one annotations channel and only the FIRST carries the timekeeping ' +

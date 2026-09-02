@@ -42,7 +42,7 @@ const DECLARED = buildEdf({
 describe('the shape', () => {
   it('is in the matrix, which is twelve shapes', () => {
     expect(SHAPE).toBeDefined();
-    expect(AWKWARD).toHaveLength(15);
+    expect(AWKWARD).toHaveLength(16);
   });
 
   it('says -1 in the field and five in the header', async () => {
