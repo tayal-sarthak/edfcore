@@ -60,8 +60,21 @@ plain EDF, BDF, EDF+C and BDF+C, and `'discontinuous'` for the two `+D` variants
 
 `spanSeconds` and `coveredSeconds` are computed independently, one from the two ends of the
 recording and the other from `recordCount × recordDuration`. Their being equal is a real statement
-rather than an identity. When they differ, the difference is time that sits inside the recording
-and that no record covers (ten seconds, in the file above).
+rather than an identity.
+
+**Read the difference with its sign.** `spanSeconds - coveredSeconds` positive is time that sits
+inside the recording and that no record covers — ten seconds, in the file above. Negative means
+records OVERLAP: the sum of their durations exceeds the distance from the first start to the last
+end, because at least one record begins before the one before it ended, and two records claim the
+same instant. `coveredSeconds` is the sum of the record durations and nothing subtracts a
+double-counted second from it, so on an overlapping file it can exceed the span outright.
+
+That is not a hypothetical case the two probes cannot reach: it is the case `resolveTimeWindow`
+already names on its own. Asked for a window against a probed index it partitions the same
+comparison by sign, and says `records covering 6 s are packed into a 3.5 s span, so at least one
+record starts before the previous one ends` rather than reporting a gap. `edfcore gaps` counts
+holes and overlaps apart for the same reason, and `RECORD_ONSET_SPACING_VIOLATION` is what an
+overlap earns at open time.
 
 > **Warning**
 > `EDF+C` is a claim the writer made, not a fact the format enforces, and files marked continuous

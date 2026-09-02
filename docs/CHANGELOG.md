@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.42
+
+- **Fixed** a claim in `discontinuous.md`. It said that when `spanSeconds` and `coveredSeconds`
+  differ, "the difference is time that sits inside the recording and that no record covers". That
+  is one of the two ways they can differ. `coveredSeconds` is the sum of the record durations and
+  nothing subtracts a double-counted second from it, so on a file whose records overlap it exceeds
+  the span outright — six seconds of coverage inside a three-and-a-half second recording — and the
+  difference is time two records both claim, not time nothing covers.
+- The library never believed the unsigned reading. `resolveTimeWindow` has partitioned this exact
+  comparison by sign since 0.3.33, because the one-sided message said "only" of the larger number;
+  `edfcore gaps` counts holes and overlaps apart (0.3.3); `EdfGap.durationSeconds` goes negative for
+  an overlap (0.2.69). The page was the last place the difference had one meaning.
+- Twenty-five lines below that sentence, the same page already said a gap and an overlap can cancel
+  at the two probes. It knew overlaps existed where it described what the probes cannot see, and
+  not where it described what they measure.
+- The page now reads the difference with its sign and quotes `resolveTimeWindow`'s overlap refusal
+  verbatim; a test executes the quote against the real message, so it cannot drift.
+
 ## 0.6.41
 
 - **Added** `start.offsetSeconds` to `edfcore json`: the sub-second start carried by record 0's
