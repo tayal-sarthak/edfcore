@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.26
+
+- **Changed** `NOT_AN_EDF_FILE` to say which archive it was handed, when the first bytes say so.
+  That message's `Next:` clause has always read "a gzip, zip or vendor container has to be unpacked
+  before edfcore sees it" — a menu, offered on the same line as the hex that answers it. `1f 8b` is
+  a gzip and nothing else, and the message printed those bytes and asked the reader to look them up.
+- It is also the likeliest first meeting with this package. Recordings travel compressed —
+  PhysioNet ships `.zip`, teuniz.net ships `.zip`, a shared study arrives as `.gz` — so pointing
+  edfcore at the download rather than at what is inside it is the ordinary mistake, not an exotic
+  one. `edfcore header study.edf.gz` now says it is a gzip and to unpack it.
+- Seven magic numbers: gzip, zip, an empty zip, bzip2, xz, zstd and 7-Zip. Archive formats only,
+  and only by magic number — naming a container is a fact about the first bytes, while guessing a
+  vendor's binary EEG format from two of them would be a claim about the whole file. Everything
+  unrecognised keeps the general advice, which `it-says-which-container.test.ts` checks with bytes
+  chosen to sit one value away from a magic number, because a table that matched everything would
+  be worse than the menu.
+- Same code, same field, same bytes, same `Next:` shape. A program branching on `code` sees nothing.
+
 ## 0.6.25
 
 - **Fixed** an event listing losing its columns to a time wider than twelve characters.

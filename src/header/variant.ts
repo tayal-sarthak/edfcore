@@ -116,6 +116,36 @@ export function reservedMarkerOf(reserved: string): EdfReservedMarker | undefine
   return undefined;
 }
 
+/**
+ * The containers whose first bytes are already in hand when `NOT_AN_EDF_FILE` is thrown.
+ *
+ * That message's `Next:` clause has always said "a gzip, zip or vendor container has to be
+ * unpacked before edfcore sees it" — a menu, offered while holding the two bytes that say which
+ * one it is. `1f 8b` is a gzip and nothing else, and a reader who has just been handed the hex is
+ * being asked to look it up.
+ *
+ * Only the archive formats, and only by their magic number. Naming a container is a fact about the
+ * first bytes; guessing at a vendor's binary EEG format from the same two bytes would be a claim
+ * about the whole file, and the generic clause still covers those.
+ */
+const CONTAINERS: ReadonlyArray<readonly [string, readonly number[]]> = [
+  ['a gzip', [0x1f, 0x8b]],
+  ['a zip', [0x50, 0x4b, 0x03, 0x04]],
+  ['an empty zip', [0x50, 0x4b, 0x05, 0x06]],
+  ['a bzip2', [0x42, 0x5a, 0x68]],
+  ['an xz', [0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00]],
+  ['a zstd', [0x28, 0xb5, 0x2f, 0xfd]],
+  ['a 7-Zip archive', [0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c]],
+];
+
+/** The container these bytes begin with, or `undefined` — which is most files. */
+function containerAt(bytes: Uint8Array): string | undefined {
+  for (const [name, magic] of CONTAINERS) {
+    if (magic.every((byte, at) => bytes[at] === byte)) return name;
+  }
+  return undefined;
+}
+
 function markerFamily(marker: EdfReservedMarker): EdfFamily {
   return marker === 'EDF+C' || marker === 'EDF+D' ? 'EDF' : 'BDF';
 }
@@ -157,15 +187,20 @@ export function detectVariant(headerBytes: Uint8Array, sink: DiagnosticSink): Ed
       HEADER_FIELDS.version.offset,
       HEADER_FIELDS.version.length,
     );
+    const container = containerAt(headerBytes);
     throw fatalError({
       code: 'NOT_AN_EDF_FILE',
       message:
         `version field (8 bytes at offset ${HEADER_FIELDS.version.offset}) is ` +
         `${JSON.stringify(raw)}, bytes ${hexBytes(versionBytes)}: this is neither EDF's ` +
         `"0" followed by seven spaces nor BDF's 0xff followed by "BIOSEMI". ` +
+        (container === undefined ? '' : `Those first bytes are ${container}. `) +
         'EDF specification, header record bytes 0-7 (version of this data format). ' +
-        'Next: confirm the bytes are an uncompressed EDF or BDF recording — a gzip, zip or ' +
-        'vendor container has to be unpacked before edfcore sees it.',
+        (container === undefined
+          ? 'Next: confirm the bytes are an uncompressed EDF or BDF recording — a gzip, zip or ' +
+            'vendor container has to be unpacked before edfcore sees it.'
+          : `Next: unpack ${container} and open the EDF or BDF file inside it — edfcore reads ` +
+            'recordings, not archives.'),
       field: 'version',
       byteOffset: HEADER_FIELDS.version.offset,
       byteLength: HEADER_FIELDS.version.length,
