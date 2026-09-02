@@ -156,9 +156,9 @@ async function readEverything(source: ByteSource): Promise<Record<string, unknow
 }
 
 describe('the spellings this compares', () => {
-  it('are the five a caller can reach, over the fourteen shapes', () => {
+  it('are the five a caller can reach, over the fifteen shapes', () => {
     expect(SPELLINGS).toHaveLength(5);
-    expect(AWKWARD).toHaveLength(14);
+    expect(AWKWARD).toHaveLength(15);
   });
 });
 

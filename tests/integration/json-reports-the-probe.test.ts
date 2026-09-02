@@ -76,7 +76,7 @@ describe('the fixture', () => {
     expect(recording.header.diagnostics.map((one) => one.code)).not.toContain(
       'DISCONTINUITY_IN_CONTINUOUS_FILE',
     );
-    expect(AWKWARD).toHaveLength(14);
+    expect(AWKWARD).toHaveLength(15);
   });
 });
 

@@ -169,6 +169,30 @@ export const AWKWARD: readonly AwkwardFile[] = [
     }),
   },
   {
+    name: 'two annotation signals',
+    awkward:
+      'EDF+ allows more than one annotations channel and only the FIRST carries the timekeeping ' +
+      'TAL, so a helper that finds "the" annotations signal picks one and loses the events in the ' +
+      'other — and the two channels have different widths, so a fixed stride is wrong as well',
+    bytes: spec({
+      format: 'EDF',
+      plus: 'C',
+      recordCount: 4,
+      recordDurationSeconds: 1,
+      signals: [{ label: 'Fp1', samplesPerRecord: 8 }],
+      annotationSignals: [
+        {
+          samplesPerRecord: 30,
+          tals: (record) => (record === 0 ? [{ onset: '+0.5', texts: ['scored by A'] }] : []),
+        },
+        {
+          samplesPerRecord: 20,
+          tals: (record) => (record === 1 ? [{ onset: '+1.5', texts: ['scored by B'] }] : []),
+        },
+      ],
+    }),
+  },
+  {
     name: 'a download that stopped part way',
     awkward:
       'the header promises more records than the bytes hold, and the last of the bytes is half a ' +

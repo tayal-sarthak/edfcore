@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.32
+
+- **Added** a fifteenth shape to the `AWKWARD` matrix: a file with two annotation channels of
+  different widths. EDF+ permits more than one and is specific about the asymmetry — the FIRST
+  carries the timekeeping TAL that states each record's onset, and any of them may carry events.
+  Two scorers writing into one file, or a device separating its own markers from a technician's
+  notes, produce exactly this.
+- `secondary-annotation-signal.test.ts` covers the decoding. What the matrix had never held is a
+  file where the answer to "the annotations channel" is two channels of different widths, so a
+  helper that finds one and stops loses half the events silently and a fixed stride through the
+  record is wrong for one of them. That is the failure a sweep over a whole file can see and a
+  targeted test cannot. Every sweep passes over it.
+- `two-scorers-two-channels.test.ts` also pins the property the sweeps do not state: one
+  `readAnnotations` call with no `signalIndices` returns both scorers, sorted together rather than
+  one channel after the other, each carrying the `signalIndex` that says which scorer wrote it.
+
 ## 0.6.31
 
 - **Added** a fourteenth shape to the `AWKWARD` matrix: a file whose last record is half there.

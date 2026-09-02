@@ -129,7 +129,7 @@ function contains(value: unknown, kind: (candidate: unknown) => boolean, depth =
 
 describe('the sweep really posts something', () => {
   it('covers every shape in the matrix, not one file', () => {
-    expect(AWKWARD).toHaveLength(14);
+    expect(AWKWARD).toHaveLength(15);
     // Eleven shapes and the gapped file. Seven values each for a file nothing can be read from,
     // ten for the rest, so the exact total is not worth pinning — that it is large is.
     expect(POSTED.length).toBeGreaterThanOrEqual(70);
