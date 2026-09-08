@@ -245,8 +245,9 @@ for (const diagnostic of recording.header.diagnostics) {
 // startdate field (8 bytes at offset 168) is "01.01.20": its two-digit year was resolved to
 // 2020 by the EDF+ rule that 85..99 mean 1985..1999 and 00..84 mean 2000..2084, so the field
 // cannot express a year outside that span. EDF+ additional specification 2 (1985 is the
-// clipping date). Next: for an unambiguous year read startTime.recordingIdDate, which the
-// EDF+ recording identification spells out in four digits.
+// clipping date). Next: this file has no four-digit year to fall back on — its recording
+// identification carries no Startdate subfield, so startTime.recordingIdDate is undefined and
+// the clipped year is the only date the file has.
 ```
 
 `severity` is `'error'`, `'warning'` or `'info'`. An error means something is genuinely unavailable: a signal with no usable `scale`, for instance, which leaves the header perfectly readable but physical units undefined for that channel. A warning means the file departs from the spec and what you got back still holds. Info means the file is correct and the note exists because the situation surprises people. A physical minimum above the physical maximum is a negative amplifier gain, it's sanctioned by the EDF FAQ, and edfcore leaves it alone. Swapping the two flips polarity.

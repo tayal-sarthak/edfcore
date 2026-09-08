@@ -366,16 +366,36 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
   }
 
   if (dateParse.clippedYear && dateParse.date !== undefined) {
+    /*
+     * The advice branches on whether the four-digit year it points at exists, because the one
+     * sentence it used to be was never actionable on any file.
+     *
+     * It said "for an unambiguous year read startTime.recordingIdDate". The resolution rule
+     * above is that the recording-identification date WINS when both are readable, so a file
+     * that has one already resolved to it — `dateSource` is "recordingIdField" and
+     * `resolvedDate` is the four-digit year — and the reader is told to do what edfcore did.
+     * A file that has none has `recordingIdDate === undefined`, and the reader is sent to a
+     * field with nothing in it. Those two cases are the only two there are: three of the seven
+     * files in the test corpus are the second, four are the first, and this clause was wrong on
+     * all seven.
+     */
+    const clipping =
+      `startdate field (8 bytes at offset ${dateOffset}) is ` +
+      `${JSON.stringify(dateParse.raw)}: its two-digit year was resolved to ` +
+      `${dateParse.date.year} by the EDF+ rule that 85..99 mean 1985..1999 and 00..84 mean ` +
+      '2000..2084, so the field cannot express a year outside that span. EDF+ additional ' +
+      'specification 2 (1985 is the clipping date). ';
     sink.report({
       code: 'DATE_CLIPPED_TO_1985_2084',
       message:
-        `startdate field (8 bytes at offset ${dateOffset}) is ` +
-        `${JSON.stringify(dateParse.raw)}: its two-digit year was resolved to ` +
-        `${dateParse.date.year} by the EDF+ rule that 85..99 mean 1985..1999 and 00..84 mean ` +
-        '2000..2084, so the field cannot express a year outside that span. EDF+ additional ' +
-        'specification 2 (1985 is the clipping date). Next: for an unambiguous year read ' +
-        'startTime.recordingIdDate, which the EDF+ recording identification spells out in ' +
-        'four digits.',
+        recordingIdDate === undefined
+          ? `${clipping}Next: this file has no four-digit year to fall back on — its recording ` +
+            'identification carries no Startdate subfield, so startTime.recordingIdDate is ' +
+            'undefined and the clipped year is the only date the file has.'
+          : `${clipping}Next: nothing is affected — the EDF+ recording identification carries a ` +
+            'Startdate, so startTime.resolvedDate is already that four-digit year and ' +
+            'startTime.dateSource is "recordingIdField". This is a note about the field, not ' +
+            'about the date you get.',
       field: 'startDate',
       byteOffset: dateOffset,
       byteLength: HEADER_FIELDS.startDate.length,

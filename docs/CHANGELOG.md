@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.46
+
+- **Changed** the `Next:` clause of `DATE_CLIPPED_TO_1985_2084`, which could not be followed on any
+  file. It said "for an unambiguous year read `startTime.recordingIdDate`, which the EDF+ recording
+  identification spells out in four digits". Resolution runs the other way: the
+  recording-identification date wins when both are readable.
+- So a file that carries one has already resolved to it — `dateSource` is `"recordingIdField"` and
+  `resolvedDate` IS the four-digit year — and the reader was told to go and fetch what edfcore had
+  already used. A file that carries none has `recordingIdDate === undefined`, and the reader was
+  sent to an empty field with no explanation. Those are the only two cases: four of the seven files
+  in the test corpus are the first and three are the second, and the clause was wrong on all seven.
+- The clause now branches. With a `Startdate` subfield it says the resolved date is already that
+  year and names `dateSource`; without one it says the file has no four-digit year to fall back on
+  and the clipped year is all it has. This is the shape of 0.6.40 and 0.6.26 — one menu split into
+  the two questions it was covering.
+- The code, severity, `field`, `byteOffset`, `expected`, `actual` and spec reference are untouched,
+  and so is the sentence before the clause. `the-advice-works.test.ts` covers this property for
+  refusals; it could not reach a diagnostic, because a diagnostic is reported rather than thrown.
+
 ## 0.6.45
 
 - **Fixed** a claim in `large-files.md`: that building a complete index "is the only price in the
