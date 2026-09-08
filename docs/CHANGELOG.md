@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.47
+
+- **Fixed** a claim in `api-primitives.md`: that when a header declares more records than the file
+  holds, "the difference between those two numbers is the only evidence" of a truncated download.
+  A writer that flushes its record-count field as it goes — so a reader can follow the recording —
+  and then dies mid-record leaves a file whose declared count equals the whole records on disk,
+  with a fraction of one more after them. There is nothing to subtract.
+- `header/parse.ts` already handles it: `declared === wholeRecords` with bytes left over reports
+  `PARTIAL_FINAL_RECORD` rather than `TRAILING_BYTES`, because a partial record is not spare bytes.
+  `recordCount` is unaffected and `recordCountSource` stays `'headerField'`.
+- The matrix shape that hid it is `a download that stopped part way`, which earns `TRUNCATED_FILE`
+  and `PARTIAL_FINAL_RECORD` together — so the second code never appeared on its own, and the
+  sentence about the first looked like it covered both. A test now builds the file where it does.
+- The page keeps its point, which was never in doubt: both findings need `sourceByteLength`, and a
+  header-only buffer looks like a complete file whose records all happen to be missing.
+
 ## 0.6.46
 
 - **Changed** the `Next:` clause of `DATE_CLIPPED_TO_1985_2084`, which could not be followed on any
