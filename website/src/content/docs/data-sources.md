@@ -289,7 +289,7 @@ working — a real 206 always carries the header, which is what makes the check 
 
 ## cachedSource: an LRU over any source
 
-None of the adapters above caches. `cachedSource` is the only cache in edfcore. You opt into it, it's visible at the call site, and you remove it by deleting one wrapper.
+None of the adapters above caches. `cachedSource` is the only cache of file bytes in edfcore. You opt into it, it's visible at the call site, and you remove it by deleting one wrapper. The record index separately memoises the record onsets it has decoded; that one is not a source wrapper and removing this one does not remove it.
 
 ```ts
 import { cachedSource, httpSource, openEdf } from 'edfcore';

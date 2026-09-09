@@ -168,7 +168,7 @@ Extends `ReadOptions`, so `signal` and `maxMaterializeBytes` are available too.
 function cachedSource(source: ByteSource, options?: CacheOptions): ByteSource
 ```
 
-A block-aligned LRU over any other `ByteSource`. **This is the only cache in edfcore**: opt-in, visible at the call site, and removed by deleting one wrapper from the expression that built the source.
+A block-aligned LRU over any other `ByteSource`. **This is the only cache of file bytes in edfcore**: opt-in, visible at the call site, and removed by deleting one wrapper from the expression that built the source. It is not the only thing in the package that remembers — the record index memoises decoded record onsets, which is what makes a second `index.locate()` near the first almost free, and no wrapper controls that. [Large files](/docs/large-files) covers the pair.
 
 Two properties matter more than the hit rate. A read returns a **copy**, never a view into a retained block, so a caller who writes into the result can't corrupt what the next reader sees. And concurrent reads wanting the same block issue **one** underlying read. Over HTTP that is one request instead of eight.
 

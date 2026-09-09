@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.48
+
+- **Fixed** an unqualified claim in four places: that `cachedSource` is "the only cache in
+  edfcore". It is the only cache of file BYTES, which is the wording `large-files.md` has always
+  used, beside a Note naming the record index's onset memo and calling the two together "the only
+  two forms of memory in the library". `src/io/cached.ts` said it twice, `api-sources.md` said it
+  in bold and `data-sources.md` said it flat, so the site disagreed with itself and the loose
+  version was on the pages a reader consults while deciding what their source expression keeps.
+- The other one is not a detail. `record-index.ts` memoises decoded record onsets in a Map keyed by
+  record index — its own docblock says so, and it is what makes `locate()` cost O(log recordCount)
+  reads and a second `locate()` nearby cost almost none. It is not opt-in, not visible at a call
+  site, no wrapper removes it, and it lives as long as the index does.
+- What the missing qualifier cost: a reader concludes that dropping the wrapper leaves edfcore
+  retaining nothing, and then cannot account for an index that grows while a viewer scrolls.
+- No behaviour changed. The new test measures the memo rather than quoting it — the same `locate()`
+  twice against a read-counting source, and the second one reads nothing.
+
 ## 0.6.47
 
 - **Fixed** a claim in `api-primitives.md`: that when a header declares more records than the file

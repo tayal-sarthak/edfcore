@@ -147,8 +147,9 @@ export { resolveTimeWindow, trimToWindow } from './time/window.js';
 
 // ===========================================================================
 // I/O adapters — universal, format-independent, and none of them caches.
-// `cachedSource` is the only cache in edfcore: opt-in, visible at the call
-// site, and removed by deleting one wrapper.
+// `cachedSource` is the only cache of file bytes in edfcore: opt-in, visible
+// at the call site, and removed by deleting one wrapper. The record index
+// memoises onsets separately, and no wrapper controls that one.
 // ===========================================================================
 
 export { blobSource } from './io/blob.js';

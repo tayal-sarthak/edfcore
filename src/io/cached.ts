@@ -1,6 +1,15 @@
 /**
- * The only cache in edfcore: opt-in, visible at the call site, and removed by deleting one
- * wrapper from the expression that built the source.
+ * The only cache of file BYTES in edfcore: opt-in, visible at the call site, and removed by
+ * deleting one wrapper from the expression that built the source.
+ *
+ * "Of bytes" is the load-bearing half. `record-index.ts` memoises decoded record onsets in a Map
+ * keyed by record index — that is what makes a second `index.locate()` near the first almost free
+ * — and it is not opt-in, not visible at a call site, and lives as long as the index does. A
+ * reader told this module is the only cache in the package concludes that dropping the wrapper
+ * leaves edfcore retaining nothing, and then cannot account for an index that grows while a viewer
+ * scrolls. `large-files.md` has always named both, calling them "the only two forms of memory in
+ * the library"; this docblock, `cachedSource` below, `api-sources.md` and `data-sources.md` each
+ * said "the only cache" flat (fixed in 0.6.48).
  *
  * Layer 5. A block-aligned LRU over an arbitrary `ByteSource`. Two properties matter more than
  * the hit rate:
@@ -83,8 +92,9 @@ function watchSignal(
 
 /**
  * Wraps a source in an LRU block cache — worth it over HTTP, where a scan re-reads neighbouring
- * bytes, and pointless over an in-memory one. It is the only cache in edfcore and it is a
- * wrapper, so removing it is deleting this call rather than finding a flag.
+ * bytes, and pointless over an in-memory one. It is the only cache of file bytes in edfcore and it
+ * is a wrapper, so removing it is deleting this call rather than finding a flag. The record
+ * index's onset memo is the other thing in the package that remembers, and no wrapper controls it.
  */
 export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSource {
   const byteLength = source.byteLength;

@@ -162,7 +162,9 @@ export interface HttpSourceOptions extends ReadOptions {
 }
 
 /**
- * Tuning for `cachedSource`, which is the only cache in edfcore — everything else reads through.
+ * Tuning for `cachedSource`, the only cache of file BYTES in edfcore — every other source reads
+ * through. The record index's onset memo is the other thing that remembers, and no option here
+ * reaches it.
  * That is why this is opt-in and visible at the call site: caching is removed by deleting one
  * wrapper, so it can never be the hidden reason two reads disagreed.
  */
