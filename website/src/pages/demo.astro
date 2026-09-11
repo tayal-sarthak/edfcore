@@ -128,6 +128,7 @@ import Base from '../layouts/Base.astro';
     blobSource,
     buildRecordIndex,
     byteSource,
+    filterAnnotationsByTime,
     formatStartTimeNaive,
     gridSampleStartSeconds,
     isEdfError,
@@ -612,9 +613,19 @@ import Base from '../layouts/Base.astro';
     // Scored events cluster — an apnea and its desaturation land half a second apart — so
     // labels claim a row and the next one drops beneath rather than overprinting.
     const labelRows: number[] = [];
-    for (const annotation of annotations) {
+    /*
+     * `annotationsInWindow`, not a hand-written comparison on the float seconds.
+     * `annotations-query.ts` exists for this and quotes the expression that was here:
+     * "The obvious filter is `a.onsetSecondsFromFirstRecord >= from && … < to`, and those are
+     * float64 seconds converted from exact tick counts." Every comparison it makes is on
+     * `onsetTicksFromFirstRecord`, which is the axis `readWindow` puts these samples on — mistake
+     * 4 on `AGENTS.md`, made on the page that draws the two together (0.6.81).
+     */
+    for (const annotation of filterAnnotationsByTime(annotations, {
+      startSeconds,
+      durationSeconds,
+    })) {
       const onset = annotation.onsetSecondsFromFirstRecord;
-      if (onset < startSeconds || onset > startSeconds + durationSeconds) continue;
       const x = secondsToX(onset);
 
       if (annotation.durationSeconds) {

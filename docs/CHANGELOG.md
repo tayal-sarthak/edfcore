@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.81
+
+- **Fixed** the inspector deciding which events fall in the window it draws by comparing
+  `onsetSecondsFromFirstRecord` against the bounds itself. `annotations-query.ts` exists for that
+  comparison and quotes the expression that was there: "The obvious filter is
+  `a.onsetSecondsFromFirstRecord >= from && … < to`, and those are float64 seconds converted from
+  exact tick counts."
+- Mistake 4 on `AGENTS.md` — "Compare event times in `bigint` ticks, not the floats" — on the page
+  that draws the events and the samples on one axis.
+- It changes two things, not one. The bounds are now converted to ticks once and compared exactly,
+  and the window is HALF-OPEN: the hand-written test used `<=` at the right edge, so an event
+  landing exactly on a window boundary was drawn in that window and in the next one. The test
+  builds a file with an event on every second and shows the old comparison returning three events
+  for a two-second window.
+
 ## 0.6.80
 
 - **Changed** `decodeStatusWord` to refuse a value that is not a BDF sample. It was
