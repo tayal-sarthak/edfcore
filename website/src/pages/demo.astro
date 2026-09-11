@@ -174,6 +174,26 @@ import Base from '../layouts/Base.astro';
       .join(':');
   };
 
+  const TICKS_PER_SECOND = 10_000_000n;
+
+  /*
+   * An event's clock comes from its TICKS, by integer division. `format-annotations.ts` states
+   * the rule for the library's own event list: "The clock is built from
+   * `onsetTicksFromFirstRecord` by integer division, never from the float seconds. That is not
+   * fussiness: `onsetSecondsFromFirstRecord` is a float64 produced by dividing an exact tick count
+   * by 10,000,000, so an onset written `+1.0000001` can print a millisecond field that is off by
+   * one — and an event list is exactly where someone reads a number off the screen and types it
+   * into something else." This table is that event list, and it read the float (0.6.82).
+   */
+  const eventClock = (ticks: bigint) => {
+    // FLOORED, as `format-annotations.ts` floors: the printed time never names an instant later
+    // than the event. A negative onset is legal — EDF+ measures from the header start time, and a
+    // recording may begin after its first annotation — so the sign is kept rather than clamped.
+    const whole = ticks / TICKS_PER_SECOND - (ticks < 0n && ticks % TICKS_PER_SECOND !== 0n ? 1n : 0n);
+    const sign = whole < 0n ? '-' : '';
+    return `${sign}${hhmmss(Number(whole < 0n ? -whole : whole))}`;
+  };
+
   function setStatus(message: string, kind: 'idle' | 'busy' | 'error' = 'idle') {
     statusEl.textContent = message;
     statusEl.dataset.kind = kind;
@@ -412,7 +432,7 @@ import Base from '../layouts/Base.astro';
     $<HTMLTableSectionElement>('events').innerHTML = annotations
       .map(
         (a) => `<tr data-onset="${a.onsetSecondsFromFirstRecord}">
-          <td class="tnum">${hhmmss(a.onsetSecondsFromFirstRecord)}</td>
+          <td class="tnum">${eventClock(a.onsetTicksFromFirstRecord)}</td>
           <td class="tnum">${a.durationSeconds === undefined ? '—' : `${fmt(a.durationSeconds)} s`}</td>
           <td>${escapeHtml(a.text)}</td>
         </tr>`,

@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.82
+
+- **Fixed** the clock the inspector prints beside each event, which read
+  `onsetSecondsFromFirstRecord` and floored it. `format-annotations.ts` states the rule for the
+  library's own event list and why it is not fussiness: the seconds are "a float64 produced by
+  dividing an exact tick count by 10,000,000 … and an event list is exactly where someone reads a
+  number off the screen and types it into something else."
+- The inspector's table is that event list. It now divides `onsetTicksFromFirstRecord` in integers,
+  floors the way the library floors — so the printed time never names an instant later than the
+  event — and keeps the sign a negative onset carries, which EDF+ allows because a recording may
+  begin after its first annotation.
+- The test finds a tick count where the two routes disagree rather than assuming one exists: one
+  tick short of a whole second, at a scale where one tick is below the float's ulp, the float
+  route names the second AFTER the event.
+
 ## 0.6.81
 
 - **Fixed** the inspector deciding which events fall in the window it draws by comparing
