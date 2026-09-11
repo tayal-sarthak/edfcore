@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.73
+
+- **Fixed** the cost figure in `io/read.ts`, which states the unit-of-I/O rule as one of "two
+  rules [that] are the whole file". It said "ten seconds of one channel out of thirty is a 27x
+  overread spread over ten requests, against a single 153,600-byte read for all thirty".
+- That is neither strategy and neither number. The read edfcore issues is ONE request of 153,600
+  bytes, of which 5,120 are the channel asked for — a factor of 30. The ten-request alternative is
+  the one that does not overread at all: ten stripes of 512 bytes, 5,120 bytes in total, at the
+  cost of ten round trips. `large-files.md` works the same window through both and has said
+  "Overread factor: 30" throughout.
+- The sentence is the one a caller planning HTTP range requests reads, which is what the module
+  exists for. The test measures all of it through a counting source rather than restating it.
+
 ## 0.6.72
 
 - **Fixed** `header/scale.ts` calling itself sole owner of "the four conditions" under which a

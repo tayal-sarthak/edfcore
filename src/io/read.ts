@@ -9,9 +9,13 @@
  *    read of a size the file has not stated.
  * 2. The unit of I/O is the RECORD RANGE, never the channel range. `readRecordBytes` issues one
  *    contiguous read covering every signal over the requested records, and de-interleaving
- *    happens in memory afterwards. There is no cheap single-channel read in EDF — ten seconds of
- *    one channel out of thirty is a 27x overread spread over ten requests, against a single
- *    153,600-byte read for all thirty — and this API says so instead of hiding it.
+ *    happens in memory afterwards. There is no cheap single-channel read in EDF. Ten seconds of
+ *    ONE channel out of thirty at 256 Hz is the same 153,600-byte read as all thirty, of which
+ *    5,120 bytes are the channel asked for: one request, 30x overread. The alternative collects
+ *    the stripes a record at a time — ten requests of 512 bytes, no overread at all, and ten
+ *    round trips instead of one. `large-files.md` works the same window through both. This said
+ *    "a 27x overread spread over ten requests" until 0.6.73, which is neither strategy and
+ *    neither number.
  *
  * The exact-length contract is re-verified here even though every bundled adapter already checks
  * it, because a `ByteSource` may be the caller's own and a silently short read is
