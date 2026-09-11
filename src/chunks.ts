@@ -2,8 +2,14 @@
  * Joining chunks that a read returned as several.
  *
  * Layer 7, and pure: nothing here reads. `readWindow` splits at every discontinuity, so a window
- * over an EDF+D file comes back as one chunk per contiguous run. Code that then wants ONE array —
- * a filter, an FFT, a CSV writer — has to join them, and joining is where the gap gets lost.
+ * over an EDF+D file comes back as one chunk per contiguous run ONCE THE INDEX IS COMPLETE. With
+ * the probed index `openEdf` hands you it does not return several chunks — it throws, because a
+ * pair of probes cannot say where the gap is, and `buildRecordIndex` is what changes that. This
+ * said the first half flatly until 0.6.71, which described a call that throws on the index a
+ * reader has at that moment.
+ *
+ * Code that then wants ONE array — a filter, an FFT, a CSV writer — has to join them, and joining
+ * is where the gap gets lost.
  *
  * Concatenating two runs separated by five minutes produces an array in which sample `i` and
  * sample `i + 1` are five minutes apart. Every time derived from an index past that point is

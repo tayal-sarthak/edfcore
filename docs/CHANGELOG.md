@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.71
+
+- **Fixed** `chunks.ts` opening with a call that throws on the index a reader holds. It said
+  `readWindow` "splits at every discontinuity, so a window over an EDF+D file comes back as one
+  chunk per contiguous run" — true of a COMPLETE index, and false of the probed one `openEdf`
+  returns, where the same call throws because two probes cannot say where the gap is.
+- That paragraph is the argument for `mergeChunks` existing, so it is the first thing a reader of
+  this module reads, and it never mentioned `buildRecordIndex` — the step between them and the
+  several chunks the module is for. `recording.ts`, the README and `discontinuous.md` all carry
+  the qualifier.
+- The test makes both calls on one file, so the difference is the index and nothing else, and
+  pins that the probed refusal is a plain `RangeError` rather than an `EdfError`: the file is
+  fine and the index passed was not enough.
+
 ## 0.6.70
 
 - **Changed** `edfcore header` to label its first diagnostics block when a second one follows. It
