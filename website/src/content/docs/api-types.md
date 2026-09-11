@@ -519,7 +519,8 @@ const [event] = result.annotations;
 
 event.onsetSecondsFromHeaderStart;  // 1.5
 event.onsetSecondsFromFirstRecord;  // 1.5
-event.onsetTicks;                   // 15000000n — compare with this
+event.onsetTicks;                   // 15000000n — the header's axis
+event.onsetTicksFromFirstRecord;    // 15000000n — compare a window with THIS one
 event.onsetRaw;                     // '+1.5'
 event.durationSeconds;              // 0.25
 event.text;                         // 'Lights off'
@@ -527,6 +528,11 @@ event.recordIndex;                  // 1
 
 result.recordOnsetTicks;  // BigInt64Array [0n, 10000000n, 20000000n, 130000000n, ...]
 ```
+
+The two tick fields are equal above because this file declares no sub-second start offset, which
+is most files. They differ by exactly that offset on the ones that do — so an example is the worst
+place to learn which to use. Against a window, a chunk or a segment it is always
+`onsetTicksFromFirstRecord`; `onsetTicks` is for comparing one annotation with another.
 
 | `EdfAnnotation` | type | meaning |
 |---|---|---|

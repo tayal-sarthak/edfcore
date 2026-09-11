@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.77
+
+- **Fixed** the `EdfAnnotation` example on `api-types.md`, which listed `onsetTicks` with the
+  comment "compare with this" and did not list `onsetTicksFromFirstRecord` at all.
+- The table four lines below it says the opposite — the rebased field is "the axis `readWindow`,
+  `readEnvelope` and `segment.startTicks` use" — and `types.ts` calls `onsetTicks` the wrong one
+  for comparing an annotation against a window. This is the defect 0.6.56 fixed in
+  `tal/annotations.ts`, in the place a reader copies from rather than the place they read.
+- The example compounded it: both fields print `15000000n` there, because that file declares no
+  sub-second start offset. That is most files, and exactly why an example is the worst place to
+  learn which field to use. A note now says so, and the test builds a file with an offset and
+  shows the two differing by it.
+
 ## 0.6.76
 
 - **Fixed** the inspector placing each sample at `part.startSeconds + i / rate`, over a rate it
