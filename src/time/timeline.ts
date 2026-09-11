@@ -2,9 +2,15 @@
  * The recording's time axis, built from probed record onsets.
  *
  * Layer 4. Pure and synchronous: it is handed onsets that someone else read, and it decides what
- * they mean. Sole owner of what makes a timeline valid — `tal/annotations.ts` produces
- * `recordOnsetTicks` and deliberately passes no judgement on it, so monotonicity and
- * record-onset spacing are enforced here and nowhere else.
+ * they mean. Sole owner of what makes a timeline valid ON THE READING PATH —
+ * `tal/annotations.ts` produces `recordOnsetTicks` and deliberately passes no judgement on it,
+ * so every monotonicity and spacing verdict a read reaches is made here.
+ *
+ * Not "and nowhere else", which this said until 0.6.59. `validateRecording` checks the spacing
+ * rule again and reports `RECORD_ONSET_SPACING_VIOLATION` of its own, from the segments a
+ * COMPLETE index gives it — a stronger check than the one below, which sees a probed pair and
+ * can only report net drift. A reader of this file concluded the conformance sweep did not
+ * look.
  *
  * TIME AXIS, fixed here for the whole library: `t = 0` is the START OF RECORD 0, not the header
  * start time. Record 0's timekeeping onset is `startOffsetTicks` — in [0, 1) s — and it is the

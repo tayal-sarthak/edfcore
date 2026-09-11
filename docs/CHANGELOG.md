@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.59
+
+- **Fixed** `time/timeline.ts` claiming that "monotonicity and record-onset spacing are enforced
+  here and nowhere else". `validateRecording` enforces the spacing rule too, and its check is the
+  stronger one: it walks the gaps of a COMPLETE index and reports
+  `RECORD_ONSET_SPACING_VIOLATION` for each negative one, naming the two segments that overlap.
+- The check in `timeline.ts` sees the two records `openEdf` probes, so it can only report net
+  drift — and a file whose gap and overlap cancel leaves it nothing to report. A reader who took
+  "nowhere else" at its word believed the conformance sweep did not look at spacing, and that the
+  probed verdict was the only one available. Both are the opposite of true.
+- The docblock now scopes itself to the reading path, which is what it is sole owner of, and
+  names the other enforcer. The test builds the cancelling file and shows the two answers
+  differing on it.
+
 ## 0.6.58
 
 - **Fixed** `io/source.ts` describing itself as "the only file in `io/` that imports an error
