@@ -259,6 +259,7 @@ Each entry of `chunk.signals` is an `EdfChunkSignal`:
 | `sampleCount` | the real count, never padded to a round number |
 | `firstSampleIndex` | index of the first sample on *this signal's own* sample grid |
 | `startSeconds` | when this signal's first sample starts |
+| `startTicks` | the same instant, exact — what `trimToWindow` measures a window from |
 | `outOfDigitalRangeCount` | samples outside the declared digital range, counted during decode |
 
 `firstSampleIndex` is per-signal because `samplesPerRecord` differs between signals. On the same

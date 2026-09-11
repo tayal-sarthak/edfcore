@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.54
+
+- **Fixed** the `EdfChunkSignal` table on `reading-signals.md`, which listed six of the shape's
+  seven fields and dropped `startTicks`.
+- That is the field the rest of the package points at. `trimToWindow` measures its window from
+  it, every read puts its chunks on the same tick axis, and `api-types.md` spends a paragraph on
+  why the `startSeconds` beside it can be a sub-tick out after a trim. The guide a reader follows
+  to get their first chunk showed them the float64 half and did not say the exact one existed.
+- Same shape as 0.6.53, one page over. The test reads the fields off a chunk a real read returned
+  and compares the table with that, so it fails on a field added to the type as well as on one
+  dropped from the page.
+
 ## 0.6.53
 
 - **Fixed** the `EdfLocation` table on `api-types.md`, which listed three of the shape's five
