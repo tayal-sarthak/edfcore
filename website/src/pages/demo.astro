@@ -216,7 +216,7 @@ import Base from '../layouts/Base.astro';
 
   function readyMessage(name: string, next: EdfRecording): string {
     const { header, timeline } = next;
-    return `${name} — ${header.variant}, ${header.signals.length} signals, ${hhmmss(timeline.spanSeconds)}`;
+    return `${name} — ${header.variant}, ${header.signals.length} signals, ${eventClock(timeline.spanTicks)}`;
   }
 
   function isActiveLoad(generation: number, controller: AbortController): boolean {
@@ -370,7 +370,10 @@ import Base from '../layouts/Base.astro';
     const items: Array<[string, string]> = [
       ['Format', header.variant],
       ['Continuity', header.continuity],
-      ['Duration', hhmmss(timeline.spanSeconds)],
+      // From the TICKS, like the event clock beside it (0.6.82) and the contiguity test above
+      // (0.6.75). `spanSeconds` is a float64 conversion of `spanTicks`, and it is the last
+      // tick-derived number on this page that was still being read as a float.
+      ['Duration', eventClock(timeline.spanTicks)],
       ['Data records', `${header.recordCount} × ${fmt(header.recordDurationSeconds, 3)} s`],
       ['Signals', `${header.dataSignalIndices.length} data · ${header.annotationSignalIndices.length} annotation`],
       ['Sample rates', rates.length ? `${rates.map((r) => `${fmt(r)} Hz`).join(', ')}` : '—'],

@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.88
+
+- **Fixed** the last two places on the inspector that read a tick-derived number as a float: the
+  summary's Duration and the status line under the file name, both `hhmmss(timeline.spanSeconds)`.
+  `EdfTimeline` says which field carries a span — "the ticks are what it must be asked of" — and
+  the Duration is the headline number on that summary.
+- It fails the way the event clock did in 0.6.82: one tick short of a whole second, at a scale
+  where a tick is below the float's ulp, `spanSeconds` rounds up and flooring it names a recording
+  a second longer than it is.
+- The test is a sweep rather than a fourth one-off. It strips the page's comments and asserts that
+  no `*Seconds` field is handed to a clock or compared against another, so a fourth site cannot be
+  added quietly — and it found the status line, which was not the one being fixed. The scrub
+  controls keep their seconds: those are range inputs read with `Number(...)`, with no exact value
+  behind them to lose.
+
 ## 0.6.87
 
 - **Changed** what `readWindow`, `readEnvelope` and `streamRecords` say when handed a `{ records }`
