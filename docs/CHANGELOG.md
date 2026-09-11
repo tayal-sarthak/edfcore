@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.63
+
+- **Fixed** the README contradicting itself about another package inside one screen. The "Before
+  edfcore" table says "Nothing published does byte-range reads" and "No published package can
+  read" BDF; two paragraphs below it, the same README credits `@epicurrents/edf-reader` with
+  "real TAL parsing, real partial reads, BDF support".
+- The reconciliation was already written and lived only on `comparison.md`, which marks both as
+  Yes for that project and then says to read its column "as describing its repository, rather
+  than the artifact currently on npm", because the published artifact predates a good deal of the
+  work in the repository. The README's rows say "published" and mean exactly that; nothing on the
+  page said so.
+- One paragraph under the table now carries that distinction and links to the page that makes it.
+  No claim about anyone else's package changed: this repository is not entitled to make one, which
+  is why `comparison-column.test.ts` checks only the edfcore column. What the new test checks is
+  ours — that the README still carries the qualification its own next paragraph makes necessary.
+
 ## 0.6.62
 
 - **Fixed** `api-errors.md` publishing `EdfFormatErrorInit` a field short. It was written

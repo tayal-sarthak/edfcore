@@ -129,6 +129,11 @@ for it. JavaScript didn't. This is every EDF package on npm, surveyed in mid-202
 | Errors | `console.warn` and `null`, or bare thrown strings; nothing typed or located |
 | Header validation | Essentially none. No size checks, no degenerate-range checks |
 
+Those rows describe the packages as published to npm. `@epicurrents/edf-reader`'s repository
+does random access and BDF, and its published artifact predates a good deal of that work — the
+[comparison page](https://edfcore.vercel.app/docs/comparison) has the column-by-column version
+and says which claims that survey verified and which it did not.
+
 So people building EEG viewers don't reach for an EDF package. They hand-roll a parser and
 reproduce the same bugs.
 
