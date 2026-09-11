@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.58
+
+- **Fixed** `io/source.ts` describing itself as "the only file in `io/` that imports an error
+  class". Four of the six do: `bytes.ts` and `http.ts` raise `EdfSourceError` for their own
+  failures, `read.ts` raises `EdfBudgetError` and `EdfRangeError`, and this file raises
+  `EdfSourceError` for a contract violation.
+- The sentence was a claim about the whole directory, made in the file a reader opens to learn
+  how the directory is arranged. What is true is the dependency direction, and it is the half the
+  design rests on: `source.ts` imports nothing from `io/`, and every other file in `io/` imports
+  it. That is what makes `assertExactRead` reachable from every adapter — including one a caller
+  wrote, which is the property the guard exists for.
+- The test counts both halves out of the directory, so a new adapter that skipped the guard fails
+  it, and so does a `source.ts` that grows an import from a sibling.
+
 ## 0.6.57
 
 - **Fixed** "the cache never sees a header", said on `large-files.md`, `api-sources.md` and

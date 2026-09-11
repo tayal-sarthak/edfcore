@@ -1,8 +1,13 @@
 /**
  * The `ByteSource` contract guard.
  *
- * Layer 5, and the only file in `io/` that imports an error class. Nothing here knows anything
- * about EDF.
+ * Layer 5, and the only file in `io/` that imports nothing from `io/`: every adapter here calls
+ * into this one and it calls into none of them. Nothing here knows anything about EDF.
+ *
+ * It said "the only file in `io/` that imports an error class" until 0.6.58, which `bytes.ts`,
+ * `http.ts` and `read.ts` each disprove by raising one of their own. What is true is the
+ * dependency direction, and it is the load-bearing half: a guard the adapters could not all
+ * reach would be a contract checked in some of them.
  *
  * The contract is one sentence — a read resolves with EXACTLY `length` bytes or rejects, it
  * never pads and never truncates — and it is *checked on every call*, including calls into a
