@@ -481,8 +481,10 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
         `${JSON.stringify(timeParse.raw)}, which is not a clock time in hh.mm.ss form with ` +
         'hour 00..23, minute 00..59 and second 00..59. EDF specification, header record ' +
         'bytes 176-183. Next: startTime.clock reports 00:00:00 because the type admits no ' +
-        'absent clock; header.raw.startTime keeps the text verbatim, and every sample offset ' +
-        'is relative to the recording start regardless.',
+        'absent clock — startTime.clockSource is "none", which is how to tell this from a file ' +
+        'that really starts at midnight, and formatStartTimeNaive() returns undefined. ' +
+        'header.raw.startTime keeps the text verbatim, and every sample offset is relative to ' +
+        'the recording start regardless.',
       field: 'startTime',
       byteOffset: HEADER_FIELDS.startTime.offset,
       byteLength: HEADER_FIELDS.startTime.length,

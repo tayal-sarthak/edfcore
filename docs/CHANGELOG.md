@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.66
+
+- **Changed** the `Next:` clause of `STARTTIME_UNPARSEABLE` as the PARSER raises it, which left
+  out the one field a caller can branch on. It named `startTime.clock` and `header.raw.startTime`
+  and stopped.
+- When the `hh.mm.ss` field fails its grammar, `startTime.clock` holds a substituted midnight and
+  `startTime.clockSource` becomes `'none'`. That second field is the whole way a program tells a
+  refused clock from a file that genuinely starts at midnight, which is an ordinary start for a
+  sleep study — the two headers are otherwise identical, down to `secondsSinceMidnight`.
+- `types.ts` says so beside the field, `codes.ts` says so beside the code, and `validate.ts`'s
+  copy of this same diagnostic says so in its own clause. The parser's copy is the one every
+  `openEdf` and `readHeader` caller sees without running a sweep, and it was the one that did
+  not. The clause now names `clockSource` and `formatStartTimeNaive()`, as the sweep's does.
+- The test compares the two emissions against each other rather than against a sentence written
+  in the test, so the next divergence fails there too.
+
 ## 0.6.65
 
 - **Changed** `SOURCE_TOO_SMALL` to name the container when the first bytes say what it is. A file
