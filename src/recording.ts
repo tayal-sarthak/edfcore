@@ -98,11 +98,29 @@ function describeSelection(value: unknown): string {
  * what was missing.
  */
 export function assertSelection(selection: unknown, call: string, shape: string): void {
-  if (typeof selection === 'object' && selection !== null) return;
-  throw new RangeError(
-    `${call}(): the selection is ${describeSelection(selection)}, not an object. ` +
-      `Next: pass ${shape}.`,
-  );
+  if (typeof selection !== 'object' || selection === null) {
+    throw new RangeError(
+      `${call}(): the selection is ${describeSelection(selection)}, not an object. ` +
+        `Next: pass ${shape}.`,
+    );
+  }
+  /*
+   * A record range where a window belongs, which is the one wrong SHAPE worth naming separately.
+   * `readRecords` takes `{ records }` and `streamRecords` takes a window — and is called
+   * streamRECORDS — so `streamRecords(recording, { records })` is the shape its own name and its
+   * sibling both suggest. It reached the seconds-to-ticks conversion with nothing to convert and
+   * earned "startSeconds must be a finite number of seconds, but was undefined. Next: check the
+   * expression that produced it —
+   * Number() on an absent environment variable…", which sends the reader to look for a `Number()`
+   * on a config key rather than at the argument they wrote (fixed in 0.6.87).
+   */
+  const given = selection as { records?: unknown; startSeconds?: unknown };
+  if (given.records !== undefined && given.startSeconds === undefined && shape.includes('start')) {
+    throw new RangeError(
+      `${call}(): the selection has a \`records\` range, and this call takes a time window. ` +
+        `Next: pass ${shape} — or call readRecords(), which is the one that takes records.`,
+    );
+  }
 }
 
 /**

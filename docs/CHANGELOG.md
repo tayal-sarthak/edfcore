@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.87
+
+- **Changed** what `readWindow`, `readEnvelope` and `streamRecords` say when handed a `{ records }`
+  range instead of a time window.
+- `streamRecords` is the one that earns it. `readRecords` takes `{ records, signalIndices }`, this
+  takes a window, and it is called streamRECORDS — so the record range is the shape both its own
+  name and its sibling suggest. It reached `secondsToTicks(undefined)` and answered "startSeconds
+  must be a finite number of seconds, but was undefined. Next: check the expression that produced
+  it — Number() on an absent environment variable, query parameter or config key yields NaN."
+  Every clause of that is about a value the caller never computed; it sends them to audit a config
+  key when what they wrote is an argument of the wrong shape.
+- The check sits in `assertSelection`, where 0.6.79 put the object check, so all three say it — and
+  name `readRecords()` as the call that does take records. Only that one shape is named: a
+  selection missing a field it should have still reports the field.
+
 ## 0.6.86
 
 - **Changed** `getSignal`, `findSignals` and `matchSignals` to refuse a selector that is not there.
