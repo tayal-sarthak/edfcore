@@ -488,7 +488,7 @@ Layout only. By the message contract a diagnostic's own message already names th
 | `FormatDiagnosticsOptions` | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `color` | `boolean` | `false` | ANSI colour by severity: red for `error`, yellow for `warning`, cyan for `info`, dim for detail lines. |
-| `maxItems` | `number` | all | Show at most this many, then a dim `... and N more`. A non-finite value is ignored; `0` shows only the summary line. |
+| `maxItems` | `number` | all | Show at most this many, then a dim `... and N more`. `Infinity` means no cap; `NaN` is refused with a `RangeError`, because an option computed from an absent config key is a mistake rather than a request for the default. `0` and any negative render no blocks, leaving that notice alone — this function has no summary line of its own. |
 
 Raw byte runs are elided after 24 bytes with a `+N more` count: a report is a summary, not a hex dump.
 

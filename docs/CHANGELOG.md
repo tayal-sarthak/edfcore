@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.52
+
+- **Fixed** the `maxItems` row on `api-primitives.md`, both halves of which described something
+  `formatDiagnostics` does not do.
+- "A non-finite value is ignored" stopped being true in 0.6.1, which made `NaN` a `RangeError`
+  and `-Infinity` show nothing rather than everything. `NaN` is non-finite and it is the value
+  that refusal exists for — `Number()` on an absent environment variable, query parameter or
+  config key — so the page was promising to swallow exactly what the library now refuses, and
+  naming the whole class the release split in two.
+- "`0` shows only the summary line" described a line this function never prints. It renders one
+  block per diagnostic and nothing else, so `maxItems: 0` leaves the `... and N more` notice
+  alone. The summary belongs to `formatValidationReport`, whose own row on `api-helpers.md` says
+  so correctly — which is where the clause appears to have come from.
+- The new test runs the function for each awkward value before reading the page for the claim, so
+  it fails on the behaviour as well as on the wording.
+
 ## 0.6.51
 
 - **Fixed** the README's account of what `--limit` caps. It said "Diagnostics and events print
