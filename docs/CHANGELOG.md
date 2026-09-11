@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.51
+
+- **Fixed** the README's account of what `--limit` caps. It said "Diagnostics and events print
+  twenty at a time", which was true until 0.6.29 brought `gaps` under the same cap. That release
+  updated the usage text and `cli.md` and left the README naming two of the three.
+- `gaps` is the one it mattered for. It is the only listing bounded by nothing but the record
+  count — an ambulatory recorder that stops and restarts across a night produces hundreds of rows
+  — so a reader of the README believed the flag did not reach the command that most needs it.
+- A test now reads the noun list out of the usage text and out of the README and compares them,
+  rather than restating the sentence. `cli-limit-default.test.ts` pins the number; this pins what
+  the number applies to.
+
 ## 0.6.50
 
 - **Changed** the message `--limit -1` earns. It said "`--limit` needs a whole number, received
