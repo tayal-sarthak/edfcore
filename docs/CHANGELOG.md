@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.49
+
+- **Fixed** `edfcore header` printing `Raise --limit to see the rest.` twice, and the first copy
+  in the wrong place. It is the only command with two capped blocks — `header.diagnostics`, then
+  `recording.timeline.diagnostics` under `From the record probes:` — and each appended its own
+  hint. On a file that truncates both, the first one landed ABOVE the probes heading: the reader
+  was told to raise the limit to see the rest, and the rest appeared to arrive on the next line.
+- One hint now follows both blocks, emitted when either list exceeded the cap. `validate` is
+  unaffected: it has one block and always printed one hint.
+- No other output moved — both `... and N more` notices are `formatDiagnostics`' own and stay
+  where they were, attached to the block they count.
+
 ## 0.6.48
 
 - **Fixed** an unqualified claim in four places: that `cachedSource` is "the only cache in

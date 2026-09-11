@@ -258,7 +258,7 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
           `\n${formatDiagnostics(recording.header.diagnostics, {
             maxItems: limit,
             ...redaction(args),
-          })}\n${truncationHint(recording.header.diagnostics.length, limit)}`,
+          })}\n`,
         );
       }
       /*
@@ -277,9 +277,18 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
           `\nFrom the record probes:\n${formatDiagnostics(timelineDiagnostics, {
             maxItems: limit,
             ...redaction(args),
-          })}\n${truncationHint(timelineDiagnostics.length, limit)}`,
+          })}\n`,
         );
       }
+      // One hint for both blocks. Emitted per block, the first copy landed ABOVE
+      // "From the record probes:" — the reader was told to raise the limit to see "the rest",
+      // and then more diagnostics arrived, which reads as the rest having already come.
+      io.out(
+        truncationHint(
+          Math.max(recording.header.diagnostics.length, timelineDiagnostics.length),
+          limit,
+        ),
+      );
       return 0;
     }
 

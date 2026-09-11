@@ -202,3 +202,36 @@ describe('and an explicit --limit reaches all four', () => {
     expect(out.split('\n').filter((line) => line.includes('\tevent ')).length).toBe(3);
   });
 });
+
+/**
+ * `header` is the one command with two capped blocks, so it is the one that can say the same
+ * thing twice. It did: each block appended its own `Raise --limit to see the rest.`, and the
+ * first copy sat above `From the record probes:` — the reader was told to raise the limit to see
+ * the rest, and the rest appeared to arrive on the next line (fixed in 0.6.49).
+ */
+describe('when both of header’s blocks are truncated', () => {
+  const BOTH_TRUNCATED = buildEdf({
+    plus: 'C',
+    recordCount: 4,
+    recordDurationSeconds: 1,
+    signals: Array.from({ length: 30 }, (_, index) => ({
+      label: `Fp${index}`,
+      samplesPerRecord: 2,
+      raw: { physicalMinimum: '5', physicalMaximum: '5' },
+    })),
+    annotationSignals: Array.from({ length: 30 }, () => ({
+      samplesPerRecord: 32,
+      tals: () => [{ onset: '+1x', texts: ['e'] }],
+    })),
+  });
+
+  it('says how to see the rest once, after both of them', async () => {
+    const out = await invoke(['header', 'a.edf', '--limit', '3'], BOTH_TRUNCATED);
+    const { own, probes } = sections(out);
+    // The fixture really does truncate both, or the assertion below proves nothing.
+    expect(own).toMatch(/\.\.\. and \d+ more/);
+    expect(probes).toMatch(/\.\.\. and \d+ more/);
+    expect(out.split('Raise --limit to see the rest.')).toHaveLength(2);
+    expect(own).not.toContain('Raise --limit to see the rest.');
+  });
+});
