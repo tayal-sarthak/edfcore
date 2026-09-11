@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.75
+
+- **Fixed** the inspector deciding whether a file needs a complete index by comparing
+  `spanSeconds` with `coveredSeconds`. `EdfTimeline` says which fields carry that verdict:
+  "`spanTicks === coveredTicks` is the two-probe contiguity verdict, and the ticks are what it
+  must be asked of", because the seconds are float64 conversions and two tick counts can round to
+  one float once the span is large enough that an ulp exceeds a tick.
+- Asked of the floats, such a file answers "contiguous", `buildRecordIndex` is skipped, and the
+  page draws a discontinuous recording on the nominal grid — the silently wrong timeline the
+  library exists to refuse, on the page that is its central claim made checkable. The same
+  comparison was fixed inside `resolveTimeWindow` in 0.3.4 and the type's docblock records it.
+- The test demonstrates the collision rather than arguing it, and shows the two staying apart at
+  an ordinary scale, which is why this could sit there.
+
 ## 0.6.74
 
 - **Fixed** `sample-locate.ts` describing a repeated record onset as something "edfcore reports

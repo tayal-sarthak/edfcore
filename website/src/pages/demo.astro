@@ -274,9 +274,17 @@ import Base from '../layouts/Base.astro';
         { duration: 0.4 },
       );
 
+      /*
+       * TICKS, not the seconds beside them. `EdfTimeline` says the two-probe contiguity verdict
+       * "is `spanTicks === coveredTicks`, and the ticks are what it must be asked of": the
+       * seconds are float64 conversions, and once a span is large enough that an ulp exceeds a
+       * tick, a real discontinuity vanishes from the comparison. Asked of the floats, this page
+       * would skip `buildRecordIndex` on such a file and draw it on the nominal grid — which is
+       * the silently wrong timeline the library exists to refuse (0.6.75).
+       */
       const needsCompleteIndex =
         header.continuity === 'discontinuous' ||
-        opened.timeline.spanSeconds !== opened.timeline.coveredSeconds;
+        opened.timeline.spanTicks !== opened.timeline.coveredTicks;
       if (needsCompleteIndex) {
         setStatus(`${name} — indexing discontinuities 0%`, 'busy');
         void draw();
