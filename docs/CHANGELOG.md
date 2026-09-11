@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.53
+
+- **Fixed** the `EdfLocation` table on `api-types.md`, which listed three of the shape's five
+  fields. The two it dropped were `recordStartTicks` and `offsetInRecordTicks`.
+- Those are the exact halves. The `EdfSegment` and `EdfGap` tables immediately above it pair every
+  `*Seconds` with its `*Ticks` twin, and the paragraph between them says to prefer the ticks:
+  "Every second on these two is a float64 conversion of the tick beside it. Compare and sum the
+  ticks." The next table then showed a reader only the float64 half of the one shape
+  `index.locate()` returns — the call whose whole job is to hand you a position to read from.
+- The rows are added and the paragraph's rule is restated under them. The test reads the fields
+  off a real `locate()` result rather than off the type, so the table is compared with the object
+  a caller receives.
+
 ## 0.6.52
 
 - **Fixed** the `maxItems` row on `api-primitives.md`, both halves of which described something

@@ -429,7 +429,13 @@ spaced. A negative one means two records overlap in time, which `validateRecordi
 |---|---|---|
 | `recordIndex` | `number` | the record containing the requested second |
 | `recordStartSeconds` | `number` | that record's start, in elapsed recording time |
+| `recordStartTicks` | `bigint` | the same, exact |
 | `offsetInRecordSeconds` | `number` | how far into the record the requested second falls |
+| `offsetInRecordTicks` | `bigint` | the same, exact |
+
+The paragraph above applies here too: `locate` is the call that hands you a position to read from,
+and the two `*Ticks` are what to carry into `readWindow` or a comparison. The seconds beside them
+are float64 conversions.
 
 ## Samples and annotations
 
