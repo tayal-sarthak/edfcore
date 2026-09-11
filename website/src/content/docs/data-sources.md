@@ -305,7 +305,7 @@ Reads are served out of block-aligned blocks kept in an LRU (1 MiB blocks and a 
 
 Two sizes are clamped. A `blockBytes` wider than `maxBytes` is clamped to the budget, since otherwise it evicts itself on every insert. A single read wider than `maxBytes` cannot benefit from the cache, so it goes straight to the source.
 
-Block boundaries are byte-aligned, not record-aligned. The cache is format-independent by construction and never sees a header, so there is no record size for it to align to. If you want block boundaries to fall on record boundaries, read the header first and do the arithmetic yourself:
+Block boundaries are byte-aligned, not record-aligned. The cache is format-independent by construction: it is handed byte ranges and never parses a header, so it has no record size to align to. If you want block boundaries to fall on record boundaries, read the header first and do the arithmetic yourself:
 
 ```ts
 import { cachedSource, httpSource, openEdf, readHeader } from 'edfcore';

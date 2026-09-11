@@ -217,7 +217,9 @@ const recording = await openEdf(
 ```
 
 Blocks default to 1 MiB and the LRU budget to 64 MiB. Blocks are **byte**-aligned, not
-record-aligned: the cache never sees a header, so there is no record size for it to align to.
+record-aligned: the cache is handed byte ranges and never parses a header, so it has no record
+size to align to — it serves the header read like any other, which is why the first block is
+already resident below.
 Round `blockBytes` to a multiple of `header.recordByteLength` yourself if you want block
 boundaries to fall on record boundaries.
 

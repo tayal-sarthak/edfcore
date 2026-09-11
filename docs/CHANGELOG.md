@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.57
+
+- **Fixed** "the cache never sees a header", said on `large-files.md`, `api-sources.md` and
+  `data-sources.md` as the reason `cachedSource` aligns blocks on bytes rather than on records.
+  It wraps a `ByteSource`, so every read `openEdf` issues goes through it, the header's two
+  included. What it never does is PARSE one, which is what leaves it with no record size.
+- `large-files.md` refuted itself twenty lines further down, in the paragraph that makes the
+  cache's best argument: "The first was already resident because the header read at open pulled
+  it in, so the reads that come with opening a file are not wasted." Both sentences sit on the
+  page a reader consults while choosing `blockBytes`.
+- `types.ts`, beside the option, already carried the qualified version — "never sees a header to
+  learn a record size from". That is the shape of 0.6.48: the docblock keeps the qualifier and
+  the pages drop it.
+- The new test measures it rather than quoting it. A 4 KiB block turns the header's two reads
+  into one underlying read, and reading the same bytes again costs nothing — which is only
+  possible if the cache saw them.
+
 ## 0.6.56
 
 - **Fixed** the onset guidance in `src/tal/annotations.ts`, which told a reader to compare on the

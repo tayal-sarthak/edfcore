@@ -192,7 +192,7 @@ await cached.read(0, 100);   // served from that block — no request
 | `blockBytes` | `number` | `1048576` (1 MiB) | Block size. Floored, never below 1, and clamped down to `maxBytes`, since a block wider than the whole budget evicts itself on every insert. |
 | `maxBytes` | `number` | `67108864` (64 MiB) | LRU budget. Floored, never below 0. |
 
-Blocks are **byte-aligned, not record-aligned**. This module never sees a header, so there's no record size for it to align to. To make block boundaries fall on record boundaries, round `blockBytes` to a multiple of `header.recordByteLength` yourself.
+Blocks are **byte-aligned, not record-aligned**. This module is handed byte ranges and never parses a header, so it has no record size to align to. It does serve the header read — that is how opening a file leaves the first block resident. To make block boundaries fall on record boundaries, round `blockBytes` to a multiple of `header.recordByteLength` yourself.
 
 > **Note**
 > Caching a source that is already in memory buys nothing and costs a copy per read. `cachedSource` is for `httpSource`, and for a `fileSource` on a slow or networked mount.
