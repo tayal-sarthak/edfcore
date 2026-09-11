@@ -11,7 +11,12 @@
  *     address(field, i) = 256 + ns * SIGNAL_FIELD_BLOCK_OFFSETS[field] + i * WIDTHS[field]
  *
  * Inside a data record the signals are stored back to back in signal order, each contributing
- * `samplesPerRecord * bytesPerSample` bytes. Both numbers come from this file and nowhere else.
+ * `samplesPerRecord * bytesPerSample` bytes. Only the first of those comes from this file.
+ * `bytesPerSample` is 2 or 3 and is decided by `header/variant.ts` from the version block — it is
+ * the whole difference between EDF and BDF, and it is per-file rather than per-signal, which is
+ * why it arrives here on `input.variant` rather than being read out of a signal field. This said
+ * "both numbers come from this file and nowhere else" until 0.6.60, which sent a reader tracing
+ * the record layout to one file when it takes two.
  */
 
 import { trimEdfField } from '../bytes/latin1.js';

@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.60
+
+- **Fixed** `header/signals.ts` saying that in `samplesPerRecord * bytesPerSample`, "Both numbers
+  come from this file and nowhere else". Only the first does. `bytesPerSample` is decided in
+  `header/variant.ts` from the version block at offset 0, and it is the entire difference between
+  a 2-byte EDF sample and a 3-byte BDF one.
+- It is the docblock that teaches the record layout — the layout whose misreading it calls "the
+  single most common EDF bug" — so a reader tracing why a record is the size it is was sent to
+  one file when it takes two, and to the one that cannot answer the half that changes with the
+  format.
+- The test writes the same channel geometry twice, once as EDF and once as BDF, and shows the
+  same `samplesPerRecord` producing a 20-byte record and a 30-byte one.
+
 ## 0.6.59
 
 - **Fixed** `time/timeline.ts` claiming that "monotonicity and record-onset spacing are enforced
