@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.65
+
+- **Changed** `SOURCE_TOO_SMALL` to name the container when the first bytes say what it is. A file
+  shorter than the 256-byte fixed header never reaches `detectVariant`, which is where a container
+  is normally named — so a 76-byte zip, a gzip that failed to download, or an HTML error page
+  saved under an `.edf` name all earned the message written for a truncated recording: "a transfer
+  cut short and a truncated copy both land here, and neither leaves anything to read." Two causes
+  named, and the one the reader actually had excluded.
+- The magic number is four bytes at most, so it is in hand at 76 as much as at 76,000. The refusal
+  now says "these bytes begin a zip, which is not a recording however long it is" and keeps the
+  size menu for the files whose bytes say nothing — which is the shape 0.6.26 gave
+  `NOT_AN_EDF_FILE` and 0.6.40 gave this code's own empty/short split.
+- `containerAt` is exported from `header/variant.ts` rather than duplicated. Nothing else changed:
+  the code, severity, `field`, `byteOffset`, `expected`, `actual` and spec reference are the same,
+  a genuinely truncated recording gets the same message it did, and an empty source keeps its own.
+
 ## 0.6.64
 
 - **Fixed** `installation.md` counting `TextDecoder` among "the four platform features edfcore

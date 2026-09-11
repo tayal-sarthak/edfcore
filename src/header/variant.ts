@@ -139,7 +139,7 @@ const CONTAINERS: ReadonlyArray<readonly [string, readonly number[]]> = [
 ];
 
 /** The container these bytes begin with, or `undefined` — which is most files. */
-function containerAt(bytes: Uint8Array): string | undefined {
+export function containerAt(bytes: Uint8Array): string | undefined {
   for (const [name, magic] of CONTAINERS) {
     if (magic.every((byte, at) => bytes[at] === byte)) return name;
   }

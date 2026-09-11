@@ -45,7 +45,7 @@ import {
 } from './fields.js';
 import { parsePatientId, parseRecordingId } from './identification.js';
 import { buildSignals, parseSignalHeaders, signalFieldOffset } from './signals.js';
-import { detectVariant } from './variant.js';
+import { containerAt, detectVariant } from './variant.js';
 
 /** The largest value a `BigInt64Array` element holds: about 29,000 years of 100 ns ticks. */
 const MAX_REPRESENTABLE_TICKS: bigint = 2n ** 63n - 1n;
@@ -230,6 +230,13 @@ export function parseHeader(
 
   // ---- 1. The fixed header must be present at all. --------------------------------------
   if (headerBytes.length < EDF_HEADER_BLOCK_BYTES) {
+    /*
+     * The magic number is in hand even here, so the size menu below is only offered when it says
+     * nothing. A file too short for the fixed header is also too short to reach `NOT_AN_EDF_FILE`,
+     * which is where the container is normally named — so a 76-byte zip earned a message about a
+     * transfer cut short, two causes named and the actual one excluded (fixed in 0.6.65).
+     */
+    const container = containerAt(headerBytes);
     throw sink.fatal({
       code: 'SOURCE_TOO_SMALL',
       /*
@@ -253,9 +260,12 @@ export function parseHeader(
             'no bytes at all.'
           : `the source is ${headerBytes.length} bytes, which stops part way through the ` +
             `${EDF_HEADER_BLOCK_BYTES}-byte fixed header every EDF and BDF file begins with. ` +
-            'EDF specification, header record bytes 0-255. Next: compare the size edfcore was ' +
-            'given with the size on disk — a transfer cut short and a truncated copy both land ' +
-            'here, and neither leaves anything to read.',
+            'EDF specification, header record bytes 0-255. Next: ' +
+            (container === undefined
+              ? 'compare the size edfcore was given with the size on disk — a transfer cut ' +
+                'short and a truncated copy both land here, and neither leaves anything to read.'
+              : `these bytes begin ${container}, which is not a recording however long it is: ` +
+                'unpack it and open the EDF or BDF file inside.'),
       field: 'header',
       byteOffset: 0,
       byteLength: headerBytes.length,
