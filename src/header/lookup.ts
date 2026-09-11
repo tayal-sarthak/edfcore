@@ -29,8 +29,31 @@ export function isAnnotationLabel(label: string): boolean {
   return trimmed === EDF_ANNOTATIONS_LABEL || trimmed === BDF_ANNOTATIONS_LABEL;
 }
 
+/**
+ * The selector, before the signals are walked with it.
+ *
+ * All three of these take a selector a caller supplies and nothing checked it. Omitting it made
+ * the failure depend on the FILE rather than on the call: `findSignals(header)` and
+ * `getSignal(header)` reached `trimEdfField(undefined)` and threw V8's "Cannot read properties of
+ * undefined (reading 'length')", while `matchSignals(header)` returned `[]` on a file with no
+ * data signals — the predicate is never called — and threw "test is not a function" on every other
+ * one, leaking an internal name (fixed in 0.6.86).
+ *
+ * A selector arrives from a montage in a config file, a channel name in a URL, or a spread that
+ * dropped a key at least as often as it is written out, which is the argument `assertSignalIndices`
+ * makes for the other required argument in this package.
+ */
+function assertSelector(selector: unknown, call: string, accepts: string): void {
+  if (selector !== undefined && selector !== null) return;
+  throw new RangeError(
+    `${call}(): the selector is ${selector === null ? 'null' : 'missing'}. ` +
+      `Next: pass ${accepts}.`,
+  );
+}
+
 /** Every signal with this label, in signal order. Empty when none matches. */
 export function findSignals(header: EdfHeader, label: string): readonly EdfSignal[] {
+  assertSelector(label, 'findSignals', 'the label to look for');
   const wanted = trimEdfField(label);
   return Object.freeze(header.signals.filter((signal) => signal.label === wanted));
 }
@@ -87,6 +110,7 @@ function differsOnlyInCase(header: EdfHeader, selector: string): string | undefi
  * edfcore could return that would not be a guess.
  */
 export function getSignal(header: EdfHeader, selector: number | string): EdfSignal {
+  assertSelector(selector, 'getSignal', 'a label, or an index into header.signals');
   if (typeof selector === 'number') {
     const signal = header.signals[selector];
     if (signal !== undefined) return signal;
@@ -167,6 +191,7 @@ export function matchSignals(
   header: EdfHeader,
   match: RegExp | ((label: string) => boolean),
 ): readonly EdfSignal[] {
+  assertSelector(match, 'matchSignals', 'a RegExp, or a function taking a label');
   const test = match instanceof RegExp ? matchesText(match) : match;
   return Object.freeze(
     header.signals.filter((signal) => signal.kind === 'data' && test(signal.label)),

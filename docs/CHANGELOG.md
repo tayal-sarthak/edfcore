@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.86
+
+- **Changed** `getSignal`, `findSignals` and `matchSignals` to refuse a selector that is not there.
+  Each takes one a caller supplies and none of them checked it, so omitting it made the failure
+  depend on the FILE rather than on the call — the shape 0.6.79 closed on the reading API.
+- `findSignals(header)` and `getSignal(header)` threw V8's "Cannot read properties of undefined
+  (reading 'length')". `matchSignals(header)` returned `[]` on a file with no data signals, because
+  the predicate is never called there, and threw "test is not a function" on every other file —
+  leaking an internal name, and answering "no channels match" to a question nobody asked.
+- A selector arrives from a montage in a config file, a channel name in a URL, or a spread that
+  dropped a key at least as often as it is written out, which is the argument `assertSignalIndices`
+  already makes for the other required argument in this package. A plain `RangeError` naming the
+  call and what it accepts, identical on both files.
+
 ## 0.6.85
 
 - **Changed** `fileHandleSource` to refuse a `byteLength` that is not a byte count. `fileSource`
