@@ -24,6 +24,13 @@ interface Props {
   /** Path to this page's raw-markdown twin, when it has one. */
   markdownPath?: string;
   /**
+   * Keep this page out of the index. One page needs it: `cleanUrls` serves `/404.html` at the
+   * extensionless `/404` with a 200, so the page written to earn a real 404 is also reachable as
+   * an ordinary, self-canonical URL — a soft 404, which is the thing its own docblock exists to
+   * avoid.
+   */
+  noindex?: boolean;
+  /**
    * Schema.org JSON-LD for this page, already shaped. Pages own their structured data because
    * only the page knows what it IS — the layout cannot guess a TechArticle from a title. The
    * one rule: everything in it must restate what is visible on the page, never more. Structured
@@ -32,7 +39,7 @@ interface Props {
   schema?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const { title, description, wide = false, markdownPath, schema } = Astro.props;
+const { title, description, wide = false, markdownPath, schema, noindex = false } = Astro.props;
 /*
  * The home page carries the query someone actually types ("read EEG files JavaScript"), since
  * "edfcore" alone is a title only people who already found it would search for. Every other page
@@ -74,6 +81,7 @@ const ogImageAlt =
     <link rel="canonical" href={canonical} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="edfcore" />

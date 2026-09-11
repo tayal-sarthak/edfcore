@@ -98,11 +98,34 @@ describe('the file that answers a crawler', () => {
 });
 
 describe('and the pages themselves', () => {
-  it('carry no robots meta telling a crawler to skip them', () => {
-    const hidden = SITE_FILES.filter((file) => /noindex|nofollow/i.test(read(file))).map(
-      (file) => file,
-    );
-    expect(hidden, 'a page asks not to be indexed').toEqual([]);
+  /*
+   * Exactly two files may mention it, and both are the 404 (0.6.67). `cleanUrls` serves that page
+   * at the extensionless `/404` with a 200 and a self-canonical, so without the tag it is a soft
+   * 404 anyone can reach by guessing — the thing `404.astro`'s own docblock exists to avoid. The
+   * layout carries the prop, defaulting to false, and `404.astro` is the only page that passes it.
+   *
+   * Widening this list is the edit the whole file is written to catch, so it is a list and not a
+   * predicate: a `noindex` in a component, in `index.astro`, or defaulted to `true` in the layout
+   * all still fail here, which is the shape that would quietly de-index the site.
+   */
+  const MAY_ASK = ['website/src/layouts/Base.astro', 'website/src/pages/404.astro'] as const;
+
+  it('carry no robots meta telling a crawler to skip them, apart from the 404', () => {
+    const hidden = SITE_FILES.filter((file) => /noindex|nofollow/i.test(read(file)));
+    expect(hidden, 'a page asks not to be indexed').toEqual([...MAY_ASK].sort());
+  });
+
+  it('leave the layout opting in rather than out, so nothing inherits it', () => {
+    const layout = read('website/src/layouts/Base.astro');
+    expect(layout).toContain('noindex = false');
+    expect(layout).not.toMatch(/noindex = true/);
+    // Guarded by the prop, so a page that does not ask emits nothing at all.
+    expect(layout).toContain('{noindex && <meta name="robots" content="noindex, follow" />}');
+  });
+
+  it('keep the one exception followable, so its links still count', () => {
+    expect(read('website/src/layouts/Base.astro')).toContain('noindex, follow');
+    expect(read('website/src/layouts/Base.astro')).not.toContain('noindex, nofollow');
   });
 
   it('are not hidden by a response header either', () => {

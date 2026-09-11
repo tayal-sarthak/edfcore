@@ -4,6 +4,11 @@
  * gone and moves on; a site with no 404 route serves whatever the host's default is, which
  * on some setups is a soft-200 that search engines index as duplicate junk. Astro names the
  * file 404 and Vercel serves it with the right status.
+ *
+ * `noindex` closes the other door. `cleanUrls` also serves this file at the extensionless `/404`,
+ * with a 200 and a canonical pointing at itself — a soft 404 reachable by anyone who guesses the
+ * URL, which is the exact thing the paragraph above is about (0.6.67). `follow`, not `nofollow`:
+ * the three links below are the page's whole purpose.
  */
 import Base from '../layouts/Base.astro';
 ---
@@ -11,6 +16,7 @@ import Base from '../layouts/Base.astro';
 <Base
   title="Page not found"
   description="This page does not exist. The edfcore documentation index, quick start and live inspector are one link away."
+  noindex
 >
   <section class="page notfound">
     <p class="eyebrow">404 — no signal on this channel</p>

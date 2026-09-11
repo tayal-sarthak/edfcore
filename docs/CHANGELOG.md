@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.67
+
+- **Added** `noindex, follow` to the 404 page, which was reachable as an ordinary indexable URL.
+- The page exists for one reason and its own docblock states it: a crawler that gets a real 404
+  treats the URL as gone, while a site with no 404 route serves "a soft-200 that search engines
+  index as duplicate junk". Vercel does serve it with a 404 for a miss — and `cleanUrls` also
+  serves it at the extensionless `/404`, with a 200 and a canonical pointing at itself. That is a
+  soft 404 at a guessable URL, on the page written to avoid one.
+- `follow` rather than `nofollow`: the three links on it are its whole purpose. The tag is an
+  opt-in prop on the layout and no other page passes it, which the test checks in both directions
+  against the built site — a page that started emitting `robots` by accident fails there.
+
+  The guard in `crawlability.test.ts` is narrowed rather than relaxed: the two files that may
+  mention the word are named, so a `noindex` in a component, in `index.astro`, or defaulted to
+  `true` in the layout all still fail it — which is the shape that would quietly de-index the site
+  and is what that file exists to catch.
+
 ## 0.6.66
 
 - **Changed** the `Next:` clause of `STARTTIME_UNPARSEABLE` as the PARSER raises it, which left
