@@ -18,12 +18,18 @@
  * is a gap here" with "nobody looked" is the confusion this whole area of the API avoids.
  *
  * ONE LIMIT, and it belongs to the file rather than to these functions. If two records cover the
- * same instant — a timeline whose onsets repeat, which EDF+ does not forbid and which edfcore
- * reports without a diagnostic — then more than one sample exists at that time and no function can
- * return both. `sampleAt` returns the one whose segment `segmentAt` finds. The round-trip
- * "the sample at a sample's start is that sample" therefore holds for files whose records do not
- * overlap, which is every file anyone is likely to have; it is not a universal law and 0.2.60
- * claimed it as one.
+ * same instant — a timeline whose onsets repeat, which EDF+ does not forbid — then more than one
+ * sample exists at that time and no function can return both.
+ *
+ * Repeating onsets are not silent, which this said until 0.6.74. With any positive record
+ * duration they are an overlap, so the probes report `RECORD_ONSET_SPACING_VIOLATION` and a
+ * complete index reports one per overlapping pair. The one file where they pass unremarked is a
+ * `recordDuration` of 0, where every record legally starts at the same instant — and `sampleAt`
+ * refuses such a file outright, so it never reaches this limit.
+ *
+ * `sampleAt` returns the one whose segment `segmentAt` finds. The round-trip "the sample at a
+ * sample's start is that sample" therefore holds for files whose records do not overlap, which is
+ * every file anyone is likely to have; it is not a universal law and 0.2.60 claimed it as one.
  */
 
 import { EdfChannelNotFoundError } from './errors.js';

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.74
+
+- **Fixed** `sample-locate.ts` describing a repeated record onset as something "edfcore reports
+  without a diagnostic". Wherever the limit that paragraph is about can be reached, it is
+  reported: a record duration above zero makes a repeat an overlap, so the two probes `openEdf`
+  issues raise `RECORD_ONSET_SPACING_VIOLATION`, and a complete index raises one per overlapping
+  pair.
+- The one file where repeats really are silent is `recordDuration = 0`, where every record legally
+  starts at the same instant — and `sampleAt` refuses such a file outright, so it never reaches
+  the limit.
+- A docblock saying a condition goes unreported is read as "check for it yourself". The paragraph
+  now names the code and the one case it does not fire on.
+- The test's first doc assertion was vacuous on its first draft: the sentence being removed wrapped
+  across two comment lines, so matching the raw file for it would have passed on the defect. It
+  collapses the wrapping first, and the canary confirmed both halves fail without the fix.
+
 ## 0.6.73
 
 - **Fixed** the cost figure in `io/read.ts`, which states the unit-of-I/O rule as one of "two
