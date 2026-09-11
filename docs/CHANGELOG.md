@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.50
+
+- **Changed** the message `--limit -1` earns. It said "`--limit` needs a whole number, received
+  -1", and `-1` is a whole number — so the refusal named a rule the rejected input satisfied, and
+  the `Next:` clause said "pass a count", which is what the caller thought they had passed.
+- One guard refuses two things: not a safe integer, and below zero. It now names both, as
+  "a non-negative whole number". That is the wording every other guard in the package already
+  uses — `bytes/view.ts` and `io/source.ts` say "non-negative safe integer", `envelope.ts` and
+  `stream.ts` say "positive whole number". `--limit` was the one that named half its own rule.
+- Nothing about what is accepted changed. `--limit 0` is still legal and still the way to ask
+  how many there are without paying to print them; the exit code is still 2.
+
 ## 0.6.49
 
 - **Fixed** `edfcore header` printing `Raise --limit to see the rest.` twice, and the first copy

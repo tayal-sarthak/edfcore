@@ -128,9 +128,14 @@ export function parseArgs(argv: readonly string[]): Args {
     else if (arg === '--limit') {
       const value = Number(argv[i + 1]);
       // A NaN limit would disable the cap silently, which is the opposite of what was asked for.
+      // `value < 0` is refused too, and the message says so: `-1` IS a whole number, so naming
+      // only that half described a rule the rejected input satisfied. Every other guard in the
+      // package names both — `view.ts` and `source.ts` say "non-negative safe integer",
+      // `envelope.ts` and `stream.ts` say "positive whole number" (fixed in 0.6.50).
       if (!Number.isSafeInteger(value) || value < 0) {
         throw new CliUsageError(
-          `--limit needs a whole number, received ${String(argv[i + 1])}. Next: pass a count, ` +
+          `--limit needs a non-negative whole number, received ${String(argv[i + 1])}. ` +
+            `Next: pass a count, ` +
             `or omit --limit for the default of ${DEFAULT_ITEM_LIMIT}.`,
         );
       }
