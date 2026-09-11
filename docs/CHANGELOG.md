@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.61
+
+- **Fixed** `api-errors.md` listing `name` among what a structured clone keeps. It keeps `message`,
+  `stack` and `cause`; `name` survives only for the seven built-in error types, and everything
+  else is normalised to `'Error'` — so every one of edfcore's seven classes arrives from a
+  `postMessage` named `Error`.
+- It is the one clause on that page a reader acts on. The section is about what to do when
+  `edfErrorKind` is gone, and two paragraphs later the page says `error.name` is the concrete
+  class's name, "`'EdfFormatError'` rather than `'Error'`". The obvious fallback in a worker is
+  therefore to branch on `name`, and on the receiving side that branch never matches.
+- The advice the section ends with is unchanged and was always right: send the discriminator
+  yourself. The test clones all six constructible classes through `structuredClone`, which is the
+  same algorithm `postMessage` uses, and checks a built-in keeps its name for contrast.
+
 ## 0.6.60
 
 - **Fixed** `header/signals.ts` saying that in `samplesPerRecord * bytesPerSample`, "Both numbers
