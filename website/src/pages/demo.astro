@@ -129,6 +129,7 @@ import Base from '../layouts/Base.astro';
     buildRecordIndex,
     byteSource,
     formatStartTimeNaive,
+    gridSampleStartSeconds,
     isEdfError,
     openEdf,
     readAnnotations,
@@ -529,6 +530,8 @@ import Base from '../layouts/Base.astro';
     if (token !== redrawToken) return;
 
     const secondsToX = (t: number) => ((t - startSeconds) / durationSeconds) * width;
+    /** Captured once: `recording` is reassigned by a later load, and the guard above is here. */
+    const durationTicks = recording.header.recordDurationTicks;
 
     selected.forEach((signalIndex, lane) => {
       const signal = recording?.header.signals[signalIndex];
@@ -577,11 +580,20 @@ import Base from '../layouts/Base.astro';
         }
         const spread = Math.max(max - min, 1e-9);
         const amp = (LANE_H - 34) / 2;
-        const rate = signal.samplesPerRecord / (recording?.header.recordDurationSeconds || 1);
-
+        /*
+         * `gridSampleStartSeconds`, not `i / rate`. A derived rate is mistake 3 on `AGENTS.md`
+         * — "Do not compute sample indices from `sampleRateHz`. It is derived and can be
+         * `undefined`" — and `sample-grid.ts` exists because the obvious spelling is wrong: 128
+         * samples over 0.3 s is 426.666…, so `i / rate` walks the trace off its own time axis
+         * as `i` grows. The `|| 1` underneath it also invented a rate for the legal zero record
+         * duration, where there is none (0.6.76).
+         *
+         * The offset is measured from the chunk's own start, so this stays right across a gap:
+         * each chunk is one contiguous run.
+         */
         ctx.beginPath();
         for (let i = 0; i < values.length; i += 1) {
-          const t = part.startSeconds + i / rate;
+          const t = part.startSeconds + gridSampleStartSeconds(signal, i, durationTicks);
           const x = secondsToX(t);
           if (x < -4 || x > width + 4) continue;
           const centred = ((values[i] as number) - (min + max) / 2) / spread;

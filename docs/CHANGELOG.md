@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.76
+
+- **Fixed** the inspector placing each sample at `part.startSeconds + i / rate`, over a rate it
+  derived itself as `samplesPerRecord / (recordDurationSeconds || 1)`.
+- That is mistake 3 on `AGENTS.md` — "Do not compute sample indices from `sampleRateHz`. It is
+  derived and can be `undefined`" — and the reason `sample-grid.ts` exists: "Every viewer needs
+  this and the obvious spelling is wrong." A record duration that does not divide leaves the rate
+  irrational in binary (128 samples over 0.3 s is 426.666…), so the trace walks off its own time
+  axis as `i` grows. The `|| 1` beside it invented a rate for the legal zero record duration,
+  where the library reports none.
+- It now uses `gridSampleStartSeconds`, measured from the chunk's own start so a gap does not
+  shift the trace — each chunk is one contiguous run. The test measures the disagreement on that
+  awkward duration rather than asserting the call.
+
 ## 0.6.75
 
 - **Fixed** the inspector deciding whether a file needs a complete index by comparing
