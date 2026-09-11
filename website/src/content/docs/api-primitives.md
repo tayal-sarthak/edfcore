@@ -489,6 +489,7 @@ Layout only. By the message contract a diagnostic's own message already names th
 | --- | --- | --- | --- |
 | `color` | `boolean` | `false` | ANSI colour by severity: red for `error`, yellow for `warning`, cyan for `info`, dim for detail lines. |
 | `maxItems` | `number` | all | Show at most this many, then a dim `... and N more`. `Infinity` means no cap; `NaN` is refused with a `RangeError`, because an option computed from an absent config key is a mistake rather than a request for the default. `0` and any negative render no blocks, leaving that notice alone — this function has no summary line of its own. |
+| `redactFields` | `readonly string[]` | none | Field names whose CONTENT is replaced with `[redacted]`. Pass `['patientId', 'recordingId']` before a report leaves your machine: a diagnostic quotes the raw bytes as written, and for an identification field those bytes are a person's name and birth date. The code, severity, byte offset and rule still print. A name outside the redactable vocabulary is refused rather than ignored. |
 
 Raw byte runs are elided after 24 bytes with a `+N more` count: a report is a summary, not a hex dump.
 

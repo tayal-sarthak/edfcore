@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.55
+
+- **Added** the `redactFields` row to `FormatDiagnosticsOptions` on `api-primitives.md`. The table
+  documented two of the option's three fields, and the missing one is the option whose absence
+  sends a patient's name and birth date to an issue tracker: a diagnostic quotes the raw bytes as
+  written, and for an identification field those bytes are a person.
+- It was documented elsewhere — `api-helpers.md` names it, the CLI passes it, `cli.md` explains
+  why — but the reference table for the function did not have it, which is the page a caller
+  building their own report reads.
+- A test now compares EVERY `| \`Interface\` | Type |` table on the site against the interface it
+  names, in both directions. That is the third instance of one class in three releases —
+  `EdfLocation` lost its two `*Ticks` in 0.6.53, `EdfChunkSignal` lost `startTicks` in 0.6.54 —
+  and all three were found by reading rather than by anything that runs. A field added to a shape
+  in `src/` now fails here until its row exists.
+
 ## 0.6.54
 
 - **Fixed** the `EdfChunkSignal` table on `reading-signals.md`, which listed six of the shape's
