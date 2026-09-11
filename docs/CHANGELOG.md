@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.69
+
+- **Fixed** the README saying that the API-surface table's counts "are served at `/api.json`".
+  Two of the five rows are. The endpoint serves the entry-point count and the total number of
+  runtime exports, and cannot serve the other three: its own docblock says "Runtime exports only.
+  Types are erased before this file can see them", and the diagnostic codes and CLI commands are
+  the same problem — `api-surface.test.ts` counts those by reading source, which is not something
+  a build-time endpoint importing `dist` can do.
+- A reader who took "the same counts" at its word went looking for a machine-readable public-type
+  count and found a document that does not mention types.
+- The test reads the endpoint rather than importing it: it names `edfcore` by package, which
+  resolves through `website/node_modules`, and reaching into that directory is what broke CI on
+  0.4.231 through 0.4.236.
+
 ## 0.6.68
 
 - **Fixed** every docs page describing itself two ways at once. `og:type` said `website` while the
