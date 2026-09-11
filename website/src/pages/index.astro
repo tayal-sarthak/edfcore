@@ -98,7 +98,14 @@ chunks.length;                    // one chunk per contiguous run
 chunks[1]?.precededByGap;         // EdfGap — where the recorder stopped
 `;
 
-// Surveyed across every EDF package on npm in mid-2026. Figures drift; the shape does not.
+/*
+ * Surveyed across every EDF package on npm in mid-2026. Figures drift; the shape does not.
+ *
+ * These describe the PUBLISHED artifacts, which is the distinction `comparison.md` draws and the
+ * README carries since 0.6.63 — `@epicurrents/edf-reader`'s repository does random access and
+ * BDF, and its npm package predates a good deal of that. The aside under the table says so, so
+ * the absolutes here are not read as claims about anyone's source tree (0.6.84).
+ */
 const gaps = [
   ['Ships TypeScript types', 'No standalone reader does'],
   ['Random access to a time window', 'Nothing published — the file is loaded whole'],
@@ -172,11 +179,13 @@ const gaps = [
       </div>
 
       <p class="measure aside">
-        The strongest prior art is <a
+        Those rows describe the packages as published to npm. The strongest prior art is <a
           href="https://github.com/epicurrents/edf-reader"
           rel="noopener">@epicurrents/edf-reader</a
-        >, worth using if you want a whole viewer framework.
-        <a href="/docs/comparison">See the full comparison.</a>
+        >, whose repository does random access and BDF and whose published artifact predates a good
+        deal of that work; it is worth using if you want a whole viewer framework.
+        <a href="/docs/comparison">See the full comparison</a>, which says which claims that
+        survey verified and which it did not.
       </p>
     </div>
   </section>

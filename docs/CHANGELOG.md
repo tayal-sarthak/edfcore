@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.84
+
+- **Fixed** the landing page carrying the "Before edfcore" absolutes with no qualification. 0.6.63
+  fixed this in the README; the same table, and a link to the same project, sit on the first page
+  anyone sees — which is where the absolutes are actually read.
+- The rows describe the packages as PUBLISHED to npm. `@epicurrents/edf-reader`'s repository does
+  random access and BDF, and its npm artifact predates a good deal of that work, which is the
+  distinction `comparison.md` draws and the only page that drew it. The aside under the table now
+  says so and points there.
+- No claim about anyone else's package changed. `comparison-column.test.ts` explains why this
+  repository is not entitled to make one and checks only the edfcore column; what the new test
+  checks is that the three places carrying this table agree about which artifact they describe.
+
 ## 0.6.83
 
 - **Fixed** the landing page's gap example, whose two working lines both fail on the index it was
