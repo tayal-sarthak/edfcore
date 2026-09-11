@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.78
+
+- **Fixed** the first code sample on the landing page, which did not compile. It ended
+  `chunk.signals[0].digital` — two `TS2532`s under `noUncheckedIndexedAccess`, on in this repo and
+  in every strict project. That is the same line, broken the same way, that 0.4.259 fixed in
+  `AGENTS.md` after that file "taught a line the compiler rejects".
+- It is the code most people who ever see edfcore will read, and nothing compiled it.
+  `doc-snippets-compile.test.ts` sweeps every FENCED block on the site that imports from
+  `edfcore`; a template literal inside `index.astro` is not one, so the page's samples sat outside
+  a sweep that would have caught this the day it was written.
+- The page's stance is unchanged — recipes belong on a docs page, and this one shows shape. A
+  shape the compiler rejects is the wrong shape. The sample now has a twin in
+  `tests/types/landing-snippet.test-d.ts` that `npm run typecheck` compiles, and a test reads the
+  sample back out of the page and asserts the two have not drifted, which is the pair
+  `agents-snippet.test-d.ts` already uses.
+
+  The twin lives in `tests/types/`, where `agents-snippet.test-d.ts` keeps its own drift check
+  beside the compiled code rather than in a separate file — a `.test-d.ts` with no `it` in it is a
+  suite vitest fails on, which the first run of this release found.
+
 ## 0.6.77
 
 - **Fixed** the `EdfAnnotation` example on `api-types.md`, which listed `onsetTicks` with the

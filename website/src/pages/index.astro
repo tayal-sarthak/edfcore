@@ -2,10 +2,16 @@
 /**
  * The landing page.
  *
- * Its code samples are written out here as strings rather than imported from the docs, and that
- * is the one thing to know before editing them: nothing checks that they still compile. Anything
- * a reader might copy belongs on a docs page, where `tests/types` typechecks the documented
- * examples — this page shows shape, not recipes.
+ * Its code samples are written out here as strings rather than imported from the docs, which is
+ * the one thing to know before editing them: `doc-snippets-compile.test.ts` sweeps every FENCED
+ * block on the site that imports from `edfcore`, and a template literal in an `.astro` file is
+ * not one, so these are outside it. Anything a reader might copy belongs on a docs page — this
+ * page shows shape, not recipes.
+ *
+ * The first sample is the exception, and now has a twin in `tests/types/landing-snippet.test-d.ts`
+ * that `npm run typecheck` compiles. It ended `chunk.signals[0].digital` until 0.6.78, which is
+ * two `TS2532`s under `noUncheckedIndexedAccess` — the same line, broken the same way, that
+ * 0.4.259 fixed in `AGENTS.md`. A shape the compiler rejects is the wrong shape.
  */
 import { VERSION } from 'edfcore';
 import Base from '../layouts/Base.astro';
@@ -64,8 +70,11 @@ const [chunk] = await readWindow(recording, {
   startSeconds: 30,
   durationSeconds: 10,
 });
+if (chunk === undefined) throw new Error('no records cover that window');
+const [series] = chunk.signals;
+if (series === undefined) throw new Error('no signal in that chunk');
 
-const microvolts = toPhysical(fp1, chunk.signals[0].digital);`;
+const microvolts = toPhysical(fp1, series.digital);`;
 
 const diagnosticExample = `const recording = await openEdf(source);
 
