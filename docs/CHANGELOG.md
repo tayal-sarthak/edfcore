@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.85
+
+- **Changed** `fileHandleSource` to refuse a `byteLength` that is not a byte count. `fileSource`
+  already validates the size it reads off the handle it opens; `fileHandleSource` exists so a
+  caller can supply that number themselves — "a range it intends to expose, a size it verified" —
+  and took whatever it was given. The guard was on the path that cannot go wrong and absent from
+  the one that can.
+- A `NaN` or an omitted size did not fail, it disabled the range guard: `assertReadRange` compares
+  the read against `byteLength` and every comparison against `NaN` is false, which is the shape
+  `options.ts` names — "a guard written as `if (value < 1)` simply does not fire". The source then
+  advertised `byteLength: NaN` downstream and the first thing to notice was `parseHeader`, which
+  does guard it, so the failure named a caller who had passed `parseHeader` the right arguments.
+- An `EdfSourceError` at construction now, naming the adapter, the value and where to get a real
+  one. Zero is still legal, and a read past the size given is still refused.
+
 ## 0.6.84
 
 - **Fixed** the landing page carrying the "Before edfcore" absolutes with no qualification. 0.6.63

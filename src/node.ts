@@ -95,6 +95,26 @@ const fs: NodeFsPromises = nodeFsPromises as unknown as NodeFsPromises;
  * closes it.
  */
 export function fileHandleSource(handle: FileHandleLike, byteLength: number): ClosableByteSource {
+  /*
+   * The caller-supplied size is checked, and `fileSource` already checks the one it reads off the
+   * handle — the guard was on the path that cannot go wrong and absent from the path that can.
+   *
+   * A `NaN` or an absent `byteLength` disabled the range guard rather than failing: `assertReadRange`
+   * compares against it, every comparison against `NaN` is false, and `options.ts` names exactly
+   * this shape ("a guard written as `if (value < 1)` simply does not fire"). The source then
+   * advertised `byteLength: NaN` to everything downstream, and the failure surfaced in
+   * `parseHeader` — which does guard it — blaming a caller who passed it the right arguments
+   * (fixed in 0.6.85).
+   */
+  if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
+    throw new EdfSourceError(
+      `fileHandleSource() was given a byteLength of ${String(byteLength)}, which is not a byte ` +
+        'count edfcore can address. Next: pass the size of the file or of the range you mean to ' +
+        'expose — (await handle.stat()).size is the whole file — or use fileSource(path), which ' +
+        'reads it from the handle it opens.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   return {
     byteLength,
     async read(offset: number, length: number, options?: ReadOptions): Promise<Uint8Array> {
