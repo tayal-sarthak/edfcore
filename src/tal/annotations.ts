@@ -17,8 +17,13 @@
  *    the derivation is never invisible. Every timeline in edfcore is built from this array.
  * 3. Onsets are exposed under both conventions as separately named fields, never as an option:
  *    `onsetSecondsFromHeaderStart` is the verbatim on-disk value and
- *    `onsetSecondsFromFirstRecord` is rebased to record 0's true start. `onsetTicks` is exact
- *    and is the only one worth comparing.
+ *    `onsetSecondsFromFirstRecord` is rebased to record 0's true start. Compare on the TICKS,
+ *    never on the floats — and on `onsetTicksFromFirstRecord` whenever the other side of the
+ *    comparison is a window, a chunk or anything a read produced, because every read in the
+ *    package puts `t = 0` at the start of record 0. `onsetTicks` is the header's axis, exact and
+ *    right for comparing one annotation against another; the two differ by the sub-second offset
+ *    record 0 may declare. This said `onsetTicks` "is the only one worth comparing" until 0.6.56,
+ *    which `types.ts` calls the wrong field for a window in as many words (fixed in 0.6.56).
  *
  * Diagnostic volume is bounded on purpose, by one test: does another occurrence of this code
  * carry information available nowhere else? `TIMEKEEPING_TAL_MISSING` does — it names a record

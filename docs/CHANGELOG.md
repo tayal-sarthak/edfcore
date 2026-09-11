@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.56
+
+- **Fixed** the onset guidance in `src/tal/annotations.ts`, which told a reader to compare on the
+  wrong axis. Decision 3 of its three load-bearing decisions ended "`onsetTicks` is exact and is
+  the only one worth comparing."
+- `types.ts` says the opposite about the same field, in as many words: `onsetTicks` is "the right
+  field for comparing one annotation against another, and the wrong one for comparing an
+  annotation against a window", because `resolveTimeWindow`, `readWindow` and `readEnvelope` all
+  put `t = 0` at the start of record 0. `api-helpers.md` says the package's own query helpers
+  agree: "Every comparison is on `onsetTicksFromFirstRecord`."
+- The two differ by the sub-second offset record 0's timekeeping TAL may declare, so they are
+  equal on most files and up to a second apart on the ones that carry one — and a file that
+  carries one is exactly the file a viewer puts an event on the wrong side of a window boundary
+  in. The wrong sentence was in the module that produces both fields, at the top, and it ships in
+  `dist` as that module's hover text.
+- The new test builds a file whose record 0 starts at +0.25 s, shows the two fields disagreeing by
+  exactly that offset, and then reads all three statements.
+
 ## 0.6.55
 
 - **Added** the `redactFields` row to `FormatDiagnosticsOptions` on `api-primitives.md`. The table
