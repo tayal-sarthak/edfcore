@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.80
+
+- **Changed** `decodeStatusWord` to refuse a value that is not a BDF sample. It was
+  `sample & 0xffffff` and four bit tests, and in JavaScript `&` coerces rather than refuses:
+  `undefined`, `null`, `NaN` and a string all became `0` — a perfectly well-formed Status word
+  with no trigger asserted, CMS in range and the battery fine.
+- That is the clause the library exists for, and the value was not even visibly wrong: a Status
+  word of zero is the most ordinary sample in a BDF file, so a caller indexing the wrong array had
+  nothing to tell it apart from a real one. `1.5` truncated to trigger code 1, and anything wider
+  than 24 bits was masked down rather than questioned.
+- The bound admits both spellings of a 24-bit word, `-8388608..16777215`, because both arrive
+  legitimately: `decodeDigital` sign-extends, so a real sample with bit 23 set is negative and the
+  mask is what puts it back, while a caller writing a bit pattern by hand spells the same word
+  unsigned. A first draft of this guard took only the signed half and the existing
+  `biosemi.test.ts` rejected it on an idle MK2 word — which is what that test is for.
+- A caller mistake, so a plain `RangeError` with a `Next:` clause naming what to pass. This is the
+  same hole 0.6.79 closed on the reading entry points, in a function small enough that it had no
+  guard at all.
+
 ## 0.6.79
 
 - **Fixed** five reading entry points crashing with a bare `TypeError` when the selection argument

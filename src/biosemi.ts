@@ -16,6 +16,7 @@
  * none.
  */
 
+import { BDF_DIGITAL_MIN } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
@@ -36,6 +37,14 @@ import type {
 
 /** BioSemi's own label for the channel. Matched case-insensitively after trimming. */
 const STATUS_LABEL = 'status';
+
+/** `undefined`, `a string`, `NaN`, `1.5` — named as itself, since `&` would have taken them all. */
+function describeSample(sample: unknown): string {
+  if (sample === null) return 'null';
+  if (sample === undefined) return 'undefined';
+  if (typeof sample !== 'number') return `a ${typeof sample}`;
+  return String(sample);
+}
 
 /*
  * The Status word, as BioSemi assigns it ("Trigger signals", biosemi.com; the same table is in
@@ -64,6 +73,8 @@ const TRIGGER_MASK = 0xffff;
 const EPOCH_BIT = 1 << 16;
 const CMS_IN_RANGE_BIT = 1 << 20;
 const BATTERY_LOW_BIT = 1 << 22;
+/** The widest a 24-bit word goes when written unsigned; `BDF_DIGITAL_MIN` is the other end. */
+const UNSIGNED_24_BIT_MAX = 0xffffff;
 
 /**
  * The `Status` channel of a BDF file, or `undefined` when there is none.
@@ -88,6 +99,29 @@ export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
  * anything is read out of it.
  */
 export function decodeStatusWord(sample: number): EdfStatusWord {
+  /*
+   * Guarded, because `&` coerces rather than refuses. `undefined`, `null`, `NaN` and a string all
+   * become 0 under it, and 0 is a perfectly well-formed Status word — no trigger asserted, CMS in
+   * range, battery fine. A caller indexing the wrong array got that back with no way to tell it
+   * from a real sample, which is the outcome this library exists to prevent: a wrong value that
+   * looks like a value. `1.5` truncated to trigger code 1, and anything wider than 24 bits was
+   * masked away rather than questioned (fixed in 0.6.80).
+   *
+   * The bound admits BOTH spellings of a 24-bit word, because both arrive here legitimately.
+   * `decodeDigital` sign-extends, so a real sample with bit 23 set is negative and the mask below
+   * is what puts it back; a caller writing a bit pattern by hand spells the same word unsigned, up
+   * to 0xffffff. What is refused is everything outside the union: a wider integer, a fraction, and
+   * the values `&` silently turned into zero.
+   */
+  if (!Number.isSafeInteger(sample) || sample < BDF_DIGITAL_MIN || sample > UNSIGNED_24_BIT_MAX) {
+    throw new RangeError(
+      `decodeStatusWord(): ${describeSample(sample)} is not a 24-bit Status word, which is a ` +
+        `whole number in ${BDF_DIGITAL_MIN}..${UNSIGNED_24_BIT_MAX} — sign-extended as ` +
+        'decodeDigital() returns it, or unsigned as a bit pattern is written. Next: pass one ' +
+        'element of the Int32Array decodeDigital() returned for the Status channel, or call ' +
+        'readTriggers() and let edfcore find that channel and decode it.',
+    );
+  }
   const raw = sample & 0xffffff;
   return {
     raw,
