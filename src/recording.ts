@@ -83,6 +83,29 @@ function describeSelection(value: unknown): string {
 }
 
 /**
+ * The SELECTION itself, before any field of it is read.
+ *
+ * `assertSignalIndices` below makes this argument already — "TypeScript is not the only way in. A
+ * selection built from JSON, from a config file, from a JavaScript call site…" — and it was made
+ * one level too deep. Reaching that guard means dereferencing `selection`, so a caller who
+ * omitted the whole object got `Cannot read properties of undefined (reading 'signalIndices')`
+ * from V8 instead: a `TypeError` with no `Next:` clause, naming an internal field rather than the
+ * argument, from a package whose plain `RangeError` is what a caller mistake is supposed to look
+ * like. `readWindow`, `readRecords`, `readEnvelope`, `streamRecords` and `readTriggers` all did
+ * it, each naming whichever field it happened to read first (fixed in 0.6.79).
+ *
+ * `shape` is the call's own selection spelled out, so the message names what to pass rather than
+ * what was missing.
+ */
+export function assertSelection(selection: unknown, call: string, shape: string): void {
+  if (typeof selection === 'object' && selection !== null) return;
+  throw new RangeError(
+    `${call}(): the selection is ${describeSelection(selection)}, not an object. ` +
+      `Next: pass ${shape}.`,
+  );
+}
+
+/**
  * The one required option with no default, refused in edfcore's own words.
  *
  * `reading-signals.md` explains why there is no "all signals" default: so that the whole of a
@@ -288,6 +311,7 @@ export async function readRecords(
   selection: RecordSelection,
   options?: ReadOptions,
 ): Promise<EdfChunk> {
+  assertSelection(selection, 'readRecords', '{ records, signalIndices }');
   return readChunk(recording, selection.records, selection.signalIndices, options);
 }
 
@@ -323,6 +347,7 @@ export async function readWindow(
    * caller a wrong diagnosis at the worst moment: an out-of-range index silently reads as an
    * empty stretch of recording. A caller mistake is a caller mistake wherever the window lands.
    */
+  assertSelection(selection, 'readWindow', '{ signalIndices, startSeconds, durationSeconds }');
   resolveSignals(recording.header, selection.signalIndices);
 
   const ranges = resolveTimeWindow(

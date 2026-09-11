@@ -13,7 +13,7 @@
  * `readWindow` chunk would, so a consumer sees the discontinuities rather than a smooth lie.
  */
 
-import { readRecords, resolveSignals } from './recording.js';
+import { assertSelection, readRecords, resolveSignals } from './recording.js';
 import { assertMonotonicOnsets } from './time/timeline.js';
 import { resolveTimeWindow } from './time/window.js';
 import type { EdfChunk, EdfRecording, ReadOptions, RecordRange, StreamSelection } from './types.js';
@@ -34,6 +34,11 @@ export async function* streamRecords(
   selection: StreamSelection,
   options?: ReadOptions,
 ): AsyncGenerator<EdfChunk, void, undefined> {
+  assertSelection(
+    selection,
+    'streamRecords',
+    '{ signalIndices, startSeconds, durationSeconds } and optionally chunkRecords',
+  );
   const chunkRecords = selection.chunkRecords ?? DEFAULT_STREAM_RECORDS;
   if (!Number.isSafeInteger(chunkRecords) || chunkRecords < 1) {
     throw new RangeError(

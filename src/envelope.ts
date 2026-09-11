@@ -28,7 +28,7 @@ import { EdfBudgetError, EdfChannelNotFoundError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
-import { assertSignalIndices, gapBefore } from './recording.js';
+import { assertSelection, assertSignalIndices, gapBefore } from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { pluralise } from './text/counted.js';
@@ -136,6 +136,11 @@ export async function readEnvelope(
   selection: EnvelopeSelection,
   options?: ReadOptions,
 ): Promise<readonly EdfEnvelopeChunk[]> {
+  assertSelection(
+    selection,
+    'readEnvelope',
+    '{ signalIndices, startSeconds, durationSeconds, buckets }',
+  );
   assertPositiveInteger(selection.buckets, 'buckets');
   // Validated before the window is resolved, for the same reason readWindow does it: a bad
   // signalIndices must not read back as an empty stretch of recording.

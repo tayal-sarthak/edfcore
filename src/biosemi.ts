@@ -19,7 +19,7 @@
 import { decodeDigitalCounted } from './decode/digital.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
-import { gapBefore } from './recording.js';
+import { assertSelection, gapBefore } from './recording.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
@@ -166,6 +166,7 @@ export async function readTriggers(
   selection: TriggerSelection,
   options?: ReadOptions,
 ): Promise<readonly EdfTriggerEvent[]> {
+  assertSelection(selection, 'readTriggers', '{ startSeconds, durationSeconds }');
   const { source, header, timeline } = recording;
 
   const status = getStatusSignal(header);

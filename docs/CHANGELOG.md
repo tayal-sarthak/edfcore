@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.79
+
+- **Fixed** five reading entry points crashing with a bare `TypeError` when the selection argument
+  is omitted. `readWindow`, `readRecords`, `readEnvelope`, `streamRecords` and `readTriggers` each
+  dereferenced `selection` before checking it, so the caller got V8's "Cannot read properties of
+  undefined (reading 'signalIndices')" — no `Next:` clause, naming whichever internal field that
+  call happened to read first, out of a package where a plain `RangeError` is what a caller
+  mistake is supposed to look like.
+- The argument for guarding this was already written, one level too deep. `assertSignalIndices`
+  refuses a missing `signalIndices` in edfcore's own words and says why: "TypeScript is not the
+  only way in. A selection built from JSON, from a config file, from a JavaScript call site, or
+  from an object spread that dropped a [field]" reaches it. Reaching it at all means dereferencing
+  the object that was missing.
+- `readTriggers` showed it worst: its Status-channel guard runs first, so a file WITHOUT a Status
+  channel produced the good message and a file WITH one produced the `TypeError`. The quality of
+  the error depended on the file rather than on the call.
+- `assertSelection` now runs first in all five and names the call, the argument and the shape to
+  pass. `readAnnotations` and `readRecordBytes` take a record range rather than a selection object
+  and already refused it as an `EdfRangeError`; the test covers all seven so the sweep is the
+  whole reading surface rather than the part that was broken.
+
 ## 0.6.78
 
 - **Fixed** the first code sample on the landing page, which did not compile. It ended
