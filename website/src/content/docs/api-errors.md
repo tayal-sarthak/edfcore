@@ -125,8 +125,9 @@ try {
 }
 ```
 
-The public initialiser type is exported too, as `EdfFormatErrorInit`: `{ code, diagnostic?, field?,
-byteOffset?, signalIndex?, recordIndex?, cause? }`. You need it only if you construct one yourself.
+The public initialiser type is exported too, as `EdfFormatErrorInit`: `{ code, diagnostic?,
+collected?, field?, byteOffset?, signalIndex?, recordIndex?, cause? }`. You need it only if you
+construct one yourself.
 
 ### EdfScalingError
 

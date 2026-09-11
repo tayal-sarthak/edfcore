@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.62
+
+- **Fixed** `api-errors.md` publishing `EdfFormatErrorInit` a field short. It was written
+  `{ code, diagnostic?, field?, byteOffset?, signalIndex?, recordIndex?, cause? }`, and the
+  interface also has `collected?`.
+- `collected` is the one worth not losing: it carries the diagnostics the parse had already found
+  when one of them turned out to be fatal, which are often several that have nothing to do with
+  the fatal, and the fatal is frequently the least informative of the set. The same page
+  documents it two tables above, in the `EdfFormatError` field list — so the page explained the
+  field and then published an initialiser without it, which is the line a reader copies.
+- The guard is generic, like 0.6.55's for tables: any `` `Name`: `{ … }` `` spelling in the docs
+  whose `Name` is an exported interface must list that interface's fields, in declaration order.
+
 ## 0.6.61
 
 - **Fixed** `api-errors.md` listing `name` among what a structured clone keeps. It keeps `message`,
