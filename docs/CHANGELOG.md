@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.64
+
+- **Fixed** `installation.md` counting `TextDecoder` among "the four platform features edfcore
+  relies on". It does not rely on it. `tal/grammar.ts` takes an ASCII fast path first, which is
+  what almost every recording's annotation text is, so the decoder is never built for them; and
+  when one is needed and absent the text run falls back to ISO-8859-1 with an
+  `ANNOTATION_TEXT_NOT_UTF8` diagnostic rather than throwing. The `null` branch in `utf8Decoder()`
+  exists for exactly that and its docblock says so.
+- The sentence told a reader on a runtime without `TextDecoder` that they were unsupported, when
+  the library is built to carry on without one.
+- No floor moved and nothing is asserted here about browser release history —
+  `browser-floor.test.ts` says why that is not a claim this repository can settle, and still pins
+  the four-item basis string. The new test deletes the global and reads a file each way, through
+  a fresh module registry, because `utf8Decoder()` memoises its answer — the `null` included.
+
 ## 0.6.63
 
 - **Fixed** the README contradicting itself about another package inside one screen. The "Before

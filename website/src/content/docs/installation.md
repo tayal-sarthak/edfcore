@@ -27,7 +27,7 @@ TypeScript declarations ship in the package. There's no `@types/edfcore` to inst
 
 Deno and Bun work through the same build the browser uses. There's nothing runtime-specific to configure for them.
 
-Those browser versions are where the four platform features edfcore relies on all became available: ES2022 syntax, `BigInt`, `Blob.prototype.slice`, and `TextDecoder`. `BigInt` carries the annotation onsets, which are parsed into exact 100-nanosecond ticks rather than floats. Float equality on event times is how alignment breaks.
+Those browser versions are where the four platform features edfcore builds against all became available: ES2022 syntax, `BigInt`, `Blob.prototype.slice`, and `TextDecoder`. Only the first three are required. A runtime with no `TextDecoder` still reads a file: annotation text is ASCII in almost every recording and is decoded without one, and text that is not falls back to ISO-8859-1 with an `ANNOTATION_TEXT_NOT_UTF8` diagnostic rather than throwing. `BigInt` carries the annotation onsets, which are parsed into exact 100-nanosecond ticks rather than floats. Float equality on event times is how alignment breaks.
 
 The Node floor is 22.12.0 for the reason covered next.
 
