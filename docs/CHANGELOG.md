@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.68
+
+- **Fixed** every docs page describing itself two ways at once. `og:type` said `website` while the
+  JSON-LD in the same head said `TechArticle`.
+- `Base.astro` states the rule in its own props: structured data "must restate what is visible on
+  the page, never more", because data contradicting the page — schema drift — reads as spam to the
+  crawlers it exists for. The two disagreeing blocks were both emitted by that layout.
+- `og:type` is a prop now, defaulting to `website`, and the docs route passes `article`. The
+  landing page, the inspector and the 404 keep `website`, which is what they are. The test reads
+  both values off the built site and parses the JSON-LD rather than pattern-matching it, so a page
+  that claims one kind and declares the other fails whichever half moved.
+
 ## 0.6.67
 
 - **Added** `noindex, follow` to the 404 page, which was reachable as an ordinary indexable URL.
