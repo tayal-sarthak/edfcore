@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.83
+
+- **Fixed** the landing page's gap example, whose two working lines both fail on the index it was
+  holding. `readWindow` across a gap THROWS on the probed index `openEdf` returns — two probes
+  cannot say where the hole is — and `precededByGap` is documented as "`undefined` on a probed
+  index, which is 'nobody looked' rather than 'no gap'".
+- That example is the page's whole argument for EDF+D support, and `discontinuous.md` opens by
+  demonstrating the same call failing before it reaches for `buildRecordIndex`. The landing page
+  showed the destination without the step. It now builds the index first, which is two lines.
+- `chunks[1]` is optional-chained as well, the class 0.6.78 fixed one sample above it. The test
+  runs the sequence against a file with a real hole and pins the old one throwing.
+
 ## 0.6.82
 
 - **Fixed** the clock the inspector prints beside each event, which read

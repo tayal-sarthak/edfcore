@@ -85,14 +85,17 @@ for (const problem of recording.header.diagnostics) {
 //   digitalMaximum === 0, so physical scale is undefined (division by zero). …`;
 
 const gapExample = `// A discontinuous recording is a list of runs, never one continuous block.
-const chunks = await readWindow(recording, {
+// Reading across a gap needs an index that has seen every onset; the one openEdf
+// returns has seen two, and says so rather than guessing.
+const index = await buildRecordIndex(recording);
+const chunks = await readWindow({ ...recording, index }, {
   signalIndices: [0],
   startSeconds: 0,
   durationSeconds: 7200,
 });
 
 chunks.length;                    // one chunk per contiguous run
-chunks[1].precededByGap;          // EdfGap — where the recorder stopped
+chunks[1]?.precededByGap;         // EdfGap — where the recorder stopped
 `;
 
 // Surveyed across every EDF package on npm in mid-2026. Figures drift; the shape does not.
