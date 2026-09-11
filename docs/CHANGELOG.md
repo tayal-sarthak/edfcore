@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.72
+
+- **Fixed** `header/scale.ts` calling itself sole owner of "the four conditions" under which a
+  signal gets `scale: undefined`. There are five. The fifth — a physical range whose derived gain
+  is not a usable float64 — arrived in 0.4.509, and `design-decisions.md`, `physical-values.md`
+  and `api-errors.md` have each called it the fifth ever since. The module that owns them kept
+  the old count.
+- It is the docblock a reader opens to find out when `signal.scale` can be `undefined`, which is
+  the whole reason that field is optional. A count one short there is a caller who handles four
+  cases and is surprised by a file.
+- The test builds and drives each of the five rather than counting them out of the source, and
+  separates the fifth from the second — they share `DEGENERATE_PHYSICAL_RANGE` and the message
+  says which one fired. A sixth has to be exercised there before the count may grow again.
+
 ## 0.6.71
 
 - **Fixed** `chunks.ts` opening with a call that throws on the index a reader holds. It said

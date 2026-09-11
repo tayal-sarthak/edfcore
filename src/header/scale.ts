@@ -1,8 +1,11 @@
 /**
  * Digital-to-physical scale, and the decision to refuse one.
  *
- * Layer 2. Sole owner of `EdfScale` construction and of the four conditions under which a
- * signal gets `scale: undefined` instead of a fabricated gain.
+ * Layer 2. Sole owner of `EdfScale` construction and of the five conditions under which a
+ * signal gets `scale: undefined` instead of a fabricated gain: the three degenerate or inverted
+ * ranges, a log-transformed channel, and a derived gain that is not a usable float64. The last
+ * arrived in 0.4.509 and `design-decisions.md`, `physical-values.md` and `api-errors.md` have
+ * called it the fifth ever since; this said "the four conditions" until 0.6.72.
  *
  * The expression is EDFlib's, verbatim:
  *
