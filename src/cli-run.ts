@@ -258,12 +258,24 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         `${formatHeader(recording.header, { includePatientId: args.patient, diagnosticsHint: false })}\n`,
       );
       const limit = args.limit ?? DEFAULT_ITEM_LIMIT;
+      /*
+       * Both blocks are labelled, or neither is.
+       *
+       * `formatHeader`'s count line says "2 diagnostics: 1 error, 1 info" and counts
+       * `header.diagnostics` only — which is honest for a library caller, because the hint it
+       * prints underneath names that array. `edfcore header` passes `diagnosticsHint: false`, so
+       * the line that named the scope is gone, and then a SECOND block arrives under "From the
+       * record probes:". A file with two of each printed "2 diagnostics" and four entries
+       * (fixed in 0.6.70).
+       */
+      const timelineDiagnostics = recording.timeline.diagnostics;
+      const bothBlocks = recording.header.diagnostics.length > 0 && timelineDiagnostics.length > 0;
       if (recording.header.diagnostics.length > 0) {
         io.out(
-          `\n${formatDiagnostics(recording.header.diagnostics, {
-            maxItems: limit,
-            ...redaction(args),
-          })}\n`,
+          `\n${bothBlocks ? 'From the header:\n' : ''}${formatDiagnostics(
+            recording.header.diagnostics,
+            { maxItems: limit, ...redaction(args) },
+          )}\n`,
         );
       }
       /*
@@ -272,11 +284,10 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
        *
        * They were dropped, so an EDF+C file with a real hole printed "1 diagnostic(s): 1 info" and
        * never mentioned `DISCONTINUITY_IN_CONTINUOUS_FILE`, while `edfcore gaps` on the same file
-       * reported a 20-second hole. `formatHeader`'s own summary line is scoped honestly — it names
-       * `header.diagnostics` — so the omission was the command's, not the formatter's
-       * (fixed in 0.3.94).
+       * reported a 20-second hole. The omission was the command's rather than the formatter's:
+       * `formatHeader` counts `header.diagnostics` and says so in the hint line this command turns
+       * off, which is the other half of the same problem (fixed in 0.3.94 and 0.6.70).
        */
-      const timelineDiagnostics = recording.timeline.diagnostics;
       if (timelineDiagnostics.length > 0) {
         io.out(
           `\nFrom the record probes:\n${formatDiagnostics(timelineDiagnostics, {

@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.70
+
+- **Changed** `edfcore header` to label its first diagnostics block when a second one follows. It
+  printed a count line saying two and four entries beneath it.
+- `formatHeader` ends with "2 diagnostics: 1 error, 1 info", counting `header.diagnostics`, and
+  names that array in the hint underneath. `edfcore header` passes `diagnosticsHint: false` to
+  suppress the hint, because it prints the detail itself — and then prints TWO blocks, the
+  header's and the record probes' that 0.3.94 added. Suppressing the hint removed the only line
+  saying which array the count was about.
+- `cli-run.ts` asserted the opposite in a comment: that the count line "is scoped honestly — it
+  names `header.diagnostics`". It does not; the hint did. Both are corrected.
+- The label appears only when both blocks do, so the ordinary file — one block, or none — prints
+  exactly what it printed before, and the heading means something when it shows up.
+
 ## 0.6.69
 
 - **Fixed** the README saying that the API-surface table's counts "are served at `/api.json`".
