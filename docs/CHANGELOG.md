@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.101
+
+- **Fixed** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` dying with V8's `Cannot read
+  properties of undefined (reading 'signals')` when handed a header, or the Promise `openEdf`
+  returns, instead of a recording.
+- `sample-grid.ts` is the pure counterpart these exist beside and every function in it takes the
+  SIGNAL, so reaching for the header — or for one of its signals — is the mistake the pair invites.
+  All three arrive at one private helper, so all three are now answered by the guard 0.6.89 added.
+- `sampleStartSecondsOf` got its own, before it delegates: it is a one-line wrapper, and a reader who
+  wrote it should not be told about `sampleStartTicksOf`. That is `secondsToTicks`'s rule about
+  naming the caller's own word, applied to a whole call.
+
 ## 0.6.100
 
 - **Fixed** the CLI page's explanation of why a signal entry in `edfcore json` has no `scale`. It

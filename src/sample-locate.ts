@@ -34,6 +34,7 @@
 
 import { EdfChannelNotFoundError } from './errors.js';
 import { segmentAt } from './record-index.js';
+import { assertRecording } from './recording.js';
 import { floorDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
 import type { EdfRecording, EdfSampleLocation, EdfSegment, EdfSignal } from './types.js';
@@ -44,7 +45,12 @@ import type { EdfRecording, EdfSampleLocation, EdfSegment, EdfSignal } from './t
  * to `sampleStartTicksOf`, so a hard-coded name here reached a caller who never wrote it
  * (completed in 0.3.134; 0.3.133 fixed only the three messages outside this function).
  */
-function resolveSignal(recording: EdfRecording, signalIndex: number): EdfSignal {
+function resolveSignal(recording: EdfRecording, signalIndex: number, call: string): EdfSignal {
+  // The three entry points in this module all arrive here, and none of them checked the recording.
+  // Every function in `sample-grid.ts` — the pure counterpart this module exists beside — takes the
+  // SIGNAL, so reaching for `header` or for one of its signals is the mistake this file invites, and
+  // it earned V8's `Cannot read properties of undefined (reading 'signals')` (fixed in 0.6.101).
+  assertRecording(recording, call);
   const signal = recording.header.signals[signalIndex];
   if (signal === undefined) {
     throw new EdfChannelNotFoundError(
@@ -144,7 +150,7 @@ export function sampleAt(
   signalIndex: number,
   seconds: number,
 ): EdfSampleLocation | undefined {
-  const signal = resolveSignal(recording, signalIndex);
+  const signal = resolveSignal(recording, signalIndex, 'sampleAt');
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
       `sampleAt(): seconds must be a finite number, received ${describeValue(seconds)}. ` +
@@ -226,7 +232,7 @@ export function sampleStartTicksOf(
   signalIndex: number,
   sampleIndex: number,
 ): bigint {
-  const signal = resolveSignal(recording, signalIndex);
+  const signal = resolveSignal(recording, signalIndex, 'sampleStartTicksOf');
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
       `sampleIndex must be a whole number, received ${describeValue(sampleIndex)}. ` +
@@ -273,5 +279,11 @@ export function sampleStartSecondsOf(
   signalIndex: number,
   sampleIndex: number,
 ): number {
+  // Its own guard, before the delegation, so the refusal names the call the caller wrote. This is
+  // the one function here that is a one-line wrapper, and it is `secondsToTicks`'s rule applied to
+  // a whole call: "`name` is the caller's own word for the value, and it is required rather than
+  // defaulted" — a reader who wrote `sampleStartSecondsOf` should not be told about
+  // `sampleStartTicksOf` (0.6.101).
+  assertRecording(recording, 'sampleStartSecondsOf');
   return ticksToSeconds(sampleStartTicksOf(recording, signalIndex, sampleIndex));
 }
