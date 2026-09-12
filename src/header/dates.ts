@@ -523,6 +523,21 @@ export function resolveStartTime(input: StartTimeInput, sink: DiagnosticSink): E
  * of an EDF+ recording lives in record 0's timekeeping TAL, not here.
  */
 export function formatStartTimeNaive(startTime: EdfStartTime): string | undefined {
+  /*
+   * `undefined` is this function's answer for a file whose start cannot be resolved, which is what
+   * makes a wrong argument dangerous here rather than merely unhelpful. `formatStartTimeNaive` reads
+   * as something you ask of a header, and `formatStartTimeNaive(header)` — or of a recording —
+   * found no `resolvedDate` and returned exactly that: a well-formed "this file has no usable
+   * start" for a file whose start is on the very object that was passed (fixed in 0.6.110).
+   */
+  const given = startTime as { clockSource?: unknown } | null | undefined;
+  if (typeof given?.clockSource !== 'string') {
+    throw new RangeError(
+      'formatStartTimeNaive(): that is not a start time — it has no clockSource, and undefined is ' +
+        'what this function returns for a file whose start cannot be resolved, so a wrong argument ' +
+        'must not be able to produce it. Next: pass header.startTime.',
+    );
+  }
   const date = startTime.resolvedDate;
   if (date === undefined) return undefined;
   // A refused clock has no timestamp either. `clock` is a substituted midnight in that case, and

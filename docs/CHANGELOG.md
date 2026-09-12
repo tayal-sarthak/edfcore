@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.110
+
+- **Fixed** `formatStartTimeNaive` returning `undefined` — one of its real answers — for an argument
+  that is not a start time at all.
+- It returns `undefined` for a file whose start cannot be resolved. Its name reads as something you
+  ask of a header, and `formatStartTimeNaive(header)` found no `resolvedDate` and returned exactly
+  that: a well-formed "this file has no usable start", for a file whose start was on the very object
+  that was passed.
+- `formatHeader(recording)` at least threw, with `Cannot read properties of undefined (reading
+  'startTime')`. The recording is what a reader has in hand and this is the report they want printed
+  of it, so it is the call the name invites; it now names `recording.header`.
+
 ## 0.6.109
 
 - **Fixed** `segmentAt` and `gapAt` describing a wrong argument as a probed index.

@@ -96,6 +96,15 @@ function formatRate(signal: EdfHeader['signals'][number]): string {
  * chosen so that the obvious thing to do with this string is also the safe one.
  */
 export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): string {
+  // The recording is what a reader has in hand, and this is the report they want printed of it, so
+  // `formatHeader(recording)` is the call the name invites. It read `recording.startTime` and threw
+  // V8's `Cannot read properties of undefined (reading 'startTime')` (fixed in 0.6.110).
+  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+    throw new RangeError(
+      'formatHeader(): that is not a header — it has no signals. Next: pass recording.header, or ' +
+        'what parseHeader(bytes, sourceByteLength) returned.',
+    );
+  }
   const lines: string[] = [];
   const start = header.startTime;
 
