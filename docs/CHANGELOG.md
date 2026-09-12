@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.90
+
+- **Changed** what `readWindow` and `readRecords` say when handed `recording.header` instead of
+  the recording.
+- It is the one wrong first argument worth naming separately, because the rest of the API teaches
+  it: `getSignal`, `decodeDigital`, `formatHeader` and `trimToWindow` all take the header, so
+  `readWindow(edf.header, window)` is the shape a reader generalises to. It landed on the same
+  message 0.6.89 gave a forgotten `await`, which tells the two apart not at all.
+- It now says a recording also carries the source, the timeline and the index, and that this call
+  needs all three — the reason the header alone cannot serve.
+
 ## 0.6.89
 
 - **Fixed** what `readWindow` and `readRecords` say when the recording argument is the Promise

@@ -88,6 +88,25 @@ describe('the other ways the first argument arrives wrong', () => {
   });
 });
 
+describe('the header, which is what every primitive in this package takes', () => {
+  it('is named as a header rather than reported as "an object"', async () => {
+    const recording = await openEdf(source());
+    const { message } = await thrownBy(readWindow, recording.header, WINDOW);
+    expect(message).toContain('readWindow(): that is a header, not a recording');
+    expect(message).toContain('the source, the timeline and the index');
+    expect(message).toContain('rather than its .header');
+  });
+
+  it('is not confused with a forgotten await', async () => {
+    const recording = await openEdf(source());
+    const asHeader = await thrownBy(readRecords, recording.header, RECORDS);
+    expect(asHeader.message).not.toContain('pending Promise');
+    const pending = openEdf(source());
+    expect((await thrownBy(readRecords, pending, RECORDS)).message).not.toContain('is a header');
+    await pending;
+  });
+});
+
 describe('a recording that was awaited', () => {
   it('still reads, so the guard costs nothing a caller notices', async () => {
     const recording: EdfRecording = await openEdf(source());

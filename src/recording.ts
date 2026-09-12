@@ -137,8 +137,25 @@ export function assertRecording(
   recording: unknown,
   call: string,
 ): asserts recording is EdfRecording {
-  const given = recording as { header?: unknown; then?: unknown } | null | undefined;
+  const given = recording as
+    | { header?: unknown; then?: unknown; signals?: unknown }
+    | null
+    | undefined;
   if (given != null && typeof given.header === 'object' && given.header !== null) return;
+  /*
+   * A header where a recording belongs, which is the one wrong first argument worth naming
+   * separately. Every primitive in this package takes the header — `getSignal`, `decodeDigital`,
+   * `formatHeader`, `trimToWindow` — so `readWindow(edf.header, window)` is the shape the rest of
+   * the API teaches. It landed on the same `Cannot read properties of undefined (reading
+   * 'signals')` a forgotten `await` did, which tells the two apart not at all (fixed in 0.6.90).
+   */
+  if (Array.isArray(given?.signals)) {
+    throw new RangeError(
+      `${call}(): that is a header, not a recording — a recording also carries the source, the ` +
+        'timeline and the index, and this call needs all three. Next: pass what ' +
+        'openEdf(source) resolved to, rather than its .header.',
+    );
+  }
   throw new RangeError(
     `${call}(): the recording is ${
       typeof given?.then === 'function' ? 'a pending Promise' : describeSelection(recording)
