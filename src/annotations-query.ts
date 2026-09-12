@@ -19,7 +19,7 @@
  * offset.
  */
 
-import { matchesText } from './header/lookup.js';
+import { assertMatcher, matchesText } from './header/lookup.js';
 import { secondsToTicks } from './tal/ticks.js';
 import type { EdfAnnotation, EdfAnnotationWindow } from './types.js';
 
@@ -85,7 +85,13 @@ export function filterAnnotationsByText(
         ? // Not `match.test` directly: a `g` or `y` flag makes `test` stateful across the array
           // and silently returns about half the true matches. See `matchesText`.
           matchesText(match)
-        : match;
+        : assertMatcher(
+            match,
+            'filterAnnotationsByText',
+            'a string matched verbatim, a RegExp, or a predicate on the text',
+            'pass the label as a string, or (text) => text.trim() === label for a file whose ' +
+              'vocabulary is padded',
+          );
   return Object.freeze(annotations.filter((annotation) => test(annotation.text)));
 }
 

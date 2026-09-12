@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.103
+
+- **Fixed** `matchSignals` and `filterAnnotationsByText` throwing V8's "test is not a function" for a
+  matcher of the wrong kind.
+- 0.6.86 checked that a matcher arrived and not what it was. `matchSignals(header, 'Fp1')` is the
+  likeliest wrong argument the function has — a caller who wants one channel reaches for the one
+  whose name says match — and it is the case `matchSignals`'s own docblock hands to `findSignals`.
+  The refusal now says so, and names it.
+- `filterAnnotationsByText` was worse: a predicate is only called once there is something to call it
+  on, so a wrong matcher returned `[]` for a recording with no events and threw for the same argument
+  on the next file. That is the third time the quality of a refusal here depended on the data rather
+  than on the call (0.6.79, 0.6.86, this one).
+
 ## 0.6.102
 
 - **Fixed** the three I/O adapters that had no argument check: `blobSource`, `httpSource` and

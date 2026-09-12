@@ -15,6 +15,7 @@ import { trimEdfField } from '../bytes/latin1.js';
 import { BDF_ANNOTATIONS_LABEL, EDF_ANNOTATIONS_LABEL } from '../constants.js';
 import { EdfAmbiguousChannelError, EdfChannelNotFoundError } from '../errors.js';
 import { ticksToSeconds } from '../tal/ticks.js';
+import { describeValue } from '../text/describe.js';
 import type { EdfHeader, EdfSignal } from '../types.js';
 
 /**
@@ -174,6 +175,29 @@ export function getSignal(header: EdfHeader, selector: number | string): EdfSign
  * argument, and a module-level `const PATTERN = /x/g` shared with a `String.replace` elsewhere
  * would then behave differently depending on whether edfcore had been called first.
  */
+/**
+ * A matcher that arrived but is not one of the kinds the call takes.
+ *
+ * `assertSelector` above checks that one arrived; it never checked WHAT arrived, and `test` is then
+ * assigned from whatever did. `matchSignals(header, 'Fp1')` — a plain string, which this module's
+ * own docblock says is `findSignals`'s case — reached `test(signal.label)` and threw V8's "test is
+ * not a function": an internal name, no `Next:` clause, and no mention of the function that does
+ * take a label.
+ *
+ * `filterAnnotationsByText` did the same and worse. A predicate is only called once there is
+ * something to call it on, so a wrong matcher returned `[]` for a recording with no events and
+ * threw for the same argument on the next file — the third time in this package that the quality of
+ * a refusal depended on the data rather than on the call (0.6.79, 0.6.86, and this one, fixed in
+ * 0.6.103).
+ */
+export function assertMatcher<T>(match: T, call: string, accepts: string, instead: string): T {
+  if (typeof match === 'function') return match;
+  throw new RangeError(
+    `${call}(): the matcher is ${describeValue(match)}, and this call takes ${accepts}. ` +
+      `Next: ${instead}.`,
+  );
+}
+
 export function matchesText(match: RegExp): (text: string) => boolean {
   const pattern = new RegExp(match.source, match.flags);
   return (text: string): boolean => {
@@ -201,7 +225,16 @@ export function matchSignals(
   match: RegExp | ((label: string) => boolean),
 ): readonly EdfSignal[] {
   assertSelector(match, 'matchSignals', 'a RegExp, or a function taking a label');
-  const test = match instanceof RegExp ? matchesText(match) : match;
+  const test =
+    match instanceof RegExp
+      ? matchesText(match)
+      : assertMatcher(
+          match,
+          'matchSignals',
+          'a RegExp or a predicate on the label',
+          'pass a RegExp for a pattern, or findSignals(header, label) for an exact label — the ' +
+            'case this function deliberately does not cover',
+        );
   return Object.freeze(
     header.signals.filter((signal) => signal.kind === 'data' && test(signal.label)),
   );
