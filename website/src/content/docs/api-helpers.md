@@ -255,6 +255,13 @@ a different number of samples per channel. It defaults to 256.
 The argument's type is `StreamSelection`: a `WindowSelection` plus `chunkRecords`, which is the
 one field that decides peak memory — a chunk's worth of records rather than the whole window.
 
+Every argument is checked by the CALL, not by the first turn of the loop. `streamRecords` is a plain
+function that validates and returns a generator; until 0.6.118 it was a generator function, whose
+body does not run until the first `next()`, so `streamRecords(recording)` with no selection at all
+returned an object successfully. That matters because the two happen in different places: a pipeline
+that builds the stream in one function and consumes it in another got the refusal in the second, and
+a stream that was built and then dropped never reported the mistake at all.
+
 `signalIndices` is validated before the window is resolved, so a non-existent index or the
 annotations channel is refused even when the window selects no records at all — the same
 `EdfChannelNotFoundError` `readWindow` raises. Before 0.2.22 a window past the end, inside an

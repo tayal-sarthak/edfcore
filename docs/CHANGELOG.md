@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.124
+
+- **Documented** when `streamRecords` checks its arguments, which 0.6.118 changed and the page did
+  not say.
+- `api-helpers.md` described the narrower rule it had — "`signalIndices` is validated before the
+  window is resolved" — and left the reader to assume the rest arrives with the data. Every argument
+  is now checked by the call rather than by the first turn of the loop, and the page says so, with
+  the reason: a pipeline that builds the stream in one function and consumes it in another used to
+  get the refusal in the second, and a stream built and then dropped never reported it at all.
+
 ## 0.6.123
 
 - **Fixed** `resolveTimeWindow` mapping a window onto a discontinuous file when handed the header

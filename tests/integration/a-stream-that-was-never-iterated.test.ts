@@ -20,6 +20,7 @@ import { buildRecordIndex, openEdf } from '../../src/index.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { streamRecords } from '../../src/stream.js';
 import type { EdfChunk, EdfRecording, StreamSelection } from '../../src/types.js';
+import { DOCS_PAGES } from '../support/docs-pages.js';
 import { buildEdf } from '../support/writer.js';
 
 const CONTINUOUS = buildEdf({
@@ -112,6 +113,21 @@ describe('a stream that is built and dropped', () => {
       caught = (error as Error).message;
     }
     expect(caught).toContain('chunkRecords must be a positive whole number');
+  });
+});
+
+describe('the page that documents when the check happens', () => {
+  it('says the call checks, not the loop', () => {
+    const page = DOCS_PAGES.get('api-helpers.md') ?? '';
+    expect(page).toContain(
+      'Every argument is checked by the CALL, not by the first turn of the loop',
+    );
+    expect(page).toContain('a stream that was built and then dropped never reported the mistake');
+  });
+
+  it('still says what it said about signalIndices, which is the narrower claim', () => {
+    const page = DOCS_PAGES.get('api-helpers.md') ?? '';
+    expect(page).toContain('`signalIndices` is validated before the window is resolved');
   });
 });
 
