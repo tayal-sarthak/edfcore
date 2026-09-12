@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.121
+
+- **Fixed** `parseHeader` accepting an `ArrayBuffer` and failing several checks later with
+  `bytes.subarray is not a function`.
+- Every size test in the function reads `headerBytes.length`, which is `undefined` on a buffer —
+  what `await response.arrayBuffer()` and `await blob.arrayBuffer()` both hand over — so all of them
+  compared false and the fixed-header check passed a buffer of unknown size. `decodeHeaderLatin1`
+  refuses the same pair one layer down (0.6.96); this is the entry point `api-primitives.md` opens
+  with.
+- The byte-view test now has one home, at Layer 0 in `bytes/latin1.ts`. 0.6.96 wrote the tags out a
+  second time and pinned the agreement with a test, the way `io/bytes.ts` had to in 0.2.23 after one
+  of its two copies was rewritten and the other was missed. `io/source.ts` re-exports it and
+  `parseHeader` calls it; one copy needs no pinning.
+
 ## 0.6.120
 
 - **Fixed** `getStatusSignal` reporting that a BDF+ file with a Status channel has none, when handed

@@ -32,14 +32,24 @@ function fromCharCodes(bytes: Uint8Array): string {
 }
 
 /**
- * The one-byte-per-element tags, written out rather than shared with `io/source.ts`'s `isByteArray`.
+ * The one-byte-per-element tags: `Uint8Array`, `Uint8ClampedArray`, and Node's `Buffer`, which is a
+ * `Uint8Array` subclass and inherits the tag.
  *
- * This module is Layer 0 and imports nothing, which is the property that lets the header decoder be
- * the one thing in the package with no dependencies. `a-header-that-was-never-bytes.test.ts`
- * asserts the two admit the same set, which is the drift `io/bytes.ts` records being bitten by in
- * 0.2.23 when one of its two copies was rewritten and the other was missed.
+ * Here, at Layer 0, because this is the lowest module that needs it and every other one that does is
+ * above it — `io/source.ts` delegates and `header/parse.ts` calls it directly. 0.6.96 wrote the tags
+ * out a second time and pinned the agreement with a test, which is what `io/bytes.ts` had to do in
+ * 0.2.23 after one of its two copies was rewritten and the other was missed. One copy needs no
+ * pinning (0.6.121).
+ *
+ * The TAG, not `instanceof`: `instanceof` is false for a view that crossed a realm boundary — a
+ * worker, an iframe — and every caller of this is a public entry point.
  */
 const BYTE_ARRAY_TAGS = new Set(['[object Uint8Array]', '[object Uint8ClampedArray]']);
+
+/** Whether a value is a real one-byte-per-element view, and therefore addressable as file bytes. */
+export function isByteArray(value: unknown): value is Uint8Array {
+  return ArrayBuffer.isView(value) && BYTE_ARRAY_TAGS.has(Object.prototype.toString.call(value));
+}
 
 /**
  * Decode header bytes as ISO-8859-1: byte `b` becomes code point U+00`b`, always.
@@ -56,7 +66,7 @@ export function decodeHeaderLatin1(bytes: Uint8Array): string {
    * refuses exactly this pair at construction and says why; this is the same refusal one layer
    * down, where the bytes are actually read (fixed in 0.6.96).
    */
-  if (!ArrayBuffer.isView(bytes) || !BYTE_ARRAY_TAGS.has(Object.prototype.toString.call(bytes))) {
+  if (!isByteArray(bytes)) {
     throw new RangeError(
       'decodeHeaderLatin1() needs a Uint8Array. An ArrayBuffer has no length, so it decoded to ' +
         'the empty string; an Int8Array has one byte per element, so it decoded every byte above ' +

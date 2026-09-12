@@ -21,7 +21,7 @@
  * file from a complete one.
  */
 
-import { trimEdfField } from '../bytes/latin1.js';
+import { isByteArray, trimEdfField } from '../bytes/latin1.js';
 import { copyBytes } from '../bytes/view.js';
 import {
   EDF_HEADER_BLOCK_BYTES,
@@ -225,6 +225,22 @@ export function parseHeader(
         `${describeValue(sourceByteLength)}. Next: pass the byte length of the whole file — ` +
         `bytes.byteLength ` +
         'for an in-memory file, or source.byteLength for a ByteSource.',
+    );
+  }
+
+  /*
+   * And the bytes, which no check in this function reached. Every size test below reads
+   * `headerBytes.length`, which is `undefined` on an `ArrayBuffer` — what `await response.arrayBuffer()`
+   * and `await blob.arrayBuffer()` both hand over — so every one of them compared false and the
+   * failure arrived as `bytes.subarray is not a function` from a field reader several checks later.
+   * `decodeHeaderLatin1` refuses the same pair one layer down (0.6.96); this is the entry point a
+   * reader is actually sent to (fixed in 0.6.121).
+   */
+  if (!isByteArray(headerBytes)) {
+    throw new RangeError(
+      `parseHeader(): the header bytes are ${describeValue(headerBytes)}, not a Uint8Array. ` +
+        'Next: pass `new Uint8Array(buffer)` for an ArrayBuffer, or the bytes a ByteSource read ' +
+        'gave you — source.read(0, 256) resolves to one.',
     );
   }
 

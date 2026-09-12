@@ -83,8 +83,13 @@ describe('an Int8Array, which would have decoded to different characters', () =>
   });
 });
 
-describe('the tag test is the same one io/source.ts uses', () => {
-  it('admits and refuses the same values, so the two copies cannot drift', () => {
+describe('the tag test is the one io/source.ts uses', () => {
+  it('admits and refuses the same values — one function now, not two that agree', () => {
+    // 0.6.96 wrote the tags out a second time here and pinned the agreement with this test, the way
+    // `io/bytes.ts` had to in 0.2.23 after one of its two copies was rewritten and the other was
+    // missed. 0.6.121 moved the test itself to this module, at Layer 0, and `io/source.ts`
+    // re-exports it; `parseHeader` calls it too. This check is now about one function rather than
+    // about two staying in step, and is kept for the values it enumerates.
     const cases: readonly unknown[] = [
       new Uint8Array(1),
       new Uint8ClampedArray(1),
