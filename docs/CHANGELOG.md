@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.122
+
+- **Fixed** `decodeDigital` and `decodeAnnotations` describing the file's geometry with arithmetic
+  computed from a wrong argument.
+- Both answer a size mismatch by stating what the file actually is — "1 records of 716 bytes each are
+  exactly 716" — which is the right message and the wrong thing to compute from an argument nobody
+  checked. The recording where the header belongs made `decodeAnnotations` say "of this file is
+  exactly NaN bytes (1 x undefined)"; an `ArrayBuffer` where the bytes belong made `decodeDigital`
+  say "recordBytes is undefined bytes — NaN whole records".
+- Both are sentences about the FILE with nonsense in them, from a caller's wrong argument, which is
+  the one confusion `byteSource` says this package works hardest to avoid. Both now check the header
+  and the buffer first, in one guard the two decoders share.
+
 ## 0.6.121
 
 - **Fixed** `parseHeader` accepting an `ArrayBuffer` and failing several checks later with

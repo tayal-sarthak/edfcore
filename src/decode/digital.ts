@@ -10,9 +10,11 @@
  * negative. Every offset below is plain arithmetic, exact to 2^53.
  */
 
+import { isByteArray } from '../bytes/latin1.js';
 import { EdfBudgetError, EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
 import { resolveMaterializeBudget } from '../options.js';
 import { pluralise } from '../text/counted.js';
+import { describeValue } from '../text/describe.js';
 import type { EdfHeader, EdfSignal, RecordRange } from '../types.js';
 
 const BYTES_PER_INT32 = 4;
@@ -94,6 +96,34 @@ function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
  * does — which is unrecoverable rather than merely wrong, because nothing in the bytes
  * identifies which record they came from.
  */
+/**
+ * The header and the record buffer, before either is measured against the other.
+ *
+ * Both decoders answer a size mismatch by stating the file's own geometry — "1 records of 716 bytes
+ * each are exactly 716" — which is the right message and the wrong one to compute from an argument
+ * nobody checked. A recording where the header belongs made it read "of this file is exactly NaN
+ * bytes (1 x undefined)", and an `ArrayBuffer` where the bytes belong made it "recordBytes is
+ * undefined bytes — NaN whole records". Both are sentences about the FILE with arithmetic nonsense
+ * in them, from a caller's wrong argument (fixed in 0.6.122).
+ *
+ * Shared by `decodeAnnotations`, which is the other function that measures a record buffer against a
+ * header and must refuse the same pair in the same words.
+ */
+export function assertDecodable(header: EdfHeader, recordBytes: Uint8Array, call: string): void {
+  if (!Number.isSafeInteger((header as { recordByteLength?: unknown } | null)?.recordByteLength)) {
+    throw new RangeError(
+      `${call}(): that is not a header — it has no recordByteLength, so there is no record size ` +
+        'to measure the buffer against. Next: pass recording.header.',
+    );
+  }
+  if (!isByteArray(recordBytes)) {
+    throw new RangeError(
+      `${call}(): the record bytes are ${describeValue(recordBytes)}, not a Uint8Array. Next: ` +
+        'pass what readRecordBytes(source, header, records) resolved to, unsliced.',
+    );
+  }
+}
+
 function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: RecordRange): void {
   const available: RecordRange = { start: 0, count: header.recordCount };
   const startValid = Number.isSafeInteger(records.start) && records.start >= 0;
@@ -238,6 +268,7 @@ export function decodeDigitalCounted(
   out?: Int32Array,
   options?: MaterializeOptions,
 ): DecodedDigital {
+  assertDecodable(header, recordBytes, 'decodeDigital');
   const signal = signalAt(header, signalIndex);
   assertRecordRange(header, recordBytes, records);
 

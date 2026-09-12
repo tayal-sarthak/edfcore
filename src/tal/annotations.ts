@@ -39,6 +39,7 @@
 
 import { sliceBytes } from '../bytes/view.js';
 import { TICKS_PER_SECOND } from '../constants.js';
+import { assertDecodable } from '../decode/digital.js';
 import { DiagnosticSink } from '../diagnostics/collector.js';
 import { EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
 import type {
@@ -448,6 +449,7 @@ export function decodeAnnotations(
   records: RecordRange,
   options?: DecodeAnnotationsOptions,
 ): EdfAnnotationsResult {
+  assertDecodable(header, recordBytes, 'decodeAnnotations');
   assertRecordRange(header, recordBytes, records);
 
   const sink = new DiagnosticSink(options);
