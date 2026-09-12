@@ -43,6 +43,7 @@
 
 import { TICKS_PER_SECOND } from './constants.js';
 import { secondsToTicks } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import type { EdfSampleLocation, EdfSignal } from './types.js';
 
 function assertGrid(signal: EdfSignal, recordDurationTicks: bigint): void {
@@ -129,7 +130,8 @@ export function gridSampleStartTicks(
   assertGrid(signal, recordDurationTicks);
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
-      `gridSampleStartTicks(): sampleIndex must be a whole number, received ${sampleIndex}. ` +
+      `gridSampleStartTicks(): sampleIndex must be a whole number, received ` +
+        `${describeValue(sampleIndex)}. ` +
         "Next: pass a whole index; this family measures the signal's own grid, so a fractional " +
         'one has no position on it.',
     );

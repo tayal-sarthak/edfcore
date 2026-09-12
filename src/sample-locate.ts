@@ -35,6 +35,7 @@
 import { EdfChannelNotFoundError } from './errors.js';
 import { segmentAt } from './record-index.js';
 import { floorDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import type { EdfRecording, EdfSampleLocation, EdfSegment, EdfSignal } from './types.js';
 
 /**
@@ -146,7 +147,8 @@ export function sampleAt(
   const signal = resolveSignal(recording, signalIndex);
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
-      `sampleAt(): seconds must be a finite number, received ${seconds}. Next: pass a time on ` +
+      `sampleAt(): seconds must be a finite number, received ${describeValue(seconds)}. ` +
+        `Next: pass a time on ` +
         'the recording axis, where t = 0 is the start of record 0.',
     );
   }
@@ -227,7 +229,8 @@ export function sampleStartTicksOf(
   const signal = resolveSignal(recording, signalIndex);
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
-      `sampleIndex must be a whole number, received ${sampleIndex}. Next: index by ` +
+      `sampleIndex must be a whole number, received ${describeValue(sampleIndex)}. ` +
+        `Next: index by ` +
         'samplesPerRecord rather than deriving one from a float sampleRateHz.',
     );
   }

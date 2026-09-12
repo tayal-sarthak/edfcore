@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.94
+
+- **Changed** what the sample family's numeric guards print when the value is not a number at all —
+  `gridSampleStartTicks`, `gridSampleStartSeconds`, `sampleStartTicksOf`, `sampleStartSecondsOf` and
+  `sampleAt`.
+- `Number.isSafeInteger('0')` is false, so the string was rejected correctly and then printed with
+  `${value}`: "sampleIndex must be a whole number, received 0". 0 is a whole number. A reader who
+  trusts a message describing a rule its own evidence satisfies looks past the argument.
+- A BigInt costs the most, for the reason 0.6.92 gives about the time layer: every instant and every
+  span edfcore hands out is ticks, so `received 10000000` reads as a plausible sample index rather
+  than as one out by ten million.
+- Numbers keep their bare spelling, so `NaN`, `Infinity` and a real fractional index say exactly
+  what they said before.
+
 ## 0.6.93
 
 - **Changed** what `getSignal(header, 1.5)` says. `header.signals[1.5]` is `undefined`, so a
