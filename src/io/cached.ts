@@ -26,7 +26,7 @@
 
 import { requireFiniteOption } from '../options.js';
 import type { AbortSignalLike, ByteSource, CacheOptions, ReadOptions } from '../types.js';
-import { assertExactRead, assertReadRange, throwIfAborted } from './source.js';
+import { assertByteSource, assertExactRead, assertReadRange, throwIfAborted } from './source.js';
 
 const DEFAULT_BLOCK_BYTES = 1024 * 1024;
 const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
@@ -97,6 +97,11 @@ function watchSignal(
  * index's onset memo is the other thing in the package that remembers, and no wrapper controls it.
  */
 export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSource {
+  // The refusal `openEdf` and `inspectEdf` already give, one call earlier. This wrapper reads
+  // `source.byteLength` on its first line, so a caller who reached for it with the bytes rather
+  // than a source got `Cannot read properties of undefined (reading 'byteLength')` out of the cache
+  // instead of the message that names the adapter they were missing (fixed in 0.6.102).
+  assertByteSource(source);
   const byteLength = source.byteLength;
   const maxBytes = Math.max(
     0,

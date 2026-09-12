@@ -16,6 +16,7 @@
 
 import { EdfSourceError } from '../errors.js';
 import { requireFiniteOption } from '../options.js';
+import { describeValue } from '../text/describe.js';
 import type {
   AbortSignalLike,
   ByteSource,
@@ -130,7 +131,17 @@ function isSuccess(status: number): boolean {
 }
 
 function hrefOf(url: string | { readonly href: string }): string {
-  return typeof url === 'string' ? url : url.href;
+  if (typeof url === 'string') return url;
+  // `url.href` on an omitted argument was V8's `Cannot read properties of undefined (reading
+  // 'href')` — from the one adapter whose whole job is an address, and before any request was
+  // issued, so there was nothing about the network in it either (fixed in 0.6.102).
+  const href = (url as { href?: unknown } | null | undefined)?.href;
+  if (typeof href === 'string') return href;
+  throw new EdfSourceError(
+    `httpSource() needs a URL string or a URL object, and received ${describeValue(url)}. ` +
+      'Next: pass the address as a string, or as new URL(address).',
+    { offset: 0, requestedLength: 0 },
+  );
 }
 
 function resolveFetch(options: HttpSourceOptions | undefined): FetchLike {

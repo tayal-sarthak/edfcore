@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.102
+
+- **Fixed** the three I/O adapters that had no argument check: `blobSource`, `httpSource` and
+  `cachedSource`.
+- Each reads one field on its first line — `blob.size`, `url.href`, `source.byteLength` — so each
+  answered a wrong argument with V8's `Cannot read properties of undefined`, naming an internal field.
+  `byteSource` has refused one by name since the beginning, and 0.4.444 carried that up to `openEdf`;
+  these three were left out.
+- `httpSource` is the worst of the three to lose: it is the adapter whose whole job is an address,
+  and the failure arrived before any request, so there was nothing about the network in it either.
+- `cachedSource` now calls `assertByteSource`, so it gives the refusal `openEdf` gives — the one that
+  names the adapter the caller was missing — one call earlier.
+
 ## 0.6.101
 
 - **Fixed** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` dying with V8's `Cannot read
