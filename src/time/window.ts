@@ -51,13 +51,13 @@ function clampToInt(value: bigint, low: number, high: number): number {
  * pass the header the chunk was read with". The header was the argument that was right, and the
  * advice named it (fixed in 0.6.97).
  */
-function assertChunkSignal(chunkSignal: EdfChunkSignal): void {
+export function assertChunkSignal(chunkSignal: EdfChunkSignal, call: string, verb: string): void {
   if (typeof chunkSignal?.signalIndex === 'number') return;
   const headerSignal = typeof (chunkSignal as unknown as EdfSignal | undefined)?.index === 'number';
   throw new RangeError(
-    `trimToWindow(): the second argument is ${
+    `${call}(): the signal is ${
       headerSignal
-        ? 'a header signal, which carries no samples to trim'
+        ? `a header signal, which carries no samples to ${verb}`
         : `${describeValue(chunkSignal)} with no signalIndex on it`
     }. Next: pass one element of chunk.signals — the array readWindow() and readRecords() fill.`,
   );
@@ -294,7 +294,7 @@ export function trimToWindow(
   startSeconds: number,
   durationSeconds: number,
 ): EdfChunkSignal {
-  assertChunkSignal(chunkSignal);
+  assertChunkSignal(chunkSignal, 'trimToWindow', 'trim');
   const signal = signalAt(header, chunkSignal.signalIndex);
   const samplesPerRecord = signal.samplesPerRecord;
   const durationTicks = header.recordDurationTicks;

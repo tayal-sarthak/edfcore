@@ -22,7 +22,7 @@
  */
 
 import { decodeDigitalCounted } from './decode/digital.js';
-import { scalingError } from './decode/physical.js';
+import { assertSignal, scalingError } from './decode/physical.js';
 import { appendChunkDiagnostics } from './diagnostics/collector.js';
 import { EdfBudgetError, EdfChannelNotFoundError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
@@ -33,7 +33,7 @@ import { decodeAnnotations } from './tal/annotations.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { pluralise } from './text/counted.js';
 import { describeValue } from './text/describe.js';
-import { resolveTimeWindow } from './time/window.js';
+import { assertChunkSignal, resolveTimeWindow } from './time/window.js';
 import type {
   EdfChunkSignal,
   EdfDiagnostic,
@@ -462,6 +462,11 @@ export function toPhysicalEnvelope(
   envelope: EdfEnvelopeSignal,
   out?: EdfPhysicalEnvelope,
 ): EdfPhysicalEnvelope {
+  // The sibling 0.6.104 missed. It guarded `toPhysical`, `physicalRangeOf` and
+  // `clampToDigitalRange`, and this is the fourth function in the package that starts from
+  // `signal.scale` and hands the signal to `scalingError` when there is none — so the same wrong
+  // argument got a message from three of four and a `TypeError` from inside the error builder here.
+  assertSignal(signal, 'toPhysicalEnvelope');
   const scale = signal.scale;
   if (scale === undefined) {
     // `scalingError`, not a hard-coded SCALE_UNAVAILABLE. That code is defined as "none of the
@@ -541,6 +546,11 @@ export function toPhysicalEnvelope(
  * eventually written down.
  */
 export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number): EdfEnvelopeSignal {
+  // The mirror of the mistake 0.6.104 guarded next door: that one is the header's signal handed to a
+  // call that wants samples, this is the header's signal handed to a call that IS the samples. It
+  // read `chunkSignal.digital.length` and answered `Cannot read properties of undefined (reading
+  // 'length')` (fixed in 0.6.117).
+  assertChunkSignal(chunkSignal, 'envelopeOfSamples', 'fold');
   assertPositiveInteger(buckets, 'buckets');
   const samples = chunkSignal.digital;
   const total = Math.min(chunkSignal.sampleCount, samples.length);

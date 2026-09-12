@@ -17,6 +17,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { clampToDigitalRange, physicalRangeOf, toPhysical } from '../../../src/decode/physical.js';
+import { envelopeOfSamples, toPhysicalEnvelope } from '../../../src/envelope.js';
 import { byteSource } from '../../../src/io/bytes.js';
 import { openEdf, readRecords } from '../../../src/recording.js';
 import type { EdfChunkSignal, EdfSignal } from '../../../src/types.js';
@@ -108,5 +109,42 @@ describe('the scaling refusal a real signal with no gain still gets', () => {
     const message = refusal(() => toPhysical(noGain, Int32Array.of(1)));
     expect(message).toContain('Raw fields: digital minimum');
     expect(message).not.toContain('the signal is');
+  });
+});
+
+describe('toPhysicalEnvelope, the fourth function that starts from signal.scale', () => {
+  it('gives the same refusal the other three do', async () => {
+    const { chunkSignal } = await parts();
+    const envelope = { min: Float64Array.of(0), max: Float64Array.of(1), counts: Int32Array.of(1) };
+    const message = refusal(() => toPhysicalEnvelope(asSignal(chunkSignal), envelope as never));
+    expect(message).toContain('toPhysicalEnvelope(): the signal is a chunk signal');
+    expect(message).not.toContain('Cannot read properties');
+  });
+
+  it('was the one 0.6.104 missed, so the family now answers as a family', async () => {
+    const { signal, chunkSignal } = await parts();
+    const envelope = { min: Float64Array.of(0), max: Float64Array.of(1), counts: Int32Array.of(1) };
+    expect(() => toPhysicalEnvelope(signal, envelope as never)).not.toThrow();
+    expect(refusal(() => toPhysicalEnvelope(asSignal(chunkSignal), envelope as never))).toBe(
+      refusal(() => toPhysical(asSignal(chunkSignal), Int32Array.of(1))).replace(
+        'toPhysical(',
+        'toPhysicalEnvelope(',
+      ),
+    );
+  });
+});
+
+describe('envelopeOfSamples, the mirror of the same mistake', () => {
+  it('refuses the header signal, which carries no samples to fold', async () => {
+    const { signal } = await parts();
+    const message = refusal(() => envelopeOfSamples(signal as never, 4));
+    expect(message).toContain('envelopeOfSamples(): the signal is a header signal');
+    expect(message).toContain('carries no samples to fold');
+    expect(message).toContain('Next: pass one element of chunk.signals');
+  });
+
+  it('still folds a real chunk signal', async () => {
+    const { chunkSignal } = await parts();
+    expect(envelopeOfSamples(chunkSignal, 4).min).toHaveLength(4);
   });
 });

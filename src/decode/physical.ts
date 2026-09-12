@@ -295,7 +295,7 @@ function resolveInt32Out(
  * there: a complaint about the FILE for a mistake in the argument, which is the one confusion
  * `byteSource` says this package works hardest to avoid (fixed in 0.6.104).
  */
-function assertSignal(signal: EdfSignal, call: string): void {
+export function assertSignal(signal: EdfSignal, call: string): void {
   if (typeof signal?.index === 'number' && typeof signal.physicalMinimum === 'number') return;
   const chunk = typeof (signal as unknown as EdfChunkSignal | undefined)?.signalIndex === 'number';
   throw new RangeError(

@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.117
+
+- **Fixed** the two per-signal arguments the envelope module did not check, one in each direction.
+- `toPhysicalEnvelope` is the fourth function in the package that starts from `signal.scale` and
+  hands the signal to `scalingError` when there is none, and it was the one 0.6.104 missed — so a
+  chunk signal got a message from three of four and a `TypeError` from inside the error builder here.
+- `envelopeOfSamples` is the mirror: it takes the chunk signal, so the header's is the wrong one, and
+  it read `chunkSignal.digital.length` and answered `Cannot read properties of undefined (reading
+  'length')`. It now shares `trimToWindow`'s refusal from 0.6.97, which is the same argument in the
+  same shape.
+
 ## 0.6.116
 
 - **Fixed** `fileSource(bytes)` opening the file's own bytes as a filename. `fs.open` accepts a

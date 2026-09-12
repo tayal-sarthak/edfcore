@@ -58,7 +58,7 @@ describe('a header signal', () => {
     const message = refusal(() =>
       trimToWindow(header, asChunkSignal(getSignal(header, 'Fp1')), 0, 1),
     );
-    expect(message).toContain('trimToWindow(): the second argument is a header signal');
+    expect(message).toContain('trimToWindow(): the signal is a header signal');
     expect(message).toContain('carries no samples to trim');
   });
 

@@ -133,7 +133,7 @@ describe('the functions that take a time in seconds', () => {
     expect(taking.length).toBeGreaterThan(10);
   });
 
-  it('are the sixteen in src/, and every one is accounted for below', () => {
+  it('are the seventeen in src/, and every one is accounted for below', () => {
     expect(taking.sort()).toEqual([
       'annotations-query.ts: annotationsAt',
       'annotations-query.ts: filterAnnotationsByTime',
@@ -149,18 +149,24 @@ describe('the functions that take a time in seconds', () => {
       'sample-locate.ts: sampleAt',
       'stream.ts: streamRecords',
       'tal/ticks.ts: secondsToTicks',
+      'time/window.ts: assertChunkSignal',
       'time/window.ts: resolveTimeWindow',
       'time/window.ts: trimToWindow',
     ]);
   });
 
-  it('minus the resolver and the two that read a start edfcore produced', () => {
+  it('minus the resolver and the three that read a start edfcore produced', () => {
     // `secondsToTicks` is the resolver every one of the others reaches.
     // `envelopeOfSamples` and `toPhysicalEnvelope` take an `EdfChunkSignal` and an
     // `EdfEnvelopeSignal` — values edfcore returned, whose `startSeconds` no caller supplies. They
     // are matched by the enumeration because their parameter TYPES carry the field, which is worth
     // stating rather than filtering out silently.
-    expect(taking.filter((entry) => !entry.includes('secondsToTicks'))).toHaveLength(15);
+    //
+    // `assertChunkSignal` joined them in 0.6.117. It is not an entry point at all: it is the guard
+    // `trimToWindow` and `envelopeOfSamples` share, exported for the second the way `recording.ts`
+    // exports `assertSelection` for `stream.ts`. It takes no time; it takes the value whose type
+    // carries one, which is the same reason the other two are here.
+    expect(taking.filter((entry) => !entry.includes('secondsToTicks'))).toHaveLength(16);
   });
 });
 
