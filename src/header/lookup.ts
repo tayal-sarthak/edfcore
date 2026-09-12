@@ -114,9 +114,18 @@ export function getSignal(header: EdfHeader, selector: number | string): EdfSign
   if (typeof selector === 'number') {
     const signal = header.signals[selector];
     if (signal !== undefined) return signal;
+    /*
+     * A fractional index is not "outside" anything. `getSignal(header, 1.5)` — which is what a
+     * midpoint, an average or a division by a sample rate produces — was told it "is outside the 7
+     * signals this file declares. Next: pass an index in 0..6", and 1.5 already is one: the message
+     * named a rule the rejected value satisfies (fixed in 0.6.93).
+     */
     throw new EdfChannelNotFoundError(
-      `signal index ${selector} is outside the ${header.signals.length} signals this file ` +
-        `declares. Labels, in signal order: ${quoteLabels(header)}. Next: pass an index in ` +
+      `signal index ${selector} ${
+        Number.isInteger(selector)
+          ? `is outside the ${header.signals.length} signals this file declares`
+          : 'is not a whole number, so it falls between two signals rather than outside them'
+      }. Labels, in signal order: ${quoteLabels(header)}. Next: pass a whole index in ` +
         `0..${header.signals.length - 1}, or a label.`,
       { selector, availableLabels: header.signals.map((signal) => signal.label) },
     );

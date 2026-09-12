@@ -109,7 +109,7 @@ describe('the list of labels', () => {
     const header = await headerOf(Array.from({ length: 40 }, (_, index) => `S${index}`));
     const message = refusal(header, 99).message;
     expect(message).toContain('and 28 more');
-    expect(message).toContain('Next: pass an index in 0..39, or a label.');
+    expect(message).toContain('Next: pass a whole index in 0..39, or a label.');
   });
 });
 

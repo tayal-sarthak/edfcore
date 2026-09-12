@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.93
+
+- **Changed** what `getSignal(header, 1.5)` says. `header.signals[1.5]` is `undefined`, so a
+  fractional index took the branch an out-of-range one takes and was told it "is outside the 7
+  signals this file declares. Next: pass an index in 0..6" — which 1.5 already is.
+- The one thing wrong with it, that it is not whole, was the one thing the message did not say. It
+  now reads "is not a whole number, so it falls between two signals rather than outside them", and
+  the `Next:` clause asks for a whole index — which is what an out-of-range integer needs too.
+- A midpoint between two channels, an average, and anything divided by a sample rate all produce
+  one. Same shape of defect as 0.6.92 in the time layer, one module over.
+
 ## 0.6.92
 
 - **Changed** how a time argument that is not a number at all is refused, because the old message
