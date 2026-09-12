@@ -60,6 +60,19 @@ const SEVERITY_RANK: Record<EdfSeverity, number> = { error: 3, warning: 2, info:
  * first. `Array.prototype.sort` is stable, so equal counts keep the order they were first seen.
  */
 export function summarizeDiagnostics(diagnostics: readonly EdfDiagnostic[]): EdfDiagnosticSummary {
+  // Described in words rather than by type, because this module "imports one type module and
+  // nothing else" and that is the property that lets any layer summarise. Without the check the
+  // `for..of` below answered `diagnostics is not iterable`: an internal name, no `Next:` clause, and
+  // no mention of the three places a caller gets a list (fixed in 0.6.107).
+  // Cast in the test, not on the value: `Array.isArray` over a `readonly T[]` narrows the whole
+  // parameter to `any[]` and the element type is lost for the rest of the function.
+  if (!Array.isArray(diagnostics as unknown)) {
+    throw new RangeError(
+      'summarizeDiagnostics(): the diagnostics are not an array, so there is nothing to ' +
+        'summarise. Next: pass header.diagnostics, or the diagnostics on the chunk or the ' +
+        'report you have.',
+    );
+  }
   let errors = 0;
   let warnings = 0;
   let infos = 0;

@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.107
+
+- **Fixed** the four annotation queries and `summarizeDiagnostics` throwing V8's "is not iterable" or
+  "is not a function" for a list argument that is not a list.
+- `readAnnotations` resolves to `{ annotations, recordOnsetTicks, diagnostics }`, so the whole result
+  is what a caller has in hand and `filterAnnotationsByTime(result, window)` is the call the variable
+  name suggests. The refusal now names the field inside the result, which is the one thing that fixes
+  it.
+- 0.6.95 did this for the two formatters, whose `''` is an answer. These throw, so the cost was a
+  message rather than a wrong result — the same argument, five functions over.
+
 ## 0.6.106
 
 - **Fixed** `buildTimeline` and `buildRecordIndex` dying with the same V8 message when handed each

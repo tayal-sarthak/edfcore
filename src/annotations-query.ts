@@ -21,7 +21,30 @@
 
 import { assertMatcher, matchesText } from './header/lookup.js';
 import { secondsToTicks } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import type { EdfAnnotation, EdfAnnotationWindow } from './types.js';
+
+/**
+ * The list itself, before it is filtered or walked.
+ *
+ * `readAnnotations` returns `{ annotations, recordOnsetTicks, diagnostics }`, so the whole result is
+ * what a caller has in hand and `filterAnnotationsByTime(result, window)` is the call the variable
+ * name suggests. It reached `annotations.filter` and threw V8's "annotations.filter is not a
+ * function"; `countAnnotationsByText` walks its argument instead and said "annotations is not
+ * iterable". Neither names the argument, and neither mentions the one field that fixes it.
+ *
+ * 0.6.95 did this for the two formatters, whose `''` is an answer. These throw, so the cost is a
+ * message rather than a wrong result — but it is the same argument, four functions over (fixed in
+ * 0.6.107).
+ */
+function assertAnnotations(annotations: readonly EdfAnnotation[], call: string): void {
+  if (Array.isArray(annotations)) return;
+  throw new RangeError(
+    `${call}(): the annotations are ${describeValue(annotations)}, not an array. Next: pass the ` +
+      '`annotations` field of what readAnnotations(recording, records) resolved to, which is a ' +
+      'result object rather than the list itself.',
+  );
+}
 
 /**
  * The annotations that overlap a time window, in the recording's own timebase.
@@ -35,6 +58,7 @@ export function filterAnnotationsByTime(
   annotations: readonly EdfAnnotation[],
   window: EdfAnnotationWindow,
 ): readonly EdfAnnotation[] {
+  assertAnnotations(annotations, 'filterAnnotationsByTime');
   const from = secondsToTicks(window.startSeconds, 'window.startSeconds');
   const to = from + secondsToTicks(window.durationSeconds, 'window.durationSeconds');
   if (to <= from) return Object.freeze([]);
@@ -78,6 +102,7 @@ export function filterAnnotationsByText(
   annotations: readonly EdfAnnotation[],
   match: string | RegExp | ((text: string) => boolean),
 ): readonly EdfAnnotation[] {
+  assertAnnotations(annotations, 'filterAnnotationsByText');
   const test =
     typeof match === 'string'
       ? (text: string): boolean => text === match
@@ -104,6 +129,7 @@ export function filterAnnotationsByText(
 export function countAnnotationsByText(
   annotations: readonly EdfAnnotation[],
 ): ReadonlyArray<{ readonly text: string; readonly count: number }> {
+  assertAnnotations(annotations, 'countAnnotationsByText');
   const counts = new Map<string, number>();
   for (const annotation of annotations) {
     counts.set(annotation.text, (counts.get(annotation.text) ?? 0) + 1);
@@ -126,6 +152,7 @@ export function annotationsAt(
   annotations: readonly EdfAnnotation[],
   seconds: number,
 ): readonly EdfAnnotation[] {
+  assertAnnotations(annotations, 'annotationsAt');
   const at = secondsToTicks(seconds, 'seconds');
   return Object.freeze(
     annotations.filter((annotation) => {
