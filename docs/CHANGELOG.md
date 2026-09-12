@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.108
+
+- **Fixed** the last two entry points in `header/lookup.ts` that took anything at all.
+- `declaredDurationSeconds` is the one function there whose name says RECORDING — "the recording's
+  total declared length in seconds" — so passing the recording is what it invites, and
+  `BigInt(undefined)` answered "Cannot convert undefined to a BigInt": not edfcore's voice, no
+  `Next:` clause, and nothing about the argument. It now names `recording.header`, and
+  `timeline.spanSeconds` for the reader who wanted the longer number.
+- `isAnnotationLabel` is the module's only plain-string argument and reads as a predicate, so
+  `header.signals.filter(isAnnotationLabel)` is the shape it invites. That threw "text.slice is not a
+  function"; it now names `signal.label`.
+- The timeline is still accepted by `declaredDurationSeconds`, and a test records why: it declares
+  `recordCount` and `recordDurationTicks` with the same meanings, so the answer is the same one.
+
 ## 0.6.107
 
 - **Fixed** the four annotation queries and `summarizeDiagnostics` throwing V8's "is not iterable" or

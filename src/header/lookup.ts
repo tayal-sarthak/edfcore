@@ -26,6 +26,16 @@ import type { EdfHeader, EdfSignal } from '../types.js';
  * expose a text channel as if it held samples.
  */
 export function isAnnotationLabel(label: string): boolean {
+  // The label, not the signal that carries it. `header.signals.filter(isAnnotationLabel)` is the
+  // shape a predicate invites, and it reached `trimEdfField` and threw "text.slice is not a
+  // function" — an internal name, from the one function in this module that takes a plain string
+  // (fixed in 0.6.108).
+  if (typeof label !== 'string') {
+    throw new RangeError(
+      `isAnnotationLabel(): the label is ${describeValue(label)}, not a string. Next: pass ` +
+        'signal.label, which is the field this asks about.',
+    );
+  }
   const trimmed = trimEdfField(label);
   return trimmed === EDF_ANNOTATIONS_LABEL || trimmed === BDF_ANNOTATIONS_LABEL;
 }
@@ -260,5 +270,19 @@ export function matchSignals(
  * gaps between records are not covered by any record; `timeline.spanSeconds` is that number.
  */
 export function declaredDurationSeconds(header: EdfHeader): number {
+  /*
+   * The header, which this module's other four entry points also take and which none of them
+   * checked. It is the one function here whose name says RECORDING, and `declaredDurationSeconds`
+   * is the sort of thing a reader asks of one — so the mistake it invites is passing it, and
+   * `BigInt(undefined)` answered "Cannot convert undefined to a BigInt": not edfcore's voice, no
+   * `Next:` clause, and nothing about the argument (fixed in 0.6.108).
+   */
+  if (!Number.isInteger((header as { recordCount?: unknown } | null | undefined)?.recordCount)) {
+    throw new RangeError(
+      'declaredDurationSeconds(): that is not a header — it has no recordCount. Next: pass ' +
+        'recording.header, or what parseHeader(bytes, sourceByteLength) returned. For the span of ' +
+        'a discontinuous file, which is longer, read timeline.spanSeconds.',
+    );
+  }
   return ticksToSeconds(BigInt(header.recordCount) * header.recordDurationTicks);
 }
