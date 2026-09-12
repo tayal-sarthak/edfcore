@@ -45,6 +45,7 @@
 import * as nodeFsPromises from 'node:fs/promises';
 import { EdfSourceError } from './errors.js';
 import { assertExactRead, assertReadRange, throwIfAborted } from './io/source.js';
+import { describeValue } from './text/describe.js';
 import type { ClosableByteSource, ReadOptions } from './types.js';
 
 /**
@@ -106,6 +107,23 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): Cl
    * `parseHeader` — which does guard it — blaming a caller who passed it the right arguments
    * (fixed in 0.6.85).
    */
+  /*
+   * And the handle, which 0.6.85 did not check. `fileHandleSource(path, size)` — the two arguments
+   * in the order `fileSource(path)` teaches, with the size this function is named for — was
+   * accepted, returned a source advertising the right `byteLength`, and failed later on
+   * `handle.read is not a function` or `handle.close is not a function`. `byteSource` states the
+   * rule this breaks: refuse at CONSTRUCTION, because a source built over something that cannot
+   * serve bytes surfaces later as a complaint about the file (fixed in 0.6.116).
+   */
+  const given = handle as { read?: unknown; close?: unknown } | null | undefined;
+  if (typeof given?.read !== 'function' || typeof given.close !== 'function') {
+    throw new EdfSourceError(
+      `fileHandleSource() needs an open file handle — an object with a read() and a close() — and ` +
+        `received ${describeValue(handle)}. Next: pass what fs.open(path, 'r') from ` +
+        '"node:fs/promises" resolved to, or use fileSource(path), which opens one for you.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
     throw new EdfSourceError(
       `fileHandleSource() was given a byteLength of ${String(byteLength)}, which is not a byte ` +
@@ -180,6 +198,24 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): Cl
  * caller's job through `source.close()`.
  */
 export async function fileSource(path: string): Promise<ClosableByteSource> {
+  /*
+   * The path, before Node is asked to open it.
+   *
+   * `fs.open` accepts a `Uint8Array` as a path — the BYTES OF a filename — so `fileSource(bytes)`,
+   * which is the mistake a caller with a file already in memory makes, reached the syscall and came
+   * back as `ENOENT: no such file or directory, open '0       X X X X                 '`: the EDF
+   * header's own bytes rendered as a filename, in an error that also names `Uint8Array` as an
+   * accepted type. `assertByteSource` recognises a path string and names `fileSource`; this is that
+   * courtesy in the other direction (fixed in 0.6.116).
+   */
+  if (typeof path !== 'string' && Object.prototype.toString.call(path) !== '[object URL]') {
+    throw new EdfSourceError(
+      `fileSource() needs a path, and received ${describeValue(path)}. Next: pass the path as a ` +
+        'string, or byteSource(bytes) for a file you have already read into memory — a Uint8Array ' +
+        'here would be opened as the bytes of a filename.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   const handle = await fs.open(path, 'r');
   try {
     const stats = await handle.stat();

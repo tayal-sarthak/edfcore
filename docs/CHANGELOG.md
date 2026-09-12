@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.116
+
+- **Fixed** `fileSource(bytes)` opening the file's own bytes as a filename. `fs.open` accepts a
+  `Uint8Array` as a path — the bytes OF a filename — so the mistake a caller with a file already in
+  memory makes came back as `ENOENT: no such file or directory, open '0       X X X X          '`:
+  the EDF header rendered as a path, in an error that also lists `Uint8Array` as an accepted type.
+  It now names `byteSource(bytes)`, which is `assertByteSource`'s courtesy in the other direction.
+- **Fixed** `fileHandleSource` accepting something that is not a handle. 0.6.85 checked the size and
+  not the handle, so `fileHandleSource(path, size)` — the two arguments in the order
+  `fileSource(path)` teaches, with the size this function is named for — returned a source
+  advertising the right `byteLength` and failed later on `handle.read is not a function`.
+- A binary value is now named by its built-in tag wherever edfcore describes a rejected argument —
+  `Uint8Array`, `ArrayBuffer`, `DataView` — because that is the mistake wherever one turns up.
+  Never its contents.
+
 ## 0.6.115
 
 - **Behaviour change:** `maxItems` no longer accepts a value that is not a number.

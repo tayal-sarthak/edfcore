@@ -24,6 +24,16 @@ export function describeValue(value: unknown): string {
   if (typeof value === 'string') return `the string ${JSON.stringify(value)}`;
   if (value === null) return 'null';
   if (value === undefined) return 'undefined';
+  /*
+   * A binary value is named by its built-in tag — `Uint8Array`, `ArrayBuffer`, `DataView` — because
+   * that IS the mistake wherever one turns up: `fileSource(bytes)` is a file already in memory and
+   * `decodeHeaderLatin1(buffer)` is a fetch result, and "an object" says nothing a reader can act
+   * on. The tag, not `instanceof`: it is the same across realms, which is why `io/bytes.ts` uses it
+   * too. Never the contents (0.6.116).
+   */
+  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
+    return Object.prototype.toString.call(value).slice(8, -1);
+  }
   // `an object` covers an array too: a reader who passed one knows which they passed, and printing
   // its contents is how a 512-signal selection ends up on one line behind `edfcore: `.
   return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
