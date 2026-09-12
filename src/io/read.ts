@@ -30,7 +30,7 @@ import { parseHeader } from '../header/parse.js';
 import { resolveMaterializeBudget } from '../options.js';
 import { pluralise } from '../text/counted.js';
 import type { ByteSource, EdfHeader, OpenOptions, ReadOptions, RecordRange } from '../types.js';
-import { assertExactRead } from './source.js';
+import { assertByteSource, assertExactRead } from './source.js';
 
 /**
  * The signal count, read leniently and reported to nobody.
@@ -58,6 +58,12 @@ function signalCountHint(fixedHeader: Uint8Array): number | undefined {
  * the file's problem.
  */
 export async function readHeader(source: ByteSource, options?: OpenOptions): Promise<EdfHeader> {
+  // The refusal `openEdf` gives, in the two functions it is the convenience wrapper over.
+  // `api-primitives.md` sends a reader who has outgrown the top layer to exactly these, and neither
+  // checked its source: both read a field off it on their first line, so `readHeader(bytes)` — the
+  // same mistake 0.4.444 named `openEdf(bytes)` for — came back as V8's `Cannot read properties of
+  // undefined (reading 'byteLength')` (fixed in 0.6.105).
+  assertByteSource(source);
   const sourceByteLength = source.byteLength;
   const firstLength = Math.min(EDF_HEADER_BLOCK_BYTES, sourceByteLength);
   const fixedHeader = assertExactRead(await source.read(0, firstLength, options), 0, firstLength);
@@ -167,6 +173,7 @@ export async function readRecordBytes(
   records: RecordRange,
   options?: ReadOptions,
 ): Promise<Uint8Array> {
+  assertByteSource(source);
   assertRecordRange(header, records);
   const byteLength = records.count * header.recordByteLength;
   if (byteLength === 0) return new Uint8Array(0);

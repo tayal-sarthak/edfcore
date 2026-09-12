@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.105
+
+- **Fixed** `readHeader` and `readRecordBytes` — the two functions `openEdf` is the convenience
+  wrapper over — accepting anything as their source.
+- `api-primitives.md` sends a reader who has outgrown the top layer to exactly these two, and both
+  read a field off the source on their first line. So `readHeader(bytes)`, the same mistake 0.4.444
+  named `openEdf(bytes)` for, made one layer down by someone who has just been told to drop a layer,
+  came back as `Cannot read properties of undefined (reading 'byteLength')`.
+- Both now call `assertByteSource`, so all three entry points give the same refusal — including the
+  clause that recognises a path string and names `fileSource`.
+
 ## 0.6.104
 
 - **Fixed** `toPhysical`, `physicalRangeOf` and `clampToDigitalRange` when handed a chunk signal
