@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.114
+
+- **Changed** how `options.ts` describes a rejected option value. It printed with `String(value)`, so
+  `maxMaterializeBytes: '1e9'` was refused — correctly, `Number.isFinite('1e9')` is false — and then
+  reported as "must be a finite number, but was 1e9", which is a finite number.
+- This is the module under eight of the guards 0.6.99 swept and it was not one of them.
+  `maxMaterializeBytes` is resolved in six modules; `blockBytes`, `maxBytes` and `maxConcurrency` in
+  two more.
+- A string is the value this guard most often meets. Every source its own module note names —
+  `process.env`, `searchParams.get`, a JSON config — hands over a string, and the note's example
+  wraps it in `Number()` precisely because the raw value is one.
+- The sweep now reaches an options path, so the guard under the guards is covered by the check that
+  found the rest.
+
 ## 0.6.113
 
 - **Fixed** `edfcore/validate`, the third entry point, which had no argument checks at all.

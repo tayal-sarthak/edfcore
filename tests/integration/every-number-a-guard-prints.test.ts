@@ -10,6 +10,11 @@
  * the sweep across the rest: the envelope's two numbers, the stream's chunk size, the two
  * segment-lookup times, and the byte length `parseHeader` takes (fixed in 0.6.99).
  *
+ * It reached six guards and not the one underneath eight of them. `options.ts` resolves
+ * `maxMaterializeBytes` in six modules and `blockBytes`, `maxBytes` and `maxConcurrency` in two
+ * more, and printed with `String(value)` — so a string, which is what every source its own module
+ * note names actually hands over, came back as the number it spells (fixed in 0.6.114).
+ *
  * Behavioural rather than a source scan, so it covers each guard by the route a caller reaches it
  * by. A string is the case that matters: it is what a query parameter, a `<input>` value, a CSV
  * cell and a config file all hand over, and it is the one wrong type that spells a valid number.
@@ -19,6 +24,7 @@ import { describe, expect, it } from 'vitest';
 import { envelopeOfSamples, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { parseHeader } from '../../src/header/parse.js';
 import { byteSource } from '../../src/io/bytes.js';
+import { cachedSource } from '../../src/io/cached.js';
 import { buildRecordIndex, gapAt, segmentAt } from '../../src/record-index.js';
 import { openEdf, readRecords } from '../../src/recording.js';
 import { streamRecords } from '../../src/stream.js';
@@ -68,6 +74,21 @@ async function guards(): Promise<ReadonlyArray<readonly [string, () => unknown]>
           .next(),
     ],
     ['segmentAt seconds', () => segmentAt(index, loosely('1'))],
+    [
+      'options.maxMaterializeBytes',
+      () =>
+        readRecords(
+          recording,
+          { records: { start: 0, count: 1 }, signalIndices: [0] },
+          {
+            maxMaterializeBytes: loosely('1e9'),
+          },
+        ),
+    ],
+    [
+      'options.blockBytes',
+      () => cachedSource(byteSource(BYTES), { blockBytes: loosely('1') }).read(0, 1),
+    ],
     ['gapAt seconds', () => gapAt(index, loosely('1'))],
     ['parseHeader sourceByteLength', () => parseHeader(BYTES, loosely('256'))],
   ];
@@ -89,7 +110,7 @@ describe('a string where a number belongs', () => {
   });
 
   it('covers enough guards that a passing run is not a vacuous one', async () => {
-    expect((await guards()).length).toBeGreaterThanOrEqual(6);
+    expect((await guards()).length).toBeGreaterThanOrEqual(8);
   });
 });
 

@@ -1,7 +1,8 @@
 /**
  * Numeric options, refused rather than silently coerced.
  *
- * Layer 1. Imports one constant and nothing else, so every layer can reach it — which is the
+ * Layer 1. Imports one constant and one Layer 1 helper that imports nothing, so every layer can
+ * reach it — which is the
  * point: `maxMaterializeBytes` is resolved in six modules spread across the stack — `io/read.ts`,
  * `decode/digital.ts`, `decode/physical.ts`, `record-index.ts`, `envelope.ts` and `validate.ts` —
  * and read raw and handed on in two more, `io/cached.ts` and `biosemi.ts`. A guard that only one
@@ -18,6 +19,7 @@
  */
 
 import { DEFAULT_MAX_MATERIALIZE_BYTES } from './constants.js';
+import { describeValue } from './text/describe.js';
 
 /**
  * `undefined` takes the default; anything non-finite throws. The two are kept apart deliberately:
@@ -31,8 +33,21 @@ export function requireFiniteOption(
 ): number {
   if (value === undefined) return fallback;
   if (Number.isFinite(value)) return value;
+  /*
+   * `describeValue`, not `String(value)`. The module note above is about a `number` that admits
+   * `NaN` and `Infinity`, and both read correctly when printed bare. A string does not:
+   * `Number.isFinite('1e9')` is false, so `maxMaterializeBytes: '1e9'` was refused — correctly —
+   * and then reported as "must be a finite number, but was 1e9", which is a finite number. That is
+   * the shape 0.6.92, 0.6.94 and 0.6.99 were spent on, in the one module whose whole subject is
+   * options "refused rather than silently coerced"; its own sweep reached six guards and not this
+   * one, which sits under eight (fixed in 0.6.114).
+   *
+   * A string is also the value this guard most often meets. Every source the note names —
+   * `process.env`, `searchParams.get`, a JSON config — hands over a string, and the note's own
+   * example wraps it in `Number()` precisely because the raw value is one.
+   */
   throw new RangeError(
-    `options.${name} must be a finite number, but was ${String(value)}. Next: check the ` +
+    `options.${name} must be a finite number, but was ${describeValue(value)}. Next: check the ` +
       'expression that produced it — Number() on an absent environment variable, query ' +
       'parameter or config key yields NaN.',
   );
