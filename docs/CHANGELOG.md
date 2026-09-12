@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.119
+
+- **Fixed** the inspector rounding a small number away to `0`. `fmt` did `value.toFixed(digits)` and
+  then stripped trailing zeros, so anything below half the last digit kept became the string `"0"`.
+- Zero is not a neutral answer at any of the five places the page uses it. A signal declared
+  `-0.001 … 0.001` rendered as `0 … 0`, which is `DEGENERATE_PHYSICAL_RANGE` — a diagnostic the same
+  page lists three sections further down, on a file that does not have it. A record duration of 0 is
+  the legal file whose records do not advance in time. A rate of 0 is not a rate, and `undefined` is
+  how that is said here.
+- Below the rounding it now keeps two significant figures, so 0.0001 s, 0.0033 Hz and a millivolt
+  range print as themselves. A true zero — the one value that should read as one — still prints `0`.
+
 ## 0.6.118
 
 - **Fixed** `streamRecords` deferring every argument check to the first `for await`.

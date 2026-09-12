@@ -164,8 +164,26 @@ import Base from '../layouts/Base.astro';
 
   const ANNOTATION_SCAN_TARGET_BYTES = 4 * 1024 * 1024;
 
-  const fmt = (value: number, digits = 2) =>
-    Number.isFinite(value) ? value.toFixed(digits).replace(/\.?0+$/, '') : '—';
+  /*
+   * A number, rounded but never rounded away.
+   *
+   * `toFixed(digits)` on a value below half the last digit kept gives all zeros, and stripping the
+   * trailing zeros then leaves `"0"` — so 0.0001 s, 0.0033 Hz and a physical range of -0.001…0.001
+   * all printed as 0. Zero is not a neutral answer at any of the five places this is used. A record
+   * duration of 0 is the legal file whose records do not advance in time, which is why edfcore gives
+   * such a file no `sampleRateHz` at all; a physical minimum equal to its maximum is
+   * DEGENERATE_PHYSICAL_RANGE, a diagnostic this page renders three sections further down. So the
+   * inspector showed a real declaration as the one thing the library reports it is not.
+   *
+   * Below the rounding, significant figures instead: 0.0001 rather than 0, and a true zero — the
+   * only value that should read as one — still prints as `0`.
+   */
+  const fmt = (value: number, digits = 2) => {
+    if (!Number.isFinite(value)) return '—';
+    const rounded = value.toFixed(digits).replace(/\.?0+$/, '');
+    if (value === 0 || Number(rounded) !== 0) return rounded;
+    return value.toPrecision(2).replace(/\.?0+(e|$)/, '$1');
+  };
 
   const hhmmss = (seconds: number) => {
     const s = Math.max(0, Math.floor(seconds));
