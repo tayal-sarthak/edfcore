@@ -96,6 +96,33 @@ export function resolveTimeWindow(
   startSeconds: number,
   durationSeconds: number,
 ): readonly RecordRange[] {
+  /*
+   * The timeline, and the index, before either decides anything.
+   *
+   * `resolveTimeWindow(header, index, …)` returned an answer. The header carries `recordCount` and
+   * `recordDurationTicks` under the same names with the same meanings, so every branch below ran —
+   * except the one that needs `spanTicks` and `coveredTicks`, which are the timeline's alone.
+   * `undefined !== undefined` is false, so the discontinuity check simply did not fire, and a
+   * window over an EDF+D file with a five-second hole came back as `[{ start: 0, count: 4 }]`: every
+   * record, mapped onto the nominal grid, as if the file were continuous. The correct call throws.
+   *
+   * That is the exact failure this function exists to prevent — "the records a window maps to depend
+   * on onsets nobody has read, and this function refuses rather than guessing them" — reachable by
+   * passing the wrong first argument (fixed in 0.6.123).
+   */
+  if (typeof (timeline as { spanTicks?: unknown } | null | undefined)?.spanTicks !== 'bigint') {
+    throw new RangeError(
+      'resolveTimeWindow(): that is not a timeline — it has no spanTicks, and the check that ' +
+        'refuses to map a window onto a file with an unseen gap is the one that reads it. Next: ' +
+        'pass recording.timeline.',
+    );
+  }
+  if (typeof (index as { coverage?: unknown } | null | undefined)?.coverage !== 'string') {
+    throw new RangeError(
+      'resolveTimeWindow(): the second argument is not a record index — it has no coverage. ' +
+        'Next: pass recording.index, or the index buildRecordIndex(recording) returns.',
+    );
+  }
   const recordCount = timeline.recordCount;
   if (recordCount <= 0) return NO_RANGES;
 

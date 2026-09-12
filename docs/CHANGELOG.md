@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.123
+
+- **Fixed** `resolveTimeWindow` mapping a window onto a discontinuous file when handed the header
+  instead of the timeline.
+- The header carries `recordCount` and `recordDurationTicks` under the same names with the same
+  meanings, so every branch of the function ran on one — except the branch that needs `spanTicks`
+  and `coveredTicks`, which are the timeline's alone. `undefined !== undefined` is false, so the
+  discontinuity check did not fire.
+- A window over an EDF+D file with a five-second hole came back as `[{ start: 0, count: 4 }]`: every
+  record, on the nominal grid, as if the file were continuous. The correct call throws — "the records
+  a window maps to depend on onsets nobody has read, and this function refuses rather than guessing
+  them." The one failure this function exists to prevent was reachable by passing the wrong first
+  argument, and it was silent.
+- Both arguments are checked now, and the index is named as the second.
+
 ## 0.6.122
 
 - **Fixed** `decodeDigital` and `decodeAnnotations` describing the file's geometry with arithmetic
