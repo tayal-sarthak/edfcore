@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.120
+
+- **Fixed** `getStatusSignal` reporting that a BDF+ file with a Status channel has none, when handed
+  the recording instead of its header.
+- `undefined` is this function's answer — "a file having no Status channel is an ordinary fact about
+  the file, not an error" — and its first line reads `header.bytesPerSample`. The recording is the
+  object a reader has in hand from the `openEdf` two lines above the call, and it has no such field,
+  so the not-a-BDF branch was taken.
+- It is the worst place in the package for a silent answer: every trigger in the recording then reads
+  as absent, and a missing event is indistinguishable from no events.
+- `contiguityOf` (0.6.91) and `formatStartTimeNaive` (0.6.110) are the same shape — a function whose
+  own answer includes the one a wrong argument produces.
+
 ## 0.6.119
 
 - **Fixed** the inspector rounding a small number away to `0`. `fmt` did `value.toFixed(digits)` and

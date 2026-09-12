@@ -83,6 +83,24 @@ const UNSIGNED_24_BIT_MAX = 0xffffff;
  * having no Status channel is an ordinary fact about the file, not an error.
  */
 export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
+  /*
+   * `undefined` is this function's answer, which is what makes a wrong argument dangerous here
+   * rather than merely unhelpful. The first line reads `header.bytesPerSample`, so
+   * `getStatusSignal(recording)` — the object a reader has in hand, from the `openEdf` two lines
+   * above the call — found `undefined`, took the not-a-BDF branch, and reported that a BDF+ file
+   * with a Status channel has none. Every trigger in the recording then reads as absent, on the one
+   * path in this package where a missing event is indistinguishable from no events.
+   *
+   * `contiguityOf` (0.6.91) and `formatStartTimeNaive` (0.6.110) are the same shape: a function
+   * whose own answer includes the one a wrong argument produces (fixed in 0.6.120).
+   */
+  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+    throw new RangeError(
+      'getStatusSignal(): that is not a header — it has no signals, and undefined is what this ' +
+        'function returns for a file with no Status channel, so a wrong argument must not be able ' +
+        'to produce it. Next: pass recording.header.',
+    );
+  }
   if (header.bytesPerSample !== 3) return undefined;
   for (const index of header.dataSignalIndices) {
     const signal = header.signals[index];
