@@ -31,6 +31,7 @@ import {
 } from '../constants.js';
 import { DiagnosticSink } from '../diagnostics/collector.js';
 import { parseUnsignedTicks, secondsToTicks } from '../tal/ticks.js';
+import { describeValue } from '../text/describe.js';
 import type { EdfHeader, ParseOptions } from '../types.js';
 import { resolveStartTime } from './dates.js';
 import {
@@ -221,7 +222,8 @@ export function parseHeader(
   if (!Number.isSafeInteger(sourceByteLength) || sourceByteLength < 0) {
     throw new RangeError(
       `parseHeader(): sourceByteLength must be a non-negative safe integer, received ` +
-        `${sourceByteLength}. Next: pass the byte length of the whole file — bytes.byteLength ` +
+        `${describeValue(sourceByteLength)}. Next: pass the byte length of the whole file — ` +
+        `bytes.byteLength ` +
         'for an in-memory file, or source.byteLength for a ByteSource.',
     );
   }

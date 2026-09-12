@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.99
+
+- **Changed** the last six numeric guards that printed a rejected value bare: the envelope's
+  `buckets` and `secondsPerBucket`, `streamRecords`'s `chunkRecords`, the times `segmentAt` and
+  `gapAt` take, and `parseHeader`'s `sourceByteLength`.
+- `Number.isSafeInteger('4')` is false, so the string was refused correctly and then reported as
+  "must be a positive whole number, received 4" — a sentence whose rule its own evidence satisfies.
+  A string is what a query parameter, an `<input>` value, a CSV cell and a config key all hand over,
+  and it is the one wrong type that spells a valid number.
+- 0.6.92 fixed this in the time layer and 0.6.94 in the sample family, both one at a time. The check
+  is now a sweep that reaches each guard by the route a caller reaches it by, so a seventh cannot be
+  added quietly.
+
 ## 0.6.98
 
 - **Fixed** the one entry point 0.6.79's selection guard did not cover: `readEnvelopeAtResolution`.

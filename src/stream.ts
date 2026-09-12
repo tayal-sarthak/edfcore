@@ -14,6 +14,7 @@
  */
 
 import { assertSelection, readRecords, resolveSignals } from './recording.js';
+import { describeValue } from './text/describe.js';
 import { assertMonotonicOnsets } from './time/timeline.js';
 import { resolveTimeWindow } from './time/window.js';
 import type { EdfChunk, EdfRecording, ReadOptions, RecordRange, StreamSelection } from './types.js';
@@ -42,7 +43,8 @@ export async function* streamRecords(
   const chunkRecords = selection.chunkRecords ?? DEFAULT_STREAM_RECORDS;
   if (!Number.isSafeInteger(chunkRecords) || chunkRecords < 1) {
     throw new RangeError(
-      `streamRecords(): chunkRecords must be a positive whole number, received ${chunkRecords}. ` +
+      `streamRecords(): chunkRecords must be a positive whole number, received ` +
+        `${describeValue(chunkRecords)}. ` +
         'Next: omit it for the default, or pass how many records you want to hold at once.',
     );
   }

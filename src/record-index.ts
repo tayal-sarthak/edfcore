@@ -32,6 +32,7 @@ import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { saturateToInt64, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import { buildSegmentation } from './time/segments.js';
 import {
   assertMonotonicOnsetArray,
@@ -39,6 +40,7 @@ import {
   buildTimelineFromProbes,
   type RecordOnsetProbe,
 } from './time/timeline.js';
+
 import type {
   BuildIndexOptions,
   ByteSource,
@@ -521,7 +523,8 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
   // return it. Refusing is the only honest answer for a time that is not a time.
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
-      `segmentAt() needs a finite time in seconds, received ${seconds}. Next: pass a number, ` +
+      `segmentAt() needs a finite time in seconds, received ${describeValue(seconds)}. ` +
+        `Next: pass a number, ` +
         'not the result of dividing by a zero recordDurationSeconds.',
     );
   }
@@ -567,7 +570,8 @@ export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefine
   }
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
-      `gapAt() needs a finite time in seconds, received ${seconds}. Next: pass a number, the ` +
+      `gapAt() needs a finite time in seconds, received ${describeValue(seconds)}. ` +
+        `Next: pass a number, the ` +
         'way segmentAt() requires one — the two agree about every boundary.',
     );
   }

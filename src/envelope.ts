@@ -32,6 +32,7 @@ import { assertSelection, assertSignalIndices, gapBefore } from './recording.js'
 import { decodeAnnotations } from './tal/annotations.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { pluralise } from './text/counted.js';
+import { describeValue } from './text/describe.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
   EdfChunkSignal,
@@ -120,7 +121,7 @@ function bucketStartsFor(
 function assertPositiveInteger(value: number, name: string): void {
   if (Number.isSafeInteger(value) && value > 0) return;
   throw new RangeError(
-    `${name} must be a positive whole number, received ${value}. ` +
+    `${name} must be a positive whole number, received ${describeValue(value)}. ` +
       'Next: pass the pixel width of the plot you are drawing into.',
   );
 }
@@ -630,7 +631,8 @@ export async function readEnvelopeAtResolution(
   if (!Number.isFinite(secondsPerBucket) || secondsPerBucket <= 0) {
     throw new RangeError(
       `readEnvelopeAtResolution(): secondsPerBucket must be a positive finite number, received ` +
-        `${secondsPerBucket}. Next: pass seconds per pixel, or call readEnvelope() with a ` +
+        `${describeValue(secondsPerBucket)}. Next: pass seconds per pixel, or call readEnvelope() ` +
+        `with a ` +
         'bucket count if what you have is a plot width.',
     );
   }
