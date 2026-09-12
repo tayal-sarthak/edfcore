@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.125
+
+- **Documented** the `maxItems` rule 0.6.115 changed, in all three tables that carry the option.
+- `api-primitives.md` listed four behaviours for it and `api-helpers.md` listed none; neither said
+  what happens to a value that is not a number, which until 0.6.115 was "it is coerced". A rule
+  stated in one table of three is a rule two readers never meet, so the check asserts every
+  `maxItems` row on both pages states it.
+- The fractional-limit behaviour, which was true all along and written down nowhere, is stated too.
+
 ## 0.6.124
 
 - **Documented** when `streamRecords` checks its arguments, which 0.6.118 changed and the page did

@@ -20,6 +20,7 @@ import { formatDiagnostics } from '../../src/diagnostics/format.js';
 import { formatAnnotations } from '../../src/format-annotations.js';
 import { requireItemLimit } from '../../src/options.js';
 import type { EdfAnnotation, EdfDiagnostic } from '../../src/types.js';
+import { DOCS_PAGES } from '../support/docs-pages.js';
 
 function diagnosticAt(index: number): EdfDiagnostic {
   return {
@@ -91,6 +92,35 @@ describe('a limit that is not a number', () => {
     expect(refusal(() => formatDiagnostics(FIVE, { maxItems: loosely<number>('3') }))).not.toMatch(
       /^info \[/m,
     );
+  });
+});
+
+describe('the pages that document the option', () => {
+  const pages = ['api-primitives.md', 'api-helpers.md'] as const;
+
+  it('were found, so a passing run is not a vacuous one', () => {
+    for (const name of pages) expect(DOCS_PAGES.get(name) ?? '').toContain('`maxItems`');
+  });
+
+  it('say a value that is not a number is refused rather than coerced', () => {
+    // Three tables carry this option — FormatDiagnosticsOptions, FormatAnnotationsOptions and
+    // FormatReportOptions — and a rule stated in one of three is a rule two readers do not meet.
+    for (const name of pages) {
+      const page = DOCS_PAGES.get(name) ?? '';
+      for (const row of page.split('\n').filter((line) => line.includes('| `maxItems`'))) {
+        expect({ name, row, says: /not a number|refused rather than coerced/.test(row) }).toEqual({
+          name,
+          row,
+          says: true,
+        });
+      }
+    }
+  });
+
+  it('still state the four accepted behaviours where they were stated', () => {
+    const page = DOCS_PAGES.get('api-primitives.md') ?? '';
+    expect(page).toContain('`Infinity` means no cap');
+    expect(page).toContain('`0` and any negative render no blocks');
   });
 });
 

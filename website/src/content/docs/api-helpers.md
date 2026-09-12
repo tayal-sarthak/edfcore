@@ -620,7 +620,7 @@ need it to build one of these ahead of the call, or to accept one in a wrapper o
 
 | field | default | what it does |
 |---|---|---|
-| `maxItems` | every row | rows to print. The count of the rest is stated either way |
+| `maxItems` | every row | rows to print. The count of the rest is stated either way. A number: `Infinity` for no cap, and anything that is not a number — a flag or a query parameter still in its text form — is refused rather than coerced |
 | `includeChannel` | `false` | show the `description@@channel` label EDF+ allows. Off because most files carry none |
 
 `FormatReportOptions`, from `edfcore/validate`:
@@ -628,7 +628,7 @@ need it to build one of these ahead of the call, or to accept one in a wrapper o
 | field | default | what it does |
 |---|---|---|
 | `header` | none | only used to name signals; a report reads fine without it |
-| `maxItems` | `20` | individual diagnostics to print. The counts above them are the summary |
+| `maxItems` | `20` | individual diagnostics to print. The counts above them are the summary. Refused rather than coerced when it is not a number, the same as everywhere else the option appears |
 | `redactFields` | none | forwarded to `formatDiagnostics`; pass `['patientId', 'recordingId']` before a report leaves your machine — see the redaction note on the [CLI reference](/docs/cli) |
 
 The two defaults point opposite ways on purpose. `includePatientId` withholds until asked, because
