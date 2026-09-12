@@ -225,7 +225,32 @@ export function saturateToInt64(ticks: bigint): bigint {
  * prefix, "because a hard-coded name would be wrong for all but one of them" — which is the choice
  * available when the callers cannot say. These can.
  */
+/**
+ * A value that is not a number at all, said in a way that does not read as a valid one.
+ *
+ * The template below interpolated it bare, so the message named a rule the printed value satisfies.
+ * A BigInt is the sharp case: this package hands out `onsetTicksFromFirstRecord` and every other
+ * instant as ticks, and passing one where seconds belong earned "startSeconds must be a finite
+ * number of seconds, but was 10000000" — which is a finite number of seconds (fixed in 0.6.92).
+ */
+function describeSeconds(seconds: unknown): string {
+  if (typeof seconds === 'bigint') return `the BigInt ${seconds}n`;
+  if (typeof seconds === 'string') return `the string ${JSON.stringify(seconds)}`;
+  if (seconds === null) return 'null';
+  return typeof seconds === 'object' ? 'an object' : `a ${typeof seconds}`;
+}
+
 export function secondsToTicks(seconds: number, name: string): bigint {
+  // Separated from the finiteness check below so that neither message can describe the other's
+  // value: "not finite" is about a number, and `NaN`, `Infinity` and `undefined` all read correctly
+  // as themselves. A string or a BigInt does not.
+  if (typeof seconds !== 'number' && seconds !== undefined) {
+    throw new RangeError(
+      `${name} must be a number of seconds, and was given ${describeSeconds(seconds)}. Next: ` +
+        'convert it first — Number(text) for a string, and for a tick count the matching ' +
+        '*Seconds field beside it, which every instant edfcore hands out carries.',
+    );
+  }
   if (!Number.isFinite(seconds)) {
     throw new RangeError(
       `${name} must be a finite number of seconds, but was ${seconds}. Next: check the ` +

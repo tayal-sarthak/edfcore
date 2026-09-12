@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.92
+
+- **Changed** how a time argument that is not a number at all is refused, because the old message
+  named a rule the printed value satisfies.
+- `secondsToTicks` interpolated the value bare into "must be a finite number of seconds, but was
+  ${seconds}". `NaN`, `Infinity` and `undefined` read correctly there; nothing else did. The string
+  `'0'` came out as `but was 0` — 0 is a finite number of seconds.
+- A BigInt is the case worth fixing for. Every instant this package hands out is ticks
+  (`onsetTicksFromFirstRecord`, `spanTicks`, `index.onsetTicks()`), so passing one back where
+  seconds belong is a mistake the API's own shape invites, and it earned "but was 10000000" — a
+  finite number of seconds, from a value out by a factor of ten million. It now says "was given the
+  BigInt 10000000n", and points at the `*Seconds` field beside it — every instant edfcore hands out
+  carries both.
+
 ## 0.6.91
 
 - **Fixed** `contiguityOf` answering `'unknown'` for an argument that is not a record index at all.
