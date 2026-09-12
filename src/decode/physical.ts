@@ -11,7 +11,8 @@
 
 import { EdfBudgetError, EdfScalingError } from '../errors.js';
 import { resolveMaterializeBudget } from '../options.js';
-import type { EdfDiagnosticCode, EdfSignal } from '../types.js';
+import { describeValue } from '../text/describe.js';
+import type { EdfChunkSignal, EdfDiagnosticCode, EdfSignal } from '../types.js';
 import type { MaterializeOptions } from './digital.js';
 
 export type { MaterializeOptions } from './digital.js';
@@ -280,12 +281,40 @@ function resolveInt32Out(
  * Throws `EdfScalingError` when `signal.scale` is `undefined`. edfcore never fabricates a gain,
  * and `decodeDigital` keeps working on such a signal.
  */
+/**
+ * The SIGNAL, before any field of it is read.
+ *
+ * `EdfChunkSignal` is the other per-signal shape and it is the one a reader has in hand after a
+ * read, so `toPhysical(chunk.signals[0], chunk.signals[0].digital)` is the call the arguments
+ * suggest. It has no `scale`, so `toPhysical` took the no-gain branch and `scalingError` then read
+ * `signal.raw.digitalMinimum` off it — V8's `Cannot read properties of undefined`, thrown from
+ * inside the builder of the error that was meant to explain the problem.
+ *
+ * `physicalRangeOf` got further, and worse. It reported `signal undefined "undefined" declares
+ * physical minimum "undefined"` and sent the reader to `header.diagnostics` for a signal that is not
+ * there: a complaint about the FILE for a mistake in the argument, which is the one confusion
+ * `byteSource` says this package works hardest to avoid (fixed in 0.6.104).
+ */
+function assertSignal(signal: EdfSignal, call: string): void {
+  if (typeof signal?.index === 'number' && typeof signal.physicalMinimum === 'number') return;
+  const chunk = typeof (signal as unknown as EdfChunkSignal | undefined)?.signalIndex === 'number';
+  throw new RangeError(
+    `${call}(): the signal is ${
+      chunk
+        ? 'a chunk signal, which carries the samples rather than the declaration they are scaled by'
+        : `${describeValue(signal)}, not one of header.signals`
+    }. Next: pass header.signals[chunkSignal.signalIndex], or resolve it with ` +
+      'getSignal(header, label).',
+  );
+}
+
 export function toPhysical(
   signal: EdfSignal,
   digital: ArrayLike<number>,
   out?: Float64Array,
   options?: MaterializeOptions,
 ): Float64Array {
+  assertSignal(signal, 'toPhysical');
   const scale = signal.scale;
   if (scale === undefined) throw scalingError(signal);
 
@@ -321,6 +350,7 @@ export function physicalRangeOf(signal: EdfSignal): {
   readonly low: number;
   readonly high: number;
 } {
+  assertSignal(signal, 'physicalRangeOf');
   const { physicalMinimum, physicalMaximum } = signal;
   if (!Number.isFinite(physicalMinimum) || !Number.isFinite(physicalMaximum)) {
     throw new RangeError(
@@ -349,6 +379,7 @@ export function clampToDigitalRange(
   out?: Int32Array,
   options?: MaterializeOptions,
 ): Int32Array {
+  assertSignal(signal, 'clampToDigitalRange');
   const low = Math.min(signal.digitalMinimum, signal.digitalMaximum);
   const high = Math.max(signal.digitalMinimum, signal.digitalMaximum);
   if (!Number.isFinite(low) || !Number.isFinite(high)) {

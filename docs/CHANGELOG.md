@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.104
+
+- **Fixed** `toPhysical`, `physicalRangeOf` and `clampToDigitalRange` when handed a chunk signal
+  instead of the header's declaration.
+- `toPhysical(chunk.signals[0], chunk.signals[0].digital)` is the call the argument list suggests, and
+  it is wrong: the scale lives on the header's signal. A chunk signal has no `scale`, so `toPhysical`
+  took its no-gain branch and `scalingError` then read `signal.raw.digitalMinimum` off it — a
+  `TypeError` thrown from inside the builder of the error meant to explain the problem.
+- `physicalRangeOf` got further and worse. It reported `signal undefined "undefined" declares physical
+  minimum "undefined" … Next: read header.diagnostics for this signal`: a complaint about the FILE
+  for a mistake in the argument, pointing at a signal that is not there.
+- All three now name the chunk signal as what it is and point at `header.signals[…]`. A real signal
+  that genuinely has no gain still gets the `EdfScalingError` it always did.
+
 ## 0.6.103
 
 - **Fixed** `matchSignals` and `filterAnnotationsByText` throwing V8's "test is not a function" for a
