@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.97
+
+- **Changed** what `trimToWindow` says when it is handed a header signal where a chunk signal
+  belongs — and it now names the argument that is wrong.
+- The two per-signal shapes name the index differently: `EdfSignal.index` for a channel the header
+  declares, `EdfChunkSignal.signalIndex` for the samples a read returned. The header's is the one a
+  reader already holds, so passing it is the natural mistake — and it sent `undefined` into the
+  header lookup, which answered "signalIndex undefined is not one of the 7 signals in this header …
+  Next: pass the header the chunk was read with". The header was the argument that was right.
+- It now says the second argument is a header signal, which carries no samples to trim, and points
+  at `chunk.signals` — the array `readWindow()` and `readRecords()` fill. An out-of-range
+  `signalIndex` on a real chunk signal still reports the header lookup it always did.
+- `next-clause-names.test.ts` resolves every field a clause names against a live object, and `chunk`
+  was the one root nothing had ever named. Its own note said a clause that started to would need a
+  fixture rather than a pass; this is that fixture.
+
 ## 0.6.96
 
 - **Fixed** `decodeHeaderLatin1` decoding two wrong arguments into text instead of refusing them.

@@ -19,6 +19,7 @@
 import { TICKS_PER_SECOND } from '../constants.js';
 import { EdfChannelNotFoundError } from '../errors.js';
 import { ceilDiv, floorDiv, secondsToTicks, ticksToSeconds } from '../tal/ticks.js';
+import { describeValue } from '../text/describe.js';
 import type {
   EdfChunkSignal,
   EdfHeader,
@@ -38,6 +39,28 @@ function clampToInt(value: bigint, low: number, high: number): number {
   if (value <= BigInt(low)) return low;
   if (value >= BigInt(high)) return high;
   return Number(value);
+}
+
+/**
+ * The chunk signal, before the header is asked anything about its index.
+ *
+ * `EdfSignal` and `EdfChunkSignal` are the two per-signal shapes in this package, and they name the
+ * index differently: `index` on the header's, `signalIndex` on the chunk's. Passing the header's —
+ * the one a reader already holds, from `getSignal` or `header.signals[i]` — sent `undefined` into
+ * `signalAt` and earned "signalIndex undefined is not one of the 7 signals in this header … Next:
+ * pass the header the chunk was read with". The header was the argument that was right, and the
+ * advice named it (fixed in 0.6.97).
+ */
+function assertChunkSignal(chunkSignal: EdfChunkSignal): void {
+  if (typeof chunkSignal?.signalIndex === 'number') return;
+  const headerSignal = typeof (chunkSignal as unknown as EdfSignal | undefined)?.index === 'number';
+  throw new RangeError(
+    `trimToWindow(): the second argument is ${
+      headerSignal
+        ? 'a header signal, which carries no samples to trim'
+        : `${describeValue(chunkSignal)} with no signalIndex on it`
+    }. Next: pass one element of chunk.signals — the array readWindow() and readRecords() fill.`,
+  );
 }
 
 function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
@@ -271,6 +294,7 @@ export function trimToWindow(
   startSeconds: number,
   durationSeconds: number,
 ): EdfChunkSignal {
+  assertChunkSignal(chunkSignal);
   const signal = signalAt(header, chunkSignal.signalIndex);
   const samplesPerRecord = signal.samplesPerRecord;
   const durationTicks = header.recordDurationTicks;

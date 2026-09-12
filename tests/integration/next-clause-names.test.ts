@@ -32,7 +32,7 @@ import * as universal from '../../src/index.js';
 import { byteSource } from '../../src/io/bytes.js';
 import * as nodeEntry from '../../src/node.js';
 import { buildRecordIndex } from '../../src/record-index.js';
-import { openEdf } from '../../src/recording.js';
+import { openEdf, readRecords } from '../../src/recording.js';
 import * as validateEntry from '../../src/validate.js';
 import { buildEdf } from '../support/writer.js';
 
@@ -191,19 +191,28 @@ describe('every field a clause tells you to read', () => {
     const signal = recording.header.signals[0];
     if (signal === undefined) throw new Error('fixture has no signal');
 
+    // `chunk` joined the roots in 0.6.97, when `trimToWindow` became the first clause to name a
+    // field on one. Read rather than constructed, for the reason every other root here is: a field
+    // that is declared and never populated would satisfy a type check and still not be there.
+    // `readRecords` rather than `readWindow`: this fixture is an EDF+D file with a real gap, and
+    // a window over a probed index is exactly what `resolveTimeWindow` refuses to guess at.
+    const chunk = await readRecords(recording, {
+      records: { start: 0, count: 1 },
+      signalIndices: [0],
+    });
+
     const roots: Record<string, object> = {
       header: recording.header,
       signal,
       index,
       recording,
       timeline: recording.timeline,
+      chunk,
     };
 
     for (const reference of NAMED_MEMBERS) {
       const [root = '', member = ''] = reference.split('.');
       const object = roots[root];
-      // `chunk` is the one root no clause below names on a live object; if one starts to, it needs
-      // a fixture here rather than a pass.
       expect(object, reference).toBeDefined();
       expect(member in (object ?? {}), reference).toBe(true);
     }
