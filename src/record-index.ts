@@ -467,6 +467,20 @@ export async function buildRecordIndex(
  * `buildRecordIndex()` is what turns `'unknown'` into a real answer.
  */
 export function contiguityOf(index: EdfRecordIndex): 'contiguous' | 'discontinuous' | 'unknown' {
+  /*
+   * `'unknown'` is one of the three real answers, which is what makes a wrong argument dangerous
+   * here rather than merely unhelpful. `contiguityOf(recording)` — the shape the name invites,
+   * since every other question a reader asks is asked of the recording — answered `'unknown'`,
+   * indistinguishable from a probed index, and nothing told the caller otherwise. `segmentAt`
+   * makes this argument for its own `undefined` already (fixed in 0.6.91).
+   */
+  if (typeof (index as { coverage?: unknown } | null | undefined)?.coverage !== 'string') {
+    throw new RangeError(
+      'contiguityOf(): that is not a record index — it has no `coverage`, and "unknown" is one ' +
+        "of this function's real answers, so a wrong argument must not be able to produce it. " +
+        'Next: pass recording.index, or the index buildRecordIndex(recording) returns.',
+    );
+  }
   if (index.coverage !== 'complete' || index.gaps === undefined) return 'unknown';
   return index.gaps.length === 0 ? 'contiguous' : 'discontinuous';
 }

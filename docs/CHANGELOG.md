@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.91
+
+- **Fixed** `contiguityOf` answering `'unknown'` for an argument that is not a record index at all.
+- `'unknown'` is one of its three real answers — "a probed index has read record 0 and the last
+  record and nothing in between" — which is what made a wrong argument dangerous here rather than
+  merely unhelpful. `contiguityOf(recording)`, the shape the name invites, read `recording.coverage`,
+  found nothing, and returned a valid-looking answer with nothing to say the check was never
+  reached.
+- It now refuses anything with no `coverage`, and names `recording.index` and
+  `buildRecordIndex(recording)`. `segmentAt` already makes this argument for its own `undefined`;
+  this is the same merge one level up.
+
 ## 0.6.90
 
 - **Changed** what `readWindow` and `readRecords` say when handed `recording.header` instead of
