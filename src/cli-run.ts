@@ -572,7 +572,13 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
              *
              * `scale` is absent rather than null when the header has no usable gain — a degenerate
              * or inverted range, or the `Filtered` dimension — which is the same convention
-             * `sampleRateHz` already uses here for the legal zero-duration file. An absent key is
+             * `sampleRateHz` already uses here for the legal zero-duration file. It is also absent,
+             * always, for an annotations channel: `signals.ts` builds no scale for one because its
+             * bytes are TAL text, so there is no measurement to scale however well formed the
+             * declared range is. That is the case a reader of this output actually meets — an EDF+
+             * annotations signal is usually declared `-1..1` over `-32768..32767`, a perfectly
+             * usable gain — and naming only the degenerate ones reads as a claim about the file.
+             * An absent key is
              * the honest shape: `JSON.stringify` drops `undefined`, and a reader who checks for
              * the key gets the same answer the library gives, which is that there is no gain.
              */

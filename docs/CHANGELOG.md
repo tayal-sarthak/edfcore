@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.100
+
+- **Fixed** the CLI page's explanation of why a signal entry in `edfcore json` has no `scale`. It
+  said the key "is absent when the header has no usable gain" and named the degenerate cases — an
+  inverted or degenerate range, the `Filtered` dimension — none of which is the case a reader of
+  that output meets.
+- `signals.ts` builds no scale for an annotations channel at all, because "its bytes are TAL text,
+  so there is no measurement to scale", and an EDF+ writer declares that channel `-1..1` over
+  `-32768..32767` — a perfectly usable gain. So every EDF+ file emits annotation entries with no
+  `scale` beside four range numbers that read as fine, and the page's one explanation for the
+  missing key was a claim that the file is malformed.
+- The same enumeration in `cli-run.ts`'s own comment said the same thing, and now says this.
+  `api-types.md` and `api-errors.md` already named the annotations channel; this page did not.
+
 ## 0.6.99
 
 - **Changed** the last six numeric guards that printed a rejected value bare: the envelope's
