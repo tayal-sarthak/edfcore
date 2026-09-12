@@ -616,6 +616,16 @@ export async function readEnvelopeAtResolution(
   },
   options?: ReadOptions,
 ): Promise<readonly EdfEnvelopeChunk[]> {
+  // The sibling 0.6.79 missed. It guarded `readWindow`, `readRecords`, `readEnvelope`,
+  // `streamRecords` and `readTriggers`, and this one destructures its selection on the very next
+  // line — so an omitted selection came back as V8's "Cannot destructure property
+  // 'secondsPerBucket' of 'selection' as it is undefined", which is the exact message that fix
+  // exists to remove (fixed in 0.6.98).
+  assertSelection(
+    selection,
+    'readEnvelopeAtResolution',
+    '{ signalIndices, startSeconds, durationSeconds, secondsPerBucket }',
+  );
   const { secondsPerBucket } = selection;
   if (!Number.isFinite(secondsPerBucket) || secondsPerBucket <= 0) {
     throw new RangeError(

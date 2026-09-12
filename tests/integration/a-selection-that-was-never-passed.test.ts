@@ -17,6 +17,11 @@
  * Status channel produced the good message and a file WITH one produced the `TypeError` — the
  * quality of the error depended on the file rather than on the call.
  *
+ * `readEnvelopeAtResolution` was the sibling the original sweep did not list. It destructures its
+ * selection on its first line, so an omitted one came back as "Cannot destructure property
+ * 'secondsPerBucket' of 'selection' as it is undefined" — the same shape of message, from the one
+ * entry point in the family that was never checked (fixed in 0.6.98).
+ *
  * `readAnnotations` and `readRecordBytes` take a record range rather than a selection object and
  * already refused it as an `EdfRangeError`; they are checked here so the sweep covers the whole
  * reading surface rather than the part that was broken.
@@ -24,7 +29,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { readTriggers } from '../../src/biosemi.js';
-import { readEnvelope } from '../../src/envelope.js';
+import { readEnvelope, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { isEdfError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { readRecordBytes } from '../../src/io/read.js';
@@ -59,6 +64,9 @@ const TAKE_A_SELECTION: ReadonlyArray<readonly [string, OneArgument]> = [
   ['readWindow', withoutSelection(readWindow)],
   ['readRecords', withoutSelection(readRecords)],
   ['readEnvelope', withoutSelection(readEnvelope)],
+  // The sibling this sweep did not list until 0.6.98, and the one function in the family that
+  // destructures its selection on its first line rather than reading a field off it.
+  ['readEnvelopeAtResolution', withoutSelection(readEnvelopeAtResolution)],
   ['readTriggers', withoutSelection(readTriggers)],
   [
     'streamRecords',

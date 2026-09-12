@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.98
+
+- **Fixed** the one entry point 0.6.79's selection guard did not cover: `readEnvelopeAtResolution`.
+- It destructures its selection on its first line, so calling it with the selection omitted came
+  back as V8's "Cannot destructure property 'secondsPerBucket' of 'selection' as it is undefined" —
+  the exact shape of message that fix exists to remove, from the sibling of a function that got it.
+- The sweep in `a-selection-that-was-never-passed.test.ts` now lists it, so the family is checked as
+  a family rather than as the five somebody remembered.
+
 ## 0.6.97
 
 - **Changed** what `trimToWindow` says when it is handed a header signal where a chunk signal
