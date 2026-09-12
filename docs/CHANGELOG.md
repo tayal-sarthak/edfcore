@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.89
+
+- **Fixed** what `readWindow` and `readRecords` say when the recording argument is the Promise
+  `openEdf` returns rather than what it resolves to.
+- 0.6.79 guarded the selection — the second argument — and left the first one unchecked. A
+  forgotten `await` reached `recording.header.signals` and threw V8's `Cannot read properties of
+  undefined (reading 'signals')`: no `Next:` clause, an internal field named instead of the
+  argument, and nothing about the one keyword that fixes it.
+- The Promise is named as itself, because it is the one wrong first argument that is a recording
+  one tick later. Everything else says what it is — "the recording is missing", "is null", "is a
+  string" — and then "not the object openEdf() returns".
+
 ## 0.6.88
 
 - **Fixed** the last two places on the inspector that read a tick-derived number as a float: the

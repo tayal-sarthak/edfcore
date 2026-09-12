@@ -124,6 +124,29 @@ export function assertSelection(selection: unknown, call: string, shape: string)
 }
 
 /**
+ * The RECORDING itself, before any field of it is read.
+ *
+ * `assertSelection` above checks the second argument; the first one was never checked at all, and
+ * the mistake it invites is the one every async API invites. A forgotten `await` passes the
+ * pending Promise `openEdf` returns, and it reached `recording.header.signals` and threw V8's
+ * `Cannot read properties of undefined (reading 'signals')` — a `TypeError` with no `Next:`
+ * clause, naming an internal field rather than the argument, and saying nothing about the one
+ * keyword that fixes it (fixed in 0.6.89).
+ */
+export function assertRecording(
+  recording: unknown,
+  call: string,
+): asserts recording is EdfRecording {
+  const given = recording as { header?: unknown; then?: unknown } | null | undefined;
+  if (given != null && typeof given.header === 'object' && given.header !== null) return;
+  throw new RangeError(
+    `${call}(): the recording is ${
+      typeof given?.then === 'function' ? 'a pending Promise' : describeSelection(recording)
+    }, not the object openEdf() returns. Next: pass \`await openEdf(source)\`.`,
+  );
+}
+
+/**
  * The one required option with no default, refused in edfcore's own words.
  *
  * `reading-signals.md` explains why there is no "all signals" default: so that the whole of a
@@ -329,6 +352,7 @@ export async function readRecords(
   selection: RecordSelection,
   options?: ReadOptions,
 ): Promise<EdfChunk> {
+  assertRecording(recording, 'readRecords');
   assertSelection(selection, 'readRecords', '{ records, signalIndices }');
   return readChunk(recording, selection.records, selection.signalIndices, options);
 }
@@ -365,6 +389,7 @@ export async function readWindow(
    * caller a wrong diagnosis at the worst moment: an out-of-range index silently reads as an
    * empty stretch of recording. A caller mistake is a caller mistake wherever the window lands.
    */
+  assertRecording(recording, 'readWindow');
   assertSelection(selection, 'readWindow', '{ signalIndices, startSeconds, durationSeconds }');
   resolveSignals(recording.header, selection.signalIndices);
 
