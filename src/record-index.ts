@@ -29,6 +29,7 @@
 import { appendDiagnostics } from './diagnostics/collector.js';
 import { EdfRangeError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
+import { assertByteSource } from './io/source.js';
 import { resolveMaterializeBudget } from './options.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { saturateToInt64, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
@@ -269,6 +270,23 @@ export async function buildTimeline(
   header: EdfHeader,
   options?: OpenOptions,
 ): Promise<{ timeline: EdfTimeline; index: EdfRecordIndex }> {
+  /*
+   * The two functions this module exports side by side take different shapes: `buildRecordIndex`
+   * takes the recording, and this one takes the source and the header separately, because it is
+   * what `openEdf` calls to BUILD a recording and there is none yet. So `buildTimeline(recording)`
+   * is the shape its sibling teaches, and it read `undefined.recordCount` — V8's `Cannot read
+   * properties of undefined`, naming the field rather than the argument, and saying nothing about
+   * the two this call wants (fixed in 0.6.106).
+   */
+  if (typeof (source as { header?: unknown } | null | undefined)?.header === 'object') {
+    throw new RangeError(
+      'buildTimeline(): that is a recording, and this call takes the source and the header ' +
+        'separately — it is what builds a recording, so there is none yet. Next: pass ' +
+        '(recording.source, recording.header), or call buildRecordIndex(recording) for the full ' +
+        'scan.',
+    );
+  }
+  assertByteSource(source);
   const recordCount = header.recordCount;
   const timekept = hasTimekeeping(header);
   const strict = options?.strict === true;
@@ -432,6 +450,18 @@ export async function buildRecordIndex(
   recording: EdfRecording,
   options?: BuildIndexOptions,
 ): Promise<EdfRecordIndex> {
+  // The mirror of the check in `buildTimeline`: this one takes the recording, and the header is
+  // what a reader holding the other function's arguments reaches for.
+  const given = recording as { header?: unknown; signals?: unknown } | null | undefined;
+  if (given == null || typeof given.header !== 'object' || given.header === null) {
+    throw new RangeError(
+      `buildRecordIndex(): ${
+        Array.isArray(given?.signals)
+          ? 'that is a header, and a full scan needs the source and the timeline too'
+          : 'the recording is not the object openEdf() returns'
+      }. Next: pass \`await openEdf(source)\`.`,
+    );
+  }
   const { header, timeline } = recording;
   const onsets = await scanOnsets(recording, options);
   assertMonotonicOnsetArray(onsets);

@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.106
+
+- **Fixed** `buildTimeline` and `buildRecordIndex` dying with the same V8 message when handed each
+  other's argument.
+- They are exported side by side and take different shapes: `buildRecordIndex` takes the recording,
+  and `buildTimeline` takes the source and the header separately because it is what `openEdf` calls
+  to build a recording, so there is none yet. Nothing about the names says that, and both read
+  `undefined.recordCount` — a field named instead of an argument, twice.
+- `buildTimeline(recording)` now says it takes the two halves and why, and names the sibling that
+  does take one. `buildRecordIndex(header)` says a full scan needs the source and the timeline too.
+
 ## 0.6.105
 
 - **Fixed** `readHeader` and `readRecordBytes` — the two functions `openEdf` is the convenience
