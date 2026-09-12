@@ -69,6 +69,24 @@ export function requireFiniteOption(
  */
 export function requireItemLimit(value: number | undefined, total: number): number {
   if (value === undefined) return total;
+  /*
+   * The one numeric option in this module that was silently coerced, which is the thing the module
+   * exists not to do. `Math.floor('3')` is 3, so `maxItems: '3'` printed three items and nothing
+   * said the option had been read as text — and `Math.floor` is where every other value in this
+   * function is decided, so the coercion sat underneath four documented behaviours.
+   *
+   * Text is exactly what reaches this option. `--limit` is a flag, a viewer's cap comes off a query
+   * parameter, and a config file holds strings; the fix for all three is `Number()`, and the `NaN`
+   * that a bad one produces is refused below with a message about that conversion (fixed in
+   * 0.6.115).
+   */
+  if (typeof value !== 'number') {
+    throw new RangeError(
+      `options.maxItems must be a number, and was given ${describeValue(value)}. Next: pass how ` +
+        'many items to print, or Infinity for no cap. A flag, a query parameter and a config key ' +
+        'all arrive as text — convert with Number() first.',
+    );
+  }
   if (Number.isNaN(value)) {
     throw new RangeError(
       'options.maxItems must be a number, but was NaN. Next: check the expression that produced ' +

@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.115
+
+- **Behaviour change:** `maxItems` no longer accepts a value that is not a number.
+- `options.ts` is titled "Numeric options, refused rather than silently coerced", and
+  `requireItemLimit` ended in `Math.floor(value)` — which is where all four of its documented
+  behaviours are decided, and which is also a coercion. `Math.floor('3')` is 3, so
+  `formatDiagnostics(list, { maxItems: '3' })` printed three blocks and nothing said the option had
+  been read as text.
+- Text is exactly what reaches this option: `--limit` is a flag, a viewer's cap comes off a query
+  parameter, and a config file holds strings. The fix for all three is `Number()`, and the `NaN` a
+  bad one produces has been refused since 0.6.1 with a message about that same conversion.
+- The four accepted behaviours are unchanged: `Infinity` means no cap, a fractional limit floors,
+  `0` and any negative render no blocks, and `NaN` throws.
+
 ## 0.6.114
 
 - **Changed** how `options.ts` describes a rejected option value. It printed with `String(value)`, so
