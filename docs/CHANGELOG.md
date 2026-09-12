@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.96
+
+- **Fixed** `decodeHeaderLatin1` decoding two wrong arguments into text instead of refusing them.
+- An `ArrayBuffer` — what `await blob.arrayBuffer()` and `await response.arrayBuffer()` hand you —
+  has no `length`, so the chunk loop never ran and the whole header decoded to `''`. An `Int8Array`
+  has one byte per element, so it passed every length check and then decoded every byte above 0x7f
+  to a different character: 0xb5, the bare micro sign real equipment writes into a physical
+  dimension, came out as U+FFB5.
+- `byteSource` refuses that same pair at construction and says why — an Int8Array "would pass every
+  length check and then decode to fabricated sample values". This is that refusal one layer down,
+  where the bytes are read.
+- The tag test is written out rather than imported, because this module is Layer 0 and imports
+  nothing; a test asserts it admits exactly what `isByteArray` does, so the two copies cannot drift
+  the way `io/bytes.ts`'s did in 0.2.23.
+
 ## 0.6.95
 
 - **Fixed** `formatDiagnostics` and `formatAnnotations` returning `''` for an argument that is not a

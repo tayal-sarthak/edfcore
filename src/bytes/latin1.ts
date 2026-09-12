@@ -32,11 +32,38 @@ function fromCharCodes(bytes: Uint8Array): string {
 }
 
 /**
+ * The one-byte-per-element tags, written out rather than shared with `io/source.ts`'s `isByteArray`.
+ *
+ * This module is Layer 0 and imports nothing, which is the property that lets the header decoder be
+ * the one thing in the package with no dependencies. `a-header-that-was-never-bytes.test.ts`
+ * asserts the two admit the same set, which is the drift `io/bytes.ts` records being bitten by in
+ * 0.2.23 when one of its two copies was rewritten and the other was missed.
+ */
+const BYTE_ARRAY_TAGS = new Set(['[object Uint8Array]', '[object Uint8ClampedArray]']);
+
+/**
  * Decode header bytes as ISO-8859-1: byte `b` becomes code point U+00`b`, always.
  *
  * Never `TextDecoder` — see the module comment.
  */
 export function decodeHeaderLatin1(bytes: Uint8Array): string {
+  /*
+   * The two wrong views both produced text rather than an error, which is the worst pair of
+   * outcomes a decoder can have. An `ArrayBuffer` has no `length`, so `undefined <= 4096` is false,
+   * the chunk loop never ran, and the whole header decoded to `''`. An `Int8Array` has one byte per
+   * element, so it passed every length check and then decoded every byte above 0x7f to a different
+   * character — 0xb5, the bare micro sign real equipment writes, came out as U+FFB5. `byteSource`
+   * refuses exactly this pair at construction and says why; this is the same refusal one layer
+   * down, where the bytes are actually read (fixed in 0.6.96).
+   */
+  if (!ArrayBuffer.isView(bytes) || !BYTE_ARRAY_TAGS.has(Object.prototype.toString.call(bytes))) {
+    throw new RangeError(
+      'decodeHeaderLatin1() needs a Uint8Array. An ArrayBuffer has no length, so it decoded to ' +
+        'the empty string; an Int8Array has one byte per element, so it decoded every byte above ' +
+        '0x7f to a different character. Next: pass `new Uint8Array(buffer)` for an ArrayBuffer, ' +
+        'and `new Uint8Array(view.buffer, view.byteOffset, view.byteLength)` for any other view.',
+    );
+  }
   if (bytes.length <= CHUNK_BYTES) return fromCharCodes(bytes);
   const parts: string[] = [];
   for (let start = 0; start < bytes.length; start += CHUNK_BYTES) {
