@@ -436,6 +436,7 @@ export async function readAnnotations(
   records: RecordRange,
   options?: DecodeAnnotationsOptions & ReadOptions,
 ): Promise<EdfAnnotationsResult> {
+  assertRecording(recording, 'readAnnotations');
   const bytes = await readRecordBytes(recording.source, recording.header, records, options);
   // The timeline knows record 0's sub-second start offset; a range that does not contain record 0
   // cannot derive it, and on an EDF+D file the derivation gives a value outside [0, 1) and the

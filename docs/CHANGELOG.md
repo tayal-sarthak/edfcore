@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.111
+
+- **Fixed** the five reading entry points 0.6.89's recording guard did not cover: `readAnnotations`,
+  `readEnvelope`, `readEnvelopeAtResolution`, `readTriggers` and `streamRecords`.
+- That fix went where the mistake was easiest to picture — `readWindow` and `readRecords` — and left
+  the rest of the family reading `recording.header` unchecked, so a forgotten `await`, or the header
+  passed in place of the recording, still came back as `Cannot read properties of undefined (reading
+  'signals')` from five of seven. Same way 0.6.79's selection guard missed
+  `readEnvelopeAtResolution`, fixed in 0.6.98.
+- The sweep now lists all seven, so the family is checked as a family.
+
 ## 0.6.110
 
 - **Fixed** `formatStartTimeNaive` returning `undefined` — one of its real answers — for an argument

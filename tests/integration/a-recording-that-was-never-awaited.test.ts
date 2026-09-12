@@ -14,9 +14,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { readTriggers } from '../../src/biosemi.js';
+import { readEnvelope, readEnvelopeAtResolution } from '../../src/envelope.js';
 import { isEdfError } from '../../src/errors.js';
 import { byteSource } from '../../src/io/bytes.js';
-import { openEdf, readRecords, readWindow } from '../../src/recording.js';
+import { openEdf, readAnnotations, readRecords, readWindow } from '../../src/recording.js';
+import { streamRecords } from '../../src/stream.js';
 import type { EdfRecording } from '../../src/types.js';
 import { buildEdf } from '../support/writer.js';
 
@@ -37,9 +40,27 @@ const RECORDS = { records: { start: 0, count: 1 }, signalIndices: [0] };
 /** The cast a JavaScript caller does not need: the type system is not the only way in. */
 const withRecording = (fn: unknown) => fn as (recording: unknown, selection: unknown) => unknown;
 
+/*
+ * All seven, not the two 0.6.89 guarded. The first fix went where the mistake was easiest to
+ * picture and left the rest of the family reading `recording.header` unchecked, which is the same
+ * way 0.6.79's selection guard missed `readEnvelopeAtResolution` (completed in 0.6.111).
+ */
 const CALLS: ReadonlyArray<readonly [string, unknown, unknown]> = [
   ['readWindow', readWindow, WINDOW],
   ['readRecords', readRecords, RECORDS],
+  ['readAnnotations', readAnnotations, { start: 0, count: 1 }],
+  ['readEnvelope', readEnvelope, { ...WINDOW, buckets: 4 }],
+  ['readEnvelopeAtResolution', readEnvelopeAtResolution, { ...WINDOW, secondsPerBucket: 0.5 }],
+  ['readTriggers', readTriggers, { startSeconds: 0, durationSeconds: 1 }],
+  [
+    'streamRecords',
+    (recording: unknown, selection: unknown) =>
+      (streamRecords as unknown as (r: unknown, s: unknown) => AsyncGenerator<unknown>)(
+        recording,
+        selection,
+      ).next(),
+    WINDOW,
+  ],
 ];
 
 async function thrownBy(fn: unknown, recording: unknown, selection: unknown): Promise<Error> {

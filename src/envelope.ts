@@ -28,7 +28,7 @@ import { EdfBudgetError, EdfChannelNotFoundError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
-import { assertSelection, assertSignalIndices, gapBefore } from './recording.js';
+import { assertRecording, assertSelection, assertSignalIndices, gapBefore } from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { pluralise } from './text/counted.js';
@@ -137,6 +137,7 @@ export async function readEnvelope(
   selection: EnvelopeSelection,
   options?: ReadOptions,
 ): Promise<readonly EdfEnvelopeChunk[]> {
+  assertRecording(recording, 'readEnvelope');
   assertSelection(
     selection,
     'readEnvelope',
@@ -622,6 +623,7 @@ export async function readEnvelopeAtResolution(
   // line — so an omitted selection came back as V8's "Cannot destructure property
   // 'secondsPerBucket' of 'selection' as it is undefined", which is the exact message that fix
   // exists to remove (fixed in 0.6.98).
+  assertRecording(recording, 'readEnvelopeAtResolution');
   assertSelection(
     selection,
     'readEnvelopeAtResolution',
