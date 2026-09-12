@@ -46,7 +46,32 @@ import { secondsToTicks } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
 import type { EdfSampleLocation, EdfSignal } from './types.js';
 
-function assertGrid(signal: EdfSignal, recordDurationTicks: bigint): void {
+function assertGrid(signal: EdfSignal, recordDurationTicks: bigint, call: string): void {
+  /*
+   * Both arguments, before either is read. `signal.kind` on a chunk signal — the per-signal shape a
+   * reader holds after a read, and the one whose samples they are indexing — is `undefined`, so the
+   * whole family answered V8's `Cannot read properties of undefined (reading 'kind')`.
+   *
+   * The ticks are the sharper of the two. `recordDurationSeconds` sits beside
+   * `recordDurationTicks` on the same header, is a float, and reads as the obvious thing to pass;
+   * it reached `recordDurationTicks <= 0n` and threw "Cannot mix BigInt and other types, use
+   * explicit conversions", which names neither the argument nor the call nor which of the two
+   * fields to use (fixed in 0.6.112).
+   */
+  if (typeof (signal as { kind?: unknown } | null | undefined)?.kind !== 'string') {
+    throw new RangeError(
+      `${call}(): the signal is ${describeValue(signal)}, not one of header.signals — a chunk ` +
+        'signal carries the samples rather than the grid they sit on. Next: pass ' +
+        'header.signals[chunkSignal.signalIndex], or resolve it with getSignal(header, label).',
+    );
+  }
+  if (typeof recordDurationTicks !== 'bigint') {
+    throw new RangeError(
+      `${call}(): recordDurationTicks is ${describeValue(recordDurationTicks)}, not a BigInt. ` +
+        'Next: pass header.recordDurationTicks — the seconds beside it on the same header are a ' +
+        'float, and this family is exact on purpose.',
+    );
+  }
   if (signal.kind === 'annotations') {
     throw new RangeError(
       `signal ${signal.index} (${JSON.stringify(signal.label)}) is an annotations channel, ` +
@@ -88,7 +113,7 @@ export function gridSampleIndexAt(
   seconds: number,
   recordDurationTicks: bigint,
 ): EdfSampleLocation {
-  assertGrid(signal, recordDurationTicks);
+  assertGrid(signal, recordDurationTicks, 'gridSampleIndexAt');
 
   const ticks = secondsToTicks(seconds, 'seconds');
   const perRecord = BigInt(signal.samplesPerRecord);
@@ -127,7 +152,7 @@ export function gridSampleStartTicks(
   sampleIndex: number,
   recordDurationTicks: bigint,
 ): bigint {
-  assertGrid(signal, recordDurationTicks);
+  assertGrid(signal, recordDurationTicks, 'gridSampleStartTicks');
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
       `gridSampleStartTicks(): sampleIndex must be a whole number, received ` +
@@ -151,6 +176,9 @@ export function gridSampleStartSeconds(
   sampleIndex: number,
   recordDurationTicks: bigint,
 ): number {
+  // Its own, before the delegation, for the reason `sampleStartSecondsOf` grew one in 0.6.101: a
+  // reader who wrote this call should not be told about `gridSampleStartTicks`.
+  assertGrid(signal, recordDurationTicks, 'gridSampleStartSeconds');
   const ticks = gridSampleStartTicks(signal, sampleIndex, recordDurationTicks);
   const whole = ticks / TICKS_PER_SECOND;
   const remainder = ticks % TICKS_PER_SECOND;

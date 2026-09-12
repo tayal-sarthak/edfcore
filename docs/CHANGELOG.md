@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.112
+
+- **Fixed** the sample-grid family checking neither of its two arguments.
+- A chunk signal has no `kind` — it is the per-signal shape a reader holds after a read, and the one
+  whose samples they are indexing — so `gridSampleStartTicks`, `gridSampleStartSeconds` and
+  `gridSampleIndexAt` all answered `Cannot read properties of undefined (reading 'kind')` for one.
+- The record duration is the sharper of the two. `recordDurationSeconds` sits beside
+  `recordDurationTicks` on the same header, is a float, and reads as the obvious thing to pass; it
+  reached `recordDurationTicks <= 0n` and threw "Cannot mix BigInt and other types, use explicit
+  conversions", which names neither the argument, nor the call, nor which of the two fields to use.
+- **Behaviour change**: a hand-built partial signal is now refused. `{ samplesPerRecord: 128 }` cast
+  to `EdfSignal` reached the arithmetic before; it has no `kind`, and that is the field the
+  annotations refusal reads. Pass a signal from `header.signals`.
+- This is 0.6.101's fix on the pure half of the pair, and `gridSampleStartSeconds` got its own guard
+  before it delegates, for the same reason `sampleStartSecondsOf` did.
+
 ## 0.6.111
 
 - **Fixed** the five reading entry points 0.6.89's recording guard did not cover: `readAnnotations`,

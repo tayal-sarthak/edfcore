@@ -24,8 +24,14 @@ import type { EdfSignal } from '../../src/types.js';
 
 const DEMO = readFileSync(new URL('../../website/src/pages/demo.astro', import.meta.url), 'utf8');
 
-/** 128 samples over 0.3 s — the shape `sample-grid.ts` names, where the rate is 426.666…. */
-const SIGNAL = { samplesPerRecord: 128 } as EdfSignal;
+/**
+ * 128 samples over 0.3 s — the shape `sample-grid.ts` names, where the rate is 426.666….
+ *
+ * `index` and `kind` are stated rather than cast away: 0.6.112 made the grid family check that its
+ * first argument is a signal at all, because a chunk signal has no `kind` and the whole family
+ * answered `Cannot read properties of undefined (reading 'kind')` for one.
+ */
+const SIGNAL = { index: 0, kind: 'data', label: 'Fp1', samplesPerRecord: 128 } as EdfSignal;
 const DURATION_TICKS = (3n * TICKS_PER_SECOND) / 10n;
 
 /** `samplesPerRecord / recordDurationSeconds`, which is what the page computed. */
