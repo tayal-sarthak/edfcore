@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.109
+
+- **Fixed** `segmentAt` and `gapAt` describing a wrong argument as a probed index.
+- Both branch on `coverage !== 'complete'` and read it off whatever arrived, so `gapAt(recording)`
+  was told "this one is probed, so it has read record 0 and the last record and nothing between" — a
+  precise description of something the caller never passed, from the two functions that exist to keep
+  "there is a gap here" and "nobody looked" apart.
+- 0.6.91 fixed the same thing in `contiguityOf`, which returned `'unknown'` outright. The check is now
+  one helper the three share, with each call's own reason for why a wrong argument must not reach its
+  coverage branch.
+
 ## 0.6.108
 
 - **Fixed** the last two entry points in `header/lookup.ts` that took anything at all.

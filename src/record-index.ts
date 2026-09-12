@@ -489,6 +489,26 @@ export async function buildRecordIndex(
 }
 
 /**
+ * The index itself, before its coverage decides anything.
+ *
+ * The three functions below all branch on `coverage !== 'complete'`, and every one of them read that
+ * off whatever arrived. So a wrong argument took the probed-index branch: `gapAt(recording)` was
+ * told "this one is probed, so it has read record 0 and the last record and nothing between", a
+ * precise description of something the caller never passed, and `contiguityOf(recording)` returned
+ * `'unknown'` outright (0.6.91, extended to its two siblings in 0.6.109).
+ *
+ * `because` is the call's own reason, because the three differ: two would misdiagnose, and one
+ * would answer.
+ */
+function assertIndex(index: EdfRecordIndex, call: string, because: string): void {
+  if (typeof (index as { coverage?: unknown } | null | undefined)?.coverage === 'string') return;
+  throw new RangeError(
+    `${call}(): that is not a record index — it has no \`coverage\`, and ${because}. ` +
+      'Next: pass recording.index, or the index buildRecordIndex(recording) returns.',
+  );
+}
+
+/**
  * Whether the records run without gaps — or whether nobody has checked.
  *
  * Three answers, not two. A probed index has read record 0 and the last record and nothing in
@@ -506,13 +526,12 @@ export function contiguityOf(index: EdfRecordIndex): 'contiguous' | 'discontinuo
    * indistinguishable from a probed index, and nothing told the caller otherwise. `segmentAt`
    * makes this argument for its own `undefined` already (fixed in 0.6.91).
    */
-  if (typeof (index as { coverage?: unknown } | null | undefined)?.coverage !== 'string') {
-    throw new RangeError(
-      'contiguityOf(): that is not a record index — it has no `coverage`, and "unknown" is one ' +
-        "of this function's real answers, so a wrong argument must not be able to produce it. " +
-        'Next: pass recording.index, or the index buildRecordIndex(recording) returns.',
-    );
-  }
+  assertIndex(
+    index,
+    'contiguityOf',
+    '"unknown" is one of this function\'s real answers, so a wrong argument must not be able to ' +
+      'produce it',
+  );
   if (index.coverage !== 'complete' || index.gaps === undefined) return 'unknown';
   return index.gaps.length === 0 ? 'contiguous' : 'discontinuous';
 }
@@ -541,6 +560,11 @@ export function contiguityOf(index: EdfRecordIndex): 'contiguous' | 'discontinuo
  * outright. Index by record with `readRecords` instead.
  */
 export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | undefined {
+  assertIndex(
+    index,
+    'segmentAt',
+    'the probed-index refusal below it would describe something you never passed',
+  );
   const segments = index.segments;
   if (index.coverage !== 'complete' || segments === undefined) {
     throw new RangeError(
@@ -590,6 +614,11 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
  * non-finite time for the same reasons `segmentAt` does.
  */
 export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefined {
+  assertIndex(
+    index,
+    'gapAt',
+    'the probed-index refusal below it would describe something you never passed',
+  );
   const gaps = index.gaps;
   if (index.coverage !== 'complete' || gaps === undefined) {
     throw new RangeError(
