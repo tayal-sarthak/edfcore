@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.118
+
+- **Fixed** `streamRecords` deferring every argument check to the first `for await`.
+- The body of an `async function*` does not run until the first `next()`, so `streamRecords(recording)`
+  with no selection at all returned a generator, successfully. The function's own comment makes this
+  argument one level down, about `resolveSignals`: "Every other selection error in the package
+  surfaces on the spot; this one waited for data."
+- Waiting for iteration is worse than waiting for data, because the two happen in different places. A
+  pipeline that builds the stream in one function and consumes it in another got the refusal in the
+  second, with the arguments it names nowhere in sight; a stream that was built and then dropped
+  never reported the mistake at all.
+- It is a plain function that validates and returns a generator now. Everything answerable from the
+  arguments is answered at the call: the recording, the selection, `chunkRecords`, the signal
+  indices, and the window — `resolveTimeWindow` is pure over the timeline and the index, and its
+  refusal for a probed index over a discontinuous file is about the call rather than about any byte.
+
 ## 0.6.117
 
 - **Fixed** the two per-signal arguments the envelope module did not check, one in each direction.

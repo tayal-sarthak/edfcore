@@ -30,11 +30,26 @@ const DEFAULT_STREAM_RECORDS = 256;
  * because the record is the only unit every signal in an EDF file shares — signals may sample at
  * different rates, so "a second of data" is a different number of samples per channel.
  */
-export async function* streamRecords(
+export function streamRecords(
   recording: EdfRecording,
   selection: StreamSelection,
   options?: ReadOptions,
 ): AsyncGenerator<EdfChunk, void, undefined> {
+  /*
+   * A plain function that validates and RETURNS a generator, rather than a generator function.
+   *
+   * The body of an `async function*` does not run until the first `next()`, so every check below
+   * was deferred to the first `for await` — and `streamRecords(recording)` with no selection at all
+   * returned an object, successfully. The comment further down makes this exact argument about
+   * `resolveSignals`: "Every other selection error in the package surfaces on the spot; this one
+   * waited for data." It waited for iteration too, which is worse, because a caller who builds the
+   * stream in one place and consumes it in another gets the refusal in the second.
+   *
+   * Everything answerable from the arguments now is: the recording, the selection, the chunk size,
+   * the signal indices, and the window itself — `resolveTimeWindow` is pure over the timeline and
+   * the index, and its refusal for a probed index over a discontinuous file is about the call, not
+   * about any byte (fixed in 0.6.118).
+   */
   assertRecording(recording, 'streamRecords');
   assertSelection(
     selection,
@@ -65,6 +80,17 @@ export async function* streamRecords(
     selection.durationSeconds,
   );
 
+  return streamRanges(recording, selection, ranges, chunkRecords, options);
+}
+
+/** The iteration itself, reached only once every argument above has been accepted. */
+async function* streamRanges(
+  recording: EdfRecording,
+  selection: StreamSelection,
+  ranges: readonly RecordRange[],
+  chunkRecords: number,
+  options: ReadOptions | undefined,
+): AsyncGenerator<EdfChunk, void, undefined> {
   const recordDurationTicks = recording.header.recordDurationTicks;
 
   for (const run of ranges) {
