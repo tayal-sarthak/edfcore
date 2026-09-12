@@ -32,6 +32,25 @@ export function formatValidationReport(
   report: ValidationReport,
   options?: FormatReportOptions,
 ): string {
+  /*
+   * The report, before `summarizeDiagnostics` is asked about its diagnostics.
+   *
+   * Without it the refusal came from that helper and carried that helper's advice: "Next: pass
+   * header.diagnostics, or the diagnostics on the chunk or the report you have." This function does
+   * not take diagnostics, so a caller who passed `report.diagnostics` — which is the obvious thing
+   * to reach for, and the mistake most likely to be made — was told to pass exactly what they had
+   * just passed. A message naming the wrong argument is the defect 0.6.97 and 0.6.104 exist for
+   * (fixed in 0.6.113).
+   */
+  const given = report as { ok?: unknown; diagnostics?: unknown } | null | undefined;
+  if (typeof given?.ok !== 'boolean' || !Array.isArray(given.diagnostics)) {
+    throw new RangeError(
+      'formatValidationReport(): that is not a validation report — it has no `ok` and no ' +
+        '`diagnostics` list. Next: pass what validateRecording(recording) resolved to, in whole: ' +
+        'the verdict, the counts and the bytes read all come off the report, not off its ' +
+        'diagnostics.',
+    );
+  }
   const lines: string[] = [];
   const header = options?.header;
 

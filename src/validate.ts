@@ -496,6 +496,16 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
  * offset, so none of them is on the read path, and running them twice costs nothing.
  */
 export function validateHeader(header: EdfHeader): readonly EdfDiagnostic[] {
+  // `edfcore/validate` is the third entry point, and until now the only one with no argument checks
+  // at all. This one walked `header.dataSignalIndices` and answered "header.dataSignalIndices is not
+  // iterable" for the recording — a leaked internal field, from the module whose whole subject is
+  // telling a caller precisely what is wrong (fixed in 0.6.113).
+  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+    throw new RangeError(
+      'validateHeader(): that is not a header — it has no signals. Next: pass recording.header, ' +
+        'or call validateRecording(recording) for the checks that need the bytes too.',
+    );
+  }
   const diagnostics: EdfDiagnostic[] = [];
 
   checkRecordSize(header, diagnostics);
@@ -773,6 +783,17 @@ export async function validateRecording(
   recording: EdfRecording,
   options?: ValidateOptions,
 ): Promise<ValidationReport> {
+  const given = recording as { header?: unknown; signals?: unknown } | null | undefined;
+  if (given == null || typeof given.header !== 'object' || given.header === null) {
+    throw new RangeError(
+      `validateRecording(): ${
+        Array.isArray(given?.signals)
+          ? 'that is a header, and this sweep reads the records too'
+          : 'the recording is not the object openEdf() returns'
+      }. Next: pass \`await openEdf(source)\`, or call validateHeader(header) for the checks that ` +
+        'need only the header.',
+    );
+  }
   const { header, timeline } = recording;
   const recordCount = header.recordCount;
   const scanSamples = options?.scanSamples === true;

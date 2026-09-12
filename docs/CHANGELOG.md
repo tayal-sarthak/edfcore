@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.113
+
+- **Fixed** `edfcore/validate`, the third entry point, which had no argument checks at all.
+- `formatValidationReport` showed it worst, and only after 0.6.107 gave `summarizeDiagnostics` a
+  refusal of its own. The message came from that helper and carried that helper's advice — "Next:
+  pass header.diagnostics, or the diagnostics on the chunk or the report you have" — so a caller who
+  passed `report.diagnostics`, the obvious thing to reach for, was told to pass exactly what they had
+  just passed.
+- `validateHeader(recording)` answered "header.dataSignalIndices is not iterable" and
+  `validateRecording(header)` read `undefined.recordCount`, from the module whose whole subject is
+  telling a caller precisely what is wrong with what they gave it. Each now names the other as the
+  one that takes the argument they have.
+
 ## 0.6.112
 
 - **Fixed** the sample-grid family checking neither of its two arguments.
