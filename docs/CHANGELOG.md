@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.95
+
+- **Fixed** `formatDiagnostics` and `formatAnnotations` returning `''` for an argument that is not a
+  list at all.
+- `''` is an answer from both: no problems with this file, and no events in this recording. Both
+  computed it from `argument.length`, so a wrong argument read `undefined`, printed nothing, and
+  returned the answer that means all clear.
+- `formatDiagnostics(recording)` is the one worth guarding. The recording is the object a reader has
+  in hand, the diagnostics hang off `recording.header`, and reaching for the wrong one bought a
+  clean bill of health for a file nobody looked at.
+- Both now refuse a non-array, say which of their two empty answers was at stake, and name what to
+  pass.
+
 ## 0.6.94
 
 - **Changed** what the sample family's numeric guards print when the value is not a number at all —

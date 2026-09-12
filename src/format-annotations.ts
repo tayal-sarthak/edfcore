@@ -18,6 +18,7 @@
 import { TICKS_PER_SECOND } from './constants.js';
 import { requireItemLimit } from './options.js';
 import { floorDiv } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import { printable } from './text/printable.js';
 import type { EdfAnnotation } from './types.js';
 
@@ -86,6 +87,21 @@ export function formatAnnotations(
   annotations: readonly EdfAnnotation[],
   options?: FormatAnnotationsOptions,
 ): string {
+  /*
+   * `''` is this function's "no events", which is what makes a wrong argument dangerous here rather
+   * than merely unhelpful. `formatAnnotations(recording)` read a `length` of `undefined`, took
+   * neither branch, and returned `''` — indistinguishable from a recording that carries no
+   * annotations at all. `formatDiagnostics` was doing the same with its all-clear (fixed in
+   * 0.6.95).
+   */
+  if (!Array.isArray(annotations)) {
+    throw new RangeError(
+      `formatAnnotations(): the annotations are ${describeValue(annotations)}, not an array — ` +
+        "and '' is what this function returns for a recording with no events, so a wrong argument " +
+        'must not be able to produce it. Next: pass the annotations from ' +
+        'readAnnotations(recording, records).',
+    );
+  }
   if (annotations.length === 0) return '';
 
   const limit = requireItemLimit(options?.maxItems, annotations.length);

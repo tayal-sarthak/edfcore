@@ -12,6 +12,7 @@
 import { trimEdfField } from '../bytes/latin1.js';
 import { HEADER_FIELDS, SIGNAL_FIELD_WIDTHS } from '../constants.js';
 import { requireItemLimit } from '../options.js';
+import { describeValue } from '../text/describe.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
 
@@ -107,6 +108,20 @@ export function formatDiagnostics(
   diagnostics: readonly EdfDiagnostic[],
   options?: FormatDiagnosticsOptions,
 ): string {
+  /*
+   * `''` is this function's all-clear, which is what makes a wrong argument dangerous here rather
+   * than merely unhelpful. `formatDiagnostics(recording)` — the object a reader has in hand — read
+   * a `length` of `undefined`, printed no blocks, and returned `''`: a clean bill of health for a
+   * file nobody looked at (fixed in 0.6.95).
+   */
+  if (!Array.isArray(diagnostics)) {
+    throw new RangeError(
+      `formatDiagnostics(): the diagnostics are ${describeValue(diagnostics)}, not an array — ` +
+        "and '' is what this function returns for a file with no problems, so a wrong argument " +
+        'must not be able to produce it. Next: pass header.diagnostics, or the diagnostics on the ' +
+        'chunk or the report you have.',
+    );
+  }
   const color = options?.color === true;
   const shown = requireItemLimit(options?.maxItems, diagnostics.length);
   const lines: string[] = [];
