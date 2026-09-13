@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.133
+
+- **Fixed** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` describing a label as a
+  signal "outside the N signals this file declares". `getSignal(header, selector)` takes
+  `number | string`, so naming a channel is the habit the rest of the package teaches, and
+  `sampleAt(recording, 'A1', t)` got a sentence that is false one clause above advice naming the
+  function that would have accepted it.
+- A fractional index now says it falls between two signals rather than outside them — the
+  distinction 0.6.93 drew in `getSignal`, in the other place the package resolves a signal by index.
+
 ## 0.6.132
 
 - **Fixed** `trimToWindow(recording, chunkSignal, ...)` — the recording passed where its `.header`

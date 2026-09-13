@@ -53,9 +53,25 @@ function resolveSignal(recording: EdfRecording, signalIndex: number, call: strin
   assertRecording(recording, call);
   const signal = recording.header.signals[signalIndex];
   if (signal === undefined) {
+    /*
+     * WHY it was refused, because "outside" was false for two of the three reasons it is.
+     *
+     * A label is not outside anything. `getSignal(header, selector)` takes `number | string`, so a
+     * caller used to naming channels writes `sampleAt(recording, 'Fp1', t)` — and was told
+     * "signalIndex Fp1 is outside the 2 signals this file declares", one clause above advice
+     * naming the function that would have accepted it. A fraction is not outside them either; it
+     * falls between two, which is the distinction 0.6.93 drew in `getSignal` itself. This is the
+     * other copy of that message (fixed in 0.6.133).
+     */
+    const problem = !Number.isFinite(signalIndex)
+      ? `signalIndex is ${describeValue(signalIndex)}, not a number this header can be indexed by`
+      : Number.isInteger(signalIndex)
+        ? `signalIndex ${signalIndex} is outside the ` +
+          `${recording.header.signals.length} signals this file declares`
+        : `signalIndex ${signalIndex} is not a whole number, so it falls between two signals ` +
+          'rather than outside them';
     throw new EdfChannelNotFoundError(
-      `signalIndex ${signalIndex} is outside the ` +
-        `${recording.header.signals.length} signals this file declares. Next: pass an index from ` +
+      `${problem}. Next: pass an index from ` +
         'header.dataSignalIndices, or resolve one with getSignal(header, label).',
       {
         selector: signalIndex,
