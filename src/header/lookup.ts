@@ -63,6 +63,30 @@ function assertSelector(selector: unknown, call: string, accepts: string): void 
 }
 
 /**
+ * The selector's KIND, which `assertSelector` above never checked.
+ *
+ * It checks that a selector ARRIVED — the 0.6.86 fix — and then hands whatever did to
+ * `trimEdfField`, which slices it. `matchSignals` has been refusing the mirror of this since
+ * 0.6.103 and names `findSignals` while doing it: "the matcher is the string \"EEG\" ... pass a
+ * RegExp for a pattern, or findSignals(header, label) for an exact label". The same mistake in
+ * the other direction — `findSignals(header, /EEG/)`, or `getSignal(header, /EEG/)` — threw V8's
+ * "text.slice is not a function": an internal name, no `Next:` clause, and no mention of the
+ * function that does take a pattern. One of the two spellings of one confusion had the better
+ * message, and it was not the spelling the reader is more likely to write, because a montage is
+ * far more often a pattern than an exact label.
+ *
+ * A boolean reaches it too, from a ternary that resolved to a flag rather than to a name.
+ */
+function assertLabel(label: unknown, call: string): void {
+  if (typeof label === 'string') return;
+  throw new RangeError(
+    `${call}(): the selector is ${describeValue(label)}, and this call matches on the label as ` +
+      'written. Next: pass the label as a string, or matchSignals(header, pattern) for a RegExp ' +
+      'or a predicate.',
+  );
+}
+
+/**
  * The HEADER, which `declaredDurationSeconds` checks below and its three siblings did not.
  *
  * 0.6.108 wrote the gap down — "the header, which this module's other four entry points also take
@@ -86,6 +110,7 @@ function assertHeaderSignals(header: EdfHeader, call: string): void {
 export function findSignals(header: EdfHeader, label: string): readonly EdfSignal[] {
   assertHeaderSignals(header, 'findSignals');
   assertSelector(label, 'findSignals', 'the label to look for');
+  assertLabel(label, 'findSignals');
   const wanted = trimEdfField(label);
   return Object.freeze(header.signals.filter((signal) => signal.label === wanted));
 }
@@ -164,6 +189,9 @@ export function getSignal(header: EdfHeader, selector: number | string): EdfSign
     );
   }
 
+  // Its own, before the delegation, and named for THIS call: `findSignals` carries the identical
+  // guard, and a reader who wrote `getSignal` should not be told about a function they did not.
+  assertLabel(selector, 'getSignal');
   const matches = findSignals(header, selector);
   const first = matches[0];
   if (first === undefined) {

@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.151
+
+- **Fixed** `findSignals` and `getSignal` walking a selector that is not a label. A RegExp threw
+  V8's `text.slice is not a function` and a predicate `text.charCodeAt is not a function` — an
+  internal name either way, with no `Next:` clause.
+- `matchSignals` has refused the mirror of this since 0.6.103 and names `findSignals` while doing
+  it. The likelier spelling — a pattern where a label belongs, since a montage selector is more
+  often a pattern — had the worse message.
+- `assertSelector` checked that a selector ARRIVED (0.6.86) and never what kind it was.
+
 ## 0.6.150
 
 - **Documented** what "duplicates are dropped" is decided on. `api-reading.md` stated the rule and
