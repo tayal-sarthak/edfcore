@@ -339,7 +339,26 @@ export function assertSignal(signal: EdfSignal, call: string): void {
  * distinction `errors.ts` exists to keep.
  */
 function assertSamples(digital: unknown, call: string): void {
-  if (typeof (digital as { length?: unknown } | null | undefined)?.length === 'number') return;
+  const length = (digital as { length?: unknown } | null | undefined)?.length;
+  if (typeof length === 'number') {
+    /*
+     * And that the length describes NUMBERS. 0.6.128 checked that the argument had one; a string
+     * has a length too, and so does `{ length: 3 }`. Every element then read back as something
+     * other than a number, `bitValue * (offset + 'a')` is `NaN`, and the call returned a
+     * full-length `Float64Array` of `NaN` with no error — which a viewer draws as a hole in the
+     * recording, the one thing `toPhysicalEnvelope` reserves `NaN` to mean.
+     *
+     * The first element is the whole test: `ArrayLike<number>` says what the rest are, and an
+     * empty one has nothing to convert either way.
+     */
+    const first = (digital as ArrayLike<unknown>)[0];
+    if (length === 0 || typeof first === 'number') return;
+    throw new RangeError(
+      `${call}(): the samples have a length of ${length}, but the first of them is ` +
+        `${describeValue(first)} rather than a number, so every value this produced would be ` +
+        'NaN. Next: pass chunkSignal.digital — the Int32Array readWindow() and readRecords() fill.',
+    );
+  }
   const chunk = typeof (digital as EdfChunkSignal | undefined)?.signalIndex === 'number';
   throw new RangeError(
     `${call}(): the samples are ${

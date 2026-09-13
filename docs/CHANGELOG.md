@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.145
+
+- **Fixed** `toPhysical(signal, 'abc')` returning a full-length `Float64Array` of `NaN` with no
+  error. 0.6.128 checked that the samples argument had a `length`; a string has one, and so does
+  `{ length: 3 }`, and every element then read back as something other than a number.
+- `NaN` is the one value a viewer reads as a break in the line — it is what `toPhysicalEnvelope`
+  reserves for a bucket no sample landed in — so the result looked like a hole in the recording
+  rather than a mistake in the call.
+- The first element is the whole test, since `ArrayLike<number>` says what the rest are. An empty
+  one is still accepted.
+
 ## 0.6.144
 
 - **Fixed** `toPhysicalEnvelope(signal, envelope, out)` writing into an `out` pair of the wrong
