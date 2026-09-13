@@ -299,6 +299,30 @@ export async function httpSource(
   options?: HttpSourceOptions,
 ): Promise<ByteSource> {
   const href = hrefOf(url);
+  /*
+   * The OPTIONS, which carry the `fetch` this adapter is supposed to call.
+   *
+   * 0.6.130, 0.6.140 and 0.6.154 each refused a bare value where an options object belongs, on the
+   * same argument: every option here is a field on one, so the value a caller means IS the option.
+   * This adapter's options are the ones where that costs most, because `fetch` is among them.
+   *
+   * `options?.fetch` was `undefined`, so `resolveFetch` fell back to the global — and the whole
+   * point of supplying one is that the global is not what should serve this request: an
+   * authenticated client, a signed-URL wrapper, a proxy, or the double a test suite installs
+   * instead of reaching the network at all. `headers` went the same way, so a bearer token was
+   * dropped and the server answered 401 or, worse, served a different resource anonymously.
+   * `byteLength`, `maxConcurrency` and `allowFullDownload` were dropped with them.
+   *
+   * `undefined` and `null` still mean "no options", which is what they already meant.
+   */
+  if (options !== undefined && typeof options !== 'object') {
+    throw new EdfSourceError(
+      `httpSource(): the options are ${describeValue(options)}, not an object — fetch, headers ` +
+        'and byteLength are fields on one, so this request would have gone out on the global ' +
+        'fetch with none of them. Next: pass them on an options object.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   const fetchImpl = resolveFetch(options);
   const baseHeaders: Record<string, string> = { ...options?.headers };
   const gate = createGate(

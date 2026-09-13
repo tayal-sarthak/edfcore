@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.163
+
+- **Fixed** `httpSource` taking a bare value as no options at all. `options?.fetch` read as
+  `undefined`, so the request went out on the GLOBAL fetch — the whole reason to supply one being
+  that the global is not what should serve it: an authenticated client, a signed-URL wrapper, a
+  proxy, or a test double.
+- `headers` went the same way, so an Authorization header was dropped; `byteLength`,
+  `maxConcurrency` and `allowFullDownload` with it. The call resolved either way.
+- `undefined` and `null` still mean "no options".
+
 ## 0.6.162
 
 - **Fixed** a channel refusal offering a label `getSignal` will not accept. The list ends "Next:
