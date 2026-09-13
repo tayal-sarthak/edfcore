@@ -37,6 +37,30 @@ export function blobSource(blob: BlobLike): ByteSource {
       { offset: 0, requestedLength: 0 },
     );
   }
+  /*
+   * The SIZE, which the check above only established is a number.
+   *
+   * `fileHandleSource` refuses a `byteLength` that is not a byte count (0.6.85) and `fileSource`
+   * refuses the one it reads off the handle; this is the third adapter that takes a size and the
+   * one that took whatever arrived. `BlobLike` is a structural shim precisely so a caller can
+   * IMPLEMENT it — a stream-backed file, a mocked blob in a test, a wrapper around a native file
+   * picker — and an implementation is where a computed `size` comes from.
+   *
+   * A `NaN` did not fail; it disabled the range guard. `assertReadRange` compares every read
+   * against `byteLength`, every comparison against `NaN` is false, so the check silently stopped
+   * happening and the source advertised `byteLength: NaN` to everything downstream. A negative or
+   * fractional size passed the same way. `options.ts` names this shape exactly: "a guard written
+   * as `if (value < 1)` simply does not fire".
+   */
+  if (!Number.isSafeInteger(blob.size) || blob.size < 0) {
+    throw new EdfSourceError(
+      `blobSource() was given ${describeValue(blob.size)} as the blob's size, which is not a ` +
+        'byte count edfcore can address, so no read could be bounded by it. Next: pass a real ' +
+        'Blob or File, whose size the platform sets, or byteSource(bytes) if you built the ' +
+        'bytes yourself.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   const byteLength = blob.size;
 
   return {

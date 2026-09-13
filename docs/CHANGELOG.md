@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.157
+
+- **Fixed** `blobSource` accepting a `size` that is not a byte count. A `NaN` did not fail — it
+  disabled the range guard, since `assertReadRange` compares every read against `byteLength` and
+  every comparison against `NaN` is false — and the source then advertised `byteLength: NaN`
+  downstream.
+- Negative and fractional sizes passed the same way. `fileHandleSource` has refused all of them
+  since 0.6.85 and `fileSource` validates the size it reads off the handle; this was the third
+  adapter that takes one.
+- `BlobLike` is a structural shim so a caller can implement it, which is where a computed size
+  comes from.
+
 ## 0.6.156
 
 - **Fixed** `decodeAnnotations` and `readAnnotations` walking a `signalIndices` that is not a list.
