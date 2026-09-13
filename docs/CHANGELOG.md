@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.164
+
+- **Fixed** `validateRecording` taking a bare value as no options at all. `scanSamples` — "the
+  expensive half", the one that turns declared digital ranges into observed ones — read as
+  `undefined`, so `validateRecording(recording, true)` took the cheap path and still returned a
+  verdict.
+- On a plain EDF that report says `ok: true`, `signalStats: []` and `recordsScanned: 0`: its own
+  account of having looked at nothing, beside an answer. `index` and the read budget were dropped
+  with it.
+- `undefined` and `null` still mean "no options".
+
 ## 0.6.163
 
 - **Fixed** `httpSource` taking a bare value as no options at all. `options?.fetch` read as

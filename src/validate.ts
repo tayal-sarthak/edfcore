@@ -90,6 +90,7 @@ export type {
 
 import { resolveMaterializeBudget } from './options.js';
 import { pluralise } from './text/counted.js';
+import { describeValue } from './text/describe.js';
 
 const LABEL_SPEC = 'EDF+ additional specification 9 (standard texts and labels)';
 const TIMEKEEPING_SPEC = 'EDF+ specification 2.2.1 (time keeping of data records)';
@@ -792,6 +793,29 @@ export async function validateRecording(
           : 'the recording is not the object openEdf() returns'
       }. Next: pass \`await openEdf(source)\`, or call validateHeader(header) for the checks that ` +
         'need only the header.',
+    );
+  }
+  /*
+   * The OPTIONS, which decide how much of the file this reads.
+   *
+   * 0.6.130, 0.6.140, 0.6.154 and 0.6.163 each refused a bare value where an options object
+   * belongs. Here the option that goes missing is `scanSamples`, and `types.ts` calls it "the
+   * expensive half — it is what turns declared digital ranges into observed ones".
+   *
+   * `validateRecording(recording, true)` reads as "validate it properly" and is the shortest thing
+   * a caller can write for it. `options?.scanSamples` was `undefined`, so the sweep took the cheap
+   * path and returned a report — with `ok: true`, `signalStats: []`, and a `recordsScanned` of 0
+   * on a plain EDF whose onsets are arithmetic. That is this call's own account of what it looked
+   * at, and it said it had looked at nothing while answering the question anyway. `index` and the
+   * read budget were dropped with it.
+   *
+   * `undefined` and `null` still mean "no options".
+   */
+  if (options !== undefined && typeof options !== 'object') {
+    throw new RangeError(
+      `validateRecording(): the options are ${describeValue(options)}, not an object — ` +
+        'scanSamples is a field on one, so this sweep would have skipped the samples and still ' +
+        'reported a verdict. Next: pass scanSamples on an options object.',
     );
   }
   const { header, timeline } = recording;
