@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.153
+
+- **Fixed** the record-range guard misdiagnosing a chunk passed where its own range belongs.
+  `readAnnotations(edf, chunk)` and `readRecords(edf, records: chunk)` read as
+  `{ start: undefined, count: undefined }` and were refused with "is not inside the 6 data records
+  this file contains" — a claim about a range that was never named — and told to clamp it.
+- `readAnnotations(edf, chunk.records)` is the idiom `recording.ts` writes out, so this path is the
+  one whose own recipe hands the caller a chunk and asks for one field off it.
+- Still an `EdfRangeError` carrying `requested` and `available`; every other wrong range is
+  refused exactly as before.
+
 ## 0.6.152
 
 - **Fixed** `mergeChunks` accepting an array whose elements are not chunks. `mergeChunks(chunk.signals)`

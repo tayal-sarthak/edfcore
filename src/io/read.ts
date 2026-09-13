@@ -104,6 +104,31 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
    * (fixed in 0.4.443).
    */
   const range: RecordRange = records ?? ({} as RecordRange);
+  /*
+   * The CHUNK, which carries the range on `.records` rather than being it.
+   *
+   * `readAnnotations(edf, chunk.records)` is written out as the idiom in `recording.ts` — it is
+   * the whole reason that call takes a range at all — and `readRecords(edf, records: chunk.records)`
+   * is how the same records are re-read with a different signal selection. Both hand the caller a
+   * chunk and ask for one field off it, so passing the chunk is the mistake this path invites, and
+   * it is the only range guard in the package whose own documented recipe starts from one.
+   *
+   * A chunk has no `start` and no `count`, so it read as `{ start: undefined, count: undefined }`
+   * and was refused with "is not inside the 6 data records this file contains" — a claim about a
+   * range that was never named — followed by advice to clamp it against `header.recordCount`,
+   * which no clamp can satisfy.
+   *
+   * Still an `EdfRangeError` carrying `requested` and `available`, so a handler written against
+   * this guard branches the same way it always did.
+   */
+  if (typeof (records as { records?: unknown } | null | undefined)?.records === 'object') {
+    throw new EdfRangeError(
+      'that is a chunk, not a record range: a chunk carries its range on .records rather than ' +
+        'being it, so no start and no count reached this call. Next: pass chunk.records, which ' +
+        'is the range that chunk was read with.',
+      { requested: range, available },
+    );
+  }
   const startValid = Number.isSafeInteger(range.start) && range.start >= 0;
   const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
   if (startValid && countValid && range.start + range.count <= header.recordCount) return;
