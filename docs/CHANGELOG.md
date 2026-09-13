@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.159
+
+- **Fixed** `toPhysicalEnvelope` naming the wrong thing when it refuses an `out`. It takes a pair
+  and checks each side, so an object carrying only `min` was refused with "out is undefined, not a
+  Float64Array" — to a caller who plainly passed an object.
+- One sentence named two different things: the clause after the dash already said `out.max`. The
+  test that stopped the dereference in 0.6.144 is titled "names a missing max" and could only
+  assert `out is undefined`.
+- The three single-array resolvers say exactly what they said before.
+
 ## 0.6.158
 
 - **Fixed** the advice attached to an omitted time bound. An absent `startSeconds` or

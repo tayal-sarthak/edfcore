@@ -196,12 +196,32 @@ function assertSignalFitsRecord(header: EdfHeader, signal: EdfSignal, blockBytes
  * `Object.prototype.toString`, not `instanceof`: a typed array from another realm is still the
  * right kind, and `a-clone-forgets-the-class.test.ts` is about exactly that distinction.
  */
-export function assertOutKind(out: unknown, kind: string, call: string, because: string): void {
+export function assertOutKind(
+  out: unknown,
+  kind: string,
+  call: string,
+  because: string,
+  /*
+   * What the rejected value is CALLED at the call site, because for one of the four resolvers it
+   * is not `out`.
+   *
+   * `toPhysicalEnvelope` takes a PAIR — `{ min, max }` — and checks each side with this helper, so
+   * an object carrying only `min` was refused with "out is undefined, not a Float64Array" to a
+   * caller who plainly passed an object. The clause after the dash already said `out.max`, so one
+   * sentence named two different things and only the second was true; the test that fixed the
+   * dereference in 0.6.144 is titled "names a missing max rather than dereferencing it" and could
+   * only assert `out is undefined`.
+   *
+   * Defaulted, so the three single-array resolvers say exactly what they said before.
+   */
+  subject = 'out',
+): void {
   if (Object.prototype.toString.call(out) === `[object ${kind}]`) return;
   const article = kind.startsWith('I') ? 'an' : 'a';
   throw new RangeError(
-    `${call}(): out is ${describeValue(out)}, not ${article} ${kind} — ${because}. Next: pass ` +
-      `${article} ${kind} long enough for the samples, or omit out and let ${call}() allocate.`,
+    `${call}(): ${subject} is ${describeValue(out)}, not ${article} ${kind} — ${because}. Next: ` +
+      `pass ${article} ${kind} long enough for the samples, or omit out and let ${call}() ` +
+      'allocate.',
   );
 }
 

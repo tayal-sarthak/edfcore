@@ -58,7 +58,10 @@ describe('toPhysicalEnvelope given an integer out pair', () => {
     const { signal, envelope } = await read();
     const call = convert(signal, envelope, { min: new Int32Array(8), max: new Int32Array(8) });
     expect(call).toThrow(RangeError);
-    expect(call).toThrow(/^toPhysicalEnvelope\(\): out is Int32Array, not a Float64Array —/);
+    // `out.min`, not `out`. This function takes a PAIR and checks each side, so the subject of the
+    // sentence is the side that was rejected — the clause after the dash has always said which one
+    // (0.6.159).
+    expect(call).toThrow(/^toPhysicalEnvelope\(\): out\.min is Int32Array, not a Float64Array —/);
   });
 
   it('says which side it was looking at and what truncation would have done', async () => {
@@ -85,7 +88,10 @@ describe('toPhysicalEnvelope given an integer out pair', () => {
   it('names a missing max rather than dereferencing it', async () => {
     const { signal, envelope } = await read();
     const call = convert(signal, envelope, { min: new Float64Array(8) });
-    expect(call).toThrow(/out is undefined, not a Float64Array/);
+    // What this test is titled. 0.6.144 stopped the dereference and the message still said "out is
+    // undefined" to a caller who had plainly passed an object; naming the side is the other half
+    // of it (0.6.159).
+    expect(call).toThrow(/out\.max is undefined, not a Float64Array/);
     expect(call).not.toThrow(/Cannot read properties/);
   });
 

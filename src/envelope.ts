@@ -532,6 +532,9 @@ export function toPhysicalEnvelope(
         'toPhysicalEnvelope',
         `and out.${name} is what this writes the ${name === 'min' ? 'lower' : 'upper'} bound of ` +
           'every bucket into, so an integer array stores each one truncated',
+        // Named as the SIDE. Both halves of this message are about `out.max` when that is the one
+        // missing, rather than the subject saying `out` and the clause after it saying otherwise.
+        `out.${name}`,
       );
     }
   }
