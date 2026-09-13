@@ -25,7 +25,12 @@ import type {
   HttpSourceOptions,
   ReadOptions,
 } from '../types.js';
-import { assertExactRead, assertReadRange, throwIfSignalAborted } from './source.js';
+import {
+  assertExactRead,
+  assertReadOptions,
+  assertReadRange,
+  throwIfSignalAborted,
+} from './source.js';
 
 /** Small enough to stay polite to a shared origin, large enough to hide latency. */
 const DEFAULT_MAX_CONCURRENCY = 4;
@@ -473,6 +478,9 @@ export async function httpSource(
       // "the default for every request", and honouring it only inside `attachSignal` meant it
       // worked for a real AbortSignal and was a silent no-op for the published
       // `AbortSignalLike` shim, which has no addEventListener to attach to.
+      // Its own, because this is the one adapter that resolves the effective signal itself rather
+      // than going through `throwIfAborted`.
+      assertReadOptions(readOptions);
       const signal = readOptions?.signal ?? options?.signal;
       throwIfSignalAborted(signal);
       assertReadRange(offset, length, byteLength);

@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.155
+
+- **Fixed** an `AbortSignal` passed as the read options being ignored. `readWindow(recording,
+  selection, controller.signal)` — one brace off `{ signal }`, and the field is named `signal` —
+  left `options?.signal` undefined, so the read ran to completion and RESOLVED WITH DATA.
+- That is indistinguishable from an abort that lost the race, which is the outcome a caller
+  already handles, so a viewer cancelling on every scroll cancelled nothing.
+- The bare-value guards of 0.6.130, 0.6.140 and 0.6.154 could not see it: an `AbortSignal` is an
+  object.
+- Guarded in `throwIfAborted`, which every adapter reaches, and in `httpSource`, which resolves
+  the effective signal itself. Recognised by shape, so the published `AbortSignalLike` shim is
+  caught too.
+
 ## 0.6.154
 
 - **Fixed** `strict` being silently dropped when it is passed as itself rather than as a field.

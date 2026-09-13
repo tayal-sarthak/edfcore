@@ -115,7 +115,39 @@ export function assertReadRange(offset: number, length: number, byteLength: numb
  * on is `error.name === 'AbortError'`, so that is what this produces.
  */
 export function throwIfAborted(options?: ReadOptions): void {
+  assertReadOptions(options);
   throwIfSignalAborted(options?.signal);
+}
+
+/**
+ * The SIGNAL passed as the options rather than as the field on them.
+ *
+ * 0.6.130, 0.6.140 and 0.6.154 each refused a bare value where an options object belongs, and the
+ * argument is always the same: every option here is a field on an object, so the value a caller
+ * means is the option. This is that mistake made with an OBJECT, so none of those guards can see
+ * it — `typeof options === 'object'` is true of an `AbortSignal`.
+ *
+ * It is also the likeliest spelling of it. The field is named `signal`, the thing a caller holds
+ * is named `signal`, and `fetch(url, signal)` for `fetch(url, { signal })` is a mistake this
+ * ecosystem makes constantly. `readWindow(recording, selection, controller.signal)` reads as
+ * correct at the call site.
+ *
+ * `options?.signal` was then `undefined`, so the read ran to completion and RESOLVED WITH DATA.
+ * Nothing distinguishes that from a read that finished before the abort, which is the ordinary
+ * outcome a caller is already handling — so a viewer that cancels on every scroll cancelled
+ * nothing, and neither the reads nor their memory stopped.
+ *
+ * Named by shape, not by class, for the reason `bytes.ts` gives: `instanceof` is false across a
+ * realm boundary, and `AbortSignalLike` is published as `aborted` and nothing more, so the shim a
+ * consumer writes has to be recognised too.
+ */
+export function assertReadOptions(options: unknown): void {
+  if (typeof (options as { aborted?: unknown } | null | undefined)?.aborted !== 'boolean') return;
+  throw new RangeError(
+    'the read options are an AbortSignal, not an object carrying one — signal is a field on the ' +
+      'options, so this read ignored the cancellation it was given and would have resolved with ' +
+      'data. Next: pass the signal as options.signal.',
+  );
 }
 
 /**
