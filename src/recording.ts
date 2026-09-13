@@ -105,6 +105,27 @@ export function assertSelection(selection: unknown, call: string, shape: string)
     );
   }
   /*
+   * An ARRAY, which is an object, so the check above let it through.
+   *
+   * 0.6.79 added that check because a selection that was not an object made each of these calls
+   * name "whichever field it happened to read first". An array reproduces exactly that: `[0]` —
+   * the signal indices, passed as the selection, which is the shortest thing a caller can write
+   * and the only argument several of these calls need to differ on — made `readWindow` blame
+   * `signalIndices`, `readEnvelope` blame `buckets`, `readEnvelopeAtResolution` blame
+   * `secondsPerBucket` and `readTriggers` blame the file for having no Status channel.
+   *
+   * `readWindow`'s was the worst of the four, because it is the one a caller acts on: "signalIndices
+   * is missing, not an array of signal indices ... Next: pass header.dataSignalIndices for all of
+   * the data signals, or an array of the indices you want" — and an array of the indices they
+   * wanted is precisely what they passed.
+   */
+  if (Array.isArray(selection)) {
+    throw new RangeError(
+      `${call}(): the selection is an array, and signalIndices is a field on the selection ` +
+        `rather than being it. Next: pass ${shape}.`,
+    );
+  }
+  /*
    * A record range where a window belongs, which is the one wrong SHAPE worth naming separately.
    * `readRecords` takes `{ records }` and `streamRecords` takes a window — and is called
    * streamRECORDS — so `streamRecords(recording, { records })` is the shape its own name and its

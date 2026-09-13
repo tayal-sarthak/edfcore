@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.167
+
+- **Fixed** an array passed as the selection walking past the check added in 0.6.79. An array is an
+  object, so `readWindow(recording, [0])` — the signal indices, passed directly — reproduced the
+  exact failure that release removed: each call named whichever field it happened to read first.
+- `readWindow`, `readRecords` and `streamRecords` blamed `signalIndices`, `readEnvelope` blamed
+  `buckets`, `readEnvelopeAtResolution` blamed `secondsPerBucket`, and `readTriggers` blamed the
+  FILE for having no Status channel.
+- The first was the worst: "Next: pass header.dataSignalIndices ... or an array of the indices you
+  want" describes what the caller had already done.
+
 ## 0.6.166
 
 - **Fixed** the READ options being taken as no options at all when passed as a bare value.
