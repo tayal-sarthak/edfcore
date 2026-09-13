@@ -25,6 +25,7 @@
  */
 
 import { requireFiniteOption } from '../options.js';
+import { describeValue } from '../text/describe.js';
 import type { AbortSignalLike, ByteSource, CacheOptions, ReadOptions } from '../types.js';
 import { assertByteSource, assertExactRead, assertReadRange, throwIfAborted } from './source.js';
 
@@ -102,6 +103,23 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
   // than a source got `Cannot read properties of undefined (reading 'byteLength')` out of the cache
   // instead of the message that names the adapter they were missing (fixed in 0.6.102).
   assertByteSource(source);
+  /*
+   * The OPTIONS, which are two byte counts and nothing else — so the number a caller means is one
+   * of them, and `cachedSource(source, 4 * 1024 * 1024)` is what gets written when the intent is a
+   * four-megabyte budget. A bare number has no `maxBytes`, so both `requireFiniteOption` calls
+   * took their defaults and the wrapper cached up to 64 MiB in 1 MiB blocks — sixteen times the
+   * budget asked for, on the one wrapper a caller reaches for to bound memory.
+   *
+   * Silently, and this is the wrapper whose whole reason for existing is what it holds. 0.6.130
+   * made the same argument for the three formatters' own item limit.
+   */
+  if (options !== undefined && typeof options !== 'object') {
+    throw new RangeError(
+      `cachedSource(): the options are ${describeValue(options)}, not an object — blockBytes and ` +
+        'maxBytes are fields on one, so this call would have cached up to the default 64 MiB ' +
+        'rather than that. Next: pass maxBytes on an options object.',
+    );
+  }
   const byteLength = source.byteLength;
   const maxBytes = Math.max(
     0,

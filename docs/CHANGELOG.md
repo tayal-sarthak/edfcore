@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.140
+
+- **Fixed** `cachedSource(source, 4 * 1024 * 1024)` — a bare number where the cache options belong
+  — silently taking both defaults and holding up to 64 MiB in 1 MiB blocks. `CacheOptions` is two
+  byte counts and nothing else, so the number a caller has in mind is one of them, and this is the
+  one wrapper reached for to bound memory.
+- **Behaviour change**: a non-object `options` is refused, the way the three formatters' have been
+  since 0.6.130. `undefined` and `null` still mean "no options".
+
 ## 0.6.139
 
 - **Fixed** `ByteSource.read` describing an offset or a length it refused as the number its digits
