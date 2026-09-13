@@ -14,7 +14,7 @@ import { isByteArray } from '../bytes/latin1.js';
 import { EdfBudgetError, EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
 import { resolveMaterializeBudget } from '../options.js';
 import { pluralise } from '../text/counted.js';
-import { describeValue } from '../text/describe.js';
+import { describeRecordRange, describeValue } from '../text/describe.js';
 import type { EdfHeader, EdfSignal, RecordRange } from '../types.js';
 
 const BYTES_PER_INT32 = 4;
@@ -130,7 +130,7 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
   const countValid = Number.isSafeInteger(records.count) && records.count >= 0;
   if (!startValid || !countValid || records.start + records.count > header.recordCount) {
     throw new EdfRangeError(
-      `records { start: ${records.start}, count: ${records.count} } is not inside the ` +
+      `records ${describeRecordRange(records)} is not inside the ` +
         `${header.recordCount} data records this file contains. Next: clamp the range against ` +
         'header.recordCount before decoding.',
       { requested: records, available },

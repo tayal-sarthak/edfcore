@@ -42,6 +42,7 @@ import { TICKS_PER_SECOND } from '../constants.js';
 import { assertDecodable } from '../decode/digital.js';
 import { DiagnosticSink } from '../diagnostics/collector.js';
 import { EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
+import { describeRecordRange } from '../text/describe.js';
 import type {
   DecodeAnnotationsOptions,
   EdfAnnotation,
@@ -141,10 +142,6 @@ interface ObservedOnset {
   readonly raw: string;
 }
 
-function describeRange(range: RecordRange): string {
-  return `{ start: ${range.start}, count: ${range.count} }`;
-}
-
 function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: RecordRange): void {
   const available: RecordRange = { start: 0, count: header.recordCount };
   const validIndices =
@@ -154,7 +151,7 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
     records.count >= 0;
   if (!validIndices || records.start + records.count > header.recordCount) {
     throw new EdfRangeError(
-      `records ${describeRange(records)} is not inside the ` +
+      `records ${describeRecordRange(records)} is not inside the ` +
         `${header.recordCount} records this file has. ` +
         `Next: clamp the range to [0, ${header.recordCount}).`,
       { requested: records, available },
@@ -165,7 +162,7 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: 
   if (recordBytes.length !== expected) {
     throw new EdfRangeError(
       `recordBytes is ${recordBytes.length} bytes, but records ` +
-        `${describeRange(records)} of this file is exactly ${expected} bytes ` +
+        `${describeRecordRange(records)} of this file is exactly ${expected} bytes ` +
         `(${records.count} x ${header.recordByteLength}). ` +
         'Next: pass the buffer readRecordBytes() returned for this exact range, unsliced.',
       // The FILE's range, for the reason `decode/digital.ts` states at the same check.

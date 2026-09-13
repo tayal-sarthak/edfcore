@@ -38,3 +38,22 @@ export function describeValue(value: unknown): string {
   // its contents is how a 512-signal selection ends up on one line behind `edfcore: `.
   return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
 }
+
+/**
+ * A record range as written, with each field named as itself.
+ *
+ * Three modules each carried their own copy of `{ start: ${range.start}, count: ${range.count} }`,
+ * and all three interpolated the value raw. A string interpolates as its digits, so the
+ * `{ start: '0', count: '1' }` a JSON config or a URL query produces was refused with "records
+ * { start: 0, count: 1 } is not inside the 4 data records this file contains" — a range that is
+ * plainly inside it — and then told to clamp the range against `header.recordCount`, which for
+ * those values is nothing a caller can act on.
+ *
+ * One home rather than three, for the reason 0.6.121 gives for `isByteArray`: two copies of a
+ * rule have to be kept in agreement, and one does not.
+ */
+export function describeRecordRange(
+  range: { readonly start?: unknown; readonly count?: unknown } | null | undefined,
+): string {
+  return `{ start: ${describeValue(range?.start)}, count: ${describeValue(range?.count)} }`;
+}

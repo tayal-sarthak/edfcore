@@ -29,6 +29,7 @@ import { EdfBudgetError, EdfRangeError } from '../errors.js';
 import { parseHeader } from '../header/parse.js';
 import { resolveMaterializeBudget } from '../options.js';
 import { pluralise } from '../text/counted.js';
+import { describeRecordRange } from '../text/describe.js';
 import type { ByteSource, EdfHeader, OpenOptions, ReadOptions, RecordRange } from '../types.js';
 import { assertByteSource, assertExactRead } from './source.js';
 
@@ -89,10 +90,6 @@ export async function readHeader(source: ByteSource, options?: OpenOptions): Pro
   return parseHeader(headerBytes, sourceByteLength, options);
 }
 
-function describeRange(range: RecordRange): string {
-  return `{ start: ${range.start}, count: ${range.count} }`;
-}
-
 function assertRecordRange(header: EdfHeader, records: RecordRange): void {
   const available: RecordRange = { start: 0, count: header.recordCount };
   /*
@@ -111,7 +108,7 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
   const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
   if (startValid && countValid && range.start + range.count <= header.recordCount) return;
   throw new EdfRangeError(
-    `records ${describeRange(range)} is not inside the ` +
+    `records ${describeRecordRange(range)} is not inside the ` +
       `${header.recordCount} data records this file contains. Next: clamp the range against ` +
       'header.recordCount, or call index.locate(seconds) to find a record index for a time.',
     { requested: range, available },
@@ -149,7 +146,7 @@ function assertWithinBudget(
       ? `read at most ${pluralise(fits, 'record')} per call, or raise options.maxMaterializeBytes.`
       : `one record of this file needs ${perRecord} bytes, so no count fits — raise options.maxMaterializeBytes.`;
   throw new EdfBudgetError(
-    `Reading records ${describeRange(records)} needs a ${requiredBytes}-byte buffer, above the ` +
+    `Reading records ${describeRecordRange(records)} needs a ${requiredBytes}-byte buffer, above the ` +
       `${budgetBytes}-byte maxMaterializeBytes budget, so the read was refused before anything ` +
       `was allocated. Next: ${advice}`,
     { requiredBytes, budgetBytes },

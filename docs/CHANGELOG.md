@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.137
+
+- **Fixed** a refused record range being printed as the numbers its digits spell.
+  `{ start: '0', count: '1' }` — what a JSON config, a saved view or a query string produces — was
+  refused with "records { start: 0, count: 1 } is not inside the 4 data records this file
+  contains", which is a range plainly inside it, and then told to clamp against
+  `header.recordCount`.
+- The class was right all along; only the sentence was false. Each field is now named as itself,
+  and the three copies of the printer are one.
+
 ## 0.6.136
 
 - **Fixed** `readEnvelope` and `readEnvelopeAtResolution` withholding half the advice `readWindow`
