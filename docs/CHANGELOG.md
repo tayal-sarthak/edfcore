@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.148
+
+- **Documented** the rule 0.6.130 and 0.6.140 introduced: the options argument itself has to be an
+  object, in the three formatters and in `cachedSource`.
+- Both pages described the FIELDS and neither described the argument, which is the whole of the
+  defect — `formatAnnotations(annotations, 20)` had no `maxItems` on it, so the limit read as
+  absent and every annotation printed with nothing saying so.
+- `undefined` and `null` still mean "no options", and the tables say so.
+
 ## 0.6.147
 
 - **Documented** the `out` rules 0.6.134 and 0.6.145 introduced, on the page that describes `out`.

@@ -638,6 +638,12 @@ not to, because the cost of forgetting is one redundant line.
 `formatDiagnostics` takes `FormatDiagnosticsOptions`, which is the same shape one level down:
 `color`, `maxItems`, and the `redactFields` the report forwards to it.
 
+The options argument itself has to be an object. `formatAnnotations(annotations, 20)` — the call
+written when the intent is twenty rows — has no `maxItems` on it, so until 0.6.130 the limit read
+as absent, the default applied, and every annotation printed with no `... and N more` line to give
+it away. A bare number is now refused by all three. `undefined` and `null` still mean "no options".
+
+
 ## The CLI
 
 The command line is its own page: [CLI reference](/docs/cli). Everything above is reachable from
