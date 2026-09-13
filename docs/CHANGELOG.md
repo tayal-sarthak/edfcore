@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.127
+
+- **Fixed** `findSignals`, `getSignal` and `matchSignals` throwing V8's `TypeError: Cannot read
+  properties of undefined (reading 'filter')` when handed the recording instead of
+  `recording.header`.
+- 0.6.108 named this gap in the file itself — "the header, which this module's other four entry
+  points also take and which none of them checked" — and closed it only for the fourth,
+  `declaredDurationSeconds`. The module has stated the rule and broken it three times since.
+- `getSignal(recording, 0)` was the worst of the three: it indexes `header.signals[selector]`, so
+  the message came back as "Cannot read properties of undefined (reading '0')" — a complaint about
+  the selector, which was the argument that was right.
+
 ## 0.6.126
 
 - **Fixed** `filterAnnotationsByTime(annotations)` with the window omitted throwing V8's

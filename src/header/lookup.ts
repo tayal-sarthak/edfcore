@@ -62,8 +62,29 @@ function assertSelector(selector: unknown, call: string, accepts: string): void 
   );
 }
 
+/**
+ * The HEADER, which `declaredDurationSeconds` checks below and its three siblings did not.
+ *
+ * 0.6.108 wrote the gap down — "the header, which this module's other four entry points also take
+ * and which none of them checked" — and then closed it only for the function it was standing in.
+ * The other three reached `header.signals` and threw V8's `Cannot read properties of undefined
+ * (reading 'filter')`: a `TypeError` naming an internal field, with no `Next:` clause.
+ *
+ * `getSignal(recording, 0)` was the worst of the three. It read `header.signals[0]`, so the
+ * message was "Cannot read properties of undefined (reading '0')" — which reads as a complaint
+ * about the selector, the argument that was right.
+ */
+function assertHeaderSignals(header: EdfHeader, call: string): void {
+  if (Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) return;
+  throw new RangeError(
+    `${call}(): that is not a header — it has no signals. Next: pass recording.header, or what ` +
+      'parseHeader(bytes, sourceByteLength) returned.',
+  );
+}
+
 /** Every signal with this label, in signal order. Empty when none matches. */
 export function findSignals(header: EdfHeader, label: string): readonly EdfSignal[] {
+  assertHeaderSignals(header, 'findSignals');
   assertSelector(label, 'findSignals', 'the label to look for');
   const wanted = trimEdfField(label);
   return Object.freeze(header.signals.filter((signal) => signal.label === wanted));
@@ -121,6 +142,7 @@ function differsOnlyInCase(header: EdfHeader, selector: string): string | undefi
  * edfcore could return that would not be a guess.
  */
 export function getSignal(header: EdfHeader, selector: number | string): EdfSignal {
+  assertHeaderSignals(header, 'getSignal');
   assertSelector(selector, 'getSignal', 'a label, or an index into header.signals');
   if (typeof selector === 'number') {
     const signal = header.signals[selector];
@@ -234,6 +256,7 @@ export function matchSignals(
   header: EdfHeader,
   match: RegExp | ((label: string) => boolean),
 ): readonly EdfSignal[] {
+  assertHeaderSignals(header, 'matchSignals');
   assertSelector(match, 'matchSignals', 'a RegExp, or a function taking a label');
   const test =
     match instanceof RegExp
