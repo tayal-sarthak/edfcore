@@ -252,10 +252,31 @@ export function secondsToTicks(seconds: number, name: string): bigint {
     );
   }
   if (!Number.isFinite(seconds)) {
+    /*
+     * `undefined` gets its own advice, because none of the advice below can apply to it.
+     *
+     * The subject of the sentence is unchanged — 0.6.92 decided that `NaN`, `Infinity` and
+     * `undefined` "all read correctly as themselves" and that is still true. The `Next:` clause is
+     * the part that was wrong: it sends the reader to audit the expression that produced the
+     * value, and names `Number()` on an absent key and a division by zero, both of which produce a
+     * NUMBER. Nothing computes `undefined`; a field is simply not there.
+     *
+     * 0.6.87 made this exact argument — "every clause of that is about a value the caller never
+     * computed: it sends them to audit a config key, when what they wrote is an argument of the
+     * wrong shape" — and closed one route to it, `{ records }` handed to a call that takes a
+     * window. Every other route to an absent bound still got the config-key advice: a selection
+     * built one field at a time, a spread that dropped a key, a window object whose two fields are
+     * spelled something else.
+     */
     throw new RangeError(
-      `${name} must be a finite number of seconds, but was ${seconds}. Next: check the ` +
-        'expression that produced it — Number() on an absent environment variable, query ' +
-        'parameter or config key yields NaN, and a division by zero yields Infinity.',
+      `${name} must be a finite number of seconds, but was ${seconds}. Next: ` +
+        (seconds === undefined
+          ? 'pass it — nothing computes undefined, so this is a field that is not there: a ' +
+            'selection built one field at a time, a spread that dropped a key, or an object ' +
+            'whose bounds are spelled something else.'
+          : 'check the expression that produced it — Number() on an absent environment ' +
+            'variable, query parameter or config key yields NaN, and a division by zero yields ' +
+            'Infinity.'),
     );
   }
   return BigInt(Math.round(seconds * TICKS_PER_SECOND_FLOAT));

@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.158
+
+- **Fixed** the advice attached to an omitted time bound. An absent `startSeconds` or
+  `durationSeconds` was answered with "check the expression that produced it — Number() on an
+  absent environment variable ... yields NaN, and a division by zero yields Infinity", which is
+  right for the two values a computation hands back and cannot be true of `undefined`.
+- Nothing computes `undefined`: a field is simply not there, and the message now says so.
+- 0.6.87 made this argument and closed one route to it — a record range handed to a window call.
+  This is the rest of them.
+- `NaN` and `Infinity` keep the advice that was written for them, and the subject of the sentence
+  is unchanged for all three.
+
 ## 0.6.157
 
 - **Fixed** `blobSource` accepting a `size` that is not a byte count. A `NaN` did not fail — it
