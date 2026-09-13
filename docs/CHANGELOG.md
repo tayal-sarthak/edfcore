@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.129
+
+- **Fixed** `toPhysicalEnvelope(signal, chunk)` — the envelope chunk passed where one of its
+  `.signals` belongs — throwing V8's `TypeError: Cannot read properties of undefined (reading
+  'length')`, which names a field on neither argument.
+- `readEnvelope` resolves to one chunk per contiguous run and `envelopeOfSamples` returns a single
+  envelope, so the two producers hand a caller different shapes. The refusal now says which one
+  this takes.
+
 ## 0.6.128
 
 - **Fixed** `toPhysical(signal, chunkSignal)` and `clampToDigitalRange(signal, chunkSignal)` — the

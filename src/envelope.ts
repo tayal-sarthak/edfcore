@@ -467,6 +467,24 @@ export function toPhysicalEnvelope(
   // `signal.scale` and hands the signal to `scalingError` when there is none — so the same wrong
   // argument got a message from three of four and a `TypeError` from inside the error builder here.
   assertSignal(signal, 'toPhysicalEnvelope');
+  /*
+   * And the SECOND argument, which that sweep and this one both stopped short of.
+   * `readEnvelope` resolves to one `EdfEnvelopeChunk` per contiguous run, and the envelopes are a
+   * field on each — so `toPhysicalEnvelope(signal, chunk)` is the call a reader holding the result
+   * writes, one field short. It reached `envelope.min.length` and threw V8's `Cannot read
+   * properties of undefined (reading 'length')`: an internal field, no `Next:` clause, and no
+   * mention of the field that does carry them.
+   */
+  if (!ArrayBuffer.isView((envelope as { min?: unknown } | null | undefined)?.min)) {
+    throw new RangeError(
+      `toPhysicalEnvelope(): the envelope is ${
+        Array.isArray((envelope as unknown as EdfEnvelopeChunk | undefined)?.signals)
+          ? 'an envelope chunk, which carries one envelope per signal on .signals rather than ' +
+            'being one'
+          : `${describeValue(envelope)} with no min on it`
+      }. Next: pass one element of chunk.signals — the array readEnvelope() fills.`,
+    );
+  }
   const scale = signal.scale;
   if (scale === undefined) {
     // `scalingError`, not a hard-coded SCALE_UNAVAILABLE. That code is defined as "none of the
