@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.147
+
+- **Documented** the `out` rules 0.6.134 and 0.6.145 introduced, on the page that describes `out`.
+- `api-primitives.md` said `out` was checked for LENGTH and stopped there, which was the whole
+  defect: an `Int32Array` handed to `toPhysical` truncated every physical value, and for a bit
+  value below 1 the call returned a buffer of zeros as if it were the signal.
+- The `digital` argument's rule is stated too — it needs a length, and the first of its elements
+  must be a number — because a string has a length and its characters are not numbers.
+
 ## 0.6.146
 
 - **Documented** what `httpSource` does with a failure from the client itself: the HEAD probe's

@@ -153,7 +153,7 @@ De-interleaves one signal out of a record range and sign-extends its samples. Th
 
 Returns an `Int32Array` of `records.count * signal.samplesPerRecord` samples, still in digital units.
 
-`out` is the reuse path. When supplied and long enough it is written in place and no allocation happens. A longer array is narrowed with `subarray`, which shares its memory, so `result.length` still equals the true sample count. An `out` that is too short throws a plain `RangeError`.
+`out` is the reuse path. When supplied and long enough it is written in place and no allocation happens. A longer array is narrowed with `subarray`, which shares its memory, so `result.length` still equals the true sample count. An `out` that is too short throws a plain `RangeError`. So does an `out` of the wrong kind: the length was checked and the kind was not until 0.6.134, and this call hands its `out` back, so anything but an `Int32Array` reached the caller in place of the array the signature promises. The kind is matched by tag rather than by `instanceof`, so a typed array built in another realm still passes.
 
 Throws `EdfChannelNotFoundError` for a signal the header does not have, `EdfRangeError` for a bad range or a mis-sized buffer, and `EdfBudgetError` when the allocation would exceed `maxMaterializeBytes`. The budget check runs before the allocation, never during.
 
@@ -212,7 +212,9 @@ Throws `EdfScalingError` when `signal.scale` is `undefined`. The error carries `
 | `LOG_TRANSFORMED_CHANNEL` | Physical dimension `Filtered`: the values are log-compressed and the linear formula would be wrong by orders of magnitude. |
 | `SCALE_UNAVAILABLE` | No scale, and none of the above explains it. |
 
-`out` behaves exactly as in `decodeDigital`: reused when long enough, narrowed with `subarray` when longer, a plain `RangeError` when shorter.
+`out` behaves exactly as in `decodeDigital`: reused when long enough, narrowed with `subarray` when longer, a plain `RangeError` when shorter — and a plain `RangeError` when it is not a `Float64Array`. That last one is not pedantry. Physical values are fractional, so an `Int32Array` truncates every one of them, and for a bit value below 1 — most EEG in microvolts — the call returned a buffer of zeros as if it were the signal. Nothing said so until 0.6.134.
+
+`digital` is checked too: it must have a length, and the first of its elements must be a number. A string has a length and its characters are not numbers, so `toPhysical(signal, 'abc')` produced a full-length array of `NaN` — which a plotting library draws as a break in the line, the one thing an envelope reserves `NaN` to mean.
 
 ```ts
 import { getSignal, toPhysical } from 'edfcore';
