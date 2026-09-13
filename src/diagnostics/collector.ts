@@ -15,6 +15,7 @@
  */
 
 import { EdfFormatError, type EdfFormatErrorInit } from '../errors.js';
+import { describeValue } from '../text/describe.js';
 import type { EdfDiagnostic, ParseOptions } from '../types.js';
 import { type EdfDiagnosticCode, isAlwaysFatal, severityOf } from './codes.js';
 
@@ -154,6 +155,35 @@ export function fatalError(init: DiagnosticInit, cause?: unknown): EdfFormatErro
 }
 
 /**
+ * The OPTIONS object, in the one family whose option changes what a parse DOES.
+ *
+ * 0.6.130 and 0.6.140 refused a bare value where an options object belongs in the three
+ * formatters and in `cachedSource`, and made the argument for it: every option in this package is
+ * a field on an object, so the value a caller means IS the option, and `formatAnnotations(list, 20)`
+ * is what gets written. `openEdf(source, true)` is the same sentence for the flag a reader is
+ * likeliest to be holding one of, since `strict` is the only option in the package that is a
+ * boolean.
+ *
+ * It read as `undefined`, so the parse was lenient: a file with a would-be diagnostic came back
+ * as a header carrying a list, from a caller who asked to receive no such file at all. `types.ts`
+ * puts it exactly that way — `strict` is for "callers who would rather not receive a file at all
+ * than inspect it" — and they received one, with nothing saying the flag had been dropped.
+ *
+ * Here rather than at each entry point, because this constructor is where `strict` is read, and
+ * `parseHeader`, `readHeader`, `openEdf`, `decodeAnnotations` and `buildTimeline` all reach it.
+ *
+ * `null` and `undefined` still mean "no options", which is what they already meant.
+ */
+export function assertParseOptions(options: unknown): void {
+  if (options === undefined || typeof options === 'object') return;
+  throw new RangeError(
+    `the parse options are ${describeValue(options)}, not an object — strict is a field on one, ` +
+      'so this parse collected its diagnostics rather than throwing on the first of them. ' +
+      'Next: pass strict on an options object.',
+  );
+}
+
+/**
  * The one place `strict` is turned into a decision. Every module that finds a departure reports
  * it here rather than choosing between collecting and throwing itself, which is what keeps the
  * rule — and the `info` exemption — from being reimplemented slightly differently per caller.
@@ -168,6 +198,7 @@ export class DiagnosticSink {
   #collected: EdfDiagnostic[] = [];
 
   constructor(options?: ParseOptions) {
+    assertParseOptions(options);
     this.strict = options?.strict === true;
   }
 

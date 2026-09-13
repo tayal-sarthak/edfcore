@@ -26,7 +26,7 @@
  * full bytes, and reading less would mean reimplementing that rule here.
  */
 
-import { appendDiagnostics } from './diagnostics/collector.js';
+import { appendDiagnostics, assertParseOptions } from './diagnostics/collector.js';
 import { EdfRangeError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { assertByteSource } from './io/source.js';
@@ -303,6 +303,10 @@ export async function buildTimeline(
   assertByteSource(source);
   const recordCount = header.recordCount;
   const timekept = hasTimekeeping(header);
+  // Its own, before any sink exists: this function reads `strict` itself and hands the resolved
+  // boolean down, so a bare value here would build `{ strict: false }` and reach the sink as a
+  // perfectly good object.
+  assertParseOptions(options);
   const strict = options?.strict === true;
 
   const probeOptions = (
@@ -476,6 +480,9 @@ export async function buildRecordIndex(
       }. Next: pass \`await openEdf(source)\`.`,
     );
   }
+  // `scanOnsets` SPREADS these into the decode options, and spreading a bare value yields `{}` —
+  // a perfectly good object by the time a sink sees it, with `strict` gone.
+  assertParseOptions(options);
   const { header, timeline } = recording;
   const onsets = await scanOnsets(recording, options);
   assertMonotonicOnsetArray(onsets);

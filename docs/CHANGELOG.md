@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.154
+
+- **Fixed** `strict` being silently dropped when it is passed as itself rather than as a field.
+  `openEdf(source, true)` read as no options at all, so the parse ran lenient and a file with a
+  would-be diagnostic came back as a header carrying a list — to a caller who asked to receive no
+  such file.
+- `strict` is the package's only boolean option, so the bare spelling is the shortest thing a
+  caller can write; the result is a well-formed header either way, so nothing downstream noticed.
+- Guarded in the `DiagnosticSink` constructor, which covers `parseHeader`, `readHeader`, `openEdf`,
+  `decodeAnnotations` and `buildTimeline`, plus `buildRecordIndex`, which spreads its options.
+- `undefined` and `null` still mean "no options".
+
 ## 0.6.153
 
 - **Fixed** the record-range guard misdiagnosing a chunk passed where its own range belongs.
