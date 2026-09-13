@@ -189,6 +189,33 @@ export function assertSignalIndices(signalIndices: unknown): void {
   );
 }
 
+/**
+ * The refusal for a signal index the file does not have, in ONE place.
+ *
+ * `envelope.ts` keeps its own copy of this loop and its comment says why: "The same refusal
+ * `resolveSignals` gives, from the resolver the envelope path uses instead", and, of this error
+ * specifically, that the identical mistake once "threw a typed error carrying `selector` and
+ * `availableLabels` from `readWindow` and a bare `RangeError` from here, so `isEdfError` answered
+ * differently depending on which read the caller had reached for".
+ *
+ * The class was made to match. The MESSAGE was not: the envelope's copy ends "Next: pass an index
+ * from header.dataSignalIndices" and stops there, without the clause naming the function that
+ * takes a label. A label is the commonest way to arrive here — `getSignal(header, selector)`
+ * accepts one, so naming channels is the habit the rest of the package teaches — and the half of
+ * the advice that fixes it was the half `readEnvelope` withheld.
+ *
+ * Two copies of a sentence have to be kept in agreement and one does not, which is the argument
+ * 0.6.121 makes for `isByteArray` (fixed in 0.6.136).
+ */
+export function channelNotFound(header: EdfHeader, signalIndex: number): EdfChannelNotFoundError {
+  return new EdfChannelNotFoundError(
+    `signalIndex ${signalIndex} is outside the ${header.signals.length} signals this file ` +
+      'declares. Next: pass an index from header.dataSignalIndices, or resolve one with ' +
+      'getSignal(header, label).',
+    { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
+  );
+}
+
 export function resolveSignals(
   header: EdfHeader,
   signalIndices: readonly number[],
@@ -198,14 +225,7 @@ export function resolveSignals(
   const signals: EdfSignal[] = [];
   for (const signalIndex of signalIndices) {
     const signal = header.signals[signalIndex];
-    if (signal === undefined) {
-      throw new EdfChannelNotFoundError(
-        `signalIndex ${signalIndex} is outside the ${header.signals.length} signals this file ` +
-          'declares. Next: pass an index from header.dataSignalIndices, or resolve one with ' +
-          'getSignal(header, label).',
-        { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
-      );
-    }
+    if (signal === undefined) throw channelNotFound(header, signalIndex);
     if (signal.kind === 'annotations') {
       throw new RangeError(
         `signal ${signalIndex} (${JSON.stringify(signal.label)}) is this file's annotations ` +

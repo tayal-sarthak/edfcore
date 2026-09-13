@@ -24,11 +24,17 @@
 import { decodeDigitalCounted } from './decode/digital.js';
 import { assertSignal, scalingError } from './decode/physical.js';
 import { appendChunkDiagnostics } from './diagnostics/collector.js';
-import { EdfBudgetError, EdfChannelNotFoundError } from './errors.js';
+import { EdfBudgetError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
-import { assertRecording, assertSelection, assertSignalIndices, gapBefore } from './recording.js';
+import {
+  assertRecording,
+  assertSelection,
+  assertSignalIndices,
+  channelNotFound,
+  gapBefore,
+} from './recording.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { pluralise } from './text/counted.js';
@@ -173,15 +179,11 @@ function resolveEnvelopeSignals(
   for (const signalIndex of signalIndices) {
     const signal = header.signals[signalIndex];
     if (signal === undefined) {
-      // `EdfChannelNotFoundError`, matching `resolveSignals` on the read path. The identical
-      // mistake — an index outside the file's signals — threw a typed error carrying `selector`
-      // and `availableLabels` from `readWindow` and a bare `RangeError` from here, so
-      // `isEdfError` answered differently depending on which read the caller had reached for.
-      throw new EdfChannelNotFoundError(
-        `signalIndex ${signalIndex} is outside the ${header.signals.length} ` +
-          'signals this file declares. Next: pass an index from header.dataSignalIndices.',
-        { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
-      );
+      // The refusal `resolveSignals` gives, built by the same function rather than written out a
+      // second time. The class was matched when this copy was made; the message was not, and this
+      // one ended before the clause naming getSignal — the half of the advice a caller who passed
+      // a LABEL needs.
+      throw channelNotFound(header, signalIndex);
     }
     if (signal.kind === 'annotations') {
       // A plain `RangeError`, exactly as `resolveSignals` does for this case: handing the

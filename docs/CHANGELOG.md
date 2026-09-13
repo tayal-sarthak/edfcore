@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.136
+
+- **Fixed** `readEnvelope` and `readEnvelopeAtResolution` withholding half the advice `readWindow`
+  gives for the same mistake. Both refuse an unresolvable `signalIndices` entry with
+  `EdfChannelNotFoundError` — the class was deliberately matched — but the envelope path's copy of
+  the message ended at "pass an index from header.dataSignalIndices", without the clause naming
+  `getSignal(header, label)`.
+- A label is the commonest thing to find in a selection that does not resolve, since
+  `getSignal(header, selector)` takes one, so that clause is the half that fixes it.
+- The sentence now has one home rather than two.
+
 ## 0.6.135
 
 - **Fixed** `signalIndices: [0, '0']` reading the same channel twice. Deduplication held the values
