@@ -24,6 +24,7 @@
 import { appendDiagnostics } from './diagnostics/collector.js';
 import { ticksToSeconds } from './tal/ticks.js';
 import { pluralise } from './text/counted.js';
+import { describeValue } from './text/describe.js';
 import type { EdfChunk, EdfChunkSignal, EdfDiagnostic } from './types.js';
 
 /** Reads as one line at the call site, and keeps the `chunks[i]` non-null assertions out of it. */
@@ -169,6 +170,27 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
  * separate call rather than something `readWindow` does on the way out.
  */
 export function mergeChunks(chunks: readonly EdfChunk[]): EdfChunk {
+  /*
+   * The ARRAY, before a length is read off it.
+   *
+   * `readWindow` resolves to one chunk per contiguous run, and on a continuous file that is an
+   * array of one — so a caller who has only ever seen one chunk holds a chunk, and
+   * `mergeChunks(chunk)` is what they write. `chunks.length` was then `undefined`, which is not
+   * `0`, and `at(chunks, 0)` refused with "no chunk at 0. Next: pass the array readWindow()
+   * returned, with no holes and nothing spliced out of it" — a message about holes in an array,
+   * to someone who never had one. `null` did not even get that far: `Cannot read properties of
+   * null (reading 'length')`.
+   */
+  if (!Array.isArray(chunks)) {
+    throw new RangeError(
+      `mergeChunks: the chunks are ${
+        typeof (chunks as unknown as EdfChunk | undefined)?.records === 'object'
+          ? 'one chunk rather than an array of them'
+          : `${describeValue(chunks)}, not an array`
+      }. Next: pass what readWindow() resolved to — it is the array this takes even on a ` +
+        'continuous file, where it holds exactly one chunk.',
+    );
+  }
   if (chunks.length === 0) {
     throw new RangeError(
       'mergeChunks: nothing to merge. `readWindow` returns [] for a window that lands past the ' +

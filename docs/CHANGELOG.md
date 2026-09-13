@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.141
+
+- **Fixed** `mergeChunks(chunk)` — one chunk where the array belongs — being refused with "no chunk
+  at 0. Next: pass the array readWindow() returned, with no holes and nothing spliced out of it", a
+  message about holes in an array the caller never had. `null` did not reach even that: `Cannot
+  read properties of null (reading 'length')`.
+- On a continuous file `readWindow` resolves to an array of exactly one, so a caller who has only
+  ever seen one chunk holds a chunk. The refusal now says that, and says the array is what this
+  takes even then.
+
 ## 0.6.140
 
 - **Fixed** `cachedSource(source, 4 * 1024 * 1024)` — a bare number where the cache options belong
