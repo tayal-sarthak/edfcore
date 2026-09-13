@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.160
+
+- **Fixed** `formatDiagnostics` dereferencing the elements of an array it was handed.
+  `summarizeDiagnostics(...).byCode` rows carry `code` and `severity` — two of the three fields the
+  renderer reads — so passing the compact summary to the compact formatter threw V8's
+  `Cannot read properties of undefined (reading 'split')` on the third.
+- 0.6.95 guarded the argument itself, because `''` is this function's all-clear; an array of the
+  wrong thing walks past that, the gap 0.6.152 closed in `mergeChunks`.
+- The refusal names the position, since only one element of a list may be wrong.
+
 ## 0.6.159
 
 - **Fixed** `toPhysicalEnvelope` naming the wrong thing when it refuses an `out`. It takes a pair

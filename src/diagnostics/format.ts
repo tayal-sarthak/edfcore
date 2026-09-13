@@ -121,6 +121,30 @@ const SEVERITY_COLORS: Readonly<Record<EdfSeverity, string>> = {
  * A multi-line report, one block per diagnostic. Returns `''` for an empty list so the result
  * can be concatenated into a larger report without a stray blank line.
  */
+/**
+ * The ELEMENTS, which the array guard above cannot reach.
+ *
+ * That guard exists because `''` is this function's all-clear and a wrong argument must not be
+ * able to produce it (0.6.95). An ARRAY of the wrong thing walks straight past it, which is the
+ * same gap 0.6.152 closed in `mergeChunks`.
+ *
+ * The neighbour that supplies one is `summarizeDiagnostics`, in this directory: its `byCode` rows
+ * carry `code` and `severity` — two of the three fields the renderer reads — so a caller who
+ * passes the compact summary to the compact formatter got most of the way through a diagnostic
+ * block and then V8's `Cannot read properties of undefined (reading 'split')` on the third.
+ */
+function assertDiagnostic(diagnostic: EdfDiagnostic, index: number): void {
+  if (typeof (diagnostic as { message?: unknown } | null | undefined)?.message === 'string') return;
+  throw new RangeError(
+    `formatDiagnostics(): the value at ${index} is ${
+      typeof (diagnostic as unknown as { count?: unknown } | null | undefined)?.count === 'number'
+        ? 'one row of a diagnostic summary, which counts a code rather than being a diagnostic'
+        : `${describeValue(diagnostic)}, which carries no message`
+    }. Next: pass header.diagnostics, or the diagnostics on the chunk or the report you have — ` +
+      'summarizeDiagnostics() takes the same array and returns the counts.',
+  );
+}
+
 export function formatDiagnostics(
   diagnostics: readonly EdfDiagnostic[],
   options?: FormatDiagnosticsOptions,
@@ -151,6 +175,7 @@ export function formatDiagnostics(
     const diagnostic = diagnostics[i];
     // i < shown <= diagnostics.length, so this only satisfies noUncheckedIndexedAccess.
     if (diagnostic === undefined) continue;
+    assertDiagnostic(diagnostic, i);
     appendDiagnostic(lines, diagnostic, color, redact);
   }
 
