@@ -59,6 +59,17 @@ export function filterAnnotationsByTime(
   window: EdfAnnotationWindow,
 ): readonly EdfAnnotation[] {
   assertAnnotations(annotations, 'filterAnnotationsByTime');
+  // The window itself, before a field of it is read. 0.6.79 made this argument for the reading
+  // API and 0.6.98 finished it there; this is the one function left in the package that takes a
+  // window object, and it reached `window.startSeconds` on an absent one — V8's `TypeError:
+  // Cannot read properties of undefined (reading 'startSeconds')`, naming a field rather than the
+  // argument, with no `Next:` clause.
+  if (typeof window !== 'object' || window === null) {
+    throw new RangeError(
+      `filterAnnotationsByTime(): the window is ${describeValue(window)}, not an object. ` +
+        'Next: pass a window carrying startSeconds and durationSeconds.',
+    );
+  }
   const from = secondsToTicks(window.startSeconds, 'window.startSeconds');
   const to = from + secondsToTicks(window.durationSeconds, 'window.durationSeconds');
   if (to <= from) return Object.freeze([]);

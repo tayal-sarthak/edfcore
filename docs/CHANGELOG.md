@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.126
+
+- **Fixed** `filterAnnotationsByTime(annotations)` with the window omitted throwing V8's
+  `TypeError: Cannot read properties of undefined (reading 'startSeconds')` — a `TypeError` naming
+  an internal field rather than the argument, with no `Next:` clause.
+- It is the one function left in the package that takes a window object, and it was in neither the
+  0.6.79 sweep nor the 0.6.98 one because it is a pure query rather than a read. Passing `{}`
+  already earned a good message, so the quality of the refusal depended on whether the object was
+  empty or absent.
+
 ## 0.6.125
 
 - **Documented** the `maxItems` rule 0.6.115 changed, in all three tables that carry the option.
