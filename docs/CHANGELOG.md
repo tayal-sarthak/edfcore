@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.152
+
+- **Fixed** `mergeChunks` accepting an array whose elements are not chunks. `mergeChunks(chunk.signals)`
+  on a single-signal read returned the CHUNK SIGNAL typed as a merged chunk — no `signals`, no
+  `durationSeconds` — because a one-element array is returned as-is.
+- On a two-signal read the same call threw V8's `Cannot read properties of undefined (reading
+  'start')`. One mistake, silently accepted or reported with an internal name depending on how
+  many channels were selected.
+- 0.6.141 guarded the argument itself and named "one chunk rather than an array of them"; an array
+  of the wrong thing passed it, because it is an array.
+
 ## 0.6.151
 
 - **Fixed** `findSignals` and `getSignal` walking a selector that is not a label. A RegExp threw

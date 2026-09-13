@@ -36,6 +36,32 @@ function at(chunks: readonly EdfChunk[], index: number): EdfChunk {
         'holes and nothing spliced out of it.',
     );
   }
+  /*
+   * The ELEMENTS, which the array guard below never reached.
+   *
+   * That guard names one wrong argument — "one chunk rather than an array of them" — and an array
+   * of the wrong thing passes it. `mergeChunks(chunk.signals)` is the mistake: `chunk.signals` IS
+   * an array, `EdfChunkSignal` carries `startSeconds` and `startTicks` under the same names
+   * `EdfChunk` does, and "merge the chunk's signals" is a sentence a caller writes.
+   *
+   * What it did depended on how many channels had been selected. On a single-signal read — the
+   * common case, and the one a viewer drawing one trace makes — the array holds one element, so
+   * `chunks.length === 1` returned it AS the merged chunk: an object with no `signals` and no
+   * `durationSeconds`, handed back typed as an `EdfChunk`. On a two-signal read the same call
+   * reached `previous.records.start` and threw V8's "Cannot read properties of undefined
+   * (reading 'start')". One mistake, silently accepted or reported with an internal name
+   * depending on the selection, which is the shape 0.6.79, 0.6.86 and 0.6.103 were each spent on.
+   */
+  if (typeof (chunk as { records?: unknown }).records !== 'object') {
+    throw new RangeError(
+      `mergeChunks: the value at ${index} is ${
+        typeof (chunk as unknown as EdfChunkSignal).signalIndex === 'number'
+          ? 'one signal of a chunk rather than a chunk'
+          : `${describeValue(chunk)}, not a chunk`
+      }. Next: pass what readWindow() resolved to — its elements are whole chunks, and each one ` +
+        'carries every signal you selected on its own signals array.',
+    );
+  }
   return chunk;
 }
 
