@@ -21,6 +21,7 @@
  * buckets plus one chunk.
  */
 
+import { TICKS_PER_SECOND } from './constants.js';
 import { assertOutKind, decodeDigitalCounted } from './decode/digital.js';
 import { assertSignal, scalingError } from './decode/physical.js';
 import { appendChunkDiagnostics } from './diagnostics/collector.js';
@@ -719,7 +720,23 @@ export async function readEnvelopeAtResolution(
   // resolution that was neither what it requested nor the same between runs. That is the exact
   // failure this function was written to prevent, arriving by a second route (fixed in 0.3.5).
   const durationTicks = recording.header.recordDurationTicks;
-  const bucketTicks = secondsToTicks(secondsPerBucket, 'secondsPerBucket');
+  /*
+   * "Finer than one tick" is decided on the REQUEST, not on what rounding made of it.
+   *
+   * The rule below, and `envelope-degenerate.test.ts` with it, is about a `secondsPerBucket` finer
+   * than one tick: it has no whole-tick answer, so it asks for one bucket per tick and `reduceRange`
+   * clamps that to one bucket per sample, "the finest picture there is". The branch that chose it
+   * read the ROUNDED tick count, and `secondsToTicks` rounds to nearest — so the lower half of the
+   * sub-tick range, 5e-8 up to 1e-7, came out as exactly one tick, took the fixed-width path
+   * instead, and was refused as a forty-million-bucket allocation.
+   *
+   * Two requests either side of half a tick therefore behaved oppositely, and the COARSER of the
+   * two was the one refused: 5e-8 s per bucket threw `EdfBudgetError` while 1e-9 — twenty times
+   * finer — came back with one bucket per sample. A viewer deriving this from a zoom level moves
+   * through that boundary continuously.
+   */
+  const subTick = secondsPerBucket * Number(TICKS_PER_SECOND) < 1;
+  const bucketTicks = subTick ? 0n : secondsToTicks(secondsPerBucket, 'secondsPerBucket');
   const chunks: EdfEnvelopeChunk[] = [];
   for (const records of ranges) {
     // A run's span is exactly its record count times the record duration: records within one run

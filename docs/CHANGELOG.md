@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.161
+
+- **Fixed** `readEnvelopeAtResolution` treating half the sub-tick range as a whole tick. "Finer
+  than one tick" was decided on the ROUNDED tick count, and `secondsToTicks` rounds to nearest, so
+  5e-8 s through 1e-7 s took the fixed-width path and asked for one bucket per tick with no clamp.
+- Over four seconds that is forty million buckets, refused as an 800 MB allocation — while 1e-9,
+  twenty times finer, came back with one bucket per sample. The coarser of two neighbouring
+  requests was the one that failed.
+- The documented rule is unchanged: finer than one tick is clamped to one bucket per sample, and a
+  whole tick keeps the fixed width.
+
 ## 0.6.160
 
 - **Fixed** `formatDiagnostics` dereferencing the elements of an array it was handed.
