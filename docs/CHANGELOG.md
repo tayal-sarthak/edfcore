@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.166
+
+- **Fixed** the READ options being taken as no options at all when passed as a bare value.
+  `readRecords(recording, selection, 64 * 1024 * 1024)` took the 256 MiB default instead — on the
+  one option whose job is to refuse an allocation before it is attempted — and any `signal` meant
+  alongside it went with it.
+- 0.6.155 refused an `AbortSignal` handed over in place of the options; it could not see this,
+  because it was looking for an object.
+- Guarded in `assertReadOptions`, which every adapter reaches, so `readWindow`, `readAnnotations`,
+  `streamRecords`, the envelope calls, `inspectEdf` and a bare `source.read` are all covered by one
+  check. `readHeader` now names `strict` before the first read, so `openEdf` still answers for the
+  option its own signature is about.
+
 ## 0.6.165
 
 - **Fixed** `formatHeader` taking a bare value as no options at all. `formatHeader(header, true)`

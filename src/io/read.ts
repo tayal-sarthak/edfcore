@@ -25,6 +25,7 @@
 import { parseEdfInteger } from '../bytes/numbers.js';
 import { readAsciiField } from '../bytes/view.js';
 import { EDF_HEADER_BLOCK_BYTES, EDF_MAX_SIGNAL_COUNT, HEADER_FIELDS } from '../constants.js';
+import { assertParseOptions } from '../diagnostics/collector.js';
 import { EdfBudgetError, EdfRangeError } from '../errors.js';
 import { parseHeader } from '../header/parse.js';
 import { resolveMaterializeBudget } from '../options.js';
@@ -65,6 +66,15 @@ export async function readHeader(source: ByteSource, options?: OpenOptions): Pro
   // same mistake 0.4.444 named `openEdf(bytes)` for — came back as V8's `Cannot read properties of
   // undefined (reading 'byteLength')` (fixed in 0.6.105).
   assertByteSource(source);
+  /*
+   * Named for THIS call, before the first read is issued.
+   *
+   * `OpenOptions` carries both families, and `assertReadOptions` fires on the very first
+   * `source.read` — so `openEdf(source, true)` was answered with a sentence about a byte budget
+   * and a cancellation signal, when `strict` is the only boolean among these options and plainly
+   * what a bare `true` meant (0.6.154).
+   */
+  assertParseOptions(options);
   const sourceByteLength = source.byteLength;
   const firstLength = Math.min(EDF_HEADER_BLOCK_BYTES, sourceByteLength);
   const fixedHeader = assertExactRead(await source.read(0, firstLength, options), 0, firstLength);

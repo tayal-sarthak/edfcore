@@ -142,12 +142,33 @@ export function throwIfAborted(options?: ReadOptions): void {
  * consumer writes has to be recognised too.
  */
 export function assertReadOptions(options: unknown): void {
-  if (typeof (options as { aborted?: unknown } | null | undefined)?.aborted !== 'boolean') return;
-  throw new RangeError(
-    'the read options are an AbortSignal, not an object carrying one — signal is a field on the ' +
-      'options, so this read ignored the cancellation it was given and would have resolved with ' +
-      'data. Next: pass the signal as options.signal.',
-  );
+  if (typeof (options as { aborted?: unknown } | null | undefined)?.aborted === 'boolean') {
+    throw new RangeError(
+      'the read options are an AbortSignal, not an object carrying one — signal is a field on ' +
+        'the options, so this read ignored the cancellation it was given and would have resolved ' +
+        'with data. Next: pass the signal as options.signal.',
+    );
+  }
+  /*
+   * And a bare value, which 0.6.155 walked past because it was looking for an object.
+   *
+   * That guard answers the mistake made WITH an object. This is the plain one the rest of the
+   * package has been closing since 0.6.130 — `cachedSource(source, 4 * 1024 * 1024)`,
+   * `openEdf(source, true)`, `httpSource(url, token)`, `validateRecording(recording, true)`,
+   * `formatHeader(header, true)` — and the read options are where the number a caller writes is
+   * likeliest to be a byte count, because `maxMaterializeBytes` is one.
+   *
+   * `readRecords(recording, selection, 64 * 1024 * 1024)` took the 256 MiB default instead, on the
+   * one option whose job is to refuse an allocation before it is attempted, and any `signal` a
+   * caller meant went with it: the read was neither bounded nor cancellable, and it resolved.
+   */
+  if (options !== undefined && options !== null && typeof options !== 'object') {
+    throw new RangeError(
+      `the read options are ${describeValue(options)}, not an object — maxMaterializeBytes and ` +
+        'signal are fields on one, so this read took the default budget and no cancellation. ' +
+        'Next: pass maxMaterializeBytes on an options object.',
+    );
+  }
 }
 
 /**

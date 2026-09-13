@@ -126,6 +126,7 @@ describe('the inventory the module claims', () => {
         name !== 'options.ts' &&
         name !== 'types.ts' &&
         name !== 'errors.ts' && // names it in a message, does not read one
+        name !== 'io/source.ts' && // the same: 0.6.166 names the option in a refusal
         !PASS_THROUGH.includes(name) &&
         code.includes('maxMaterializeBytes') &&
         !code.includes('resolveMaterializeBudget'),
