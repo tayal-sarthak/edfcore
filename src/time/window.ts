@@ -64,6 +64,19 @@ export function assertChunkSignal(chunkSignal: EdfChunkSignal, call: string, ver
 }
 
 function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
+  // The header itself, before a signal is taken out of it. `trimToWindow` is the only caller, its
+  // OTHER argument is a chunk signal, and the two live one field apart on what a reader holds —
+  // so `trimToWindow(recording, chunkSignal, ...)` is the call that gets written, and it read
+  // `recording.signals[0]` and threw V8's `Cannot read properties of undefined (reading '0')`.
+  // That names the signal index, which was the argument that was right. 0.6.127 swept the same
+  // mistake out of `header/lookup.ts`; this is the last entry point in the package that took a
+  // header without checking one.
+  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+    throw new RangeError(
+      'trimToWindow(): that is not a header — it has no signals, and this call needs the ' +
+        'samples-per-record the chunk signal does not carry. Next: pass recording.header.',
+    );
+  }
   const signal = header.signals[signalIndex];
   if (signal !== undefined) return signal;
   throw new EdfChannelNotFoundError(

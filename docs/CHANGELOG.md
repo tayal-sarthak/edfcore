@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.132
+
+- **Fixed** `trimToWindow(recording, chunkSignal, ...)` — the recording passed where its `.header`
+  belongs — throwing V8's `TypeError: Cannot read properties of undefined (reading '0')`, which
+  names the signal index. `trimToWindow` reads that index off the chunk signal itself, so it is the
+  one value in the call nobody could have got wrong.
+- Its two arguments live one field apart on what a reader holds, which is what makes the pairing
+  easy to write. 0.6.127 swept this out of the lookup helpers; this was the last entry point that
+  took a header without looking at one.
+
 ## 0.6.131
 
 - **Fixed** `index.onsetTicks()` describing a record index it refused as one the file does not
