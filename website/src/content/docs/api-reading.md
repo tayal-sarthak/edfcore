@@ -126,6 +126,18 @@ console.log(chunk.signals[0].sampleCount);
 
 `signalIndices` has no "all signals" default. `header.dataSignalIndices` is the explicit spelling of "all of them", so a 256-channel file is never read wholesale because an argument was omitted.
 
+"Duplicates are dropped" is decided on the index an entry RESOLVES to, not on the value written.
+An array-index string resolves to its signal — `['0']` is what `JSON.parse` of a query string
+gives — and until 0.6.135 the deduplication held the values as written, so `[0, '0']` was
+deduplicated against nothing: the same channel was read twice, decoded twice, and returned twice in
+`chunk.signals`, both entries reporting `signalIndex: 0`. Mixing is how the string arrives — a
+numeric default merged with `Object.keys()`, a saved view, or a query parameter.
+
+A record range is checked the same way and refused rather than coerced, and from 0.6.137 the
+refusal prints each field as it was written: `{ start: '0', count: '1' }` reads back as
+`{ start: the string "0", count: the string "1" }` rather than as a range that is plainly inside
+the file.
+
 ### EdfChunk
 
 | Field | Type | Meaning |

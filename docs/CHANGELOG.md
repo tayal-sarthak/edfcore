@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.150
+
+- **Documented** what "duplicates are dropped" is decided on. `api-reading.md` stated the rule and
+  not the value it reads: 0.6.135 moved it to the index a selection RESOLVES to, because holding
+  the values as written left `[0, '0']` deduplicated against nothing.
+- The page also now says that an array-index string resolves to its signal, which is what
+  `JSON.parse` of a query string gives, and that mixing is how it arrives.
+- The record range beside it is covered too: refused rather than coerced, and since 0.6.137 printed
+  field by field as it was written.
+
 ## 0.6.149
 
 - **Documented** that `redactFields` takes a list, not a name — the rule 0.6.143 made enforceable,
