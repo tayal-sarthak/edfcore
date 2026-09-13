@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.135
+
+- **Fixed** `signalIndices: [0, '0']` reading the same channel twice. Deduplication held the values
+  as written, and `'0'` is not `0`, so the mixed array was deduplicated against nothing: the
+  channel was read twice, decoded twice, and returned twice in `chunk.signals` — both entries
+  reporting `signalIndex: 0`, with nothing to tell the copy from the original.
+- The canonical decimal string has always resolved to its signal, by ordinary array-index
+  coercion, and still does. Mixing is how it arrives: a numeric default merged with `Object.keys()`,
+  a saved view, or a query parameter.
+- Deduplication now looks at the index a selection resolved to rather than the value written, in
+  both the read path and `envelope.ts`'s own copy of the loop.
+
 ## 0.6.134
 
 - **Fixed** `toPhysical(signal, digital, out)` writing physical values into an `out` array of the

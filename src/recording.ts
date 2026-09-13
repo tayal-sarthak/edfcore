@@ -197,9 +197,6 @@ export function resolveSignals(
   const seen = new Set<number>();
   const signals: EdfSignal[] = [];
   for (const signalIndex of signalIndices) {
-    if (seen.has(signalIndex)) continue;
-    seen.add(signalIndex);
-
     const signal = header.signals[signalIndex];
     if (signal === undefined) {
       throw new EdfChannelNotFoundError(
@@ -217,6 +214,23 @@ export function resolveSignals(
           'records) for it, and pass only header.dataSignalIndices here.',
       );
     }
+    /*
+     * Deduplicated on the index the selection RESOLVED to, not on the value that was written.
+     *
+     * `a-selection-from-json.test.ts` names the one shape accepted by coercion — the canonical
+     * decimal string, "which is what `JSON.parse('[\"0\"]')` from a query string gives" — and
+     * argues it is safe because "the chunk that comes back reports `signalIndex` as a number, so
+     * nothing downstream carries the string". Both are true. What neither covers is the MIXED
+     * array, and mixing is how the string arrives: a numeric default merged with `Object.keys()`,
+     * a saved view, or a query parameter.
+     *
+     * `seen` held the values as written, and `'0'` is not `0`, so `[0, '0']` was deduplicated
+     * against nothing. The same channel was read twice, its bytes decoded twice, and it came back
+     * twice in `chunk.signals` — both entries reporting `signalIndex: 0`, so nothing downstream
+     * could tell the copy from the original (fixed in 0.6.135).
+     */
+    if (seen.has(signal.index)) continue;
+    seen.add(signal.index);
     signals.push(signal);
   }
   return signals;

@@ -171,8 +171,6 @@ function resolveEnvelopeSignals(
   const seen = new Set<number>();
   const signals: EdfSignal[] = [];
   for (const signalIndex of signalIndices) {
-    if (seen.has(signalIndex)) continue;
-    seen.add(signalIndex);
     const signal = header.signals[signalIndex];
     if (signal === undefined) {
       // `EdfChannelNotFoundError`, matching `resolveSignals` on the read path. The identical
@@ -194,6 +192,11 @@ function resolveEnvelopeSignals(
           'would be an envelope over ASCII. Next: call readAnnotations() instead.',
       );
     }
+    // On the RESOLVED index, for the reason `resolveSignals` states: this is its copy of the loop,
+    // and deduplicating on the value as written left `[0, '0']` reading the same channel twice
+    // here too.
+    if (seen.has(signal.index)) continue;
+    seen.add(signal.index);
     signals.push(signal);
   }
   return signals;
