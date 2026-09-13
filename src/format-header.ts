@@ -17,6 +17,7 @@ import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
 import { formatCalendarDate, formatClockTime } from './header/dates.js';
 import { pluralise } from './text/counted.js';
+import { describeValue } from './text/describe.js';
 import { printable } from './text/printable.js';
 import type { EdfCalendarDate, EdfHeader, FormatHeaderOptions } from './types.js';
 
@@ -103,6 +104,28 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
     throw new RangeError(
       'formatHeader(): that is not a header — it has no signals. Next: pass recording.header, or ' +
         'what parseHeader(bytes, sourceByteLength) returned.',
+    );
+  }
+  /*
+   * The OPTIONS, which are two flags and nothing else — so the value a caller means is one of
+   * them, and `formatHeader(header, true)` is what gets written for "include the identification".
+   *
+   * 0.6.130, 0.6.140, 0.6.154, 0.6.163 and 0.6.164 each refused this shape elsewhere. What makes
+   * it worth its own guard here is that the failure is INVISIBLE IN THE OUTPUT. When the lines are
+   * asked for, an empty identification field prints as `unknown`, which is this module's promise:
+   * it never invents a value, "because the whole point of pasting this somewhere is that the
+   * reader can trust it". When the flag is dropped the lines are not printed at all, so the
+   * summary is byte-identical to one nobody asked for — and a reader checking whether a file
+   * carries a name concludes that it does not.
+   *
+   * `undefined` and `null` still mean "no options", which is what they already meant.
+   */
+  if (options !== undefined && typeof options !== 'object') {
+    throw new RangeError(
+      `formatHeader(): the options are ${describeValue(options)}, not an object — ` +
+        'includePatientId is a field on one, so the identification lines would have been left ' +
+        'out and the summary would look exactly like one that never asked for them. ' +
+        'Next: pass includePatientId on an options object.',
     );
   }
   const lines: string[] = [];

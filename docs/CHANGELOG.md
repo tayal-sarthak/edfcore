@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.165
+
+- **Fixed** `formatHeader` taking a bare value as no options at all. `formatHeader(header, true)`
+  left `includePatientId` undefined, so the identification lines were omitted — and the summary is
+  then byte-identical to one that never asked for them.
+- An empty identification field prints `unknown` when the lines ARE on, which is this module's
+  promise that it never invents a value. With the flag dropped there is nothing to read at all, so
+  a reader checking whether a file carries a name concludes that it does not.
+- `undefined` and `null` still mean "no options".
+
 ## 0.6.164
 
 - **Fixed** `validateRecording` taking a bare value as no options at all. `scanSamples` — "the
