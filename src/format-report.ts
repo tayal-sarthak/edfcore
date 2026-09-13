@@ -15,6 +15,7 @@
 
 import { assertRedactableFields, formatDiagnostics } from './diagnostics/format.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
+import { assertOptions } from './options.js';
 import { plural, pluralise } from './text/counted.js';
 import { printable } from './text/printable.js';
 import type { EdfHeader, FormatReportOptions, ValidationReport } from './types.js';
@@ -57,6 +58,7 @@ export function formatValidationReport(
   // Before anything is rendered, and outside the `diagnostics.length > 0` branch below. A report
   // that passes still has to report a misspelled `redactFields`: the typo belongs to the call, and
   // the clean file is the cheap place to find out about it.
+  assertOptions(options, 'formatValidationReport', 'diagnostic');
   assertRedactableFields(options?.redactFields);
 
   // One counting implementation, shared with the public `summarizeDiagnostics`.

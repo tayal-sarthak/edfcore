@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.130
+
+- **Fixed** `formatAnnotations`, `formatDiagnostics` and `formatValidationReport` silently ignoring
+  a bare number where their options belong. `formatAnnotations(annotations, 20)` — the call written
+  when the intent is twenty rows — printed every annotation instead, with no truncation line to
+  give it away.
+- **Behaviour change**: a non-object `options` is now refused. `undefined` and `null` still mean
+  "no options", as they already did.
+- `maxItems` is the one option a caller is likely to pass as the whole argument, and its absence is
+  indistinguishable from asking for no limit — which is the default these three already had.
+
 ## 0.6.129
 
 - **Fixed** `toPhysicalEnvelope(signal, chunk)` — the envelope chunk passed where one of its

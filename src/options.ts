@@ -67,6 +67,31 @@ export function requireFiniteOption(
  * it. `parseArgs` has refused a `NaN --limit` since the flag existed, and says why in a comment;
  * the library function underneath it did the thing that comment describes.
  */
+/**
+ * The OPTIONS object, in the three formatters that take a `maxItems`.
+ *
+ * Every option in this package is a field on one, so the number a caller means IS the option:
+ * `formatAnnotations(annotations, 20)` is what gets written when the intent is twenty rows. A bare
+ * number has no `maxItems`, so `options?.maxItems` was `undefined`, `requireItemLimit` took that
+ * as "no limit given" — its documented default — and every annotation was printed.
+ *
+ * Silently. `format-annotations.ts` argues the opposite case at length: truncation "always says how
+ * much it withheld", because a listing that stopped without saying so "would be indistinguishable
+ * from a recording that simply had no more events". A listing that did NOT truncate when it was
+ * asked to is the same confusion from the other side, and on a scoring file with fifty thousand
+ * events it is fifty thousand lines where twenty were asked for.
+ *
+ * `null` and `undefined` still mean "no options", which is what they already meant.
+ */
+export function assertOptions(options: unknown, call: string, listed: string): void {
+  if (options === undefined || typeof options === 'object') return;
+  throw new RangeError(
+    `${call}(): the options are ${describeValue(options)}, not an object — maxItems is a field ` +
+      `on one, so this call would have listed every ${listed} rather than that many. ` +
+      'Next: pass maxItems on an options object.',
+  );
+}
+
 export function requireItemLimit(value: number | undefined, total: number): number {
   if (value === undefined) return total;
   /*

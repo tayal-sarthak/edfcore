@@ -11,7 +11,7 @@
 
 import { trimEdfField } from '../bytes/latin1.js';
 import { HEADER_FIELDS, SIGNAL_FIELD_WIDTHS } from '../constants.js';
-import { requireItemLimit } from '../options.js';
+import { assertOptions, requireItemLimit } from '../options.js';
 import { describeValue } from '../text/describe.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
@@ -123,6 +123,7 @@ export function formatDiagnostics(
     );
   }
   const color = options?.color === true;
+  assertOptions(options, 'formatDiagnostics', 'diagnostic');
   const shown = requireItemLimit(options?.maxItems, diagnostics.length);
   const lines: string[] = [];
 

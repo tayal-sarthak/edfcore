@@ -16,7 +16,7 @@
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
-import { requireItemLimit } from './options.js';
+import { assertOptions, requireItemLimit } from './options.js';
 import { floorDiv } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
 import { printable } from './text/printable.js';
@@ -104,6 +104,7 @@ export function formatAnnotations(
   }
   if (annotations.length === 0) return '';
 
+  assertOptions(options, 'formatAnnotations', 'annotation');
   const limit = requireItemLimit(options?.maxItems, annotations.length);
 
   /*
