@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.143
+
+- **Fixed** `redactFields: 'patientId'` — the field name where the list belongs — being refused
+  with `options.redactFields names "p"`. A string is iterable, so the vocabulary check walked its
+  characters and reported a value nobody wrote, about a vocabulary that was never the problem.
+- Nothing leaked: it did refuse. What it did not do is say what was wrong, in the one option whose
+  own docblock calls its silent failure "sends a person's name somewhere it should not go".
+- The vocabulary check underneath is unchanged; a misspelled name inside a real list is refused
+  exactly as before.
+
 ## 0.6.142
 
 - **Fixed** the two calls that take a source's size from the caller — `httpSource(url, { byteLength })`

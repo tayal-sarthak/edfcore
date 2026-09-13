@@ -75,6 +75,23 @@ const REDACTABLE_FIELDS: ReadonlySet<string> = new Set([
  * would have said nothing and the same argument would have leaked on the next file.
  */
 export function assertRedactableFields(fields: readonly string[] | undefined): void {
+  /*
+   * The LIST, before its names are walked.
+   *
+   * A string is iterable, so `redactFields: 'patientId'` — the value out of every example on
+   * every page, one pair of brackets short — walked its CHARACTERS and refused with
+   * `options.redactFields names "p"`. The caller never wrote "p", the real mistake is never
+   * named, and this is the one option whose silent failure the docblock above is about.
+   *
+   * It did fail loudly, so nothing leaked. What it did not do is say what was wrong.
+   */
+  if (fields !== undefined && !Array.isArray(fields)) {
+    throw new RangeError(
+      `options.redactFields is ${describeValue(fields)}, not a list of names. A string is ` +
+        'iterable, so this walked its characters and named the first one rather than the field ' +
+        "you meant. Next: pass redactFields: ['patientId', 'recordingId'].",
+    );
+  }
   for (const field of fields ?? []) {
     if (REDACTABLE_FIELDS.has(field)) continue;
     throw new RangeError(
