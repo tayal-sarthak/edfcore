@@ -181,6 +181,30 @@ function assertSignalFitsRecord(header: EdfHeader, signal: EdfSignal, blockBytes
  * path survives — while keeping `result.length` equal to the true sample count, so no caller
  * can mistake spare capacity for data.
  */
+/**
+ * The KIND of a reused `out` array, which none of the three resolvers that take one checked.
+ *
+ * Every one of them tested the LENGTH and then wrote through it, so an array of the wrong kind
+ * passed. `toPhysical(signal, digital, new Int32Array(n))` is the one that costs data: the
+ * physical values are written into an integer array, which truncates every one of them, and for a
+ * bit value below 1 — which is most EEG channels in microvolts — the result is a buffer of zeros
+ * returned as if it were the signal. Nothing said so.
+ *
+ * The other two return the array they were given, so the caller got back something other than the
+ * `Int32Array` their signatures promise.
+ *
+ * `Object.prototype.toString`, not `instanceof`: a typed array from another realm is still the
+ * right kind, and `a-clone-forgets-the-class.test.ts` is about exactly that distinction.
+ */
+export function assertOutKind(out: unknown, kind: string, call: string, because: string): void {
+  if (Object.prototype.toString.call(out) === `[object ${kind}]`) return;
+  const article = kind.startsWith('I') ? 'an' : 'a';
+  throw new RangeError(
+    `${call}(): out is ${describeValue(out)}, not ${article} ${kind} — ${because}. Next: pass ` +
+      `${article} ${kind} long enough for the samples, or omit out and let ${call}() allocate.`,
+  );
+}
+
 function resolveOut(
   out: Int32Array | undefined,
   sampleCount: number,
@@ -195,6 +219,13 @@ function resolveOut(
     );
     return new Int32Array(sampleCount);
   }
+  assertOutKind(
+    out,
+    'Int32Array',
+    'decodeDigital',
+    'and this call returns the array it is given, so a different kind would reach the caller in ' +
+      'place of the Int32Array the signature promises',
+  );
   if (out.length < sampleCount) {
     throw new RangeError(
       `out holds ${out.length} samples but this decode produces ${sampleCount}. Next: size the ` +

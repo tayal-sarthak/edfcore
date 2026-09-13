@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.134
+
+- **Fixed** `toPhysical(signal, digital, out)` writing physical values into an `out` array of the
+  wrong kind. Physical values are fractional, so an `Int32Array` truncated every one of them — for
+  a bit value below 1, which is most EEG in microvolts, the call returned a buffer of zeros as if
+  it were the signal, with no error and no diagnostic.
+- `clampToDigitalRange` and `decodeDigital` return the array they are given, so a wrong kind
+  reached the caller in place of the `Int32Array` their signatures promise. All three now check it.
+- **Behaviour change**: an `out` of the wrong kind is refused. The kind is matched by tag rather
+  than by `instanceof`, so a typed array from another realm still passes.
+
 ## 0.6.133
 
 - **Fixed** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` describing a label as a

@@ -14,6 +14,7 @@ import { resolveMaterializeBudget } from '../options.js';
 import { describeValue } from '../text/describe.js';
 import type { EdfChunkSignal, EdfDiagnosticCode, EdfSignal } from '../types.js';
 import type { MaterializeOptions } from './digital.js';
+import { assertOutKind } from './digital.js';
 
 export type { MaterializeOptions } from './digital.js';
 
@@ -234,6 +235,13 @@ function resolveFloat64Out(
     );
     return new Float64Array(length);
   }
+  assertOutKind(
+    out,
+    'Float64Array',
+    'toPhysical',
+    'and physical values are fractional, so an integer array stores every one of them truncated ' +
+      '— at a bit value below 1 that is a buffer of zeros returned as if it were the signal',
+  );
   if (out.length < length) {
     throw new RangeError(
       `out holds ${out.length} samples but this conversion produces ${length}. Next: size the ` +
@@ -259,6 +267,13 @@ function resolveInt32Out(
     );
     return new Int32Array(length);
   }
+  assertOutKind(
+    out,
+    'Int32Array',
+    'clampToDigitalRange',
+    'and this call returns the array it is given, so a different kind would reach the caller in ' +
+      'place of the Int32Array the signature promises',
+  );
   if (out.length < length) {
     throw new RangeError(
       `out holds ${out.length} samples but this clamp produces ${length}. Next: size the ` +
