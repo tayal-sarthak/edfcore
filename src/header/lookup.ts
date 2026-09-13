@@ -129,9 +129,37 @@ const LABELS_SHOWN = 12;
 /** The whole label list, capped, saying how many it withheld — never silently truncated. */
 function quoteLabels(header: EdfHeader, first?: string): string {
   const labels = header.signals.map((signal) => signal.label);
-  const ordered =
-    first === undefined ? labels : [first, ...labels.filter((label) => label !== first)];
-  const shown = ordered.slice(0, LABELS_SHOWN).map((label) => JSON.stringify(label));
+  /*
+   * Each label ONCE, with how many signals carry it.
+   *
+   * This list is offered as something to pass — "Next: pass one of those labels" — and a label
+   * more than one signal carries is one `getSignal` REFUSES, as `EdfAmbiguousChannelError`,
+   * because "returning the first is how the wrong channel ends up in a paper". Printed flat, the
+   * suggestion handed the reader a second refusal: an EDF+ file with two annotation channels
+   * listed `"EDF Annotations", "EDF Annotations"` among its labels and invited the caller to use
+   * one of them.
+   *
+   * A repeated label is not exotic. Two annotation signals are ordinary EDF+, and a duplicated
+   * data label is common enough that `getSignal` has a dedicated error for it and `findSignals`
+   * exists to return every match.
+   *
+   * The count is what makes the line still true of the file, and it says which entry to reach
+   * for `findSignals` about. `availableLabels` on the error is untouched: that is the
+   * machine-readable list and it stays one entry per signal, in signal order.
+   */
+  const carriers = new Map<string, number>();
+  for (const label of labels) carriers.set(label, (carriers.get(label) ?? 0) + 1);
+  const ordered: string[] = first === undefined ? [] : [first];
+  const seen = new Set<string>(ordered);
+  for (const label of labels) {
+    if (seen.has(label)) continue;
+    seen.add(label);
+    ordered.push(label);
+  }
+  const shown = ordered.slice(0, LABELS_SHOWN).map((label) => {
+    const count = carriers.get(label) ?? 1;
+    return count > 1 ? `${JSON.stringify(label)} (${count} signals)` : JSON.stringify(label);
+  });
   const hidden = ordered.length - shown.length;
   return hidden > 0 ? `${shown.join(', ')}, and ${hidden} more` : shown.join(', ');
 }

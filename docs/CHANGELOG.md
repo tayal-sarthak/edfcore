@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.162
+
+- **Fixed** a channel refusal offering a label `getSignal` will not accept. The list ends "Next:
+  pass one of those labels" and was built one entry per signal, so a label two signals carry
+  appeared twice — and that is exactly the label `getSignal` refuses as
+  `EdfAmbiguousChannelError`.
+- A reader who took the advice got a second refusal from the same call. Two annotation channels
+  are conformant EDF+, so the case is ordinary.
+- Each label is now listed once, with the number of signals carrying it. `availableLabels` on the
+  error is unchanged: one entry per signal, in signal order.
+
 ## 0.6.161
 
 - **Fixed** `readEnvelopeAtResolution` treating half the sub-tick range as a whole tick. "Finer
