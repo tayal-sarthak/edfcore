@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.146
+
+- **Documented** what `httpSource` does with a failure from the client itself: the HEAD probe's
+  rejection is swallowed, because the range probe below it is the next route, and the range probe's
+  is not, because there is no route after it. A DNS failure, a CORS rejection or a
+  `TypeError: Failed to parse URL` arrives unwrapped, with `isEdfError` false.
+- The consequence worth stating is the address. `httpSource` checks that one arrived, not that it
+  is reachable, so a relative or scheme-less address fails inside `fetch` — which is right in a
+  browser, where a relative URL resolves against the document, and useless outside one.
+
 ## 0.6.145
 
 - **Fixed** `toPhysical(signal, 'abc')` returning a full-length `Float64Array` of `NaN` with no

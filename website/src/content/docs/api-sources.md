@@ -147,6 +147,10 @@ const source = await httpSource('https://data.example.org/night.bdf', {
 const recording = await openEdf(source);
 ```
 
+A failure from the client itself reaches you as the client threw it. The HEAD probe's rejection is swallowed — a blocked or forbidden HEAD is ordinary, and the range probe below it is the next route — but the range probe's is not, because there is no route after it: a DNS failure, a CORS rejection or a `TypeError: Failed to parse URL` arrives unwrapped, and `isEdfError` is false for it. That is deliberate, and `tests/io/http-length.test.ts` pins it.
+
+It has one consequence worth stating. `httpSource` does not check that the address is one a client can reach, only that an address arrived — so a relative or scheme-less address fails inside `fetch` rather than in edfcore, with no `Next:` clause and no mention of this function. In a browser a relative URL resolves against the document and is perfectly good; outside one there is no page for it to resolve against. Pass an absolute URL, or `options.fetch` for a client that resolves the one you have.
+
 Opening an EDF+ file over that source issues five requests in total. One `HEAD` for the length, then `bytes=0-255` and one more range covering the rest of the header. Then one whole data record at each end of the file, for the timekeeping probes. Every header you passed goes on all five. Wrap the result in [`cachedSource`](#cachedsource) if you expect overlapping reads.
 
 ### HttpSourceOptions
