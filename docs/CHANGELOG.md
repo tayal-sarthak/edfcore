@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.144
+
+- **Fixed** `toPhysicalEnvelope(signal, envelope, out)` writing into an `out` pair of the wrong
+  kind — the fourth resolver in the family 0.6.134 swept, and the one it did not reach because this
+  one takes an object carrying two arrays rather than a single one.
+- The cost is identical: both bounds are `bitValue * (offset + digital)`, so an `Int32Array`
+  truncated every one of them, and at a bit value below 1 the whole envelope came back as zeros —
+  which a viewer draws as a flat trace along the bottom of the axis.
+- `out.max` had no check of its own either: the length comparison reads `out.min.length` first, so
+  a pair carrying only `min` reached `out.max.length` and threw a `TypeError`.
+
 ## 0.6.143
 
 - **Fixed** `redactFields: 'patientId'` — the field name where the list belongs — being refused

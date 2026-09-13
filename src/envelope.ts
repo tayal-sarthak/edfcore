@@ -21,7 +21,7 @@
  * buckets plus one chunk.
  */
 
-import { decodeDigitalCounted } from './decode/digital.js';
+import { assertOutKind, decodeDigitalCounted } from './decode/digital.js';
 import { assertSignal, scalingError } from './decode/physical.js';
 import { appendChunkDiagnostics } from './diagnostics/collector.js';
 import { EdfBudgetError } from './errors.js';
@@ -511,6 +511,30 @@ export function toPhysicalEnvelope(
    * silently writing fewer values than the caller will read.
    */
   const length = envelope.min.length;
+  /*
+   * The `out` PAIR, the fourth resolver in the family 0.6.134 swept and the one it did not reach:
+   * the other three take a single typed array, this takes an object carrying two.
+   *
+   * The cost is the same. `min` and `max` are written with `bitValue * (offset + digital)`, which
+   * is fractional, so an `Int32Array` truncated every bound — at a bit value below 1 the whole
+   * envelope came back as zeros, which a viewer draws as a flat trace at the bottom of the axis.
+   * And `out.max` was never checked for existence at all, so an object carrying only `min` reached
+   * `out.max.length` and threw V8's `Cannot read properties of undefined (reading 'length')`.
+   */
+  if (out !== undefined) {
+    for (const [name, side] of [
+      ['min', (out as { min?: unknown }).min],
+      ['max', (out as { max?: unknown }).max],
+    ] as const) {
+      assertOutKind(
+        side,
+        'Float64Array',
+        'toPhysicalEnvelope',
+        `and out.${name} is what this writes the ${name === 'min' ? 'lower' : 'upper'} bound of ` +
+          'every bucket into, so an integer array stores each one truncated',
+      );
+    }
+  }
   if (out !== undefined && (out.min.length < length || out.max.length < length)) {
     throw new RangeError(
       `out holds ${Math.min(out.min.length, out.max.length)} buckets but this envelope has ` +
