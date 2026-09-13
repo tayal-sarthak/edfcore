@@ -145,9 +145,23 @@ function createIndex(input: IndexInput): EdfRecordIndex {
     if (Number.isSafeInteger(recordIndex) && recordIndex >= 0 && recordIndex < recordCount) {
       return;
     }
+    /*
+     * Branched on WHY, because the flat sentence was false for two of the three reasons a value
+     * reaches here. A string interpolates as its digits, so `onsetTicks('2')` on an eight-record
+     * file was refused with "record 2 is not one of the 8 data records this file contains" —
+     * naming a rule the value satisfies, about a record that is right there. And 1.5 is not
+     * outside the eight either; it falls between two of them, which is the distinction 0.6.93
+     * drew for `getSignal`'s own index.
+     */
+    const why = !Number.isFinite(recordIndex)
+      ? `is ${typeof recordIndex === 'number' ? 'not finite' : 'not a number'}, so it names no ` +
+        'record at all'
+      : !Number.isInteger(recordIndex)
+        ? 'is not a whole number, so it falls between two records rather than outside them'
+        : `is not one of the ${recordCount} data records this file contains`;
     throw new EdfRangeError(
-      `record ${recordIndex} is not one of the ${recordCount} data records this file contains, ` +
-        'so it has no onset to read. Next: pass an index in ' +
+      `record ${describeValue(recordIndex)} ${why}, so it has no onset to read. ` +
+        'Next: pass a whole index in ' +
         `0..${recordCount - 1}, or call locate(seconds) to find one for a time.`,
       { requested: { start: recordIndex, count: 1 }, available: { start: 0, count: recordCount } },
     );

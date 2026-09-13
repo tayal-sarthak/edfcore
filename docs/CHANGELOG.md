@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.131
+
+- **Fixed** `index.onsetTicks()` describing a record index it refused as one the file does not
+  contain, when for two of the three reasons it refuses that was false.
+- A string interpolates as its digits, so `onsetTicks('2')` on an eight-record file was told
+  "record 2 is not one of the 8 data records this file contains. Next: pass an index in 0..7" —
+  naming a rule the printed value satisfies, about a record that is right there.
+- A fractional index now says it falls between two records rather than outside them, which is the
+  distinction 0.6.93 drew for `getSignal`. A genuinely out-of-range index reads exactly as before.
+
 ## 0.6.130
 
 - **Fixed** `formatAnnotations`, `formatDiagnostics` and `formatValidationReport` silently ignoring
