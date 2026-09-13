@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.156
+
+- **Fixed** `decodeAnnotations` and `readAnnotations` walking a `signalIndices` that is not a list.
+  A string is iterable, so `signalIndices: '12'` read the channels its CHARACTERS name — every
+  annotation in a file whose annotation signals are 1 and 2, from a caller who asked for one.
+- `'1,2'` was refused as "signalIndex , is outside the 3 signals this file declares", and a plain
+  number threw V8's `indices is not iterable`.
+- `assertSignalIndices` has refused a non-array on every sample read since 0.4.442; the annotation
+  path keeps its own copy of that loop and took the refusals without the guard in front of them.
+
 ## 0.6.155
 
 - **Fixed** an `AbortSignal` passed as the read options being ignored. `readWindow(recording,

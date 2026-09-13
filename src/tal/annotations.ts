@@ -42,7 +42,7 @@ import { TICKS_PER_SECOND } from '../constants.js';
 import { assertDecodable } from '../decode/digital.js';
 import { DiagnosticSink } from '../diagnostics/collector.js';
 import { EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
-import { describeRecordRange } from '../text/describe.js';
+import { describeRecordRange, describeValue } from '../text/describe.js';
 import type {
   DecodeAnnotationsOptions,
   EdfAnnotation,
@@ -189,6 +189,34 @@ function resolveSignals(
   header: EdfHeader,
   requested: readonly number[] | undefined,
 ): readonly EdfSignal[] {
+  /*
+   * The ARRAY, before it is iterated.
+   *
+   * `assertSignalIndices` refuses a non-array on every sample read — "signalIndices is a string,
+   * not an array of signal indices" — and this resolver, which is the annotation path's own copy
+   * of that loop, had no such check. A string is iterable, so `signalIndices: '12'` read the
+   * channels its CHARACTERS name: on a file whose annotation signals are 1 and 2 it returned every
+   * annotation in the file, from a caller who asked for one channel. `'1,2'` reached
+   * `header.signals[',']` and was refused as "signalIndex , is outside the 3 signals this file
+   * declares", and a plain number — the single index a caller writes when there is only one
+   * annotation channel — threw V8's "indices is not iterable".
+   *
+   * It is the shape 0.6.143 fixed for `redactFields`, in the other option of this package that
+   * takes a list, and the sibling guard has existed since 0.4.442.
+   *
+   * A distinct message rather than `assertSignalIndices`: omitting this option is the documented
+   * default here — it reads every annotation signal — which is exactly what that guard exists to
+   * refuse on a sample read, and its advice names `dataSignalIndices`, the one array that is
+   * always wrong here.
+   */
+  if (requested !== undefined && !Array.isArray(requested)) {
+    throw new RangeError(
+      `options.signalIndices is ${describeValue(requested)}, not an array of signal indices. ` +
+        'A string is iterable, so this read the channels its characters name rather than the one ' +
+        'you meant. Next: pass an array of indices from header.annotationSignalIndices, or omit ' +
+        'signalIndices to read every annotation signal.',
+    );
+  }
   const indices = requested ?? header.annotationSignalIndices;
   const seen = new Set<number>();
   const signals: EdfSignal[] = [];
