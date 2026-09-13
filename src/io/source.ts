@@ -18,6 +18,7 @@
 
 import { isByteArray } from '../bytes/latin1.js';
 import { EdfSourceError } from '../errors.js';
+import { describeValue } from '../text/describe.js';
 import type { AbortSignalLike, ByteSource, ReadOptions } from '../types.js';
 
 /**
@@ -76,17 +77,24 @@ export function assertExactRead(received: Uint8Array, offset: number, length: nu
  * safe-integer-ness rather than truncating with `| 0`, which silently wraps past 2 GiB.
  */
 export function assertReadRange(offset: number, length: number, byteLength: number): void {
+  // `describeValue`, not `${offset}`. A string interpolates as its digits, so a `'0'` out of a
+  // query parameter or a JSON range was refused with "was given offset 0, which is not a
+  // non-negative safe integer" — naming a rule that 0 satisfies, about the first byte of the file.
+  // The same sentence about the same value, printed two ways, is the defect 0.6.114 fixed for
+  // `maxMaterializeBytes` and 0.6.131 for a record index; these are the two numbers every read in
+  // the package passes through.
   if (!Number.isSafeInteger(offset) || offset < 0) {
     throw new EdfSourceError(
-      `ByteSource.read was given offset ${offset}, which is not a non-negative safe integer. ` +
+      `ByteSource.read was given ${describeValue(offset)} as its offset, which is not a ` +
+        'non-negative safe integer. ' +
         'Next: pass a plain integer byte offset; edfcore never truncates offsets to 32 bits.',
       { offset, requestedLength: length },
     );
   }
   if (!Number.isSafeInteger(length) || length < 0) {
     throw new EdfSourceError(
-      `ByteSource.read was given length ${length}, which is not a non-negative safe integer. ` +
-        'Next: pass a plain integer byte count.',
+      `ByteSource.read was given ${describeValue(length)} as its length, which is not a ` +
+        'non-negative safe integer. Next: pass a plain integer byte count.',
       { offset, requestedLength: length },
     );
   }

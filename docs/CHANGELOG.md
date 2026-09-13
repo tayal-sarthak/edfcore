@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.139
+
+- **Fixed** `ByteSource.read` describing an offset or a length it refused as the number its digits
+  spell. A `'0'` out of a query parameter, a JSON range or a config key came back as "was given
+  offset 0, which is not a non-negative safe integer" — about the first byte of the file.
+- Offset and length are the two numbers every read in the package passes through, so they are the
+  pair most likely to arrive from outside a TypeScript call site. Both now name the value as
+  itself; every numeric refusal reads as before.
+
 ## 0.6.138
 
 - **Fixed** `getStatusSignal` returning the first of two channels labelled `Status` with nothing
