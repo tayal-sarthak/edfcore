@@ -308,6 +308,33 @@ export function assertSignal(signal: EdfSignal, call: string): void {
   );
 }
 
+/**
+ * The SAMPLES, which neither converter in this file checked.
+ *
+ * 0.6.104 guarded the first argument of both, and 0.6.117 guarded its mirror in `envelope.ts`. The
+ * second argument is the one they read a `.length` off, and it had no guard at all.
+ * `toPhysical(signal, chunkSignal)` — the pairing a caller holding `header.signals[i]` and
+ * `chunk.signals[i]` writes — took `undefined` as the length and carried it into the budget check,
+ * which reported "Producing undefined physical samples needs a NaN-byte array, above the
+ * 268435456-byte maxMaterializeBytes budget" and advised raising a budget the call never
+ * approached.
+ *
+ * The CLASS is the part that costs something. `EdfBudgetError` is an `EdfError`, so `isEdfError`
+ * answered `true` and a caller's file-or-budget branch handled what is a caller mistake — the one
+ * distinction `errors.ts` exists to keep.
+ */
+function assertSamples(digital: unknown, call: string): void {
+  if (typeof (digital as { length?: unknown } | null | undefined)?.length === 'number') return;
+  const chunk = typeof (digital as EdfChunkSignal | undefined)?.signalIndex === 'number';
+  throw new RangeError(
+    `${call}(): the samples are ${
+      chunk
+        ? 'a chunk signal, which carries them on .digital rather than being them'
+        : `${describeValue(digital)}, which has no length`
+    }. Next: pass chunkSignal.digital — the Int32Array readWindow() and readRecords() fill.`,
+  );
+}
+
 export function toPhysical(
   signal: EdfSignal,
   digital: ArrayLike<number>,
@@ -318,6 +345,7 @@ export function toPhysical(
   const scale = signal.scale;
   if (scale === undefined) throw scalingError(signal);
 
+  assertSamples(digital, 'toPhysical');
   const length = digital.length;
   const physical = resolveFloat64Out(out, length, options);
   const bitValue = scale.bitValue;
@@ -393,6 +421,7 @@ export function clampToDigitalRange(
     );
   }
 
+  assertSamples(digital, 'clampToDigitalRange');
   const length = digital.length;
   const clamped = resolveInt32Out(out, length, options);
   for (let i = 0; i < length; i++) {

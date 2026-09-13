@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.128
+
+- **Fixed** `toPhysical(signal, chunkSignal)` and `clampToDigitalRange(signal, chunkSignal)` — the
+  chunk signal passed where its `.digital` belongs — being refused as `EdfBudgetError`, so
+  `isEdfError` answered `true` and a caller mistake was sorted into the file-or-budget branch.
+- The length came back `undefined`, so the message read "Producing undefined physical samples needs
+  a NaN-byte array, above the 268435456-byte maxMaterializeBytes budget" and advised raising a
+  budget the call never approached.
+- Both now name the field that carries the samples. 0.6.104 and 0.6.117 guarded the signal argument
+  of this family; this is the other one.
+
 ## 0.6.127
 
 - **Fixed** `findSignals`, `getSignal` and `matchSignals` throwing V8's `TypeError: Cannot read
