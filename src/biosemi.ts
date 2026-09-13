@@ -18,6 +18,7 @@
 
 import { BDF_DIGITAL_MIN } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
+import { EdfAmbiguousChannelError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { scanChunkRecords } from './record-index.js';
 import { assertRecording, assertSelection, gapBefore } from './recording.js';
@@ -102,11 +103,39 @@ export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
     );
   }
   if (header.bytesPerSample !== 3) return undefined;
+  const matches: EdfSignal[] = [];
   for (const index of header.dataSignalIndices) {
     const signal = header.signals[index];
-    if (signal !== undefined && signal.label.trim().toLowerCase() === STATUS_LABEL) return signal;
+    if (signal !== undefined && signal.label.trim().toLowerCase() === STATUS_LABEL) {
+      matches.push(signal);
+    }
   }
-  return undefined;
+  /*
+   * More than one, refused rather than resolved to the first.
+   *
+   * `getSignal` states the reason for its own duplicate-label refusal and it is the whole of this
+   * one: "there is no answer edfcore could return that would not be a guess", because "returning
+   * the first is how the wrong channel ends up in a paper". This loop returned the first and said
+   * nothing, so `readTriggers` decoded a whole recording's triggers off a channel nobody chose —
+   * on the one path in the package where a missing event is indistinguishable from no events.
+   *
+   * A BDF carrying two channels labelled `Status` is malformed, which is precisely the file this
+   * package exists to be careful with (fixed in 0.6.138).
+   */
+  if (matches.length > 1) {
+    throw new EdfAmbiguousChannelError(
+      `this file has ${matches.length} signals labelled ${JSON.stringify(matches[0]?.label ?? '')} ` +
+        `(indices ${matches.map((signal) => signal.index).join(', ')}), so getStatusSignal ` +
+        'cannot choose one — returning the first would date every trigger in the recording to a ' +
+        'channel nobody picked. Next: select the one you mean with getSignal(header, index) and ' +
+        'decode it with decodeDigital() and decodeStatusWord().',
+      {
+        label: matches[0]?.label.trim() ?? '',
+        matchingIndices: matches.map((signal) => signal.index),
+      },
+    );
+  }
+  return matches[0];
 }
 
 /**

@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.138
+
+- **Fixed** `getStatusSignal` returning the first of two channels labelled `Status` with nothing
+  saying a choice had been made, so `readTriggers` decoded a whole recording's triggers off a
+  channel nobody picked — on the one path where a missing event is indistinguishable from no
+  events.
+- **Behaviour change**: a duplicate `Status` label is now an `EdfAmbiguousChannelError` carrying
+  the indices, which is what `getSignal` has always done for a duplicate label and for the reason
+  it states: "returning the first is how the wrong channel ends up in a paper".
+- One Status channel still resolves, none still returns `undefined`, and a 16-bit file still
+  returns `undefined` without looking at labels.
+
 ## 0.6.137
 
 - **Fixed** a refused record range being printed as the numbers its digits spell.
