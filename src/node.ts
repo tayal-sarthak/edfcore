@@ -126,8 +126,9 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): Cl
   }
   if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
     throw new EdfSourceError(
-      `fileHandleSource() was given a byteLength of ${String(byteLength)}, which is not a byte ` +
-        'count edfcore can address. Next: pass the size of the file or of the range you mean to ' +
+      `fileHandleSource() was given ${describeValue(byteLength)} as its byteLength, which is ` +
+        'not a byte count edfcore can address. Next: pass the size of the file or of the range ' +
+        'you mean to ' +
         'expose — (await handle.stat()).size is the whole file — or use fileSource(path), which ' +
         'reads it from the handle it opens.',
       { offset: 0, requestedLength: 0 },

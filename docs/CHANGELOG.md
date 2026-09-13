@@ -6,6 +6,16 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.142
+
+- **Fixed** the two calls that take a source's size from the caller — `httpSource(url, { byteLength })`
+  and `fileHandleSource(handle, byteLength)` — describing one they refused as the number its digits
+  spell. A `'1024'` out of an environment variable, a `Content-Length` read as text, or a JSON
+  manifest came back as "was given options.byteLength 1024, which is not a non-negative safe
+  integer". 1024 is one.
+- A resource size arrives as text more often than it is written as a literal, which is what makes
+  these the pair worth naming. Both now print the value as itself.
+
 ## 0.6.141
 
 - **Fixed** `mergeChunks(chunk)` — one chunk where the array belongs — being refused with "no chunk

@@ -60,7 +60,13 @@ describe.skipIf(!PRESENT).each(NOT_A_SIZE)('a byteLength that is %s', (_name, va
       wrap(value);
     } catch (error) {
       expect(isEdfError(error)).toBe(true);
-      expect((error as Error).message).toContain('fileHandleSource() was given a byteLength of');
+      // Named as the value ITSELF, not interpolated: the string `'4096'` interpolated as its
+      // digits, so a size out of an environment variable or a manifest was refused with "was
+      // given a byteLength of 4096, which is not a byte count edfcore can address" — and 4096 is
+      // one (fixed in 0.6.142).
+      expect((error as Error).message).toMatch(
+        /fileHandleSource\(\) was given (\S+|the string "4096") as its byteLength/,
+      );
       expect((error as Error).message).toContain('Next: pass the size of the file');
     }
   });

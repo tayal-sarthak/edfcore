@@ -221,9 +221,9 @@ async function resolveSource(
   if (declared !== undefined) {
     if (!Number.isSafeInteger(declared) || declared < 0) {
       throw new EdfSourceError(
-        `httpSource() was given options.byteLength ${declared}, which is not a non-negative ` +
-          'safe integer. Next: pass the real resource size in bytes, or omit it and let ' +
-          'edfcore probe for it.',
+        `httpSource() was given ${describeValue(declared)} as options.byteLength, which is not ` +
+          'a non-negative safe integer. Next: pass the real resource size in bytes, or omit it ' +
+          'and let edfcore probe for it.',
         { offset: 0, requestedLength: 0 },
       );
     }
