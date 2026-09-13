@@ -6,6 +6,14 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.149
+
+- **Documented** that `redactFields` takes a list, not a name — the rule 0.6.143 made enforceable,
+  on both pages that tell a reader to use it.
+- Every example spells it `['patientId', 'recordingId']` and neither page said the brackets were
+  load-bearing. A string is iterable, so the bare name walked its characters and reported `"p"`.
+- The CLI page carries it too, since that is where the redaction argument is actually made.
+
 ## 0.6.148
 
 - **Documented** the rule 0.6.130 and 0.6.140 introduced: the options argument itself has to be an

@@ -122,3 +122,7 @@ replaced by `[redacted]`.
 ```ts
 formatDiagnostics(header.diagnostics, { redactFields: ['patientId', 'recordingId'] });
 ```
+
+The brackets are load-bearing. A string is iterable, so `redactFields: 'patientId'` walked its
+characters and refused with `options.redactFields names "p"` — a value nobody wrote, about a
+vocabulary that was never the problem. It is named as the string it is from 0.6.143 on.
