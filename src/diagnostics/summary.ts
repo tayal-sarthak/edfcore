@@ -49,6 +49,32 @@ export interface EdfDiagnosticSummary {
 const SEVERITY_RANK: Record<EdfSeverity, number> = { error: 3, warning: 2, info: 1 };
 
 /**
+ * One ELEMENT, before it is counted.
+ *
+ * The check above refuses the summary itself; it cannot refuse the summary's own rows, because
+ * those are an array. `byCode` carries `code` and `severity` — both of the fields this loop reads —
+ * so `summarizeDiagnostics(summary.byCode)` counted them and returned a summary that is wrong in
+ * the two numbers the call exists for: `total` became the number of distinct codes rather than of
+ * diagnostics, and every `count` became 1. On a file where one code fired four hundred times that
+ * reads as a file with one of it.
+ *
+ * `formatDiagnostics` refused the same rows in 0.6.160, one directory over, and threw on the third
+ * field it reads. This one reads only the two a row has, so it answered instead — and the answer is
+ * itself a well-formed summary, which is the outcome this package treats as the worst kind.
+ *
+ * Said in words rather than through `describeValue`, for the reason the check above gives.
+ */
+function assertDiagnostic(diagnostic: EdfDiagnostic, index: number): void {
+  if (typeof (diagnostic as { message?: unknown } | null | undefined)?.message === 'string') return;
+  throw new RangeError(
+    `summarizeDiagnostics(): the value at ${index} carries no message, so it is not a ` +
+      'diagnostic — a row of a by-code summary counts a code rather than being one, and counting ' +
+      'those again reports the number of distinct codes as the number of diagnostics. Next: pass ' +
+      'header.diagnostics, or the diagnostics on the chunk or the report you have.',
+  );
+}
+
+/**
  * Counts by severity and by code.
  *
  * `worst` is by severity rank, not by insertion order and not alphabetical — `error` beats
@@ -79,7 +105,8 @@ export function summarizeDiagnostics(diagnostics: readonly EdfDiagnostic[]): Edf
   let worst: EdfSeverity | undefined;
 
   const counts = new Map<EdfDiagnosticCode, EdfCodeCount>();
-  for (const diagnostic of diagnostics) {
+  for (const [index, diagnostic] of diagnostics.entries()) {
+    assertDiagnostic(diagnostic, index);
     if (diagnostic.severity === 'error') errors += 1;
     else if (diagnostic.severity === 'warning') warnings += 1;
     else infos += 1;

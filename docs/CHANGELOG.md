@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.168
+
+- **Fixed** a by-code summary counted as a diagnostics list. `summarizeDiagnostics` reads `code`
+  and `severity`, which are exactly the two fields a `byCode` row carries, so
+  `summarizeDiagnostics(summary.byCode)` did not fail — it returned a summary.
+- A well-formed one, and wrong in the two numbers the call exists to produce: `total` became the
+  number of distinct codes rather than of diagnostics, and every `count` became 1. A file where one
+  code fired four hundred times reads, on the second pass, as a file with one thing wrong with it.
+- 0.6.160 refused the same rows in `formatDiagnostics`, one directory over; that one reads a third
+  field and threw. The elements are now checked here too, per element and by position.
+
 ## 0.6.167
 
 - **Fixed** an array passed as the selection walking past the check added in 0.6.79. An array is an
