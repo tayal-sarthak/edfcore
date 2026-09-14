@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.169
+
+- **Fixed** `streamRecords` handing the read options to the generator unchecked. `readRecords`
+  refuses a bare value where they belong, but it is the generator that calls it, so
+  `streamRecords(recording, selection, controller.signal)` was built without complaint and refused
+  on the first `for await` — the split 0.6.118 turned this function inside out to close.
+- On a window that resolves to no records — past the end, inside an EDF+D gap, of zero duration —
+  the loop body never runs, so nothing was ever refused: the stream completed, empty, with the
+  options dropped. Whether a caller mistake was reported depended on where the window landed.
+- The `AbortSignal` case is the pair that cannot be told apart: a cancellation that was never wired
+  up, and a stream that yields nothing, which is what an abort looks like from outside.
+
 ## 0.6.168
 
 - **Fixed** a by-code summary counted as a diagnostics list. `summarizeDiagnostics` reads `code`

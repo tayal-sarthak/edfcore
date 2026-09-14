@@ -13,6 +13,7 @@
  * `readWindow` chunk would, so a consumer sees the discontinuities rather than a smooth lie.
  */
 
+import { assertReadOptions } from './io/source.js';
 import { assertRecording, assertSelection, readRecords, resolveSignals } from './recording.js';
 import { describeValue } from './text/describe.js';
 import { assertMonotonicOnsets } from './time/timeline.js';
@@ -64,6 +65,24 @@ export function streamRecords(
         'Next: omit it for the default, or pass how many records you want to hold at once.',
     );
   }
+
+  /*
+   * The OPTIONS, here rather than on the first read.
+   *
+   * `readRecords` refuses a bare value — 0.6.155 for an `AbortSignal` handed over in place of the
+   * options, 0.6.166 for any other — but this function does not read; the generator below does, and
+   * only once someone iterates it. So `streamRecords(recording, selection, controller.signal)` was
+   * built without complaint and refused in the `for await`, which is the split 0.6.118 was spent
+   * closing: "a caller who builds the stream in one place and consumes it in another gets the
+   * refusal in the second".
+   *
+   * And on a window that resolves to no records — past the end, inside an EDF+D gap, of zero
+   * duration — the loop body never runs, so it was never refused at all: the stream simply
+   * completed, empty. That is the same data-dependent guard 0.6.118 found here, one argument over,
+   * and for the signal case it is the worst version of it. An abort that was never wired up and a
+   * window with nothing in it both end as a stream that yielded nothing.
+   */
+  assertReadOptions(options);
 
   // Validated BEFORE the window is resolved, for the reason `readWindow` and `readEnvelope` both
   // state: a caller mistake is a caller mistake wherever the window lands. Resolving first meant
