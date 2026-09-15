@@ -491,6 +491,29 @@ export function toPhysicalEnvelope(
       }. Next: pass one element of chunk.signals — the array readEnvelope() fills.`,
     );
   }
+  /*
+   * And a PHYSICAL envelope, which the check above cannot see: `min` is a Float64Array, which is a
+   * view, so the one field that guard reads is present and of the right kind on both shapes.
+   *
+   * The physical envelope in a caller's hand is this function's own return value, and it is the
+   * same `{ min, max }` pair the third parameter takes — so `toPhysicalEnvelope(signal, reused)`,
+   * with the buffers meant for `out` in the envelope's place, is the slip the reuse contract
+   * invites on the render path this exists for. It reached `counts[i]` and threw V8's `Cannot read
+   * properties of undefined (reading '0')`.
+   *
+   * `counts` is the field that separates them, and it is not incidental: it is what says a bucket
+   * was empty, which is the whole reason this function can write NaN instead of a value that reads
+   * as a measurement. Converting an already-converted envelope would scale every bound a second
+   * time.
+   */
+  if (!ArrayBuffer.isView((envelope as { counts?: unknown }).counts)) {
+    throw new RangeError(
+      'toPhysicalEnvelope(): the envelope has no counts, so it is a physical envelope rather than ' +
+        'a digital one — that is what this function RETURNS, and converting it again would scale ' +
+        'every bound a second time. Next: pass one element of chunk.signals, and hand the pair you ' +
+        'are reusing to the third parameter instead, which is what reuses it.',
+    );
+  }
   const scale = signal.scale;
   if (scale === undefined) {
     // `scalingError`, not a hard-coded SCALE_UNAVAILABLE. That code is defined as "none of the

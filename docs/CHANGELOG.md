@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.172
+
+- **Fixed** `toPhysicalEnvelope` dereferencing a physical envelope handed back to it. The guard
+  0.6.144 added tests `envelope.min`, and a physical envelope has one — a `Float64Array`, which is a
+  view — so the one shape it cannot tell from a digital envelope is the shape this function returns.
+- `EdfPhysicalEnvelope` is both the return type and the type of the `out` parameter, and `out`
+  exists because a viewer redraws on every pan and zoom. So the pair a caller keeps in order to
+  reuse it is the same shape as the pair it converts, one argument to the left.
+- It reached `counts[i]` and threw V8's `Cannot read properties of undefined`. `counts` is the field
+  that separates the two, and the one that says a bucket was empty — which is why a physical
+  envelope cannot be converted again rather than merely should not be.
+
 ## 0.6.171
 
 - **Fixed** `gridSampleStartSeconds` refusing a bad index in the name of a function the caller never
