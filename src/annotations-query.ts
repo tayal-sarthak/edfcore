@@ -70,6 +70,28 @@ export function filterAnnotationsByTime(
         'Next: pass a window carrying startSeconds and durationSeconds.',
     );
   }
+  /*
+   * An ARRAY, which is an object and therefore walked straight past the check above.
+   *
+   * 0.6.167 closed this route for the reading API's selection and recorded what it costs: an array
+   * "reproduced the exact failure 0.6.79 removed — each call named whichever field it happened to
+   * read first". Here that field is `window.startSeconds`, and the advice attached to an absent
+   * bound is about "an object whose bounds are spelled something else" — which sends a reader to
+   * rename fields on a value that has none.
+   *
+   * The array a caller has in hand is the one this function's own neighbour returns.
+   * `resolveTimeWindow` is named for the window and returns the RECORD RANGES it maps to, so
+   * `const window = resolveTimeWindow(timeline, index, from, span)` reads exactly like the argument
+   * this takes.
+   */
+  if (Array.isArray(window)) {
+    throw new RangeError(
+      'filterAnnotationsByTime(): the window is an array, and this call bounds events by time ' +
+        'rather than by record. resolveTimeWindow() returns the record ranges a window maps to, ' +
+        'not the window. Next: pass the startSeconds and durationSeconds you gave that call, on ' +
+        'an object.',
+    );
+  }
   const from = secondsToTicks(window.startSeconds, 'window.startSeconds');
   const to = from + secondsToTicks(window.durationSeconds, 'window.durationSeconds');
   if (to <= from) return Object.freeze([]);

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.170
+
+- **Fixed** an array taken as a time window by `filterAnnotationsByTime`, the one function left in
+  the package that takes a window object. An array is an object, so it walked past the check added
+  for the absent case and was read for bounds it does not have.
+- The array a caller holds comes from the neighbour this module is documented against.
+  `resolveTimeWindow` is named for the window and returns the record RANGES it maps to, so
+  `filterAnnotationsByTime(annotations, resolveTimeWindow(...))` is the call that reads correctly
+  and is not.
+- The refusal it got named `window.startSeconds` and advised "an object whose bounds are spelled
+  something else" — a clause written in 0.6.158 for a bound that is genuinely absent, which here
+  sends a reader to rename fields on a value that has none. Same shape as 0.6.167, in the window.
+- The three places that print the size of the suite say 4,500 rather than 4,000, which the tests
+  added here took it past. As at 0.4.415, a floor claim can never be wrong and is therefore never
+  re-read, so it is checked against the suite in the direction it rots.
+
 ## 0.6.169
 
 - **Fixed** `streamRecords` handing the read options to the generator unchecked. `readRecords`
