@@ -102,6 +102,28 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint, call: string
 }
 
 /**
+ * The INDEX, named by the call the reader actually wrote.
+ *
+ * `assertGrid` above takes a `call` for exactly this reason, and `sampleStartSecondsOf` grew its own
+ * copy of a guard in 0.6.101 on the same argument: "a reader who wrote this call should not be told
+ * about `sampleStartTicksOf`". This check lived inside `gridSampleStartTicks` alone, so
+ * `gridSampleStartSeconds(signal, 1.5, d)` — the display form, which delegates one line down — was
+ * refused in the name of a function it never called.
+ *
+ * The two arguments of one call were then described by two different functions: `assertGrid` named
+ * `gridSampleStartSeconds` for a bad signal and this named `gridSampleStartTicks` for a bad index,
+ * on the same line of the same file.
+ */
+function assertSampleIndex(sampleIndex: number, call: string): void {
+  if (Number.isSafeInteger(sampleIndex)) return;
+  throw new RangeError(
+    `${call}(): sampleIndex must be a whole number, received ${describeValue(sampleIndex)}. ` +
+      "Next: pass a whole index; this family measures the signal's own grid, so a fractional " +
+      'one has no position on it.',
+  );
+}
+
+/**
  * The sample covering `seconds` elapsed from the start of the recording.
  *
  * Floor, not round: a sample covers the half-open interval from its own start to the next one's,
@@ -153,14 +175,7 @@ export function gridSampleStartTicks(
   recordDurationTicks: bigint,
 ): bigint {
   assertGrid(signal, recordDurationTicks, 'gridSampleStartTicks');
-  if (!Number.isSafeInteger(sampleIndex)) {
-    throw new RangeError(
-      `gridSampleStartTicks(): sampleIndex must be a whole number, received ` +
-        `${describeValue(sampleIndex)}. ` +
-        "Next: pass a whole index; this family measures the signal's own grid, so a fractional " +
-        'one has no position on it.',
-    );
-  }
+  assertSampleIndex(sampleIndex, 'gridSampleStartTicks');
   const perRecord = BigInt(signal.samplesPerRecord);
   const numerator = BigInt(sampleIndex) * recordDurationTicks;
   const quotient = numerator / perRecord;
@@ -179,6 +194,7 @@ export function gridSampleStartSeconds(
   // Its own, before the delegation, for the reason `sampleStartSecondsOf` grew one in 0.6.101: a
   // reader who wrote this call should not be told about `gridSampleStartTicks`.
   assertGrid(signal, recordDurationTicks, 'gridSampleStartSeconds');
+  assertSampleIndex(sampleIndex, 'gridSampleStartSeconds');
   const ticks = gridSampleStartTicks(signal, sampleIndex, recordDurationTicks);
   const whole = ticks / TICKS_PER_SECOND;
   const remainder = ticks % TICKS_PER_SECOND;

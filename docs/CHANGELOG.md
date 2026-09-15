@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.171
+
+- **Fixed** `gridSampleStartSeconds` refusing a bad index in the name of a function the caller never
+  wrote. The index guard hard-coded `gridSampleStartTicks`, the one-line delegate underneath it, so
+  `gridSampleStartSeconds(signal, 1.5, d)` was answered by `gridSampleStartTicks():`.
+- The two arguments of one call were described by two different functions: the signal by
+  `assertGrid`, which takes the call name for exactly this reason, and the index by the other name,
+  on the same line of the same file.
+- It matters more in this module than most. Its own docblock spends four paragraphs on the `grid`
+  prefix being load-bearing, because the neighbouring family measures a different quantity — so a
+  refusal that hands over the wrong name sends a reader to a call they did not make.
+
 ## 0.6.170
 
 - **Fixed** an array taken as a time window by `filterAnnotationsByTime`, the one function left in
