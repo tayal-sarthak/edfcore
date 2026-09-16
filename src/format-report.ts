@@ -52,6 +52,29 @@ export function formatValidationReport(
         'diagnostics.',
     );
   }
+  /*
+   * An INSPECTION, which carries `ok`, `diagnostics` AND `bytesRead`, so the check above sees a
+   * report and the two lines below it both render.
+   *
+   * `inspectEdf` and `validateRecording` are the two sweeps this package exports and the two
+   * commands the CLI wraps, so the printer for one is what a caller reaches for holding the other.
+   * The overlap is the whole of what this prints first: it announced `PASS` — a VERDICT — over an
+   * object whose `ok` means only that the header parsed, printed `scanned undefined records` for a
+   * call that scans none, and then died on `report.signalStats.length` with V8's `Cannot read
+   * properties of undefined`, which is the failure 0.6.113 added the guard above to remove.
+   *
+   * `recordsScanned` is the field to test rather than `signalStats`, because it is the first of the
+   * two a reader sees go wrong and the one that states what an inspection did not do.
+   */
+  if (typeof (given as { recordsScanned?: unknown }).recordsScanned !== 'number') {
+    throw new RangeError(
+      'formatValidationReport(): that is an inspection, not a validation report — inspectEdf() ' +
+        'reads the header and stops, so it scanned no records and observed no sample ranges, and ' +
+        '`ok` on it means the header parsed rather than the file conformed. Next: pass what ' +
+        'validateRecording(recording) resolved to, or print an inspection with ' +
+        'formatHeader(inspection.header).',
+    );
+  }
   const lines: string[] = [];
   const header = options?.header;
 

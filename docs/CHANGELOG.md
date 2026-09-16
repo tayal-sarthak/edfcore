@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.173
+
+- **Fixed** `formatValidationReport` printing a verdict over an inspection. Its guard, added in
+  0.6.113, tests `ok` and a `diagnostics` array — the two fields `inspectEdf` also resolves to, with
+  `bytesRead` a third — so the one wrong argument the API's own symmetry hands a caller walked past
+  the check written for wrong arguments.
+- It rendered `PASS — 1 info` and `scanned undefined records` before dying on
+  `report.signalStats.length` with V8's `Cannot read properties of undefined`. `ok` on an inspection
+  means the header parsed, not that the file conformed, and an inspection scans no records at all.
+- The two sweeps this package exports are also the two commands the CLI wraps, so the printer for
+  one is what a caller reaches for holding the other.
+
 ## 0.6.172
 
 - **Fixed** `toPhysicalEnvelope` dereferencing a physical envelope handed back to it. The guard
