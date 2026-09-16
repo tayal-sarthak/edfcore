@@ -20,6 +20,7 @@ import { BDF_DIGITAL_MIN } from './constants.js';
 import { decodeDigitalCounted } from './decode/digital.js';
 import { EdfAmbiguousChannelError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
+import { assertReadOptions } from './io/source.js';
 import { scanChunkRecords } from './record-index.js';
 import { assertRecording, assertSelection, gapBefore } from './recording.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
@@ -249,6 +250,19 @@ export async function readTriggers(
 ): Promise<readonly EdfTriggerEvent[]> {
   assertRecording(recording, 'readTriggers');
   assertSelection(selection, 'readTriggers', '{ startSeconds, durationSeconds }');
+  /*
+   * The OPTIONS, here rather than on the first read, for the reason `streamRecords` states in full
+   * at 0.6.169: the guard that catches them is inside the read, so whether it fires at all depends
+   * on the window rather than on the call. A window past the end, one inside an EDF+D gap, or one
+   * of zero duration resolves to no records, the loop below never runs, and
+   * `readTriggers(recording, selection, controller.signal)` resolved with the cancellation dropped.
+   *
+   * This is the worst of the family for it. `[]` is one of this function's real answers — "no
+   * trigger changed in this window" — so the empty result reads as a fact about the recording, on
+   * the one path in the package where a missing event is indistinguishable from no events. The
+   * identical call over a window with records in it was refused all along.
+   */
+  assertReadOptions(options);
   const { source, header, timeline } = recording;
 
   const status = getStatusSignal(header);

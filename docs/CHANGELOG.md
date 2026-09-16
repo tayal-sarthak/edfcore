@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.177
+
+- **Fixed** `readTriggers` deferring its read-options check to the first read, so whether a bad
+  options argument was refused depended on the window. A window past the end, one inside an EDF+D
+  gap, or one of zero duration resolves to no records, the scan loop never runs, and
+  `readTriggers(recording, window, controller.signal)` resolved with the cancellation dropped.
+- It is the worst of the family for it. `[]` is one of this call's real answers — "no trigger changed
+  in this window" — on the one path in the package where a missing event is indistinguishable from no
+  events. The identical call over a window with records in it was refused all along.
+- 0.6.169 made the same fix for `streamRecords`, and stated the rule: a guard must fire on the call,
+  never on the data.
+
 ## 0.6.176
 
 - **Fixed** the other half of 0.6.87. A records range where a window belongs has had its own refusal
