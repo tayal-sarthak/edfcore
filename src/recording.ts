@@ -142,6 +142,24 @@ export function assertSelection(selection: unknown, call: string, shape: string)
         `Next: pass ${shape} — or call readRecords(), which is the one that takes records.`,
     );
   }
+  /*
+   * And the OTHER WAY, which 0.6.87 left open. `readRecords` is the one call in this family that
+   * takes no seconds at all, and it sits directly beside `readWindow` in the barrel, in the docs and
+   * in `recording.ts` itself — so `readRecords(recording, { signalIndices, startSeconds,
+   * durationSeconds })` is as easy to write as the mistake above, and rather easier to believe,
+   * since every other read here is bounded in seconds.
+   *
+   * It reached `assertRecordRange` with no range to check and was refused as
+   * `records { start: undefined, count: undefined } is not inside the 6 data records this file
+   * contains`, then told to clamp that range or to call `index.locate(seconds)` — advice about
+   * bounds for a caller whose bounds were fine and in the unit the sibling call takes.
+   */
+  if (given.startSeconds !== undefined && given.records === undefined && !shape.includes('start')) {
+    throw new RangeError(
+      `${call}(): the selection is a time window, and this call takes a \`records\` range. ` +
+        `Next: pass ${shape} — or call readWindow(), which is the one that takes seconds.`,
+    );
+  }
 }
 
 /**

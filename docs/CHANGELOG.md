@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.176
+
+- **Fixed** the other half of 0.6.87. A records range where a window belongs has had its own refusal
+  since then, ending "or call readRecords(), which is the one that takes records"; the mirror was
+  left open, and it is the easier of the two to write — `readRecords` is the one read in this family
+  bounded by records rather than by seconds, and it sits beside `readWindow` everywhere it appears.
+- `readRecords(recording, { signalIndices, startSeconds, durationSeconds })` reached the range check
+  with nothing to check and was refused as `records { start: undefined, count: undefined } is not
+  inside the 6 data records this file contains`, then told to clamp those bounds — to a caller whose
+  bounds were fine and already in the unit the sibling call takes.
+- A selection carrying both still reads by its `records`, which is the field that call has always
+  used.
+
 ## 0.6.175
 
 - **Fixed** the array `resolveTimeWindow` returns being refused as a range with no bounds.
