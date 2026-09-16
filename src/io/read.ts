@@ -139,6 +139,29 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
       { requested: range, available },
     );
   }
+  /*
+   * An ARRAY OF RANGES, which is what the call that maps a window to records returns.
+   *
+   * `resolveTimeWindow(timeline, index, from, span)` answers with one `RecordRange` per contiguous
+   * run, and this takes one range — so `readAnnotations(edf, resolveTimeWindow(…))` is the pair a
+   * caller writes when they have seconds and this call wants records. On a continuous file the
+   * array holds exactly one element, which is what makes it read correctly.
+   *
+   * The comment above this guard has counted an array among the shapes that "are refused with a
+   * next step" since 0.4.443, and by the generic message an array reads as
+   * `{ start: undefined, count: undefined }` — refused for not being inside the file's records, then
+   * told to clamp it. 0.6.167 and 0.6.170 each closed this same route one call over and recorded
+   * what it costs: advice that sends a reader to fix fields on a value that has none.
+   */
+  if (Array.isArray(records)) {
+    throw new EdfRangeError(
+      'that is an array of record ranges, not one of them: resolveTimeWindow() answers with one ' +
+        'range per contiguous run, and this call reads a single range. Next: pass one element of ' +
+        'it — a continuous file gives exactly one — or call readWindow(), which takes the seconds ' +
+        'directly and reads every run.',
+      { requested: range, available },
+    );
+  }
   const startValid = Number.isSafeInteger(range.start) && range.start >= 0;
   const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
   if (startValid && countValid && range.start + range.count <= header.recordCount) return;

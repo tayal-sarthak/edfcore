@@ -64,7 +64,6 @@ const NOT_A_RANGE: ReadonlyArray<readonly [string, unknown]> = [
   ['an empty object', {}],
   ['only a start', { start: 0 }],
   ['only a count', { count: 1 }],
-  ['an array', []],
   ['a string', '0,1'],
   ['string-valued fields', { start: '0', count: '1' }],
   ['a null field', { start: null, count: 1 }],
@@ -89,6 +88,28 @@ describe('a records range that is not a range', () => {
       expect(thrown, where).toBeInstanceOf(EdfRangeError);
       expect(isEdfError(thrown), where).toBe(true);
       expect((thrown as Error).message, where).toContain('is not inside the 6 data records');
+      expect((thrown as Error).message, where).toMatch(/Next:/);
+    }
+  });
+
+  /*
+   * An ARRAY, which arrives from JSON like every other shape above and is answered separately since
+   * 0.6.175. It is what `resolveTimeWindow` returns — one range per contiguous run — so it is the
+   * one wrong shape here that names a call rather than a typo, and the generic sentence asked it to
+   * be clamped against `header.recordCount`, which no array can satisfy.
+   */
+  it('is refused as a list of ranges when it is an array', async () => {
+    const recording = await opened();
+    const calls: ReadonlyArray<readonly [string, () => unknown]> = [
+      ['readRecordBytes', () => readRecordBytes(recording.source, recording.header, [] as never)],
+      ['readRecords', () => readRecords(recording, { records: [] as never, signalIndices: [0] })],
+      ['readAnnotations', () => readAnnotations(recording, [] as never)],
+    ];
+    for (const [where, call] of calls) {
+      const thrown = await thrownBy(call);
+      expect(thrown, where).toBeInstanceOf(EdfRangeError);
+      expect(isEdfError(thrown), where).toBe(true);
+      expect((thrown as Error).message, where).toContain('an array of record ranges');
       expect((thrown as Error).message, where).toMatch(/Next:/);
     }
   });

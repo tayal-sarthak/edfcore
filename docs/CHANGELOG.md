@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.175
+
+- **Fixed** the array `resolveTimeWindow` returns being refused as a range with no bounds.
+  `readAnnotations`, `readRecords` and `readRecordBytes` each take ONE `RecordRange`; the call that
+  maps seconds to records answers with one per contiguous run, so
+  `readAnnotations(edf, resolveTimeWindow(…))` is the pair a caller writes — and on a continuous file
+  that array holds exactly one element, which is what makes it read correctly.
+- The generic message read it as `{ start: undefined, count: undefined }`, said it was not inside the
+  file's records, and asked for a clamp. No clamp reaches an array. `assertRecordRange` has counted
+  an array among the shapes it handles since 0.4.443; what it handled it with was that sentence.
+- 0.6.167 and 0.6.170 closed the same route for the selection and for the annotation window. This is
+  the third and last shape in the package one of those arrays can be mistaken for.
+
 ## 0.6.174
 
 - **Fixed** `signalIndex [object Object]` from all five reading calls when `signalIndices` holds the
