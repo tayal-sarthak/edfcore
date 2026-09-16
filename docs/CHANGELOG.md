@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.178
+
+- **Fixed** `index.onsetTicks` and `index.locate` dropping their read options. `buildTimeline`
+  composes each probe's options as `{ ...readOptions, strict }`, and spreading an `AbortSignal` — or
+  a bare byte count — yields `{ strict }`, a perfectly well-formed options object by the time any
+  guard meets it. So the mistake was not deferred, as 0.6.169 and 0.6.177 found it deferred: it was
+  undetectable downstream, on every file.
+- Both calls read, and both publish `options?: ReadOptions`. `locate` issues O(log recordCount) reads
+  — the figure this type's own docblock says a caller planning HTTP range requests is there to
+  compute — and every one of them ran uncancellable and unbounded.
+- Memoisation made it worse rather than better: record 0 and the last record are already in hand
+  after `openEdf`, so the same call issued no read at all to be refused by.
+- `buildTimeline` has made this argument about the parse half since it grew `assertParseOptions` —
+  "a bare value here would build `{ strict: false }` and reach the sink as a perfectly good object".
+
 ## 0.6.177
 
 - **Fixed** `readTriggers` deferring its read-options check to the first read, so whether a bad

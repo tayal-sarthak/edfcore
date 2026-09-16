@@ -29,7 +29,7 @@
 import { appendDiagnostics, assertParseOptions } from './diagnostics/collector.js';
 import { EdfRangeError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
-import { assertByteSource } from './io/source.js';
+import { assertByteSource, assertReadOptions } from './io/source.js';
 import { resolveMaterializeBudget } from './options.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { saturateToInt64, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
@@ -167,8 +167,24 @@ function createIndex(input: IndexInput): EdfRecordIndex {
     );
   }
 
+  /*
+   * The read options, HERE, because nothing downstream of this line can ever see them.
+   *
+   * `buildTimeline` builds every probe's options by spreading these — `{ ...readOptions, strict }`
+   * — and spreading an `AbortSignal` or a number yields `{ strict }`: a perfectly good `ReadOptions`
+   * by the time `assertReadOptions` meets it, with the `signal` and the `maxMaterializeBytes` gone.
+   * The comment beside `assertParseOptions` in `buildTimeline` makes exactly this argument for the
+   * parse half and stops there; the read half launders the same way and had no guard at all.
+   *
+   * So `index.locate(seconds, controller.signal)` and `index.onsetTicks(r, controller.signal)`
+   * resolved, uncancellable, on every file — and these two are the calls whose cost this type's own
+   * docblock spells out in reads, "which is exactly the number a caller planning HTTP range requests
+   * is reading this line to compute". Memoisation makes it worse rather than better: record 0 and the
+   * last record are already in hand, so the same mistake issued no read at all for them.
+   */
   async function onsetTicks(recordIndex: number, options?: ReadOptions): Promise<bigint> {
     assertRecordIndex(recordIndex);
+    assertReadOptions(options);
     return onsetOf(recordIndex, options);
   }
 
@@ -222,6 +238,9 @@ function createIndex(input: IndexInput): EdfRecordIndex {
   }
 
   async function locate(seconds: number, options?: ReadOptions): Promise<EdfLocation | undefined> {
+    // Before the record count decides anything: a file with no records answers `undefined`, which
+    // is one of this call's real answers, so it must not be reachable with options nobody checked.
+    assertReadOptions(options);
     if (recordCount <= 0) return undefined;
     // `seconds` is elapsed recording time; stored onsets are relative to the header start time.
     const targetTicks = secondsToTicks(seconds, 'seconds') + startOffsetTicks;
