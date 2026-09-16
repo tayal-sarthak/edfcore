@@ -229,6 +229,27 @@ export function assertSignalIndices(signalIndices: unknown): void {
  * 0.6.121 makes for `isByteArray` (fixed in 0.6.136).
  */
 export function channelNotFound(header: EdfHeader, signalIndex: number): EdfChannelNotFoundError {
+  /*
+   * A SIGNAL where its index belongs, which the advice below sent a reader straight back to.
+   *
+   * `matchSignals(header, /EEG/)` and `getSignal(header, label)` return `EdfSignal`s, and they are
+   * how the package teaches a caller to find channels by name — so
+   * `readWindow(recording, { signalIndices: matchSignals(header, pattern), … })` is the selection
+   * that gets written, and every one of the five reading calls answered
+   * `signalIndex [object Object] is outside the 3 signals this file declares`. The value was
+   * interpolated raw, which is the defect `describeValue` exists for (0.6.94), and the next step
+   * named `getSignal(header, label)` — the call that returns the very thing being refused.
+   *
+   * The index is one field away: `signal.index`, which every `EdfSignal` carries.
+   */
+  if (typeof (signalIndex as { index?: unknown } | null | undefined)?.index === 'number') {
+    return new EdfChannelNotFoundError(
+      'signalIndices holds a signal rather than an index: matchSignals() and getSignal() return ' +
+        'signals, and the index is one field on each. Next: pass signal.index for every channel ' +
+        'you matched, or header.dataSignalIndices for all of the data signals.',
+      { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
+    );
+  }
   return new EdfChannelNotFoundError(
     `signalIndex ${signalIndex} is outside the ${header.signals.length} signals this file ` +
       'declares. Next: pass an index from header.dataSignalIndices, or resolve one with ' +

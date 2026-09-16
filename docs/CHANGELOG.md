@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.174
+
+- **Fixed** `signalIndex [object Object]` from all five reading calls when `signalIndices` holds the
+  signals a lookup returned. `getSignal` and `matchSignals` return `EdfSignal`s, and they are how
+  this package teaches a caller to find channels by name, so
+  `{ signalIndices: matchSignals(header, /EEG/) }` is the selection that gets written.
+- The advice was worse than the value. It named `getSignal(header, label)` — the call that returns
+  the signal being refused — so following it literally reproduced the mistake one channel at a time.
+  The refusal now names `signal.index`, which is the one field between the two.
+- Still an `EdfChannelNotFoundError` carrying `selector` and `availableLabels`, and an index the file
+  genuinely lacks is still refused in the words it always was.
+
 ## 0.6.173
 
 - **Fixed** `formatValidationReport` printing a verdict over an inspection. Its guard, added in
