@@ -103,6 +103,26 @@ export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
         'to produce it. Next: pass recording.header.',
     );
   }
+  /*
+   * A CHUNK, which carries the array the check above is looking for.
+   *
+   * `chunk.signals` is the other signals array in this package, so the guard 0.6.120 wrote to stop
+   * a wrong argument producing `undefined` was defeated by the one object most likely to be in a
+   * caller's hand beside the header — and produced `undefined` through it, because a chunk has no
+   * `bytesPerSample` and the very next line reads that field to decide whether the file is a BDF.
+   *
+   * Which is the field to test. The guard above names `signals`; this call never reads `signals`
+   * until three lines later and reads `bytesPerSample` first, so checking what it actually reads is
+   * what makes the refusal cover every shape rather than one.
+   */
+  if (typeof (header as { bytesPerSample?: unknown }).bytesPerSample !== 'number') {
+    throw new RangeError(
+      'getStatusSignal(): that is a chunk, not a header — a chunk carries a signals array too, ' +
+        'but no bytesPerSample, which is the field this call reads to decide whether the file is ' +
+        'a BDF at all. So it answered undefined: no Status channel, for a file that has one. ' +
+        'Next: pass recording.header.',
+    );
+  }
   if (header.bytesPerSample !== 3) return undefined;
   const matches: EdfSignal[] = [];
   for (const index of header.dataSignalIndices) {

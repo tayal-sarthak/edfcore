@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.179
+
+- **Fixed** `getStatusSignal` answering `undefined` for a chunk. 0.6.120 gave it a guard and said
+  exactly why: `undefined` is this function's own answer for a file with no Status channel, so "a
+  wrong argument must not be able to produce it". The guard tests `Array.isArray(header.signals)` —
+  and `EdfChunk` carries a `signals` array too.
+- So it walked through, found no `bytesPerSample`, took the not-a-BDF branch, and reported that a
+  BDF+ file with a Status channel has none. Every trigger in the recording then reads as absent, on
+  the one path in the package where a missing event is indistinguishable from no events.
+- The check now tests `bytesPerSample`, which is the field this call reads FIRST; `signals` is not
+  touched until three lines later. The 0.6.120 refusal for a recording is unchanged.
+
 ## 0.6.178
 
 - **Fixed** `index.onsetTicks` and `index.locate` dropping their read options. `buildTimeline`
