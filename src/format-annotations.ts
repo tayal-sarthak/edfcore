@@ -83,6 +83,31 @@ function duration(annotation: EdfAnnotation): string {
  * The order is the caller's. `readAnnotations` already returns them sorted by onset, and
  * re-sorting here would quietly discard a deliberate `filterAnnotationsByText` ordering.
  */
+/**
+ * The ELEMENTS, which the array check below never reaches.
+ *
+ * `formatDiagnostics` grew this in 0.6.160 and `summarizeDiagnostics` in 0.6.168, on the same
+ * argument: an array of the wrong thing satisfies `Array.isArray` and is then read for fields it
+ * does not have. The first field read here is `onsetTicksFromFirstRecord`, a BigInt, so a list of
+ * anything else threw V8's `Cannot mix BigInt and other types, use explicit conversions` — a
+ * sentence about arithmetic, out of a printer, naming no argument and carrying no `Next:` clause.
+ *
+ * `header.diagnostics` is the list that gets passed. It is the other array a reader holds after
+ * opening a file, `formatDiagnostics` sits beside this call in the barrel, and the two take the same
+ * shape of argument with the same shape of options — so the pair is easy to cross.
+ */
+function assertAnnotation(annotation: EdfAnnotation, index: number): void {
+  const onset = (annotation as { onsetTicksFromFirstRecord?: unknown } | null | undefined)
+    ?.onsetTicksFromFirstRecord;
+  if (typeof onset === 'bigint') return;
+  throw new RangeError(
+    `formatAnnotations(): the value at ${index} carries no onset, so it is not an annotation — ` +
+      'this listing is one row per event, timed from the start of record 0. Next: pass the ' +
+      '`annotations` field of what readAnnotations(recording, records) resolved to, or print a ' +
+      'list of diagnostics with formatDiagnostics().',
+  );
+}
+
 export function formatAnnotations(
   annotations: readonly EdfAnnotation[],
   options?: FormatAnnotationsOptions,
@@ -125,6 +150,7 @@ export function formatAnnotations(
   for (let i = 0; i < limit; i += 1) {
     const annotation = annotations[i];
     if (annotation === undefined) continue;
+    assertAnnotation(annotation, i);
     cells.push({
       onset: clock(annotation.onsetTicksFromFirstRecord),
       duration: duration(annotation),

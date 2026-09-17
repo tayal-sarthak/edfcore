@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.185
+
+- **Fixed** `formatAnnotations` dying on the onset arithmetic for an array of the wrong thing. The
+  guard 0.6.95 added tests `Array.isArray`, and an array of anything passes it; the first field this
+  listing reads is `onsetTicksFromFirstRecord`, a BigInt, so the answer was V8's `Cannot mix BigInt
+  and other types, use explicit conversions` — a sentence about arithmetic, out of a printer, naming
+  no argument and carrying no `Next:` clause.
+- `header.diagnostics` is the list that gets passed: the other array a reader holds after opening a
+  file, printed by the call that sits beside this one in the barrel, taking the same shape of
+  argument with the same shape of options.
+- `formatDiagnostics` closed this in 0.6.160 and `summarizeDiagnostics` in 0.6.168, each checking the
+  one field its own rows must carry. This is the third of the three, and it checks the onset.
+
 ## 0.6.184
 
 - **Fixed** `httpSource` handing an unusable address to `fetch` and letting `fetch` answer for it.
