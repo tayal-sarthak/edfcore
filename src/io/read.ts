@@ -279,6 +279,21 @@ export async function readRecordBytes(
       (header as { recordByteLength?: unknown } | null | undefined)?.recordByteLength,
     )
   ) {
+    /*
+     * A FORGOTTEN AWAIT, which this message's own advice walks a reader past.
+     *
+     * The next step names `parseHeader`, which is synchronous — and the call a reader reaches for
+     * when they have a SOURCE rather than bytes is `readHeader`, which is not. 0.6.217 made this
+     * argument for the three lookups and 0.6.229 for `validateHeader`; this is the same sentence in
+     * the primitive that sits directly beside readHeader in this file, and it named nothing a reader could act on: "it has no recordByteLength" is true of a pending
+     * Promise, and true of almost everything else.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'readRecordBytes(): that is a pending Promise, not a header. Next: await readHeader(source) — it ' +
+          'resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       'readRecordBytes(): that is not a header — it has no recordByteLength, which is the record ' +
         'size every offset and length below is measured in. Next: pass recording.header, or what ' +

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.236
+
+- **Fixed** the three remaining guards whose advice names `parseHeader` for a header that came from
+  `readHeader`. 0.6.217 gave the argument while fixing the first of them: "the next step names
+  `parseHeader`, which is synchronous — but the call a reader reaches for when they have a SOURCE
+  rather than bytes is `readHeader`, and that one is async", so the whole of what the caller was
+  told is true of a pending Promise and of almost everything else.
+- 0.6.229 carried it to `validateHeader`. These three kept the clause and not the branch:
+  `formatHeader`, whose name offers to print the header you just read; `declaredDurationSeconds`,
+  the one lookup in `header/lookup.ts` that reads a count rather than the signals and so sits
+  outside the guard 0.6.217 fixed; and `readRecordBytes`, which sits directly beside `readHeader`
+  in `io/read.ts` and takes what that call returns as its second argument.
+- Each keeps its own field, its own tail and its own class — `declaredDurationSeconds` still points
+  at `timeline.spanSeconds`, `readRecordBytes` still says what the record size measures, and
+  `formatHeader` still names a chunk as one. Only the forgotten keyword is named now.
+
 ## 0.6.235
 
 - **Fixed** `buildTimeline` throwing V8's `Cannot read properties of undefined (reading 'length')`

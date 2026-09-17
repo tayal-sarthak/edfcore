@@ -401,6 +401,21 @@ export function declaredDurationSeconds(header: EdfHeader): number {
    * `Next:` clause, and nothing about the argument (fixed in 0.6.108).
    */
   if (!Number.isInteger((header as { recordCount?: unknown } | null | undefined)?.recordCount)) {
+    /*
+     * A FORGOTTEN AWAIT, which this message's own advice walks a reader past.
+     *
+     * The next step names `parseHeader`, which is synchronous — and the call a reader reaches for
+     * when they have a SOURCE rather than bytes is `readHeader`, which is not. 0.6.217 made this
+     * argument for the three lookups and 0.6.229 for `validateHeader`; this is the same sentence in
+     * the one lookup in this file that reads a count rather than the signals, and it named nothing a reader could act on: "it has no recordCount" is true of a pending
+     * Promise, and true of almost everything else.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'declaredDurationSeconds(): that is a pending Promise, not a header. Next: await readHeader(source) — it ' +
+          'resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       'declaredDurationSeconds(): that is not a header — it has no recordCount. Next: pass ' +
         'recording.header, or what parseHeader(bytes, sourceByteLength) returned. For the span of ' +

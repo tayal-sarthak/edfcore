@@ -103,6 +103,21 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   // V8's `Cannot read properties of undefined (reading 'startTime')` (fixed in 0.6.110).
   const signals = (header as { signals?: unknown } | null | undefined)?.signals;
   if (!Array.isArray(signals)) {
+    /*
+     * A FORGOTTEN AWAIT, which this message's own advice walks a reader past.
+     *
+     * The next step names `parseHeader`, which is synchronous — and the call a reader reaches for
+     * when they have a SOURCE rather than bytes is `readHeader`, which is not. 0.6.217 made this
+     * argument for the three lookups and 0.6.229 for `validateHeader`; this is the same sentence in
+     * the printer, and it named nothing a reader could act on: "it has no signals" is true of a pending
+     * Promise, and true of almost everything else.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'formatHeader(): that is a pending Promise, not a header. Next: await readHeader(source) — it ' +
+          'resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       'formatHeader(): that is not a header — it has no signals. Next: pass recording.header, or ' +
         'what parseHeader(bytes, sourceByteLength) returned.',
