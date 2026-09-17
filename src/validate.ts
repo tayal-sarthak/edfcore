@@ -501,10 +501,29 @@ export function validateHeader(header: EdfHeader): readonly EdfDiagnostic[] {
   // at all. This one walked `header.dataSignalIndices` and answered "header.dataSignalIndices is not
   // iterable" for the recording — a leaked internal field, from the module whose whole subject is
   // telling a caller precisely what is wrong (fixed in 0.6.113).
-  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+  const signals = (header as { signals?: unknown } | null | undefined)?.signals;
+  if (!Array.isArray(signals)) {
     throw new RangeError(
       'validateHeader(): that is not a header — it has no signals. Next: pass recording.header, ' +
         'or call validateRecording(recording) for the checks that need the bytes too.',
+    );
+  }
+  /*
+   * A CHUNK, whose `signals` array satisfies the check above.
+   *
+   * 0.6.113 added that check because this function "walked `header.dataSignalIndices` and answered
+   * `header.dataSignalIndices is not iterable`". A chunk has no `dataSignalIndices` either, so it
+   * walked through and produced that same leaked internal field — from the module whose whole
+   * subject is telling a caller precisely what is wrong.
+   *
+   * Being an array of the right signals is the test, as 0.6.183 and 0.6.186 settled for the lookups
+   * and for `trimToWindow`.
+   */
+  if (typeof (signals[0] as { signalIndex?: unknown } | undefined)?.signalIndex === 'number') {
+    throw new RangeError(
+      'validateHeader(): that is a chunk, not a header — a chunk has a signals array too, but its ' +
+        'entries carry samples rather than the declarations these checks are about. Next: pass ' +
+        'recording.header.',
     );
   }
   const diagnostics: EdfDiagnostic[] = [];

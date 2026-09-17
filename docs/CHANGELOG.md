@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.189
+
+- **Fixed** `formatHeader` and `validateHeader` accepting a chunk. Both were given a guard for a
+  wrong first argument — 0.6.110 and 0.6.113 — and both guards test `Array.isArray(header.signals)`,
+  which a chunk satisfies.
+- So each failed in exactly the words its own guard was written to remove: `formatHeader(chunk)`
+  reached `header.startTime.clockSource` and threw V8's `Cannot read properties of undefined`, and
+  `validateHeader(chunk)` answered `header.dataSignalIndices is not iterable` — a leaked internal
+  field, from the module whose subject is saying precisely what is wrong.
+- A chunk is the likeliest wrong argument for these two in particular: it is what a reader holds
+  after a read, and "print what I just read" and "check what I just read" are what the two names
+  offer.
+
 ## 0.6.188
 
 - **Fixed** `envelopeOfSamples` and `trimToWindow` accepting an envelope signal. `EdfEnvelopeSignal`

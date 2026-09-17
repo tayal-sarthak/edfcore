@@ -100,10 +100,29 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   // The recording is what a reader has in hand, and this is the report they want printed of it, so
   // `formatHeader(recording)` is the call the name invites. It read `recording.startTime` and threw
   // V8's `Cannot read properties of undefined (reading 'startTime')` (fixed in 0.6.110).
-  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+  const signals = (header as { signals?: unknown } | null | undefined)?.signals;
+  if (!Array.isArray(signals)) {
     throw new RangeError(
       'formatHeader(): that is not a header — it has no signals. Next: pass recording.header, or ' +
         'what parseHeader(bytes, sourceByteLength) returned.',
+    );
+  }
+  /*
+   * A CHUNK, whose `signals` array satisfies the check above.
+   *
+   * The same slip as the recording, one object along: a chunk is what a reader holds after a read,
+   * and "print what I just read" is what this call's name offers. It reached
+   * `header.startTime.clockSource` and threw V8's `Cannot read properties of undefined` — the exact
+   * failure 0.6.110 added the guard above to remove.
+   *
+   * Being an array of the right signals is the test, as 0.6.183 and 0.6.186 settled for the lookups
+   * and for `trimToWindow`.
+   */
+  if (typeof (signals[0] as { signalIndex?: unknown } | undefined)?.signalIndex === 'number') {
+    throw new RangeError(
+      'formatHeader(): that is a chunk, not a header — a chunk has a signals array too, but its ' +
+        'entries carry samples rather than the declarations this prints. Next: pass ' +
+        'recording.header.',
     );
   }
   /*
