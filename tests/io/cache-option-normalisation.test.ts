@@ -1,7 +1,7 @@
 /**
  * The four normalisations `api-sources.md` states for `cachedSource`'s two options.
  *
- * "`blockBytes` — floored, never below 1, and clamped down to `maxBytes`, since a block wider than
+ * "`blockBytes` — floored, refused below 1, and clamped down to `maxBytes`, since a block wider than
  * the whole budget evicts itself on every insert. `maxBytes` — floored, never below 0." Four rules
  * in a table, and each one exists because a caller computes these numbers rather than typing them:
  * a block size derived from `header.recordByteLength` divided by something, a budget read from an
@@ -13,8 +13,12 @@
  *
  * What that costs is not obvious from the table, which is why the table is worth executing. A block
  * size that rounded up instead of down fetches more than the caller budgeted for on every miss; a
- * `blockBytes` of 0 that was not floored to 1 divides by zero when it computes which block an
- * offset falls in.
+ * `blockBytes` of 0 divides by zero when the cache works out which block an offset falls in.
+ *
+ * That last one used to be answered by clamping UP to a single byte, and 0.6.187 changed the rule to
+ * a refusal. Clamping stopped the division and produced the other failure instead: a 512-byte read
+ * became 512 one-byte reads, which over HTTP is 512 range requests — more than not caching at all,
+ * from the wrapper that exists to make reads fewer.
  *
  * Each rule is checked through what the wrapped source is ASKED for, because that is the only place
  * the block size is observable — the cache has no accessor for it, deliberately.
@@ -41,7 +45,7 @@ async function fetchesFor(options: { blockBytes?: number; maxBytes?: number }): 
 describe('the table was read', () => {
   it('states the four rules this file checks', () => {
     const prose = PAGE.replace(/\s+/g, ' ');
-    expect(prose).toContain('Floored, never below 1, and clamped down to `maxBytes`');
+    expect(prose).toContain('Floored, refused below 1, and clamped down to `maxBytes`');
     expect(prose).toContain('Floored, never below 0');
   });
 });
@@ -53,10 +57,13 @@ describe('blockBytes', () => {
     expect(await fetchesFor({ blockBytes: 4.9, maxBytes: 4096 })).toEqual([4]);
   });
 
-  it('is never below one, whatever it is asked for', async () => {
-    // Zero would be a division by zero when the cache works out which block an offset is in.
+  it('is refused below one rather than clamped up to a byte', async () => {
+    // Zero would be a division by zero when the cache works out which block an offset is in, and
+    // one byte is 512 requests for a 512-byte read. Neither is an answer, so neither is given.
     for (const blockBytes of [0, 0.4, -8]) {
-      expect(await fetchesFor({ blockBytes, maxBytes: 4096 })).toEqual([1]);
+      await expect(fetchesFor({ blockBytes, maxBytes: 4096 })).rejects.toThrow(
+        /options.blockBytes must be at least 1 byte/,
+      );
     }
   });
 

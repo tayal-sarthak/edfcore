@@ -125,10 +125,29 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
     0,
     Math.floor(requireFiniteOption(options?.maxBytes, 'maxBytes', DEFAULT_MAX_BYTES)),
   );
-  const requestedBlockBytes = Math.max(
-    1,
-    Math.floor(requireFiniteOption(options?.blockBytes, 'blockBytes', DEFAULT_BLOCK_BYTES)),
+  /*
+   * The BLOCK SIZE, refused rather than clamped up to one byte.
+   *
+   * `Math.max(1, …)` is the shape `options.ts` warns about in its own module note — a guard that
+   * does not fire — and here it turned a nonsense size into a working cache with 1-byte blocks. A
+   * 512-byte read then issued 512 underlying reads, which over HTTP is 512 range requests, on the
+   * one wrapper in this package whose whole purpose is to make reads fewer. Strictly worse than not
+   * caching at all, and silent.
+   *
+   * `resolveMaterializeBudget` already refuses a negative byte count in exactly these words; the
+   * cache's own two byte counts were the ones still clamping.
+   */
+  const requestedBlockBytes = Math.floor(
+    requireFiniteOption(options?.blockBytes, 'blockBytes', DEFAULT_BLOCK_BYTES),
   );
+  if (requestedBlockBytes < 1) {
+    throw new RangeError(
+      `options.blockBytes must be at least 1 byte, but was ${describeValue(options?.blockBytes)}. ` +
+        'It used to be clamped to a single byte, which makes this wrapper issue one read per byte ' +
+        '— more requests than not caching at all. Next: pass the block size in bytes, or omit it ' +
+        `for the ${DEFAULT_BLOCK_BYTES}-byte default.`,
+    );
+  }
   // A block wider than the whole budget would evict itself on every insert, so the block is
   // clamped to the budget rather than the cache being left in a state that can never hold one.
   const blockBytes = Math.min(requestedBlockBytes, maxBytes);

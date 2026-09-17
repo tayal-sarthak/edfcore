@@ -193,7 +193,7 @@ await cached.read(0, 100);   // served from that block — no request
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `blockBytes` | `number` | `1048576` (1 MiB) | Block size. Floored, never below 1, and clamped down to `maxBytes`, since a block wider than the whole budget evicts itself on every insert. |
+| `blockBytes` | `number` | `1048576` (1 MiB) | Block size. Floored, refused below 1, and clamped down to `maxBytes`, since a block wider than the whole budget evicts itself on every insert. Below 1 used to be clamped UP to a single byte, which made a 512-byte read issue 512 requests — more than not caching at all (changed in 0.6.187). |
 | `maxBytes` | `number` | `67108864` (64 MiB) | LRU budget. Floored, never below 0. |
 
 The options argument itself has to be an object. `CacheOptions` is two byte counts and nothing else, so `cachedSource(source, 4 * 1024 * 1024)` is what gets written when the intent is a four-megabyte budget — and until 0.6.140 it had neither field, both defaults applied, and the wrapper held up to 64 MiB from the one call a caller reaches for to bound memory. A bare number is now refused; `undefined` and `null` still mean "no options".

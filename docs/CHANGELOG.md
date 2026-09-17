@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.187
+
+- **Fixed** `cachedSource` clamping a `blockBytes` below one up to a single byte. `Math.max(1, …)`
+  is the shape `options.ts` opens by warning about — a guard written so that it does not fire — and
+  it turned `0`, `-1` and `0.5` into a working cache with one-byte blocks.
+- A 512-byte read then issued 512 underlying reads. Over HTTP, where this wrapper is the only one
+  worth using, that is 512 range requests for half a kilobyte: more requests than not caching at all,
+  from the wrapper whose purpose is to make reads fewer.
+- **Behaviour change.** `api-sources.md` documented the clamp, and the rule is now a refusal; the
+  clamp stopped the division by zero it was written for and produced the other failure instead.
+  `resolveMaterializeBudget` has refused a negative byte count since 0.3.21. `maxBytes: 0` is
+  untouched — a budget of nothing is a coherent way to say "do not cache", and the wrapper already
+  answers it by passing reads through.
+
 ## 0.6.186
 
 - **Fixed** `trimToWindow` accepting the chunk both of its first two arguments come off. The second
