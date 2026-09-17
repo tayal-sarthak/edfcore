@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.235
+
+- **Fixed** `buildTimeline` throwing V8's `Cannot read properties of undefined (reading 'length')`
+  for a header it never checked. 0.6.106 guarded the first argument, for the confusion between this
+  call's shape and its sibling's; the header beside it had no check at all.
+- It is the argument with the forgotten `await` in it. `api-reading.md` writes the pair out as
+  `await buildTimeline(source, header)`, and the header on that line comes from `readHeader(source)`
+  — which is async. `recordCount` read back `undefined` without complaining, and `hasTimekeeping`
+  then reached `header.annotationSignalIndices.length` and threw: a `TypeError` naming an internal
+  field, with no `Next:` clause, from a published export.
+- A chunk got the same crash one step further in, its `signals` array satisfying the shape test —
+  the case `validateHeader` and the three lookups each earned a branch for, since "being an array
+  of the right signals is the test".
+- Both are named now, and the pending Promise the way 0.6.217, 0.6.229 and 0.6.232 name it. The
+  first argument keeps its 0.6.106 refusal.
+
 ## 0.6.234
 
 - **Fixed** the source guard answering a forgotten `await` with the call the reader had just made.

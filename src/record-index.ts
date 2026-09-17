@@ -320,6 +320,52 @@ export async function buildTimeline(
     );
   }
   assertByteSource(source);
+  /*
+   * And the SECOND argument, which nothing checked at all.
+   *
+   * 0.6.106 guarded the first one, for the confusion between this call's shape and its sibling's.
+   * The header beside it was left open, and it is the argument with the forgotten `await` in it:
+   * `api-reading.md` writes the pair out as `await buildTimeline(source, header)`, and the header
+   * there comes from `readHeader(source)`, which is async. `buildTimeline(source,
+   * readHeader(source))` is that line one keyword short.
+   *
+   * `recordCount` read back `undefined` without complaining, and `hasTimekeeping` then reached
+   * `header.annotationSignalIndices.length` and threw V8's `Cannot read properties of undefined` —
+   * a `TypeError` naming an internal field, with no `Next:` clause, from a published export.
+   *
+   * Checked on `signals`, which is what every other header guard in the package checks, and the
+   * pending Promise is named the way 0.6.217, 0.6.229 and 0.6.232 name it.
+   */
+  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'buildTimeline(): that is a pending Promise, not a header. Next: await ' +
+          'readHeader(source) — it resolves to the header this takes.',
+      );
+    }
+    throw new RangeError(
+      'buildTimeline(): that is not a header — it has no signals, and this call reads the ' +
+        'annotation channels off it to find the timekeeping. Next: pass what readHeader(source) ' +
+        'resolved to, or what parseHeader(bytes, sourceByteLength) returned.',
+    );
+  }
+  /*
+   * A CHUNK, whose `signals` array satisfies the test above and whose entries are samples.
+   *
+   * The same shape `validateHeader` and the three lookups each earned a branch for — "being an
+   * array of the right signals is the test", as 0.6.183 and 0.6.186 settled — and here it reached
+   * `hasTimekeeping` and threw the same `Cannot read properties of undefined` the absent header
+   * did, one step further in.
+   */
+  if (
+    typeof (header.signals[0] as { signalIndex?: unknown } | undefined)?.signalIndex === 'number'
+  ) {
+    throw new RangeError(
+      'buildTimeline(): that is a chunk, not a header — a chunk has a signals array too, but its ' +
+        'entries carry samples rather than the declarations the timekeeping is found from. Next: ' +
+        'pass recording.header.',
+    );
+  }
   const recordCount = header.recordCount;
   const timekept = hasTimekeeping(header);
   // Its own, before any sink exists: this function reads `strict` itself and hands the resolved
