@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.190
+
+- **Fixed** `declaredDurationSeconds` dying on the record index. The guard 0.6.108 added tests
+  `Number.isInteger(recordCount)`, and `EdfRecordIndex` counts records too — so it walked past, and
+  `BigInt(recordCount) * undefined` answered "Cannot mix BigInt and other types, use explicit
+  conversions": a near-miss of the message that guard removed, from the same guard, one neighbour
+  over.
+- The index is what a reader holds after `buildRecordIndex`, which is where this function's own
+  `Next:` clause points them.
+- The timeline is still accepted, deliberately: it declares both fields with the same meanings, so
+  the arithmetic is the header's arithmetic. The check is on the missing FIELD rather than on the
+  type, which is what leaves that recorded decision standing.
+
 ## 0.6.189
 
 - **Fixed** `formatHeader` and `validateHeader` accepting a chunk. Both were given a guard for a

@@ -388,5 +388,26 @@ export function declaredDurationSeconds(header: EdfHeader): number {
         'a discontinuous file, which is longer, read timeline.spanSeconds.',
     );
   }
+  /*
+   * The RECORD INDEX, which counts records too and so walks past the check above.
+   *
+   * It is one of the two objects that check's own `Next:` clause sends a reader to look at, and it
+   * has no `recordDurationTicks` — so `BigInt(recordCount) * undefined` threw "Cannot mix BigInt and
+   * other types, use explicit conversions": a near-miss of the very message 0.6.108 added the guard
+   * to remove, from the same guard, one neighbour over.
+   *
+   * The TIMELINE is deliberately still accepted. It declares both fields with the same meanings, so
+   * the arithmetic is the header's arithmetic and the answer is the header's answer;
+   * `the-last-two-unchecked-arguments.test.ts` records that as a decision rather than an oversight,
+   * and this checks the field rather than the type so as to leave it standing.
+   */
+  if (typeof (header as { recordDurationTicks?: unknown }).recordDurationTicks !== 'bigint') {
+    throw new RangeError(
+      'declaredDurationSeconds(): that is not a header — it counts records but declares no ' +
+        'recordDurationTicks, and this length is the two multiplied together. Next: pass ' +
+        'recording.header, or read timeline.spanSeconds for how long a discontinuous recording ' +
+        'actually ran.',
+    );
+  }
   return ticksToSeconds(BigInt(header.recordCount) * header.recordDurationTicks);
 }
