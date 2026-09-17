@@ -52,7 +52,31 @@ function clampToInt(value: bigint, low: number, high: number): number {
  * advice named it (fixed in 0.6.97).
  */
 export function assertChunkSignal(chunkSignal: EdfChunkSignal, call: string, verb: string): void {
-  if (typeof chunkSignal?.signalIndex === 'number') return;
+  if (typeof chunkSignal?.signalIndex === 'number') {
+    if (ArrayBuffer.isView((chunkSignal as { digital?: unknown }).digital)) return;
+    /*
+     * An ENVELOPE signal, which the check above cannot tell from a chunk signal.
+     *
+     * `EdfEnvelopeSignal` and `EdfChunkSignal` share eight of their nine fields — `signalIndex`,
+     * `sampleCount`, `firstSampleIndex`, `startSeconds`, `startTicks` and `outOfDigitalRangeCount`
+     * among them — and differ only in the one that holds the data: `digital` against
+     * `min`/`max`/`counts`. They are also reached identically, as `chunk.signals[i]` off what a read
+     * resolved to, so a reader who has drawn one window with `readEnvelope` and wants a coarser pass
+     * over it hands this exactly the wrong one of the two.
+     *
+     * Both callers then read `.digital` and threw V8's `Cannot read properties of undefined
+     * (reading 'length')`: an internal field, no `Next:` clause, and nothing about the argument —
+     * which is the failure 0.6.97 added this guard to remove.
+     *
+     * `digital` is the field to test, because it is the one both callers read.
+     */
+    throw new RangeError(
+      `${call}(): that is an envelope signal, not a chunk signal — an envelope carries the ` +
+        `smallest and largest sample of each bucket rather than the samples, so there is none ` +
+        `here to ${verb}. Next: pass one element of chunk.signals from readWindow() or ` +
+        'readRecords(); readEnvelope() has already reduced its samples away.',
+    );
+  }
   const headerSignal = typeof (chunkSignal as unknown as EdfSignal | undefined)?.index === 'number';
   throw new RangeError(
     `${call}(): the signal is ${

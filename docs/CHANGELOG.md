@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.188
+
+- **Fixed** `envelopeOfSamples` and `trimToWindow` accepting an envelope signal. `EdfEnvelopeSignal`
+  and `EdfChunkSignal` share eight of their nine fields and differ only in the one that holds the
+  data — `digital` against `min`/`max`/`counts` — and `assertChunkSignal` tests `signalIndex`, which
+  they share.
+- They are also reached identically: `readWindow` and `readEnvelope` both resolve to chunks with a
+  `signals` array, so `chunk.signals[0]` is the expression either way and which shape it names
+  depends on the read, not on the call site.
+- Both callers then read `.digital` and threw V8's `Cannot read properties of undefined` — the
+  failure 0.6.97 added this guard to remove, arriving through it. `digital` is the field both
+  callers read, so it is the field the guard tests.
+
 ## 0.6.187
 
 - **Fixed** `cachedSource` clamping a `blockBytes` below one up to a single byte. `Math.max(1, …)`
