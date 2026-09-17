@@ -71,10 +71,33 @@ function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
   // That names the signal index, which was the argument that was right. 0.6.127 swept the same
   // mistake out of `header/lookup.ts`; this is the last entry point in the package that took a
   // header without checking one.
-  if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+  const signals = (header as { signals?: unknown } | null | undefined)?.signals;
+  if (!Array.isArray(signals)) {
     throw new RangeError(
       'trimToWindow(): that is not a header — it has no signals, and this call needs the ' +
         'samples-per-record the chunk signal does not carry. Next: pass recording.header.',
+    );
+  }
+  /*
+   * The CHUNK, which is the one object whose `signals` array holds exactly what the message above
+   * says this call cannot use.
+   *
+   * Both arguments come off the same chunk — `trimToWindow(header, chunk.signals[0], …)` — so the
+   * chunk is what is in hand, and `trimToWindow(chunk, chunk.signals[0], …)` is the pair that gets
+   * written. `chunk.signals[signalIndex]` is then defined, so the lookup below succeeded and
+   * returned a CHUNK signal typed as an `EdfSignal`. Its `samplesPerRecord` is `undefined`, and the
+   * trim arithmetic reached `BigInt(undefined)`: V8's `Cannot convert undefined to a BigInt`, from
+   * a guard whose own sentence had already named the shape it let through.
+   *
+   * 0.6.183 made the same fix for the three lookups in `header/lookup.ts`: being an array is not
+   * the test, being an array of the right signals is.
+   */
+  if (typeof (signals[0] as { signalIndex?: unknown } | undefined)?.signalIndex === 'number') {
+    throw new RangeError(
+      'trimToWindow(): that is a chunk, not a header — its signals array holds the very chunk ' +
+        'signals this call cannot take the samples-per-record from, which is why it needs the ' +
+        'header beside them. Next: pass recording.header, and keep chunk.signals[i] as the second ' +
+        'argument.',
     );
   }
   const signal = header.signals[signalIndex];

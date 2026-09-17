@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.186
+
+- **Fixed** `trimToWindow` accepting the chunk both of its first two arguments come off. The second
+  is spelled `chunk.signals[i]` at every call site, so the chunk is what a reader holds, and
+  `trimToWindow(chunk, chunk.signals[i], …)` is the pair that gets written.
+- The guard on the first argument tested `Array.isArray(header.signals)` while its own message said
+  this call "needs the samples-per-record the chunk signal does not carry" — and a chunk's signals
+  array holds exactly those chunk signals. So the guard named the shape it let through: the lookup
+  succeeded, a chunk signal came back typed as an `EdfSignal`, and the trim reached
+  `BigInt(undefined)`.
+- Being an array is not the test; being an array of the right signals is — the rule 0.6.183 applied
+  to the three lookups in `header/lookup.ts`.
+
 ## 0.6.185
 
 - **Fixed** `formatAnnotations` dying on the onset arithmetic for an array of the wrong thing. The
