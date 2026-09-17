@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.183
+
+- **Fixed** `getSignal`, `findSignals` and `matchSignals` answering about a chunk's samples. Their
+  shared guard, added in 0.6.127, tests `Array.isArray(header.signals)` — and `EdfChunk` has a
+  `signals` array too, the only other one in the package, holding the samples of each channel rather
+  than the declarations.
+- `findSignals` and `matchSignals` returned `[]`, which is a real answer from those two and means
+  "this file has no such channel" — said of a file that has one, because a chunk signal carries no
+  label to match. `getSignal(chunk, 0)` returned the chunk signal itself typed as an `EdfSignal`, and
+  `getSignal(chunk, label)` threw V8's `Cannot read properties of undefined`, which is the exact
+  failure 0.6.127 removed.
+- Being an array of the RIGHT signals is now the test: `index` is on a header signal and
+  `signalIndex` on a chunk one, the distinction `assertChunkSignal` has drawn from the other side
+  since 0.6.97.
+
 ## 0.6.182
 
 - **Fixed** `strict` given as text parsing leniently and saying nothing. It is resolved everywhere as

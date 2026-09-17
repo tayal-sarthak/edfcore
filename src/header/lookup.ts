@@ -99,11 +99,36 @@ function assertLabel(label: unknown, call: string): void {
  * about the selector, the argument that was right.
  */
 function assertHeaderSignals(header: EdfHeader, call: string): void {
-  if (Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) return;
-  throw new RangeError(
-    `${call}(): that is not a header — it has no signals. Next: pass recording.header, or what ` +
-      'parseHeader(bytes, sourceByteLength) returned.',
-  );
+  const signals = (header as { signals?: unknown } | null | undefined)?.signals;
+  if (!Array.isArray(signals)) {
+    throw new RangeError(
+      `${call}(): that is not a header — it has no signals. Next: pass recording.header, or what ` +
+        'parseHeader(bytes, sourceByteLength) returned.',
+    );
+  }
+  /*
+   * A CHUNK, whose `signals` array is the only other one in the package — and holds the other
+   * per-signal shape.
+   *
+   * Being an array was the whole test, so a chunk walked through and every function here answered
+   * about the samples instead of the declarations. `findSignals` and `matchSignals` returned `[]`,
+   * which is a real answer here and means "this file has no such channel" — said of a file that
+   * has one, because a chunk signal carries no `label` to match. `getSignal(chunk, 0)` was worse
+   * and returned the chunk signal itself, typed `EdfSignal`; `getSignal(chunk, label)` reached
+   * `quoteLabels` and threw V8's `Cannot read properties of undefined (reading 'length')`.
+   *
+   * Being an array of the RIGHT signals is the test. `index` is on a header signal and
+   * `signalIndex` on a chunk one, which is the distinction `assertChunkSignal` already draws from
+   * the other side (0.6.97).
+   */
+  if (typeof (signals[0] as { signalIndex?: unknown } | undefined)?.signalIndex === 'number') {
+    throw new RangeError(
+      `${call}(): that is a chunk, not a header — a chunk has a signals array too, but its ` +
+        'entries carry the samples of each channel rather than the declaration, so none of them ' +
+        'has a label to look up. Next: pass recording.header, and reach a declaration from a ' +
+        'chunk with header.signals[chunkSignal.signalIndex].',
+    );
+  }
 }
 
 /** Every signal with this label, in signal order. Empty when none matches. */
