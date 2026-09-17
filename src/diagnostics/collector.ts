@@ -175,12 +175,34 @@ export function fatalError(init: DiagnosticInit, cause?: unknown): EdfFormatErro
  * `null` and `undefined` still mean "no options", which is what they already meant.
  */
 export function assertParseOptions(options: unknown): void {
-  if (options === undefined || typeof options === 'object') return;
-  throw new RangeError(
-    `the parse options are ${describeValue(options)}, not an object — strict is a field on one, ` +
-      'so this parse collected its diagnostics rather than throwing on the first of them. ' +
-      'Next: pass strict on an options object.',
-  );
+  if (options !== undefined && typeof options !== 'object') {
+    throw new RangeError(
+      `the parse options are ${describeValue(options)}, not an object — strict is a field on one, ` +
+        'so this parse collected its diagnostics rather than throwing on the first of them. ' +
+        'Next: pass strict on an options object.',
+    );
+  }
+  /*
+   * And the FIELD, once the object is there. `strict` is read as `options?.strict === true`, which
+   * is a coercion-proof test and therefore a silent one: `'true'`, `'1'` and `1` are all not-`true`,
+   * so every one of them parsed LENIENTLY.
+   *
+   * That is the same outcome the guard above exists to stop — the failure it describes as a file
+   * with a would-be diagnostic coming back "as a header carrying a list, from a caller who asked to
+   * receive no such file at all" — reached through the guard rather than past it. And text is
+   * exactly what arrives here: `strict` is the one boolean option in this package, and a flag, a
+   * query parameter and a config key all hand over a string, which is the argument `requireItemLimit`
+   * makes for its own coercion check.
+   */
+  const strict = (options as { strict?: unknown } | null | undefined)?.strict;
+  if (strict !== undefined && typeof strict !== 'boolean') {
+    throw new RangeError(
+      `options.strict must be true or false, and was ${describeValue(strict)}. It is read as ` +
+        '`=== true`, so anything else reads as false and this parse collected its diagnostics ' +
+        'rather than throwing on the first of them. Next: pass a boolean — a flag, a query ' +
+        'parameter and a config key all arrive as text, so compare with === "true" first.',
+    );
+  }
 }
 
 /**

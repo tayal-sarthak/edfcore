@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.182
+
+- **Fixed** `strict` given as text parsing leniently and saying nothing. It is resolved everywhere as
+  `options?.strict === true` — the right way to read a boolean, and what makes the mistake silent:
+  `'true'`, `'1'` and `1` are each not-`true`.
+- That is the outcome `assertParseOptions` exists for, in its own words — a file with a would-be
+  diagnostic coming back "as a header carrying a list, from a caller who asked to receive no such
+  file at all". It guarded the options being a bare value; the field inside them, which is the whole
+  of `ParseOptions`, was never checked, so the same failure was reachable through the guard.
+- Text is what arrives here: `strict` is the only boolean option in the package, and a flag, a query
+  parameter and a config key all hand over a string. `requireItemLimit` makes the same argument for
+  its own coercion check.
+- One check covers `parseHeader`, `readHeader`, `openEdf`, `decodeAnnotations`, `buildTimeline` and
+  `buildRecordIndex`, because all six reach `DiagnosticSink`.
+
 ## 0.6.181
 
 - **Fixed** `readRecordBytes` blaming the record range for a wrong header. It is the lowest
