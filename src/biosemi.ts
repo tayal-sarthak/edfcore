@@ -97,6 +97,26 @@ export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
    * whose own answer includes the one a wrong argument produces (fixed in 0.6.120).
    */
   if (!Array.isArray((header as { signals?: unknown } | null | undefined)?.signals)) {
+    /*
+     * A FORGOTTEN AWAIT, and the one wrong argument this guard's own advice does not reach.
+     *
+     * 0.6.120 wrote this check because "undefined is what this function returns for a file with no
+     * Status channel, so a wrong argument must not be able to produce it", and what that costs is
+     * in the comment above: "Every trigger in the recording then reads as absent, on the one path
+     * in this package where a missing event is indistinguishable from no events." A pending
+     * Promise is exactly such a wrong argument.
+     *
+     * The next step is `recording.header`, which a reader holding `readHeader(source)` does not
+     * have. 0.6.217, 0.6.229, 0.6.232, 0.6.235, 0.6.236 and 0.6.237 name the keyword everywhere
+     * else a header is taken — 0.6.237's entry said that was all of them, and this was the one it
+     * missed.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'getStatusSignal(): that is a pending Promise, not a header. Next: await ' +
+          'readHeader(source) — it resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       'getStatusSignal(): that is not a header — it has no signals, and undefined is what this ' +
         'function returns for a file with no Status channel, so a wrong argument must not be able ' +

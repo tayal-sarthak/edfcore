@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.238
+
+- **Fixed** `getStatusSignal` never naming the forgotten keyword, and **corrects 0.6.237**, whose
+  entry said every published call that takes a header now names it. This one was left out.
+- 0.6.120 wrote that guard for a stated reason: "`undefined` is what this function returns for a
+  file with no Status channel, so a wrong argument must not be able to produce it", and the comment
+  above it says what that costs — "Every trigger in the recording then reads as absent, on the one
+  path in this package where a missing event is indistinguishable from no events." A pending
+  Promise is exactly such a wrong argument, and what it was told is that it has no signals: true of
+  a Promise and of almost everything else, with a next step naming `recording.header`, which a
+  reader holding `readHeader(source)` does not have.
+- `gridSampleIndexAt`, `gridSampleStartTicks` and `gridSampleStartSeconds` take
+  `recordDurationTicks` rather than a header, so with this the claim 0.6.237 made is true.
+- The 0.6.120 sentence and the chunk branch beside it are unchanged, and a real header with no
+  Status channel still answers `undefined`.
+
 ## 0.6.237
 
 - **Fixed** the last three calls that take a header and never named the keyword. `decodeDigital`
