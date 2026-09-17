@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.181
+
+- **Fixed** `readRecordBytes` blaming the record range for a wrong header. It is the lowest
+  published read in the package and it takes `(source, header, records)` — and the source almost
+  always comes off a recording, so `readRecordBytes(recording.source, recording, records)` is one
+  field short and nothing checked it.
+- `assertRecordRange` reads `header.recordCount` and prints it, so the answer was `records
+  { start: 0, count: 1 } is not inside the undefined data records this file contains`, followed by
+  advice to clamp a range that was already inside the file. A chunk gave the same sentence.
+- The timeline reached further, because it HAS a `recordCount`: the range check passed and
+  `records.count * header.recordByteLength` was `NaN`, reported as an `EdfBudgetError` about a
+  "NaN-byte buffer" above the budget. That one is an `EdfError`, so `isEdfError` sent a caller
+  mistake down the file-or-budget branch.
+- The check names `recordByteLength`, which is the field this call multiplies by.
+
 ## 0.6.180
 
 - **Fixed** `toPhysical` and `clampToDigitalRange` accepting raw record bytes as samples. The

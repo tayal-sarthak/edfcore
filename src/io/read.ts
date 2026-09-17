@@ -229,6 +229,35 @@ export async function readRecordBytes(
   options?: ReadOptions,
 ): Promise<Uint8Array> {
   assertByteSource(source);
+  /*
+   * The HEADER, before the range is measured against it.
+   *
+   * `assertRecordRange` reads `header.recordCount` and prints it, so a wrong header put the blame
+   * on the argument that was right: `readRecordBytes(source, recording, records)` — the recording
+   * being the object the source came off — answered `records { start: 0, count: 1 } is not inside
+   * the undefined data records this file contains`, and told the caller to clamp a range that was
+   * already inside the file. A chunk gave the same sentence.
+   *
+   * The timeline is worse and reaches further. It HAS a `recordCount`, so the range check passes
+   * and `records.count * header.recordByteLength` is `NaN` — reported as an `EdfBudgetError`,
+   * "needs a NaN-byte buffer, above the 268435456-byte maxMaterializeBytes budget", advising a
+   * smaller read. An `EdfError`, so `isEdfError` sent a caller mistake down the file-or-budget
+   * branch, which is the one distinction `errors.ts` exists to keep.
+   *
+   * `recordByteLength` is the field to test: it is the one this function multiplies by, and
+   * `decode/digital.ts` already names it for the same reason.
+   */
+  if (
+    !Number.isInteger(
+      (header as { recordByteLength?: unknown } | null | undefined)?.recordByteLength,
+    )
+  ) {
+    throw new RangeError(
+      'readRecordBytes(): that is not a header — it has no recordByteLength, which is the record ' +
+        'size every offset and length below is measured in. Next: pass recording.header, or what ' +
+        'parseHeader(bytes, sourceByteLength) returned.',
+    );
+  }
   assertRecordRange(header, records);
   const byteLength = records.count * header.recordByteLength;
   if (byteLength === 0) return new Uint8Array(0);
