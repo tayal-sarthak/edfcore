@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.239
+
+- **Fixed** `formatValidationReport` answering a forgotten `await` with the call the reader had just
+  made. `validateRecording` is async, and the next step reads "pass what
+  validateRecording(recording) resolved to, in whole" — so
+  `formatValidationReport(validateRecording(recording))` was shown the expression it had just
+  written and told to pass what that resolves to, with no word for the difference.
+- 0.6.215 named this shape for the index guard — "a reader who takes the advice and forgets the
+  `await` gets the same sentence back, pointing at the same call" — and 0.6.234 for the source
+  adapter. It is also the likelier of the two mistakes this guard catches: the sweep and the
+  printer are written on consecutive lines and only one of them is awaited.
+- The 0.6.113 sentence for `report.diagnostics` is unchanged, and so is the inspection branch
+  below it.
+
 ## 0.6.238
 
 - **Fixed** `getStatusSignal` never naming the forgotten keyword, and **corrects 0.6.237**, whose

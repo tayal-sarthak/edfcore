@@ -45,6 +45,24 @@ export function formatValidationReport(
    */
   const given = report as { ok?: unknown; diagnostics?: unknown } | null | undefined;
   if (typeof given?.ok !== 'boolean' || !Array.isArray(given.diagnostics)) {
+    /*
+     * A FORGOTTEN AWAIT, which the advice below quotes back without the keyword.
+     *
+     * `validateRecording` is async, and the next step says "pass what validateRecording(recording)
+     * resolved to" — so a reader who wrote `formatValidationReport(validateRecording(recording))`
+     * was shown the expression they had just written and told to pass what it resolves to, with no
+     * word for the difference. 0.6.215 named that shape for the index guard: advice a reader
+     * follows and arrives back where they started.
+     *
+     * It is the likelier of the two mistakes this guard catches, because the sweep and the printer
+     * are written on consecutive lines and only one of them is awaited.
+     */
+    if (typeof (report as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'formatValidationReport(): that is a pending Promise, not a validation report. Next: ' +
+          'await validateRecording(recording) — it resolves to the report this prints.',
+      );
+    }
     throw new RangeError(
       'formatValidationReport(): that is not a validation report — it has no `ok` and no ' +
         '`diagnostics` list. Next: pass what validateRecording(recording) resolved to, in whole: ' +
