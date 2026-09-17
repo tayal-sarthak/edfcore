@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.180
+
+- **Fixed** `toPhysical` and `clampToDigitalRange` accepting raw record bytes as samples. The
+  documented pipeline is `readRecordBytes` → `decodeDigital` → `toPhysical`, all three published, so
+  `toPhysical(signal, recordBytes)` is that pipeline with the middle call left out — and it returned
+  a full-length `Float64Array` with no error, scaling each BYTE of the record as if it were a sample.
+- On a two-record read of a sixteen-samples-per-record signal that is 192 values where the signal has
+  32, drawn from the halves of 16-bit words and from the annotation region. Numbers that look exactly
+  like a signal, which is the failure `resolveSignals` names as the reason this library exists.
+- `assertSamples` could not see it: 0.6.128 checked for a `length` and the check after it requires
+  the first element to be a number, and a `Uint8Array` has both. One byte per element is now the
+  test, and it is a fact rather than a heuristic — an EDF digital value is signed 16-bit and a BDF
+  one signed 24-bit, so neither fits in a byte array, and `decodeDigital` returns an `Int32Array`.
+
 ## 0.6.179
 
 - **Fixed** `getStatusSignal` answering `undefined` for a chunk. 0.6.120 gave it a guard and said

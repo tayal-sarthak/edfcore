@@ -339,6 +339,34 @@ export function assertSignal(signal: EdfSignal, call: string): void {
  * distinction `errors.ts` exists to keep.
  */
 function assertSamples(digital: unknown, call: string): void {
+  /*
+   * RAW RECORD BYTES, which pass both checks below: they have a length, and their first element is
+   * a number.
+   *
+   * `readRecordBytes` is a published primitive and the step before `decodeDigital` in the pipeline
+   * this package documents, so `toPhysical(signal, recordBytes)` is that pipeline with one call
+   * left out — and it is the mistake with no symptom. It returned a full-length `Float64Array`,
+   * scaling each BYTE of the record as though it were a sample: on a 2-record read of a
+   * 16-samples-per-record signal, 192 values where the signal has 32, every one of them a byte of
+   * a 16-bit word or of the annotation region. Numbers that look exactly like a signal, which is
+   * the failure `resolveSignals` names as the reason this library exists.
+   *
+   * One byte per element is the whole test, and it is not a heuristic: a digital sample is a signed
+   * 16-bit (EDF) or 24-bit (BDF) integer, so it does not fit in a byte array at all, and
+   * `decodeDigital` returns an `Int32Array` by contract.
+   */
+  if (
+    ArrayBuffer.isView(digital) &&
+    (digital as { BYTES_PER_ELEMENT?: unknown }).BYTES_PER_ELEMENT === 1
+  ) {
+    throw new RangeError(
+      `${call}(): the samples are ${describeValue(digital)}, one byte per element, so they are ` +
+        'record bytes rather than decoded samples — a digital value is a signed 16-bit (EDF) or ' +
+        '24-bit (BDF) integer and does not fit in one, so this would have scaled each byte of the ' +
+        'file as if it were a sample. Next: run decodeDigital() over those bytes first, and pass ' +
+        'the Int32Array it returns.',
+    );
+  }
   const length = (digital as { length?: unknown } | null | undefined)?.length;
   if (typeof length === 'number') {
     /*
