@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.184
+
+- **Fixed** `httpSource` handing an unusable address to `fetch` and letting `fetch` answer for it.
+  0.6.102 checked the argument was a URL string or an object with an `href` and stopped there, so
+  `httpSource('not a url')` came back as `TypeError: Failed to parse URL from not a url` — no `Next:`
+  clause, not an `EdfSourceError`, so `isEdfError` was false — from the one adapter whose whole
+  argument is an address, and before any request went out.
+- `file:///path/to.edf` is named separately, because no parse catches it: it is a perfectly good URL,
+  and this adapter reads by asking a server for byte ranges, which no runtime serves for one. The
+  refusal names `fileSource`, `blobSource` and `byteSource`, and a bare `host:port` — which parses as
+  a scheme of its own — is told to write `http://` out.
+- A relative address is resolved against `location.href` when there is one, which is the rule the
+  runtime itself applies: legitimate in a page, meaningless in Node, Deno or Bun.
+
 ## 0.6.183
 
 - **Fixed** `getSignal`, `findSignals` and `matchSignals` answering about a chunk's samples. Their

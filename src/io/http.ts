@@ -149,6 +149,53 @@ function hrefOf(url: string | { readonly href: string }): string {
   );
 }
 
+/**
+ * The ADDRESS, before a request is built from it.
+ *
+ * `hrefOf` checks the argument is a string and stops there, so anything a string can hold reached
+ * `fetch` — and `fetch` answered for itself. `httpSource('not a url')` was V8's
+ * `TypeError: Failed to parse URL from not a url`: no `Next:` clause, not an `EdfSourceError`, so
+ * `isEdfError` was false, from the one adapter whose whole argument is an address, and before any
+ * request went out so there was nothing about the network in it either. That is the same shape
+ * 0.6.102 fixed one function up, for the object form.
+ *
+ * `file://` is the mistake worth naming. It is a perfectly good URL, so no parse catches it, and
+ * this adapter reads by asking for byte ranges over HTTP — which no runtime serves for a file URL.
+ * `fileSource(path)` is the adapter for that and the message says so.
+ *
+ * Resolved against `location.href` WHEN THERE IS ONE, because that is the rule the runtime itself
+ * applies: a relative address is legitimate in a page and meaningless in Node, Deno or Bun. Reached
+ * structurally, like `globalThis.fetch` below, since `src/` compiles with no DOM lib.
+ */
+function assertFetchableHref(href: string): void {
+  const UrlCtor = (globalThis as { URL?: new (url: string, base?: string) => { protocol: string } })
+    .URL;
+  if (UrlCtor === undefined) return;
+  const base = (globalThis as { location?: { href?: unknown } }).location?.href;
+  let protocol: string;
+  try {
+    protocol = new UrlCtor(href, typeof base === 'string' ? base : undefined).protocol;
+  } catch {
+    throw new EdfSourceError(
+      `httpSource(): ${JSON.stringify(href)} is not an address this runtime can fetch. It is not ` +
+        'an absolute URL, and there is no page here to resolve a relative one against, so the ' +
+        "request would have failed with fetch's own TypeError rather than anything edfcore said. " +
+        'Next: pass the whole https:// address.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    throw new EdfSourceError(
+      `httpSource(): ${JSON.stringify(href)} is a ${protocol.replace(':', '')} address, and this ` +
+        'adapter reads by asking a server for byte ranges over HTTP. Next: write the scheme out as ' +
+        'http:// or https:// if that is what is missing, or use fileSource(path) from ' +
+        '"edfcore/node" for a file on disk, blobSource(file) for one a browser handed you, and ' +
+        'byteSource(bytes) for one already in memory.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
+}
+
 function resolveFetch(options: HttpSourceOptions | undefined): FetchLike {
   const provided = options?.fetch;
   if (provided !== undefined) return provided;
@@ -299,6 +346,7 @@ export async function httpSource(
   options?: HttpSourceOptions,
 ): Promise<ByteSource> {
   const href = hrefOf(url);
+  assertFetchableHref(href);
   /*
    * The OPTIONS, which carry the `fetch` this adapter is supposed to call.
    *
