@@ -138,6 +138,25 @@ function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
  */
 export function assertDecodable(header: EdfHeader, recordBytes: Uint8Array, call: string): void {
   if (!Number.isSafeInteger((header as { recordByteLength?: unknown } | null)?.recordByteLength)) {
+    /*
+     * A FORGOTTEN AWAIT, and here the two arguments come from calls that differ in exactly that.
+     *
+     * `decodeDigital(header, recordBytes, records, signalIndex)` is written beside
+     * `readRecordBytes(source, header, records)` in `api-primitives.md`, and the header on that
+     * line comes from `readHeader(source)` — async — while the bytes come from a call the reader
+     * has already awaited. So one of the two keywords is the easy one to drop, and the message
+     * said only that the argument has no `recordByteLength`: true of a pending Promise, and true
+     * of almost everything else.
+     *
+     * 0.6.217, 0.6.229, 0.6.232, 0.6.235 and 0.6.236 name it everywhere else a header is taken.
+     * These two are the primitives, and `decodeAnnotations` shares the sentence.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        `${call}(): that is a pending Promise, not a header. Next: await readHeader(source) — it ` +
+          'resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       `${call}(): that is not a header — it has no recordByteLength, so there is no record size ` +
         'to measure the buffer against. Next: pass recording.header.',

@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.237
+
+- **Fixed** the last three calls that take a header and never named the keyword. `decodeDigital`
+  and `decodeAnnotations` share one guard; `trimToWindow` has its own, whose comment calls it "the
+  last entry point in the package that took a header without checking one". All three said only
+  that the argument lacked a field, which is true of a pending Promise and of almost everything
+  else.
+- The decoders are where the two arguments differ in exactly that keyword. `api-primitives.md`
+  writes `decodeDigital(header, recordBytes, records, signalIndex)` beside
+  `readRecordBytes(source, header, records)`: the bytes come from a call already awaited, the
+  header from `readHeader(source)`, which is async — so one of the two `await`s is the easy one to
+  drop. `trimToWindow` names `recording.header`, which a reader who called `readHeader` does not
+  have.
+- With these, every published call that takes a header names the forgotten keyword: 0.6.217 for the
+  three lookups, 0.6.229 for `validateHeader`, 0.6.235 for `buildTimeline`, 0.6.236 for the guards
+  whose advice named `parseHeader`.
+- Each keeps its own field and its own tail, the two decoders still share their sentence word for
+  word, and `trimToWindow` still names a chunk as one.
+
 ## 0.6.236
 
 - **Fixed** the three remaining guards whose advice names `parseHeader` for a header that came from

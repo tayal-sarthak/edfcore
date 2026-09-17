@@ -97,6 +97,21 @@ function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
   // header without checking one.
   const signals = (header as { signals?: unknown } | null | undefined)?.signals;
   if (!Array.isArray(signals)) {
+    /*
+     * A FORGOTTEN AWAIT, in the last entry point that took a header without naming it.
+     *
+     * The comment above calls this "the last entry point in the package that took a header without
+     * checking one", and the check it got says only that the argument has no signals — true of a
+     * pending Promise, and true of almost everything else. 0.6.217 made the argument for the three
+     * lookups and 0.6.236 finished the guards whose advice named `parseHeader`; this one names
+     * `recording.header`, which a reader who called `readHeader(source)` does not have.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'trimToWindow(): that is a pending Promise, not a header. Next: await readHeader(source) ' +
+          '— it resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       'trimToWindow(): that is not a header — it has no signals, and this call needs the ' +
         'samples-per-record the chunk signal does not carry. Next: pass recording.header.',
