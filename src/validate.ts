@@ -88,7 +88,11 @@ export type {
   ValidationReport,
 } from './types.js';
 
-import { requireBooleanOption, resolveMaterializeBudget } from './options.js';
+import {
+  requireBooleanOption,
+  requireFunctionOption,
+  resolveMaterializeBudget,
+} from './options.js';
 import { pluralise } from './text/counted.js';
 import { describeValue } from './text/describe.js';
 
@@ -847,6 +851,11 @@ export async function validateRecording(
    * It is the one option here whose whole subject is how much of the file was read, which is what
    * makes a silent OFF worse than a silent anything-else.
    */
+  requireFunctionOption(
+    options?.onProgress,
+    'onProgress',
+    'with the records scanned so far and the total',
+  );
   requireBooleanOption(
     options?.scanSamples,
     'scanSamples',

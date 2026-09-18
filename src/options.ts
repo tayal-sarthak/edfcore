@@ -118,6 +118,29 @@ export function requireBooleanOption(value: unknown, name: string, consequence: 
   );
 }
 
+/**
+ * A callback option, refused at the call rather than at the first tick.
+ *
+ * `onProgress` is the one option in this package that is a function, and it exists on exactly the
+ * two operations whose cost scales with the file — `validateRecording` and `buildRecordIndex`,
+ * which `types.ts` says are "long enough on a million-record recording to want a progress bar".
+ *
+ * Both callers reach it through optional-call syntax, which guards against ABSENCE and not against
+ * a wrong kind: a number or a string reached the call and threw V8's
+ * `options?.onProgress is not a function` — no `Next:` clause, naming an internal expression, from
+ * inside a traversal that had already started reading. And WHEN it threw depended on the file: the
+ * progress call sits in the scan loop, so a recording with nothing to scan finished without ever
+ * reaching it. That is the data-dependent guard 0.6.169 and 0.6.177 were spent on.
+ */
+export function requireFunctionOption(value: unknown, name: string, purpose: string): void {
+  if (value === undefined || typeof value === 'function') return;
+  throw new RangeError(
+    `options.${name} must be a function, and was ${describeValue(value)}. It is called ${purpose}, ` +
+      'so this would have failed partway through a traversal that had already begun reading — or ' +
+      'not at all, on a file with nothing to scan. Next: pass the callback, or omit it.',
+  );
+}
+
 export function requireItemLimit(value: number | undefined, total: number): number {
   if (value === undefined) return total;
   /*

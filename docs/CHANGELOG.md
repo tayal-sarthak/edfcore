@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.200
+
+- **Fixed** `onProgress` given something other than a function failing inside the traversal. Both
+  callers read it as `options?.onProgress?.(done, total)`, and optional-call syntax guards against
+  absence rather than against a wrong kind — so a number or a string reached the call site and threw
+  V8's `options?.onProgress is not a function`, with no `Next:` clause, from a scan that had already
+  started reading.
+- Whether it threw at all depended on the file: that call sits inside the scan loop, so a recording
+  with nothing to scan finished cleanly with the bad option never touched. The same data-dependent
+  guard 0.6.169 and 0.6.177 removed, in the one option that is a callback.
+- It exists on exactly the two operations whose cost scales with the file, which `types.ts` puts at
+  "long enough on a million-record recording to want a progress bar" — so failing in the middle of
+  one is the worst place for it.
+
 ## 0.6.199
 
 - **Fixed** `clampToDigitalRange` clamping to the annotations channel's declared pair. The function

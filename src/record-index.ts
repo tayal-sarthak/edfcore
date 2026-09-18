@@ -30,7 +30,7 @@ import { appendDiagnostics, assertParseOptions } from './diagnostics/collector.j
 import { EdfRangeError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
 import { assertByteSource, assertReadOptions } from './io/source.js';
-import { resolveMaterializeBudget } from './options.js';
+import { requireFunctionOption, resolveMaterializeBudget } from './options.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { saturateToInt64, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
@@ -502,6 +502,14 @@ export async function buildRecordIndex(
   // `scanOnsets` SPREADS these into the decode options, and spreading a bare value yields `{}` —
   // a perfectly good object by the time a sink sees it, with `strict` gone.
   assertParseOptions(options);
+  // And the callback, which optional-call syntax guards against absence and not against a wrong
+  // kind. It is called from inside the scan loop, so a file with no records reached it never and a
+  // long one reached it partway through — the data-dependent guard 0.6.169 and 0.6.177 removed.
+  requireFunctionOption(
+    options?.onProgress,
+    'onProgress',
+    'with the records scanned so far and the total',
+  );
   const { header, timeline } = recording;
   const onsets = await scanOnsets(recording, options);
   assertMonotonicOnsetArray(onsets);
