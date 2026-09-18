@@ -154,6 +154,37 @@ function assertJoinable(previous: EdfChunk, next: EdfChunk, index: number): void
     );
   }
 
+  /*
+   * And that the two chunks came from the SAME FILE, which nothing above can see.
+   *
+   * Every test so far is about time and record numbers, and those are properties a second recording
+   * can satisfy exactly: two files of the same geometry, read at adjacent record ranges, pass the
+   * gap test, the record test, the tick test and the per-signal sample test. The result is one array
+   * holding half of one recording and half of another, with `records` and `durationSeconds` claiming
+   * it is a single run — which is worse than the gap this function exists to refuse, and reported
+   * even less.
+   *
+   * `byteOffset` and `byteLength` are the two fields that know where the samples came from. Within
+   * one recording they are fixed by the record range — `headerByteLength + start * recordByteLength`
+   * and `count * recordByteLength` — so record-adjacent chunks are byte-adjacent as well, at every
+   * chunk size and after a merge. When they are not, the two chunks were read from files whose
+   * header or record sizes differ, and no arrangement of records makes that one file.
+   *
+   * It does NOT catch two files of identical geometry: nothing on `EdfChunk` identifies a recording,
+   * so that pair stays indistinguishable. This closes the case where the files differ at all, which
+   * is the usual one — a different channel count is a different record size.
+   */
+  const expectedByteOffset = previous.byteOffset + previous.byteLength;
+  if (next.byteOffset !== expectedByteOffset) {
+    throw new RangeError(
+      `mergeChunks: chunk ${index} begins at byte ${next.byteOffset}, but the chunk before it ` +
+        `ends at ${expectedByteOffset}. Within one recording a record range fixes both numbers, so ` +
+        'these two were read from files whose headers or records are different sizes — different ' +
+        "recordings. Concatenating them would put one file's samples after another's in an array " +
+        'that says it is one run. Next: merge the chunks of each recording separately.',
+    );
+  }
+
   if (next.signals.length !== previous.signals.length) {
     throw new RangeError(
       `mergeChunks: chunk ${index} carries ${pluralise(next.signals.length, 'signal')}, the chunk ` +

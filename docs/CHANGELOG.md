@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.196
+
+- **Fixed** `mergeChunks` joining chunks from two different recordings. Every test it applied was
+  about time and record numbers, and a second file satisfies all of them: same record duration,
+  adjacent record ranges, and the gap, record, tick and per-signal sample checks all pass. The result
+  was one array holding half of one recording and half of another, with `records` and
+  `durationSeconds` claiming a single run.
+- That is worse than the gap this function exists to refuse — its docblock rejects concatenating
+  across five minutes because "nothing in the result says so" — and it was reported even less.
+- `byteOffset` and `byteLength` are the two fields that know where the samples came from. Within one
+  recording the record range fixes both, so record-adjacent chunks are byte-adjacent at every chunk
+  size and after a merge; when they are not, the files' headers or records are different sizes.
+- It does not catch two files of identical geometry, and nothing on `EdfChunk` could — no field
+  identifies a recording. That limit is pinned in the tests rather than assumed.
+
 ## 0.6.195
 
 - **Fixed** `formatValidationReport`'s `header` option going unchecked. It is the one field on these
