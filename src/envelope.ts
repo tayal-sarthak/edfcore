@@ -150,6 +150,27 @@ export async function readEnvelope(
     'readEnvelope',
     '{ signalIndices, startSeconds, durationSeconds, buckets }',
   );
+  /*
+   * And the SIBLING'S field, left on the selection.
+   *
+   * These two calls exist so a caller can say the bucket width either way — "a plot's pixel width"
+   * or seconds per pixel — and a viewer that offers both switches between them on one selection
+   * object. Whichever field is not taken out on the way is simply ignored, so the SAME object
+   * answered with four buckets here and six from `readEnvelopeAtResolution`: two different
+   * resolutions for one selection, and no way to see which one was used.
+   *
+   * This is the reverse of `assertSelection`'s records-versus-window pair (0.6.87 and 0.6.176). The
+   * difference is that these two fields are both about the buckets, so having both is not a shape
+   * mistake — it is an unanswerable question.
+   */
+  if ((selection as { secondsPerBucket?: unknown }).secondsPerBucket !== undefined) {
+    throw new RangeError(
+      'readEnvelope(): the selection carries both buckets and secondsPerBucket, and this call ' +
+        'divides the run into buckets — so secondsPerBucket was going to be ignored. Next: drop ' +
+        'one of the two, or call readEnvelopeAtResolution(), which is the one that takes seconds ' +
+        'per bucket.',
+    );
+  }
   assertPositiveInteger(selection.buckets, 'buckets');
   // Validated before the window is resolved, for the same reason readWindow does it: a bad
   // signalIndices must not read back as an empty stretch of recording.
@@ -713,6 +734,16 @@ export async function readEnvelopeAtResolution(
     'readEnvelopeAtResolution',
     '{ signalIndices, startSeconds, durationSeconds, secondsPerBucket }',
   );
+  // And the sibling's field, for the reason `readEnvelope` states in full: a selection carrying
+  // both asks two different questions about the bucket width, and each call answered its own
+  // silently — four buckets there against six here, from one object.
+  if ((selection as { buckets?: unknown }).buckets !== undefined) {
+    throw new RangeError(
+      'readEnvelopeAtResolution(): the selection carries both secondsPerBucket and buckets, and ' +
+        'this call sizes the buckets in seconds — so buckets was going to be ignored. Next: drop ' +
+        'one of the two, or call readEnvelope(), which is the one that takes a bucket count.',
+    );
+  }
   const { secondsPerBucket } = selection;
   if (!Number.isFinite(secondsPerBucket) || secondsPerBucket <= 0) {
     throw new RangeError(

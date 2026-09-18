@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.201
+
+- **Fixed** an envelope selection carrying both `buckets` and `secondsPerBucket` being answered twice
+  over. The two calls exist so a caller can state the bucket width either way — a plot's pixel width
+  or seconds per pixel — so a viewer offering both switches between them on one selection object, and
+  whichever field was not taken out on the way was simply ignored.
+- The same object then gave four buckets from `readEnvelope` and six from
+  `readEnvelopeAtResolution`, with nothing saying which had been used.
+- It is the reverse of the records-versus-window pair `assertSelection` handles (0.6.87, 0.6.176):
+  those are two shapes and one is wrong, while these are two answers to the same question and neither
+  is, which is why each call now names the sibling rather than guessing.
+
 ## 0.6.200
 
 - **Fixed** `onProgress` given something other than a function failing inside the traversal. Both
