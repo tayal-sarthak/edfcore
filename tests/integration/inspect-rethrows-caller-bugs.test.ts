@@ -72,9 +72,9 @@ describe('a mistake in the arguments', () => {
     const error = await thrownBy(() => inspectEdf(sourceClaiming(1e21)));
 
     expect(error).toBeInstanceOf(RangeError);
-    expect((error as RangeError).message).toContain('sourceByteLength must be a non-negative safe');
+    expect((error as RangeError).message).toContain('must be a non-negative safe integer');
     // The bytes are a perfectly good EDF file, so nothing here is a statement about them.
-    expect((error as RangeError).message).toContain('source.byteLength for a ByteSource');
+    expect((error as RangeError).message).toContain('source.byteLength');
   });
 
   it('stays outside the EdfError family, so a caller’s triage does not absorb it', async () => {

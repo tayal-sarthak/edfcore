@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.192
+
+- **Fixed** a `ByteSource` being accepted with a `byteLength` that is not a byte count. The guard
+  checks it structurally — "a `read` function and a numeric `byteLength`" — because `api-sources.md`
+  documents writing your own, and numeric is not the same as usable: `NaN`, `-1`, `Infinity` and
+  `1.5` are all numbers.
+- Each built a source, and the first read then answered `ByteSource.read(offset 0, length NaN)
+  resolved with 0 bytes. A ByteSource must resolve with exactly the requested number of bytes or
+  reject` — which accuses the caller's `read()` of breaking its contract when it answered correctly
+  for a length edfcore computed and handed it.
+- 0.6.85 made this argument for `fileHandleSource` and recorded the same cost: a `NaN` "disabled the
+  range guard rather than failing", and the failure surfaced elsewhere "blaming a caller who passed
+  it the right arguments". That fix went into one adapter; this is the boundary every source crosses,
+  including the one no adapter can cover.
+- A plain `RangeError`, not an `EdfSourceError`: `inspectEdf` turns an `EdfError` into a diagnostic
+  about the FILE, and the bytes here are usually a perfectly good recording.
+
 ## 0.6.191
 
 - **Fixed** `decodeDigital` decoding the annotations channel into numbers. Its region holds EDF+ TAL

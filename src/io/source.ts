@@ -252,7 +252,39 @@ function describeGiven(source: unknown): string {
  */
 export function assertByteSource(source: unknown): asserts source is ByteSource {
   const candidate = source as { read?: unknown; byteLength?: unknown } | null | undefined;
-  if (typeof candidate?.read === 'function' && typeof candidate.byteLength === 'number') return;
+  if (typeof candidate?.read === 'function' && typeof candidate.byteLength === 'number') {
+    /*
+     * And that the number is a BYTE COUNT, which "typeof number" is not.
+     *
+     * 0.6.85 made this exact argument for `fileHandleSource` and recorded what a bad one costs: "a
+     * `NaN` or an absent `byteLength` disabled the range guard rather than failing: `assertReadRange`
+     * compares against it, every comparison against `NaN` is false", and "the failure then surfaced
+     * in `parseHeader` — which does guard it — blaming a caller who passed it the right arguments".
+     *
+     * That fix went into one adapter. This is the boundary every source crosses, and the one shape
+     * no adapter can cover: a `ByteSource` the CALLER wrote, which `api-sources.md` documents
+     * writing. A `NaN` from a `Content-Length` header, a `-1` from a stat that failed, a fractional
+     * size from a division — each built a source, and the first read then reported
+     * `ByteSource.read(offset 0, length NaN) resolved with 0 bytes. A ByteSource must resolve with
+     * exactly the requested number of bytes or reject`. That accuses the caller's `read()` of
+     * breaking its contract when it answered correctly for the length edfcore computed and handed
+     * it.
+     */
+    if (Number.isSafeInteger(candidate.byteLength) && (candidate.byteLength as number) >= 0) return;
+    /*
+     * A plain `RangeError`, not an `EdfSourceError`, and that is the load-bearing half.
+     * `inspect-rethrows-caller-bugs.test.ts` pins the rule for exactly this class: `inspectEdf`
+     * turns an `EdfError` into a diagnostic about the FILE, so a mistake in the arguments has to
+     * stay outside the family or a caller's triage absorbs it. The bytes here are usually a
+     * perfectly good recording.
+     */
+    throw new RangeError(
+      `source.byteLength must be a non-negative safe integer, and this ByteSource advertises ` +
+        `${describeValue(candidate.byteLength)}. Every offset and length edfcore computes is ` +
+        'measured against it, so the first read asked for a range derived from it and then blamed ' +
+        'read() for the answer. Next: give the source the real size of the file in bytes.',
+    );
+  }
   const received = describeGiven(source);
   throw new EdfSourceError(
     `a ByteSource is needed — an object with a byteLength and a read() — and received ` +
