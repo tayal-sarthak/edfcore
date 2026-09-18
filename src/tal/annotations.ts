@@ -476,6 +476,28 @@ export function decodeAnnotations(
 ): EdfAnnotationsResult {
   assertDecodable(header, recordBytes, 'decodeAnnotations');
   assertRecordRange(header, recordBytes, records);
+  /*
+   * The two TICK options, which are the only bigints a caller of this package ever passes in.
+   *
+   * Both name an origin on the recording's axis, and both have a float sibling one field away:
+   * `timeline.startOffsetSeconds` sits beside `startOffsetTicks`, and it is the seconds a reader
+   * reaches for. A number went straight into the rebasing arithmetic and threw V8's `Cannot mix
+   * BigInt and other types, use explicit conversions` — a sentence about types, with no `Next:`
+   * clause and nothing naming the option.
+   *
+   * 0.6.112 made this exact argument for `recordDurationTicks` in the sample-grid family: "the
+   * seconds beside it on the same header are a float, and this family is exact on purpose". These
+   * are the last two tick options in the package that took whatever arrived.
+   */
+  for (const name of ['startOffsetTicks', 'originTicks'] as const) {
+    const value = options?.[name];
+    if (value === undefined || typeof value === 'bigint') continue;
+    throw new RangeError(
+      `decodeAnnotations(): options.${name} is ${describeValue(value)}, not a BigInt. It is an ` +
+        'origin in 100 ns ticks, and the onsets it rebases are exact integers — so the seconds ' +
+        'beside it are a float and cannot stand in for it. Next: pass timeline.startOffsetTicks.',
+    );
+  }
 
   const sink = new DiagnosticSink(options);
   const signals = resolveSignals(header, options?.signalIndices);

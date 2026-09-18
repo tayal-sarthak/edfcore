@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.204
+
+- **Fixed** `decodeAnnotations` taking `startOffsetTicks` or `originTicks` in the wrong unit. They
+  are the only BigInt options a caller of this package ever passes in, both name record 0's
+  sub-second start offset, and both have a float sibling one field away —
+  `timeline.startOffsetSeconds` sits directly beside `timeline.startOffsetTicks`.
+- A number went into the rebasing arithmetic and came back as V8's `Cannot mix BigInt and other
+  types, use explicit conversions`: a sentence about types, with no `Next:` clause and nothing naming
+  the option, out of a decoder.
+- 0.6.112 made this exact argument for `recordDurationTicks` — "the seconds beside it on the same
+  header are a float, and this family is exact on purpose". These two were the last tick options that
+  took whatever arrived.
+
 ## 0.6.203
 
 - **Fixed** `allowFullDownload` given as text being read as a permission withheld. It is compared
