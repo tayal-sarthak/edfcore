@@ -114,13 +114,25 @@ describe.each(present.length > 0 ? present : (['(corpus absent)'] as const))('%s
       recording.timeline.spanSeconds + 1e-9,
     );
 
-    // A physical range exists for every signal whose bounds parsed, and is ordered.
-    for (const signal of header.signals) {
-      if (!Number.isFinite(signal.physicalMinimum) || !Number.isFinite(signal.physicalMaximum)) {
+    // A physical range exists for every DATA signal whose bounds parsed, and is ordered. The
+    // annotations channel is excluded the same way `matchSignals` excludes it above: its physical
+    // fields describe nothing, so it has no range to be ordered (0.6.194).
+    for (const index of header.dataSignalIndices) {
+      const signal = header.signals[index];
+      if (
+        signal === undefined ||
+        !Number.isFinite(signal.physicalMinimum) ||
+        !Number.isFinite(signal.physicalMaximum)
+      ) {
         continue;
       }
       const range = physicalRangeOf(signal);
       expect(range.low, signal.label).toBeLessThanOrEqual(range.high);
+    }
+    for (const index of header.annotationSignalIndices) {
+      const signal = header.signals[index];
+      if (signal === undefined) continue;
+      expect(() => physicalRangeOf(signal), signal.label).toThrow(/annotations channel/);
     }
 
     // The formatters produce text and never leak identification without being asked.

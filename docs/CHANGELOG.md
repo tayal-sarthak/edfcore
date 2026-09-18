@@ -6,6 +6,17 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.194
+
+- **Fixed** `physicalRangeOf` returning a range for the annotations channel. It returned
+  `{ low: -1, high: 1 }` — the conventional pair a writer puts in an annotation signal's header —
+  as if it were a measurement range, and this function's own docblock says the result "is what a
+  fixed axis or a gain control should be built from". So a viewer drew a y-axis in units that do not
+  exist, for a channel that holds text.
+- The package is explicit about those two fields everywhere else: `parseSignalHeaders` does not build
+  a scale from them, and `describeScalingFailure` says they "describe nothing a caller may use". This
+  function never reads `scale`, so it never met the refusal `toPhysical` gives for the same signal.
+
 ## 0.6.193
 
 - **Fixed** `scanSamples` given as text skipping the samples and reporting a verdict anyway. It is

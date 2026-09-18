@@ -441,6 +441,28 @@ export function physicalRangeOf(signal: EdfSignal): {
   readonly high: number;
 } {
   assertSignal(signal, 'physicalRangeOf');
+  /*
+   * The ANNOTATIONS CHANNEL, whose physical fields describe nothing.
+   *
+   * `parseSignalHeaders` deliberately does not build a scale for it, and `describeScalingFailure`
+   * says why in its own words: those fields "describe nothing a caller may use", and checking them
+   * "would report a defect about a number nobody may use". `toPhysical` therefore throws an
+   * `EdfScalingError` for such a signal and says the same thing.
+   *
+   * This function never reads `scale`, so it never met that refusal. It read the two fields
+   * directly and returned `{ low: -1, high: 1 }` — the conventional pair a writer puts in an
+   * annotation signal's header, handed back as a measurement range. This docblock says the result
+   * "is what a fixed axis or a gain control should be built from", so a viewer builds a y-axis in
+   * units that do not exist for a channel holding text.
+   */
+  if (signal.kind === 'annotations') {
+    throw new RangeError(
+      `physicalRangeOf(): signal ${signal.index} (${JSON.stringify(signal.label)}) is this file's ` +
+        'annotations channel. Its physical fields describe nothing — no scale was ever built from ' +
+        'them — so the pair it declares is not a range in any unit, and an axis drawn from it ' +
+        'would be one. Next: pass a signal from header.dataSignalIndices.',
+    );
+  }
   const { physicalMinimum, physicalMaximum } = signal;
   if (!Number.isFinite(physicalMinimum) || !Number.isFinite(physicalMaximum)) {
     throw new RangeError(

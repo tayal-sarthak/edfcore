@@ -79,8 +79,17 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
 
     // A physical range is ordered whichever way the file declared its bounds — an inverted
     // physical range is legal, and `physicalRangeOf` is the helper that hides that from a plot.
-    for (const signal of header.signals) {
-      if (!Number.isFinite(signal.physicalMinimum) || !Number.isFinite(signal.physicalMaximum)) {
+    //
+    // DATA signals only. An annotations channel's physical fields describe nothing, so it has no
+    // range to order, and asking for one drew an axis in units that do not exist (0.6.194). That is
+    // the same exclusion `matchSignals` makes, and it is checked rather than skipped below.
+    for (const index of header.dataSignalIndices) {
+      const signal = header.signals[index];
+      if (
+        signal === undefined ||
+        !Number.isFinite(signal.physicalMinimum) ||
+        !Number.isFinite(signal.physicalMaximum)
+      ) {
         continue;
       }
       const range = physicalRangeOf(signal);
@@ -88,6 +97,11 @@ describe.each(AWKWARD)('$name', ({ awkward, bytes }) => {
       expect(new Set([range.low, range.high])).toEqual(
         new Set([signal.physicalMinimum, signal.physicalMaximum]),
       );
+    }
+    for (const index of header.annotationSignalIndices) {
+      const signal = header.signals[index];
+      if (signal === undefined) continue;
+      expect(() => physicalRangeOf(signal), signal.label).toThrow(/annotations channel/);
     }
 
     // `findSignals` and `getSignal` answer about the same channels: whenever a label is unique,
