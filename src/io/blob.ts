@@ -72,6 +72,29 @@ export function blobSource(blob: BlobLike): ByteSource {
       // `Blob.slice` takes an EXCLUSIVE end, unlike an HTTP byte range.
       const buffer = await blob.slice(offset, offset + length).arrayBuffer();
       throwIfAborted(options);
+      /*
+       * Diagnosed HERE rather than left to `assertExactRead`, which is the argument `node.ts` makes
+       * for its own short read — and the case it names there is this one: "a picked `File`'s backing
+       * file shrank". It was the only adapter of the three without the diagnosis.
+       *
+       * `assertExactRead` exists for a `ByteSource` the CALLER wrote. Its message says a source
+       * "must resolve with exactly the requested number of bytes or reject", which accuses the
+       * browser of breaking a contract it kept: the platform answered correctly for a file that is
+       * now shorter than the one the picker measured. This module's own docblock calls that the one
+       * legitimate short read there is.
+       *
+       * Same shape as the HTTP buffered-body path (0.3.75) and the file handle (0.3.93).
+       */
+      if (buffer.byteLength < length) {
+        throw new EdfSourceError(
+          `Reading bytes ${offset}..${offset + length - 1}: the blob ended after ` +
+            `${buffer.byteLength} of them. This source was built for ${byteLength} bytes, so the ` +
+            'range asked for is past the end of the blob as it is now. Next: a picked File is a ' +
+            'handle on a file that can still change — the backing file was truncated or replaced ' +
+            'since it was chosen, so ask for it again.',
+          { offset, requestedLength: length, receivedLength: buffer.byteLength },
+        );
+      }
       return assertExactRead(new Uint8Array(buffer), offset, length);
     },
   };

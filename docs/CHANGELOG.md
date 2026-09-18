@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.198
+
+- **Fixed** `blobSource` reporting a shrunk `File` as a `ByteSource` breaking its contract. Its own
+  docblock names this as the one legitimate short read there is — "a `File` whose backing file
+  changed on disk since the picker ran" — and then handed it to `assertExactRead`, whose message says
+  a source "must resolve with exactly the requested number of bytes or reject" and asks for a
+  `read()` that loops.
+- So the browser was accused of breaking a contract it kept, and the advice asked it to loop for
+  bytes that no longer exist.
+- `node.ts` diagnoses exactly this in its own reader and names this very case — "a picked `File`'s
+  backing file shrank". The HTTP buffered-body path got it in 0.3.75 and the file handle in 0.3.93;
+  `blobSource` was the third of three.
+
 ## 0.6.197
 
 - **Fixed** the three printers' flags being read as one side of a boolean when given as text —
