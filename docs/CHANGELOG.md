@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.203
+
+- **Fixed** `allowFullDownload` given as text being read as a permission withheld. It is compared
+  against a boolean rather than coerced — the rule 0.6.182, 0.6.193 and 0.6.197 each closed for
+  another flag — so `'true'` out of a config key read as OFF.
+- Off is the expensive direction for this one. It is the option that says "yes, this server ignores
+  Range; fetch the resource once and serve reads out of it", so the read came back as
+  `HTTP_RANGE_IGNORED` with the sentence "edfcore will not silently buffer a recording nobody asked
+  for" — said to the caller who asked for it.
+- `data-sources.md` names `options.byteLength` with `allowFullDownload` as the pair for exactly that
+  kind of server, which is where a value read out of a config lands.
+
 ## 0.6.202
 
 - **Fixed** `parseHeader` reporting `TRUNCATED_FILE` for a `sourceByteLength` below the length of the

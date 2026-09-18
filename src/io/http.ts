@@ -15,7 +15,7 @@
  */
 
 import { EdfSourceError } from '../errors.js';
-import { requireFiniteOption } from '../options.js';
+import { requireBooleanOption, requireFiniteOption } from '../options.js';
 import { describeValue } from '../text/describe.js';
 import type {
   AbortSignalLike,
@@ -371,6 +371,21 @@ export async function httpSource(
       { offset: 0, requestedLength: 0 },
     );
   }
+  /*
+   * The FLAG, once the options object is there. Same rule as 0.6.182, 0.6.193 and 0.6.197: it is
+   * compared against a boolean rather than coerced, so `'true'` out of a config key reads as OFF.
+   *
+   * Off is the direction that costs here. `allowFullDownload` is the one option that says "yes, this
+   * server ignores Range — fetch the resource once and serve reads out of it", so text turned the
+   * permission off and the read was refused with `HTTP_RANGE_IGNORED` and the sentence "edfcore
+   * will not silently buffer a recording nobody asked for" — said to a caller who asked for it.
+   */
+  requireBooleanOption(
+    options?.allowFullDownload,
+    'allowFullDownload',
+    'a server that ignores Range was refused with HTTP_RANGE_IGNORED, which is the permission this ' +
+      'option grants',
+  );
   const fetchImpl = resolveFetch(options);
   const baseHeaders: Record<string, string> = { ...options?.headers };
   const gate = createGate(
