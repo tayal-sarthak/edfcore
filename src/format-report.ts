@@ -76,6 +76,40 @@ export function formatValidationReport(
     );
   }
   const lines: string[] = [];
+  /*
+   * The HEADER option, before a signal is taken out of it.
+   *
+   * It is the one field on these options that is an object, and the recording is what a caller
+   * holds — `formatValidationReport(report, { header: recording })` is one field short of the call
+   * above it, `validateRecording(recording)`. Nothing checked it: the first argument has been
+   * guarded since 0.6.113 and the options object since `assertOptions`, and the object inside them
+   * was not.
+   *
+   * It only shows up once the report has SIGNAL STATS, because that is the only block this names
+   * signals in — so a sweep with `scanSamples` off printed fine and the same call with it on threw
+   * V8's `Cannot read properties of undefined (reading '0')` from `header.signals[…]`, or, for a
+   * chunk, `text is not iterable` from `printable`. Whether it failed at all depended on how much
+   * of the file had been read.
+   *
+   * The option's whole job is the difference between `EEG Fpz-Cz` and `signal 0`, so it is also the
+   * one a caller adds last, to a call that already worked.
+   */
+  if (options?.header !== undefined) {
+    // Being an array is not the test; being an array of the RIGHT signals is — a chunk carries one
+    // too, and its entries have no `label` for a row to be named with. That is the rule 0.6.183 and
+    // 0.6.186 settled for the lookups and for `trimToWindow`.
+    const signals = (options.header as EdfHeader | undefined)?.signals as unknown;
+    const named =
+      Array.isArray(signals) &&
+      (signals.length === 0 || typeof (signals[0] as { label?: unknown })?.label === 'string');
+    if (!named) {
+      throw new RangeError(
+        'formatValidationReport(): options.header is not a header — nothing on it carries the ' +
+          'labels this names the rows with, which is all this option does. Next: pass ' +
+          'recording.header, or omit it and the rows read `signal 0`.',
+      );
+    }
+  }
   const header = options?.header;
 
   // Before anything is rendered, and outside the `diagnostics.length > 0` branch below. A report

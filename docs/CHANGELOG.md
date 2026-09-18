@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.195
+
+- **Fixed** `formatValidationReport`'s `header` option going unchecked. It is the one field on these
+  options that is an object, and the recording is what a caller holds — the line above is
+  `validateRecording(recording)` — so `{ header: recording }` is one field short of it. The first
+  argument has been guarded since 0.6.113 and the options object since `assertOptions`; the object
+  inside them was not.
+- It only failed once the report had signal statistics, because that is the only block this names
+  signals in. The same call printed fine with `scanSamples` off and threw V8's `Cannot read
+  properties of undefined (reading '0')` with it on — so whether the mistake surfaced depended on how
+  much of the file had been read.
+- Being an array is not the test; carrying labels is. A chunk has a `signals` array too, and its
+  entries have no `label` for a row to be named with — the rule 0.6.183 and 0.6.186 settled.
+
 ## 0.6.194
 
 - **Fixed** `physicalRangeOf` returning a range for the annotations channel. It returned
