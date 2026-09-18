@@ -92,6 +92,32 @@ export function assertOptions(options: unknown, call: string, listed: string): v
   );
 }
 
+/**
+ * A boolean option, refused rather than read as false.
+ *
+ * Every flag in this package is resolved as `options?.flag === true`, which never coerces — the
+ * right way to read a boolean, and therefore a silent one: `'true'`, `'1'` and `1` are each
+ * not-`true`, so every one of them means OFF. 0.6.182 closed this for `strict` and made the
+ * argument: the same failure the bare-value guards exist to stop, reached through them rather than
+ * past them.
+ *
+ * Text is what arrives. These are the options a CLI flag, a query parameter and a JSON or YAML
+ * config key set, and all three hand over a string — which is the argument `requireItemLimit` above
+ * makes for its own coercion check.
+ *
+ * `consequence` completes the sentence "so this call ..." with what the OFF reading actually did,
+ * because that is the part a caller cannot see.
+ */
+export function requireBooleanOption(value: unknown, name: string, consequence: string): void {
+  if (value === undefined || typeof value === 'boolean') return;
+  throw new RangeError(
+    `options.${name} must be true or false, and was ${describeValue(value)}. It is read as ` +
+      `\`=== true\`, so anything else reads as false and ${consequence}. Next: pass a boolean — a ` +
+      'flag, a query parameter and a config key all arrive as text, so compare with === "true" ' +
+      'first.',
+  );
+}
+
 export function requireItemLimit(value: number | undefined, total: number): number {
   if (value === undefined) return total;
   /*

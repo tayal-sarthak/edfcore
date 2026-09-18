@@ -88,7 +88,7 @@ export type {
   ValidationReport,
 } from './types.js';
 
-import { resolveMaterializeBudget } from './options.js';
+import { requireBooleanOption, resolveMaterializeBudget } from './options.js';
 import { pluralise } from './text/counted.js';
 import { describeValue } from './text/describe.js';
 
@@ -837,6 +837,21 @@ export async function validateRecording(
         'reported a verdict. Next: pass scanSamples on an options object.',
     );
   }
+  /*
+   * And the FIELD, once the object is there. The guard above describes what a dropped `scanSamples`
+   * costs — "this sweep would have skipped the samples and still reported a verdict" — and
+   * `scanSamples: 'true'` out of a config or a flag did exactly that, through the guard rather than
+   * past it: `=== true` is false for a string, the sweep took the cheap path, and the report came
+   * back with `ok: true` and `signalStats: []`.
+   *
+   * It is the one option here whose whole subject is how much of the file was read, which is what
+   * makes a silent OFF worse than a silent anything-else.
+   */
+  requireBooleanOption(
+    options?.scanSamples,
+    'scanSamples',
+    'this sweep skipped the samples and reported a verdict anyway',
+  );
   const { header, timeline } = recording;
   const recordCount = header.recordCount;
   const scanSamples = options?.scanSamples === true;

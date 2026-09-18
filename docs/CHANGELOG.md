@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.193
+
+- **Fixed** `scanSamples` given as text skipping the samples and reporting a verdict anyway. It is
+  resolved as `options?.scanSamples === true`, which never coerces — the right way to read a boolean,
+  and what makes the mistake silent: `'true'`, `'1'` and `1` are each not-`true`.
+- That is exactly what `validateRecording`'s own bare-value guard says a dropped `scanSamples` costs,
+  reached through the guard rather than past it. The sweep took the cheap path, `signalStats` came
+  back empty and `ok` came back true, with nothing saying the half `types.ts` calls "what turns
+  declared digital ranges into observed ones" had not run.
+- `requireBooleanOption` now holds the rule, beside `requireFiniteOption` and `requireItemLimit` in
+  the module whose subject is options "refused rather than silently coerced". 0.6.182 made the same
+  fix for `strict`.
+
 ## 0.6.192
 
 - **Fixed** a `ByteSource` being accepted with a `byteLength` that is not a byte count. The guard
