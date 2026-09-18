@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.191
+
+- **Fixed** `decodeDigital` decoding the annotations channel into numbers. Its region holds EDF+ TAL
+  text, and de-interleaving it as int16 produced an ordinary `Int32Array` — `12331, 5140, 0, 0, 0` on
+  a conforming file, the bytes of `+0` and the TAL separator read as samples — with no error and
+  nothing distinguishing them from a recorded channel.
+- Every reader above it already refuses this: `resolveSignals` for `readRecords`, `readWindow` and
+  `streamRecords`, and `envelope.ts` for both envelope calls. `decode/physical.ts` even declines to
+  offer `decodeDigital` as the fallback for such a signal, in as many words — "It does, and it
+  produces numbers that look exactly like a signal — the one failure this package exists to prevent."
+- So the primitive was the one route left to it. Nothing in the package decodes an annotation region
+  this way, and the refusal names `decodeAnnotations`, which takes the same record bytes.
+
 ## 0.6.190
 
 - **Fixed** `declaredDurationSeconds` dying on the record index. The guard 0.6.108 added tests

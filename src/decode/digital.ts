@@ -321,6 +321,30 @@ export function decodeDigitalCounted(
 ): DecodedDigital {
   assertDecodable(header, recordBytes, 'decodeDigital');
   const signal = signalAt(header, signalIndex);
+  /*
+   * The ANNOTATIONS CHANNEL, which this decoded into numbers.
+   *
+   * Its region holds EDF+ TAL text, and de-interleaving it as int16 or int24 produced a perfectly
+   * ordinary `Int32Array` — `12331, 5140, 0, 0, 0` for a conforming file, which is `+0` and `\x14`
+   * read as samples. `decode/physical.ts` names that outcome exactly, and refuses to call it a next
+   * step: "It does, and it produces numbers that look exactly like a signal — the one failure this
+   * package exists to prevent."
+   *
+   * Every read above this refuses it already — `resolveSignals` for `readRecords`, `readWindow` and
+   * `streamRecords`, and `envelope.ts` for both envelope calls — so this primitive was the one route
+   * left to the thing all of them exist to stop. Nothing in the package decodes an annotation region
+   * this way: `readTriggers` and `validateRecording` name data signals, and the region's own reader
+   * is `decodeAnnotations`, which takes the same bytes.
+   */
+  if (signal.kind === 'annotations') {
+    throw new RangeError(
+      `decodeDigital(): signal ${signalIndex} (${JSON.stringify(signal.label)}) is this file's ` +
+        'annotations channel: its region holds TAL text rather than samples, so this would have ' +
+        'returned the bytes of that text as an Int32Array — numbers that look exactly like a ' +
+        'signal. Next: read it with decodeAnnotations(), which takes these same record bytes, and ' +
+        'pass an index from header.dataSignalIndices here.',
+    );
+  }
   assertRecordRange(header, recordBytes, records);
 
   const bytesPerSample = header.bytesPerSample;
