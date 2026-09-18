@@ -183,6 +183,44 @@ export function resolveTimeWindow(
         'Next: pass recording.index, or the index buildRecordIndex(recording) returns.',
     );
   }
+  /*
+   * And that the two describe the SAME recording.
+   *
+   * They arrive as separate arguments and are only ever paired by a caller. `buildRecordIndex`
+   * resolves to a bare index, so `{ ...recording, index: await buildRecordIndex(recording) }` is the
+   * documented way to put one on — which makes holding the wrong one an ordinary slip:
+   * `validate-index-reuse.test.ts` lists it as "a viewer holding indices for several open
+   * recordings, a helper that caches one per session, a loop that forgets to rebuild", and states
+   * the cost: "not a wrong number but a wrong FILE: the segments and gaps of recording A reported
+   * as the structure of recording B".
+   *
+   * `validateRecording` refuses a mismatched index. Every READ went through here and did not: a
+   * continuous eight-record file carrying a gapped file's index returned records 0..3 for a window
+   * over the whole recording — half the data missing, silently — and `[]` for a window inside the
+   * other file's gap, which reads as a hole in a file that has none.
+   *
+   * A complete index's last segment ends at the recording's span, by construction, so the two
+   * numbers disagreeing is the contradiction. The record counts are compared first because they are
+   * the cheaper test and the commoner mistake; the span is what catches two files of the same
+   * length. A file with no records has no segments and is left to the branch below.
+   */
+  if (index.recordCount !== timeline.recordCount) {
+    throw new RangeError(
+      `resolveTimeWindow(): the index counts ${index.recordCount} records and the timeline ` +
+        `${timeline.recordCount}, so they were built from different files. Next: pass the index ` +
+        'this recording was scanned with — buildRecordIndex(recording) returns it.',
+    );
+  }
+  const lastSegment = index.segments?.[index.segments.length - 1];
+  if (lastSegment !== undefined && lastSegment.endTicks !== timeline.spanTicks) {
+    throw new RangeError(
+      `resolveTimeWindow(): the index describes a recording spanning ${lastSegment.endTicks} ticks ` +
+        `and the timeline one spanning ${timeline.spanTicks}, so they were built from different ` +
+        "files. Reading through the wrong one reports another recording's gaps as this one's, " +
+        'which is data missing rather than data wrong. Next: pass the index this recording was ' +
+        'scanned with — buildRecordIndex(recording) returns it.',
+    );
+  }
   const recordCount = timeline.recordCount;
   if (recordCount <= 0) return NO_RANGES;
 

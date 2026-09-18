@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.205
+
+- **Fixed** a recording reading through another recording's index. The timeline and the index reach
+  `resolveTimeWindow` as separate arguments and are only ever paired by a caller —
+  `buildRecordIndex` resolves to a bare index, so attaching one is a spread — and nothing checked
+  that the two came from the same file.
+- A continuous eight-record file carrying a gapped file's index returned records 0..3 for a window
+  over the whole recording: half the data missing, silently. A window inside the other file's gap
+  came back `[]`, which reads as a hole in a file that has none.
+- `validateRecording` has refused a mismatched index all along, and
+  `validate-index-reuse.test.ts` states the cost — "not a wrong number but a wrong FILE: the segments
+  and gaps of recording A reported as the structure of recording B". Every read went through this
+  call and did not.
+- The record counts are compared first, and the span second, because two files of the same length are
+  the case a count cannot catch: a complete index's last segment ends at the recording's span, by
+  construction. Verified against every fixture and corpus file in the suite.
+
 ## 0.6.204
 
 - **Fixed** `decodeAnnotations` taking `startOffsetTicks` or `originTicks` in the wrong unit. They
