@@ -244,6 +244,32 @@ export function parseHeader(
     );
   }
 
+  /*
+   * And that the two numbers describe the same file, which is a caller's arithmetic rather than a
+   * fact about the bytes.
+   *
+   * `sourceByteLength` is the length of the WHOLE file and `headerBytes` was read out of it, so a
+   * source smaller than the bytes taken from it is not a file any reader can produce. It was
+   * accepted, and the size checks below then reported `TRUNCATED_FILE` — a diagnostic asserting the
+   * FILE is short, for a number the caller computed. `edfcore` works hardest to keep those two
+   * apart, which is why the guard above this is a plain `RangeError` and says so in its own comment:
+   * "EdfFormatError would claim the bytes are wrong when what is wrong is the number describing
+   * them".
+   *
+   * A plain `RangeError` for the same reason, and for the one `inspect-rethrows-caller-bugs.test.ts`
+   * pins: `inspectEdf` turns an `EdfError` into a diagnostic about the file, so a mistake in the
+   * arguments has to stay outside the family.
+   */
+  if (isByteArray(headerBytes) && sourceByteLength < headerBytes.length) {
+    throw new RangeError(
+      `parseHeader(): sourceByteLength is ${sourceByteLength} but ${headerBytes.length} bytes were ` +
+        'handed in, and those bytes were read out of that source — so this pair describes no file, ' +
+        'and the size checks would have reported the file as truncated. Next: pass the length of ' +
+        'the whole file, not of the header — source.byteLength for a ByteSource, bytes.byteLength ' +
+        'for a file already in memory.',
+    );
+  }
+
   const sink = new DiagnosticSink(options);
 
   // ---- 1. The fixed header must be present at all. --------------------------------------

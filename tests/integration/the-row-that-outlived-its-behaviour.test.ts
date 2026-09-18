@@ -26,18 +26,20 @@ import { buildEdf } from '../support/writer.js';
 const PAGE = (DOCS_PAGES.get('api-primitives.md') ?? '').replace(/\s+/g, ' ');
 
 /** Two degenerate scales, so there is more than one block to cap. */
-const DIAGNOSTICS = parseHeader(
-  buildEdf({
-    recordCount: 1,
-    recordDurationSeconds: 1,
-    signals: [0, 1].map((index) => ({
-      label: `Fp${index}`,
-      samplesPerRecord: 2,
-      raw: { physicalMinimum: '5', physicalMaximum: '5' },
-    })),
-  }),
-  512 + 2 * 2 * 2,
-).diagnostics;
+const FILE = buildEdf({
+  recordCount: 1,
+  recordDurationSeconds: 1,
+  signals: [0, 1].map((index) => ({
+    label: `Fp${index}`,
+    samplesPerRecord: 2,
+    raw: { physicalMinimum: '5', physicalMaximum: '5' },
+  })),
+});
+
+// `FILE.byteLength`, not arithmetic. This said `512 + 2 * 2 * 2`, which is 520 for a file of 776 —
+// the fixed header is 256 bytes and each of the three signals adds another — so every parse here
+// also collected a TRUNCATED_FILE about a file that is whole. 0.6.202 refuses that pair outright.
+const DIAGNOSTICS = parseHeader(FILE, FILE.byteLength).diagnostics;
 
 const NOTICE = /\.\.\. and \d+ more/;
 

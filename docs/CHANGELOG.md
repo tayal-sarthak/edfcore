@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.202
+
+- **Fixed** `parseHeader` reporting `TRUNCATED_FILE` for a `sourceByteLength` below the length of the
+  bytes handed in. The two arguments describe one file from two directions — the whole file's length,
+  and a prefix read out of it — so a source smaller than its own bytes is not a file any adapter can
+  produce.
+- It was accepted, and the size checks then asserted the FILE was short for a number the caller had
+  computed. The guard directly above it refuses a bad `sourceByteLength` with a plain `RangeError`
+  for exactly this reason, in its own words: an `EdfFormatError` "would claim the bytes are wrong
+  when what is wrong is the number describing them".
+- A plain `RangeError` here too, so `inspectEdf` cannot turn it into a diagnostic about the file.
+- It found an instance of itself in this repository's own suite: a fixture computed `512 + 2 * 2 * 2`
+  for a 776-byte file and had been collecting a `TRUNCATED_FILE` about a whole file ever since.
+
 ## 0.6.201
 
 - **Fixed** an envelope selection carrying both `buckets` and `secondsPerBucket` being answered twice
