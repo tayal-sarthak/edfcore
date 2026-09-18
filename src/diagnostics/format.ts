@@ -11,7 +11,7 @@
 
 import { trimEdfField } from '../bytes/latin1.js';
 import { HEADER_FIELDS, SIGNAL_FIELD_WIDTHS } from '../constants.js';
-import { assertOptions, requireItemLimit } from '../options.js';
+import { assertOptions, requireBooleanOption, requireItemLimit } from '../options.js';
 import { describeValue } from '../text/describe.js';
 import { printable } from '../text/printable.js';
 import type { EdfDiagnostic, EdfSeverity } from '../types.js';
@@ -163,6 +163,12 @@ export function formatDiagnostics(
         'chunk or the report you have.',
     );
   }
+  /*
+   * The FLAGS, once the options object is there. 0.6.182 closed this for `strict` and 0.6.193 for
+   * `scanSamples`: every flag in the package is resolved with `=== true`, which never coerces, so
+   * `'true'` out of a config or a `--color` flag read as OFF and the report came back plain.
+   */
+  requireBooleanOption(options?.color, 'color', 'this report was printed without colour');
   const color = options?.color === true;
   assertOptions(options, 'formatDiagnostics', 'diagnostic');
   const shown = requireItemLimit(options?.maxItems, diagnostics.length);

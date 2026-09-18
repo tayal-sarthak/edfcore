@@ -111,10 +111,10 @@ export function assertOptions(options: unknown, call: string, listed: string): v
 export function requireBooleanOption(value: unknown, name: string, consequence: string): void {
   if (value === undefined || typeof value === 'boolean') return;
   throw new RangeError(
-    `options.${name} must be true or false, and was ${describeValue(value)}. It is read as ` +
-      `\`=== true\`, so anything else reads as false and ${consequence}. Next: pass a boolean — a ` +
-      'flag, a query parameter and a config key all arrive as text, so compare with === "true" ' +
-      'first.',
+    `options.${name} must be true or false, and was ${describeValue(value)}. It is compared ` +
+      `against a boolean rather than coerced, so anything else silently takes one side of it and ` +
+      `${consequence}. Next: pass a boolean — a flag, a query parameter and a config key all ` +
+      'arrive as text, so compare with === "true" first.',
   );
 }
 

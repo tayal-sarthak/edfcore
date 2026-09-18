@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.197
+
+- **Fixed** the three printers' flags being read as one side of a boolean when given as text —
+  `color`, `includePatientId`, `diagnosticsHint` and `includeChannel`. Each is compared against a
+  boolean rather than coerced, which is the right way to read one and therefore a silent one.
+  0.6.182 closed this for `strict` and 0.6.193 for `scanSamples`; these are the rest.
+- They do not all fail in the same direction, which is why each is named. `color`, `includeChannel`
+  and `includePatientId` are read as `=== true`, so text means OFF and the colour, the channel column
+  or the identification a caller asked for simply was not there. `diagnosticsHint` is read as
+  `!== false`, so text turns it ON — `'false'` printed the hint line under a report that was
+  suppressing it, which is what `edfcore header` passes `false` for.
+
 ## 0.6.196
 
 - **Fixed** `mergeChunks` joining chunks from two different recordings. Every test it applied was

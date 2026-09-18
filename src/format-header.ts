@@ -16,6 +16,7 @@ import { trimEdfField } from './bytes/latin1.js';
 import { TICKS_PER_SECOND } from './constants.js';
 import { summarizeDiagnostics } from './diagnostics/summary.js';
 import { formatCalendarDate, formatClockTime } from './header/dates.js';
+import { requireBooleanOption } from './options.js';
 import { pluralise } from './text/counted.js';
 import { describeValue } from './text/describe.js';
 import { printable } from './text/printable.js';
@@ -147,6 +148,27 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
         'Next: pass includePatientId on an options object.',
     );
   }
+  /*
+   * The FLAGS, once the options object is there. 0.6.182 closed this for `strict` and 0.6.193 for
+   * `scanSamples`, on the same argument: a flag is compared against a boolean rather than coerced,
+   * so text takes one side of it silently.
+   *
+   * They take opposite sides here, which is why both are named. `includePatientId` is read as
+   * `=== true`, so `'true'` out of a config left the identification out of a report that asked for
+   * it; `diagnosticsHint` is read as `!== false`, so `'false'` printed the hint line the caller was
+   * suppressing. `edfcore header` passes that one `false` precisely because it prints the detail
+   * itself one line below.
+   */
+  requireBooleanOption(
+    options?.includePatientId,
+    'includePatientId',
+    'the identification was left out of a report that asked for it',
+  );
+  requireBooleanOption(
+    options?.diagnosticsHint,
+    'diagnosticsHint',
+    'the hint line was printed under a report that suppressed it',
+  );
   const lines: string[] = [];
   const start = header.startTime;
 

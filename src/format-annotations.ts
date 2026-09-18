@@ -16,7 +16,7 @@
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
-import { assertOptions, requireItemLimit } from './options.js';
+import { assertOptions, requireBooleanOption, requireItemLimit } from './options.js';
 import { floorDiv } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
 import { printable } from './text/printable.js';
@@ -130,6 +130,13 @@ export function formatAnnotations(
   if (annotations.length === 0) return '';
 
   assertOptions(options, 'formatAnnotations', 'annotation');
+  // The flag, on the same rule as 0.6.182 and 0.6.193: `=== true` never coerces, so text read as
+  // OFF and the `description@@channel` column a caller asked for was simply not there.
+  requireBooleanOption(
+    options?.includeChannel,
+    'includeChannel',
+    'the channel column was left off a listing that asked for it',
+  );
   const limit = requireItemLimit(options?.maxItems, annotations.length);
 
   /*
