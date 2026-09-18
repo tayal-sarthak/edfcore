@@ -492,6 +492,27 @@ export function clampToDigitalRange(
   options?: MaterializeOptions,
 ): Int32Array {
   assertSignal(signal, 'clampToDigitalRange');
+  /*
+   * The ANNOTATIONS CHANNEL, whose digital fields describe nothing either.
+   *
+   * This exists "to reproduce a clamping consumer when cross-validating against one", and the
+   * consumer it reproduces clamps SAMPLES. An annotations region holds TAL text, so the only way to
+   * have values to hand this is to have decoded that text as samples — which `decodeDigital`
+   * refuses as of 0.6.191, and which every reader in the package has always refused.
+   *
+   * It read the pair anyway and clamped to it. That pair is the conventional one a writer puts in
+   * an annotation signal's header; `parseSignalHeaders` never built a scale from it, and
+   * `describeScalingFailure` says checking those fields "would report a defect about a number
+   * nobody may use". 0.6.194 closed the same hole in `physicalRangeOf`, which reads the other pair.
+   */
+  if (signal.kind === 'annotations') {
+    throw new RangeError(
+      `clampToDigitalRange(): signal ${signal.index} (${JSON.stringify(signal.label)}) is this ` +
+        "file's annotations channel. Its region holds TAL text, so it has no samples to clamp and " +
+        'the digital pair it declares is not a range they could be clamped to. Next: pass a signal ' +
+        'from header.dataSignalIndices, and read this channel with readAnnotations().',
+    );
+  }
   const low = Math.min(signal.digitalMinimum, signal.digitalMaximum);
   const high = Math.max(signal.digitalMinimum, signal.digitalMaximum);
   if (!Number.isFinite(low) || !Number.isFinite(high)) {

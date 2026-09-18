@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.199
+
+- **Fixed** `clampToDigitalRange` clamping to the annotations channel's declared pair. The function
+  exists "to reproduce a clamping consumer when cross-validating against one", and that consumer
+  clamps SAMPLES — an annotations region holds TAL text, so the only way to have values for this call
+  is to have decoded that text as samples, which every reader refuses and `decodeDigital` has refused
+  since 0.6.191.
+- The pair it clamped to is the conventional one a writer puts in an annotation signal's header:
+  `parseSignalHeaders` never builds a scale from it, and `describeScalingFailure` says checking those
+  fields "would report a defect about a number nobody may use".
+- 0.6.194 closed the same hole in `physicalRangeOf`, which reads the other pair on the same signal.
+  All three functions in the module now answer alike.
+
 ## 0.6.198
 
 - **Fixed** `blobSource` reporting a shrunk `File` as a `ByteSource` breaking its contract. Its own
