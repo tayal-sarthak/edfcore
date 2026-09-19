@@ -127,9 +127,24 @@ function bucketStartsFor(
  */
 function assertPositiveInteger(value: number, name: string): void {
   if (Number.isSafeInteger(value) && value > 0) return;
+  /*
+   * A pixel width PER RUN, which is what the advice used to promise for the whole plot.
+   *
+   * These are the buckets one contiguous run is divided into — `readEnvelope` returns a chunk per
+   * run, "the shape mirrors `readWindow` exactly" — so on an EDF+D window spanning two gaps a
+   * 1000-pixel width came back as three chunks of 1000. And each run is divided EVENLY into them,
+   * so the widths differ run to run: `api-helpers.md` says "widths that disagree cannot be drawn
+   * on one axis, which is the entire reason this function exists separately from `readEnvelope`",
+   * and the sibling it means was the call the advice never named.
+   *
+   * True on a continuous file, which is the only kind the sentence was written against.
+   */
   throw new RangeError(
     `${name} must be a positive whole number, received ${describeValue(value)}. ` +
-      'Next: pass the pixel width of the plot you are drawing into.',
+      'Next: pass the pixel width you are drawing ONE contiguous run into — this is buckets per ' +
+      'run, so a window spanning a gap returns a chunk of them for each and their widths differ. ' +
+      'readEnvelopeAtResolution(recording, selection) is the one whose buckets are the same ' +
+      'width across runs.',
   );
 }
 

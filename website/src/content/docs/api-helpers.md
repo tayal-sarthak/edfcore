@@ -106,6 +106,11 @@ The shape mirrors `readWindow`: an array of chunks, one per contiguous run, empt
 selects nothing. Memory is bounded by the record chunk rather than by the window, so an envelope
 over a whole recording costs the buckets plus one chunk.
 
+`buckets` is **per run**, not per window. Each chunk gets the full count, so a window spanning two
+gaps answers a 1000-pixel width with three chunks of 1000, and each run is divided evenly into
+them, so the widths differ run to run. On a continuous file that is one chunk of exactly what you
+asked for; when the runs have to share one axis, use `readEnvelopeAtResolution` below.
+
 `buckets` is clamped to the sample count of the densest signal in the run — asking for more
 buckets than there are samples would leave holes that mean nothing.
 

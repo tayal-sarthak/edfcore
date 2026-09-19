@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.220
+
+- **Fixed** `readEnvelope` offering the whole plot's pixel width for a count that is per run.
+  `buckets` is the buckets ONE contiguous run is divided into — the shape mirrors `readWindow`, a
+  chunk per run — and each chunk gets the full count, so an EDF+D window spanning two gaps answered
+  a 1000-pixel width with three chunks of 1000: three thousand columns for a thousand pixels.
+- Each run is also divided evenly into them, so the widths differ run to run. `api-helpers.md` says
+  what that costs — "widths that disagree cannot be drawn on one axis, which is the entire reason
+  this function exists separately from `readEnvelope`" — and the sibling it means,
+  `readEnvelopeAtResolution`, was the call the advice never named.
+- The refusal, the `EnvelopeSelection.buckets` doc comment and the `readEnvelope` section of
+  `api-helpers.md` all say it now. Nothing about what the call returns changes; the sentence was
+  true on a continuous file, which is the only kind it was written against.
+
 ## 0.6.219
 
 - **Fixed** `EdfChannelNotFoundError.selector` carrying a whole `EdfSignal` in a field declared

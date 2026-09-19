@@ -642,7 +642,12 @@ export interface EdfEnvelopeChunk {
  */
 export interface EnvelopeSelection extends WindowSelection {
   /**
-   * How many buckets to reduce the window into — in a viewer, the pixel width of the plot.
+   * How many buckets to reduce each contiguous RUN into — in a viewer, a pixel width.
+   *
+   * Per run, not per window. `readEnvelope` returns one chunk per run the way `readWindow` does,
+   * and each gets this many, so a window spanning two gaps answers a 1000-pixel width with three
+   * chunks of 1000. Each run is divided evenly into them, so the widths differ run to run;
+   * `readEnvelopeAtResolution` is the one whose buckets are the same width across runs.
    *
    * A bucket per pixel is the point: asking for more buckets than the window has samples wastes
    * work and yields empty buckets, so the count is clamped to the sample count of the densest
