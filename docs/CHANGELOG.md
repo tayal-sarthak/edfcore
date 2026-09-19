@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.210
+
+- **Fixed** `options.headers` being spread into whatever shape it happened to have. `httpSource`
+  builds the request headers as `{ ...options?.headers }`, which launders anything into a plausible
+  object — the shape 0.6.178 found in `buildTimeline`, except that here it goes out on the wire.
+- A bearer STRING became one single-character header per index. A list of pairs — the form
+  `new Headers()` takes and `Object.entries` returns — became `{ 0: [...] }`. A `Map` or a real
+  `Headers` has no own enumerable properties at all and became `{}`: the request went out
+  unauthenticated and the adapter never knew.
+- The options guard above it names that cost in its own words — "a bearer token was dropped and the
+  server answered 401 or, worse, served a different resource anonymously" — for the whole object. The
+  field inside it went the same way.
+
 ## 0.6.209
 
 - **Fixed** `readTriggers` answering `[]` for a BDF whose `Status` channel declares no samples.

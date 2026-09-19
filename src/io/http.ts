@@ -196,6 +196,25 @@ function assertFetchableHref(href: string): void {
   }
 }
 
+/** A plain record of strings, which is the only shape a spread carries intact. */
+function assertHeaders(headers: unknown): void {
+  if (headers === undefined || headers === null) return;
+  const iterable =
+    typeof (headers as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
+  if (typeof headers === 'object' && !iterable) {
+    const values = Object.values(headers as Record<string, unknown>);
+    if (values.every((value) => typeof value === 'string')) return;
+  }
+  throw new EdfSourceError(
+    `httpSource(): options.headers is ${describeValue(headers)}, not a plain object of header ` +
+      'names to string values — and it is spread into the request, so a string becomes one header ' +
+      'per character, a list of pairs becomes one numbered entry, and a Map or a Headers becomes ' +
+      'nothing at all. Next: pass an object whose values are strings — authorization to ' +
+      '"Bearer …" — or Object.fromEntries(headers) for a Headers or a Map.',
+    { offset: 0, requestedLength: 0 },
+  );
+}
+
 function resolveFetch(options: HttpSourceOptions | undefined): FetchLike {
   const provided = options?.fetch;
   if (provided !== undefined) return provided;
@@ -386,6 +405,25 @@ export async function httpSource(
     'a server that ignores Range was refused with HTTP_RANGE_IGNORED, which is the permission this ' +
       'option grants',
   );
+  /*
+   * The HEADERS, before they are spread into one.
+   *
+   * `{ ...options?.headers }` launders anything into a plausible object, which is the shape 0.6.178
+   * found in `buildTimeline`: by the time a check could see it, the mistake is gone. Here it goes
+   * out on the wire.
+   *
+   * - a bearer STRING — `headers: 'Bearer abc'`, which is what a caller writes when the token is the
+   *   only header they have — spread into thirteen single-character headers, one per index;
+   * - an ARRAY of pairs, the form `new Headers()` takes and `Object.entries` returns, spread into
+   *   `{ 0: [...] }`;
+   * - a `Map` or a real `Headers`, which have no own enumerable properties at all, spread into `{}`.
+   *
+   * The options guard above names this cost in its own words — "a bearer token was dropped and the
+   * server answered 401 or, worse, served a different resource anonymously" — for the whole object.
+   * The field inside it went the same way, and the last of the three is the silent one: the request
+   * went out unauthenticated and the adapter never knew.
+   */
+  assertHeaders(options?.headers);
   const fetchImpl = resolveFetch(options);
   const baseHeaders: Record<string, string> = { ...options?.headers };
   const gate = createGate(
