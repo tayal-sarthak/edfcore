@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.213
+
+- **Fixed** `EdfRangeError.requested` carrying whatever was refused. The field is declared a
+  `RecordRange`, and the range guards handed over the value they had just rejected — so a chunk given
+  where its own `.records` belongs put the ENTIRE CHUNK on the error: `signals`, and every sample in
+  every `digital` array, under a field a handler reads `.start` off and gets `undefined` from.
+- The cost is not the type. `JSON.stringify(error)` and every structured logger walk own enumerable
+  properties, so one refused call wrote a recording's samples into a log line — the outcome
+  `describeRecordRange` and `quoteLabels` both exist to prevent: "printing its contents is how a
+  512-signal selection ends up on one line".
+- Narrowed in the constructor rather than at each guard, so no later one can reintroduce it. A
+  well-formed range is unchanged, the `{}` stand-in for an absent one still reads as an object, and a
+  wrong shape keeps whatever it had under `start` and `count` — the pair the message prints.
+
 ## 0.6.212
 
 - **Fixed** `options.signal` given the `AbortController` rather than the signal on it. A controller

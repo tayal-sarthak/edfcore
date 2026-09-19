@@ -163,8 +163,25 @@ export class EdfRangeError extends EdfError {
   ) {
     super(message, { cause: init.cause });
     this.name = 'EdfRangeError';
-    this.requested = init.requested;
-    this.available = init.available;
+    /*
+     * The two FIELDS, not the argument they came from.
+     *
+     * `requested` is declared a `RecordRange` and was whatever the caller passed, because the range
+     * guards hand over the value they refused. So a chunk given where its own `.records` belongs put
+     * the entire chunk on the error — `signals`, and every sample in every `digital` array — under a
+     * field a handler reads `.start` off and gets `undefined` from. A structured log or a
+     * `JSON.stringify(error)` then writes a recording's samples into one line, which is the outcome
+     * `describeRecordRange` and `quoteLabels` both exist to prevent: "printing its contents is how a
+     * 512-signal selection ends up on one line".
+     *
+     * Narrowed here rather than at each guard, so no later one can reintroduce it. A well-formed
+     * range is unchanged; a wrong shape keeps whatever it had under those two names and nothing
+     * else, which is the same pair the message prints.
+     */
+    const requested = init.requested as { start?: number; count?: number } | null | undefined;
+    const available = init.available as { start?: number; count?: number } | null | undefined;
+    this.requested = { start: requested?.start, count: requested?.count } as RecordRange;
+    this.available = { start: available?.start, count: available?.count } as RecordRange;
   }
 }
 
