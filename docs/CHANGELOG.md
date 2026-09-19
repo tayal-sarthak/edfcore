@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.219
+
+- **Fixed** `EdfChannelNotFoundError.selector` carrying a whole `EdfSignal` in a field declared
+  `string | number`. Every guard that raises this error hands over the value it refused, and
+  `signalIndices: matchSignals(header, /EEG/)` — the selection 0.6.174 exists for — refuses a
+  signal, so `label`, `scale`, `recordByteOffset`, `raw` and the rest travelled, about 850 bytes of
+  it, through a field a handler reads as an index and prints into a log line.
+- A signal's own `index` is the selector the message tells the caller to pass, so that is what the
+  field keeps now. A value that is neither a label nor an index leaves it empty rather than holding
+  something the type never described.
+- Narrowed in the constructor rather than at each guard, so no later one can reintroduce it, which
+  is the argument 0.6.213 makes for `EdfRangeError`'s `requested` and `available`.
+- Labels and indices are untouched, and every message is unchanged.
+
 ## 0.6.218
 
 - **Fixed** the refusal the five reading calls share telling a LABEL it was outside a range it was

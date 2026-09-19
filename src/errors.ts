@@ -266,7 +266,30 @@ export class EdfChannelNotFoundError extends EdfError {
   ) {
     super(message, { cause: init.cause });
     this.name = 'EdfChannelNotFoundError';
-    this.selector = init.selector;
+    /*
+     * Only what the declared type can hold.
+     *
+     * `selector` is the label or index that was asked for, and every guard that raises this hands
+     * over the value it REFUSED. One of them refuses a whole `EdfSignal`:
+     * `signalIndices: matchSignals(header, /EEG/)` is the selection 0.6.174 exists for, and the
+     * error for it carried the signal — `label`, `scale`, `recordByteOffset`, `raw` and the rest,
+     * 850 bytes of it — in a field a handler reads as a number, prints beside `availableLabels`
+     * and puts in a log line.
+     *
+     * A signal's own `index` is the selector the message tells the caller to pass, so that is what
+     * the field keeps. Anything else is left empty rather than holding a value the type never
+     * described. Narrowed here rather than at each guard, so no later one can reintroduce it —
+     * which is the argument 0.6.213 makes for `EdfRangeError`'s `requested` and `available`.
+     */
+    const selector = init.selector as unknown;
+    const index = (selector as { index?: unknown } | null | undefined)?.index;
+    this.selector = (
+      typeof selector === 'string' || typeof selector === 'number'
+        ? selector
+        : typeof index === 'number'
+          ? index
+          : undefined
+    ) as string | number;
     this.availableLabels = init.availableLabels;
   }
 }
