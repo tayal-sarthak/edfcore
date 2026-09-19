@@ -165,10 +165,37 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
   const startValid = Number.isSafeInteger(range.start) && range.start >= 0;
   const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
   if (startValid && countValid && range.start + range.count <= header.recordCount) return;
+  /*
+   * A CLAMP is advice you can only follow when there are two numbers to clamp.
+   *
+   * The two branches above are each documented as a fix for this sentence, and both name the same
+   * half of it: "advice to clamp it against `header.recordCount`, which no clamp can satisfy". Each
+   * carved out one shape. Every other range with no numbers in it still got the clamp — the
+   * `records ?? {}` stand-in at the top of this guard, which exists because `undefined` and `null`
+   * are "the likeliest two"; a half-built `{ start: 0 }`; a range whose fields arrived as strings
+   * from JSON.
+   *
+   * The belief behind writing one is the part no message addressed. `readRecords` refuses a missing
+   * SELECTION with "pass { records, signalIndices }", and 0.6.88 refuses one carrying
+   * `startSeconds` instead, so a selection holding only `signalIndices` passes both guards and
+   * arrives here with nothing — written that way because the range reads as optional. It is not,
+   * deliberately, and `readAnnotations` gives the reason: a full-file scan "is a legitimate thing to
+   * want and an expensive thing to do by accident, so it is always visible in the caller's source".
+   * So the advice for a range with no numbers is the range itself, counted for this file.
+   *
+   * Only the advice differs. The sentence naming the range and the file's record count is what
+   * every caller of this guard is pinned on, and it is true of both.
+   */
+  const clampable = typeof range.start === 'number' && typeof range.count === 'number';
   throw new EdfRangeError(
     `records ${describeRecordRange(range)} is not inside the ` +
-      `${header.recordCount} data records this file contains. Next: clamp the range against ` +
-      'header.recordCount, or call index.locate(seconds) to find a record index for a time.',
+      `${header.recordCount} data records this file contains. Next: ` +
+      (clampable
+        ? 'clamp the range against header.recordCount, or call index.locate(seconds) to find a ' +
+          'record index for a time.'
+        : 'pass a start and a count — there is no default, so a whole-file read is written out ' +
+          `rather than implied, and here that is start 0, count ${header.recordCount}. Or call ` +
+          'readWindow(), which takes seconds and resolves the records itself.'),
     { requested: range, available },
   );
 }

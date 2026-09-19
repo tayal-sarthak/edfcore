@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.221
+
+- **Fixed** the record-range refusal advising a clamp to a caller who passed no numbers to clamp.
+  `assertRecordRange` sits behind `readRecords`, `readAnnotations` and `readRecordBytes`, and its
+  two shape branches are each documented as a fix for the sentence beneath them, both naming the
+  same half of it: advice "to clamp it against `header.recordCount`, which no clamp can satisfy".
+  A chunk got its own sentence in 0.4.443 and an array of ranges one in 0.6.212 — one shape each.
+- Every other range with no numbers in it kept the clamp: the `records ?? {}` stand-in at the top
+  of the guard, a half-built `{ start: 0 }`, a range whose fields arrived from JSON as strings.
+  And a caller need not pass any of those literally — `readRecords` refuses a missing selection
+  with "pass { records, signalIndices }", 0.6.88 refuses one carrying `startSeconds` instead, and
+  a selection holding only `signalIndices` passes both guards and arrives here with nothing.
+- It is written that way because the range reads as optional. It is not, deliberately, and
+  `readAnnotations` gives the reason: a full-file scan "is a legitimate thing to want and an
+  expensive thing to do by accident, so it is always visible in the caller's source". The clause
+  now asks for the two numbers and spells that range out, counted for the file in hand.
+- Only the advice changed. A range that is two numbers and lands outside the file still gets the
+  clamp, the sentence naming the range and the record count is unchanged, and the absent range and
+  the half-built one still answer identically, as `missing-record-range.test.ts` has required
+  since 0.4.443.
+
 ## 0.6.220
 
 - **Fixed** `readEnvelope` offering the whole plot's pixel width for a count that is per run.
