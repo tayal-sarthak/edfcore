@@ -242,6 +242,29 @@ function adapterFor(source: unknown): string {
   ) {
     return 'that looks like a Blob or a File — use blobSource(file)';
   }
+  /*
+   * The RECORDING, which carries the source on `.source` rather than being it.
+   *
+   * No adapter turns one into a `ByteSource` — it already holds the one it was opened from — so
+   * this reader is the only one the generic list has nothing for: four adapters for bytes, a path,
+   * a File and a URL, to someone holding none of them and an open file instead.
+   *
+   * `inspectEdf(source)` is where they meet it. It is the one call in the convenience layer whose
+   * first argument is a source, and it sits in the barrel beside `readWindow`, `readRecords`,
+   * `readAnnotations`, `readEnvelope` and `readTriggers` — every one of which takes the recording.
+   * `readRecordBytes(recording.source, recording.header, records)` is the other route: the idiom
+   * `physical-values.md` and `reading-signals.md` both write out, with one field left off the
+   * argument that needs it and kept on the one beside it.
+   *
+   * `assertRecording` has named the mirror of this since 0.6.90 — "that is a header, not a
+   * recording — a recording also carries the source, the timeline and the index" — because every
+   * primitive takes the header and the shape is easy to reach for. This is that confusion pointed
+   * the other way, and it is the one direction the package answered with a list.
+   */
+  const opened = source as { source?: { read?: unknown }; header?: unknown } | null | undefined;
+  if (typeof opened?.source?.read === 'function' && typeof opened.header === 'object') {
+    return 'that is a recording — it carries the source on .source rather than being one, so pass recording.source';
+  }
   return (
     'use byteSource(bytes) for bytes in memory, fileSource(path) from "edfcore/node" for a file, ' +
     'blobSource(file) for a File, or httpSource(url) for a URL'

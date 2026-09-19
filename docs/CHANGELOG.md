@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.222
+
+- **Fixed** the source guard offering four adapters to a caller holding an open recording.
+  `assertByteSource` answers a wrong first argument with the adapter that would have fixed it —
+  `byteSource(bytes)` for bytes, `fileSource(path)` for a path, `blobSource(file)` for a File — and
+  falls back to listing all four. A recording is the one shape no adapter applies to: it already
+  holds the source it was opened from, on `.source`. The reader least in need of one got four.
+- `inspectEdf(source)` is where they meet it. It is the one call in the convenience layer whose
+  first argument is a source, and it sits in the barrel beside `readWindow`, `readRecords`,
+  `readAnnotations`, `readEnvelope` and `readTriggers` — every one of which takes the recording.
+  `readRecordBytes(recording.source, recording.header, records)` is the other route, reached by
+  leaving `.source` off the argument that needs it while keeping `.header` on the one beside it.
+- 0.6.90 named the mirror of this for `assertRecording` — "that is a header, not a recording" —
+  because every primitive takes the header. This is the same confusion pointed the other way, and
+  it was the direction the package answered with a list.
+- Only the `Next:` clause changes. It stays an `EdfSourceError` carrying `offset` and
+  `requestedLength`, and every other wrong argument keeps the adapter it always had.
+
 ## 0.6.221
 
 - **Fixed** the record-range refusal advising a clamp to a caller who passed no numbers to clamp.
