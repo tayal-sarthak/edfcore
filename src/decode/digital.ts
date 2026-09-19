@@ -80,9 +80,36 @@ function assertWithinBudget(
 function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
   const signal = header.signals[signalIndex];
   if (signal !== undefined) return signal;
+  /*
+   * WHY it was refused, in the last entry point in this package that resolved a signal without
+   * saying so.
+   *
+   * 0.6.93 drew the distinction in `getSignal` — 1.5 "is not a whole number, so it falls between
+   * two signals rather than outside them" — 0.6.133 carried it to `sample-locate.ts`, and 0.6.218
+   * to the refusal the five reading calls share. `decodeDigital` is a PRIMITIVE, the layer
+   * `index.ts` describes as what "a consumer who outgrows the top layer drops to", and it answered
+   * every one of those with the same sentence and the value interpolated raw: a label got
+   * `signalIndex EEG Fpz-Cz is not one of the 3 signals in this header`, one clause above advice
+   * naming `getSignal(header, label)`, the call that takes labels; a signal from `matchSignals`
+   * got `signalIndex [object Object]`, the defect `describeValue` exists for (0.6.94).
+   */
+  // The canonical decimal string is a SPELLING of an index here, not text: the lookup one line up
+  // IS `header.signals['9']`, which is the property access `header.signals[9]` is — the coercion
+  // `a-selection-from-json.test.ts` names, diagnosed as the index it spells for the reason 0.6.218
+  // gives. `'  9  '` and `''` are not spellings this header can be indexed by, and reading 9 or 0
+  // out of them would name a signal the caller never wrote.
+  const index =
+    typeof signalIndex === 'string' && signalIndex === String(Number(signalIndex))
+      ? Number(signalIndex)
+      : signalIndex;
+  const problem = !Number.isFinite(index)
+    ? `signalIndex is ${describeValue(signalIndex)}, not a number this header can be indexed by`
+    : Number.isInteger(index)
+      ? `signalIndex ${index} is not one of the ${header.signals.length} signals in this header`
+      : `signalIndex ${index} is not a whole number, so it falls between two signals rather ` +
+        'than outside them';
   throw new EdfChannelNotFoundError(
-    `signalIndex ${signalIndex} is not one of the ${header.signals.length} signals in this ` +
-      'header. Next: pass an index taken from header.signals, or resolve one with ' +
+    `${problem}. Next: pass an index taken from header.signals, or resolve one with ` +
       'getSignal(header, label).',
     { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
   );

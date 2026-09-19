@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.225
+
+- **Fixed** `decodeDigital` answering three different selector mistakes with one sentence and the
+  value interpolated raw. 0.6.93 drew the distinction in `getSignal` — 1.5 "is not a whole number,
+  so it falls between two signals rather than outside them" — 0.6.133 carried it to
+  `sample-locate.ts`, and 0.6.218 to the refusal the five reading calls share. `decodeDigital` is a
+  primitive, the layer `index.ts` calls what "a consumer who outgrows the top layer drops to", and
+  it was the last entry point in the package resolving a signal by index with none of it.
+- A label got `signalIndex EEG Fpz-Cz is not one of the 3 signals in this header`, one clause above
+  advice naming `getSignal(header, label)` — the call that takes labels — for the label of signal
+  0. A signal from `matchSignals` got `signalIndex [object Object]`, the defect `describeValue`
+  exists for (0.6.94). A fraction got the same sentence as 99.
+- The canonical decimal string stays an index, for the reason 0.6.218 gives: the lookup here IS
+  `header.signals['9']`, which is the property access `header.signals[9]` is. `'  9  '`, `''` and
+  `'0x10'` are described as the strings they are.
+- The next step, the class, `selector` and `availableLabels` are all unchanged, and an index the
+  file simply does not have keeps its sentence.
+
 ## 0.6.224
 
 - **Fixed** `decodeDigital` and `decodeAnnotations` advising a clamp for a range with no numbers in
