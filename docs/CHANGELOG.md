@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.206
+
+- **Fixed** `formatHeader` telling a reader which way an EDF+D file's records fail to run end to
+  end. Printing what the records COVER rather than a duration is right — the span lives in the
+  timekeeping TALs and a header cannot see it — but the two notes under it said "the gaps between
+  them are not in it" and "where the gaps are", and a header cannot know that either.
+- An EDF+D file's records may leave gaps, and they may OVERLAP. A file with overlaps covers MORE time
+  than it spans, so the note told a reader the recording reaches further than the printed number when
+  it reaches less far: six seconds covered against a span of three and a half, printed as a floor.
+- 0.3.3 stated the partition — "a gap is time no record covers; an overlap is one instant two records
+  both claim" — and 0.3.33, 0.3.41 and 0.3.59 each applied it to one site. This is the fifth, and it
+  is the first thing `edfcore header` prints.
+
 ## 0.6.205
 
 - **Fixed** a recording reading through another recording's index. The timeline and the index reach

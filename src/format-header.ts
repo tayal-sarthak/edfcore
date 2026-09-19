@@ -201,8 +201,20 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
   // recording that spans 3604 s. Someone pasting that into a bug report says "a 4-second file".
   //
   // A header alone cannot know the span: it is the last record's onset minus the first's, and
-  // those live in the timekeeping TALs. What a header does know is that this file claims to have
-  // gaps, so the label says what the number is and the next line says where the span comes from.
+  // those live in the timekeeping TALs. What a header does know is that this file claims its
+  // records do not run end to end, so the label says what the number is and the next line says
+  // where the span comes from.
+  //
+  // WHICH WAY they fail to run end to end is the part a header cannot know either, and the two
+  // notes below asserted one of them. `EDF+D` means discontinuous; the records may leave gaps, and
+  // they may also OVERLAP — an overlap is one instant two records both claim, and a file with one
+  // covers MORE time than it spans. "the gaps between them are not in it" told a reader the
+  // recording reaches further than the number, on a file where it reaches less far: 6 s covered
+  // against a span of 3.5 s, printed as though 6 s were a floor.
+  //
+  // 0.3.3 stated the partition — "a gap is time no record covers; an overlap is one instant two
+  // records both claim" — and 0.3.33, 0.3.41 and 0.3.59 applied it to a site each. This is the
+  // fifth, and the first line of `edfcore header`.
   const discontinuous = header.continuity === 'discontinuous';
   const label = discontinuous ? 'covered     ' : 'duration    ';
   lines.push(
@@ -210,8 +222,9 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
       `(${header.recordCount} × ${header.recordDurationSeconds} s)`,
   );
   if (discontinuous) {
-    lines.push('             what the records cover; the gaps between them are not in it');
-    lines.push('             buildRecordIndex(recording) reports the span and where the gaps are');
+    lines.push('             what the records cover, which on this file is not the span: its');
+    lines.push('             records may leave gaps between them, and may overlap each other');
+    lines.push('             buildRecordIndex(recording) reports the span and which it is');
   }
   if (header.recordCountSource === 'sourceByteLength') {
     // Worth saying out loud: the count came from the file size, not from the header field.

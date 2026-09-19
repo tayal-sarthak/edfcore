@@ -188,7 +188,7 @@ describe('the start line never invents a clock', () => {
 });
 
 describe('the duration line does not overclaim on a discontinuous file', () => {
-  it('calls it "covered" and says the gaps are not in it', async () => {
+  it('calls it "covered" and says the records need not run end to end', async () => {
     // `recordCount * recordDuration` is the DECLARED coverage. On an EDF+D file the recording
     // reaches further by whatever the gaps add up to, and calling that number the duration made a
     // four-record file with an hour-long hole print `duration 00:00:04` — a summary someone pastes
@@ -207,7 +207,11 @@ describe('the duration line does not overclaim on a discontinuous file', () => {
 
     expect(out).toContain('covered      00:00:04 (4 × 1 s)');
     expect(out).not.toContain('duration');
-    expect(out).toContain('the gaps between them are not in it');
+    // The note used to say "the gaps between them are not in it", which asserts a direction a
+    // header cannot know: an EDF+D file's records may also OVERLAP, and such a file covers MORE
+    // time than it spans (0.6.206).
+    expect(out).toContain('may leave gaps between them, and may overlap each other');
+    expect(out).not.toContain('the gaps between them are not in it');
     expect(out).toContain('buildRecordIndex');
     // The number itself is unchanged and still correct for what it measures. The span is more
     // than three orders of magnitude larger, and a header alone cannot know it.
