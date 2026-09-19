@@ -38,11 +38,38 @@ import type { EdfAnnotation, EdfAnnotationWindow } from './types.js';
  * 0.6.107).
  */
 function assertAnnotations(annotations: readonly EdfAnnotation[], call: string): void {
-  if (Array.isArray(annotations)) return;
+  if (!Array.isArray(annotations)) {
+    throw new RangeError(
+      `${call}(): the annotations are ${describeValue(annotations)}, not an array. Next: pass the ` +
+        '`annotations` field of what readAnnotations(recording, records) resolved to, which is a ' +
+        'result object rather than the list itself.',
+    );
+  }
+  /*
+   * And the ELEMENTS, which being an array says nothing about.
+   *
+   * The three printers closed this one at a time — `formatDiagnostics` in 0.6.160,
+   * `summarizeDiagnostics` in 0.6.168, `formatAnnotations` in 0.6.185 — and these four QUERIES share
+   * a guard that still stopped at `Array.isArray`. Three of the four then answered:
+   * `filterAnnotationsByText` and `annotationsAt` returned `[]`, which means "no event matches" said
+   * of a list holding no events at all, and `countAnnotationsByText` returned one row counting
+   * `undefined`. Only `filterAnnotationsByTime` failed, with V8's `Cannot mix BigInt and other
+   * types` out of the tick comparison.
+   *
+   * `header.diagnostics` and `timeline.diagnostics` are the lists that get passed: they are the
+   * other arrays a reader holds after opening a file, and the printers for both sit beside these
+   * four in the barrel.
+   *
+   * The onset is the field to test — every one of these four reads it, and it is the one an
+   * annotation cannot be without.
+   */
+  const first = annotations[0] as { onsetTicksFromFirstRecord?: unknown } | undefined;
+  if (annotations.length === 0 || typeof first?.onsetTicksFromFirstRecord === 'bigint') return;
   throw new RangeError(
-    `${call}(): the annotations are ${describeValue(annotations)}, not an array. Next: pass the ` +
-      '`annotations` field of what readAnnotations(recording, records) resolved to, which is a ' +
-      'result object rather than the list itself.',
+    `${call}(): the value at 0 carries no onset, so this is not a list of annotations — and three ` +
+      'of these four calls answer with a list, so a wrong one reads as a recording with nothing in ' +
+      'it. Next: pass the `annotations` field of what readAnnotations(recording, records) resolved ' +
+      'to, or print a list of diagnostics with formatDiagnostics().',
   );
 }
 

@@ -91,7 +91,12 @@ describe('filterAnnotationsByText given a matcher of no known kind', () => {
   });
 
   it('refuses the same way whatever the list holds, which is the point', () => {
-    const one = [{ text: 'Sleep stage W' }] as unknown as readonly EdfAnnotation[];
+    // A real annotation, onset included: 0.6.208 gave the four queries an element check, so a
+    // stand-in missing the field an annotation cannot be without is refused as a list before the
+    // matcher is looked at. The property being pinned is about the matcher, not about that.
+    const one = [
+      { text: 'Sleep stage W', onsetTicksFromFirstRecord: 0n, durationTicks: undefined },
+    ] as unknown as readonly EdfAnnotation[];
     expect(refusal(() => filterAnnotationsByText(one, loosely<string>(0)))).toBe(
       refusal(() => filterAnnotationsByText(EMPTY, loosely<string>(0))),
     );

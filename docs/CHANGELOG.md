@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.208
+
+- **Fixed** the four annotation queries answering over an array of something else. Their shared guard
+  stopped at `Array.isArray`, and being an array says nothing about what is in it.
+- Three of the four then ANSWERED. `filterAnnotationsByText` and `annotationsAt` returned `[]` —
+  "no event matches", said of a list holding no events at all — and `countAnnotationsByText` returned
+  one row counting `undefined`. Only `filterAnnotationsByTime` failed, with V8's `Cannot mix BigInt
+  and other types` out of the tick comparison.
+- `header.diagnostics` and `timeline.diagnostics` are the lists that get passed: the other arrays a
+  reader holds after opening a file, whose printers sit beside these four in the barrel.
+- The three printers closed this one at a time — 0.6.160, 0.6.168, 0.6.185 — each checking the field
+  its own rows must carry. These four share one guard, and the field is the onset.
+
 ## 0.6.207
 
 - **Fixed** `fileSource` handing a non-file URL to `fs.open`. A URL object is an accepted argument —
