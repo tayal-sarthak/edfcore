@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.218
+
+- **Fixed** the refusal the five reading calls share telling a LABEL it was outside a range it was
+  never in. `readWindow`, `readRecords`, `streamRecords` and both envelope calls answer a signal
+  index they cannot resolve through one message, and for `signalIndices: ['EEG Fpz-Cz']` it read
+  `signalIndex EEG Fpz-Cz is outside the 3 signals this file declares` — one clause above "resolve
+  one with getSignal(header, label)", the function that would have taken it.
+- `1.5` got the same sentence, though a fraction falls between two signals rather than outside them,
+  and a bare object got `signalIndex [object Object] is outside` — the raw interpolation
+  `describeValue` exists to remove, still standing one branch below the 0.6.174 fix that quotes it.
+- 0.6.93 drew this distinction in `getSignal` and 0.6.133 carried it to `sample-locate.ts`, whose
+  comment calls that module "the other copy of that message". It was not: this is the third place
+  the package resolves a signal by index, and the one behind every read.
+- The canonical decimal string is unchanged. `header.signals['9']` is the property access
+  `header.signals[9]` is, so `'9'` is still an index that is out of range; `'  9  '` and `''` are
+  not spellings this header can be indexed by, and naming 9 or 0 for them would name a signal the
+  caller never wrote.
+- An index that really is out of range keeps its sentence, because for that one it was true.
+
 ## 0.6.217
 
 - **Fixed** `getSignal`, `findSignals` and `matchSignals` describing a header that had not arrived as

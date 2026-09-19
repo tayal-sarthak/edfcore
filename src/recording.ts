@@ -30,6 +30,7 @@ import { assertByteSource } from './io/source.js';
 import { buildTimeline } from './record-index.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ticksToSeconds } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import { assertMonotonicOnsetArray } from './time/timeline.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
@@ -268,9 +269,35 @@ export function channelNotFound(header: EdfHeader, signalIndex: number): EdfChan
       { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
     );
   }
+  /*
+   * WHY it was refused, in the third place this package resolves a signal by index.
+   *
+   * 0.6.93 drew the distinction in `getSignal`: 1.5 "is not a whole number, so it falls between
+   * two signals rather than outside them". 0.6.133 carried it to `sample-locate.ts`, whose comment
+   * says a label "is not outside anything" and calls itself "the other copy of that message". It
+   * was not the other copy — the five reading calls share THIS one, and it still answered
+   * `signalIndex EEG Fpz-Cz is outside the 3 signals this file declares` for a label, one clause
+   * above advice naming the function that takes labels, and the same sentence for `1.5` and for a
+   * bare object: the raw interpolation the branch above quotes as the defect it was fixing.
+   */
+  // The canonical decimal string is a SPELLING of an index here, not text: `header.signals['9']`
+  // is the property access `header.signals[9]` is, which is the coercion
+  // `a-selection-from-json.test.ts` names and 0.6.135 deduplicates against. Diagnosed as the index
+  // it spells, so `'9'` stays out of range rather than becoming not a number. Nothing else coerces:
+  // `'  9  '` and `''` are not spellings this header can be indexed by, and saying 9 or 0 for them
+  // would name a signal the caller never wrote.
+  const index =
+    typeof signalIndex === 'string' && signalIndex === String(Number(signalIndex))
+      ? Number(signalIndex)
+      : signalIndex;
+  const problem = !Number.isFinite(index)
+    ? `signalIndex is ${describeValue(signalIndex)}, not a number this header can be indexed by`
+    : Number.isInteger(index)
+      ? `signalIndex ${index} is outside the ${header.signals.length} signals this file declares`
+      : `signalIndex ${index} is not a whole number, so it falls between two signals ` +
+        'rather than outside them';
   return new EdfChannelNotFoundError(
-    `signalIndex ${signalIndex} is outside the ${header.signals.length} signals this file ` +
-      'declares. Next: pass an index from header.dataSignalIndices, or resolve one with ' +
+    `${problem}. Next: pass an index from header.dataSignalIndices, or resolve one with ` +
       'getSignal(header, label).',
     { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
   );
