@@ -180,6 +180,36 @@ export function assertReadOptions(options: unknown): void {
  * `{ signal: undefined }` where the property is declared optional.
  */
 export function throwIfSignalAborted(signal?: AbortSignalLike): void {
+  /*
+   * That it IS a signal, which `aborted !== true` never asked.
+   *
+   * `AbortController` is the value this option is most often given, because it is the object a
+   * caller holds: `{ signal: controller }` for `{ signal: controller.signal }` is the same slip
+   * `fetch(url, signal)` is, one field in. A controller has `abort()` and `signal` and no `aborted`,
+   * so the comparison was false, the read ran to completion and RESOLVED WITH DATA — which is
+   * verbatim the failure 0.6.155 describes for the signal passed as the whole options object:
+   * "nothing distinguishes that from a read that finished before the abort... so a viewer that
+   * cancels on every scroll cancelled nothing, and neither the reads nor their memory stopped".
+   *
+   * That release caught the argument one level out. This is the field itself, and every other shape
+   * with it: a string, a number, `{}`, and `{ aborted: 'yes' }` out of a JSON config all meant "not
+   * cancelled" and could never mean anything else.
+   *
+   * `AbortSignalLike` is published as `aborted` and nothing more — `bytes.ts` gives the reason it is
+   * named by shape rather than by class — so a boolean `aborted` is the whole test, and the shim a
+   * consumer writes still passes.
+   */
+  if (signal !== undefined && signal !== null && typeof signal.aborted !== 'boolean') {
+    const controller = typeof (signal as { abort?: unknown }).abort === 'function';
+    throw new RangeError(
+      `options.signal is ${
+        controller
+          ? 'an AbortController, not the signal on it — a controller has no `aborted`'
+          : `${describeValue(signal)}, which carries no \`aborted\``
+      }, so this read could never be cancelled and would have resolved with data. Next: pass ` +
+        'controller.signal, or any object with a boolean aborted on it.',
+    );
+  }
   if (signal?.aborted !== true) return;
   const error = new Error('The read was aborted through options.signal.');
   error.name = 'AbortError';

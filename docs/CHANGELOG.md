@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.212
+
+- **Fixed** `options.signal` given the `AbortController` rather than the signal on it. A controller
+  has `abort()` and `signal` and no `aborted`, so `signal?.aborted !== true` was false, the read ran
+  to completion and resolved with data — even for an already-aborted controller, whose caller's own
+  `catch (AbortError)` therefore never ran.
+- That is verbatim the failure 0.6.155 describes for the signal passed as the whole options object:
+  "a viewer that cancels on every scroll cancelled nothing, and neither the reads nor their memory
+  stopped". This is the same slip one field further in.
+- Every other shape meant the same thing and could never mean anything else — a string, a number,
+  `{}`, and `{ aborted: 'yes' }` out of a JSON config all read as "not cancelled". `AbortSignalLike`
+  is published as `aborted` and nothing more, so a boolean `aborted` is the whole test and a
+  consumer's own shim still passes.
+
 ## 0.6.211
 
 - **Fixed** `options.fetch` being handed on without checking it is a function. `resolveFetch` asks
