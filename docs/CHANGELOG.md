@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.223
+
+- **Fixed** `decodeDigital` and `decodeAnnotations` throwing the engine's
+  `TypeError: Cannot read properties of undefined (reading 'start')` when the record range was
+  absent rather than wrong. Three copies of `assertRecordRange` exist, one per layer that takes a
+  range, and the I/O copy has opened with `records ?? {}` since 0.4.443 — with the reason written
+  beside it, that every wrong shape already reached its refusal while `undefined` and `null` threw
+  from the two lines under it, "which names neither the option nor anything to do about it".
+- That line went into one copy. The other two are the primitives `index.ts` describes as what "a
+  consumer who outgrows the top layer drops to", and they read `records.start` with nothing in
+  front of it. A `TypeError` raised by V8 is the one way out of this package with no `Next:`
+  clause, and `next-clause.test.ts` only proves it of messages edfcore composes.
+- The range is also the argument most likely to be absent rather than malformed here: it and the
+  bytes beside it come from the same `readRecordBytes(source, header, records)` call, and a range
+  read out of JSON, a config file or a spread that dropped a key arrives as `undefined`.
+- Both keep their own wording and their own `EdfRangeError`, and `requested` carries the stand-in
+  so a handler reading it finds an object, as the I/O copy does.
+
 ## 0.6.222
 
 - **Fixed** the source guard offering four adapters to a caller holding an open recording.

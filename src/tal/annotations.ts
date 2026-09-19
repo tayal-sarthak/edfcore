@@ -142,8 +142,27 @@ interface ObservedOnset {
   readonly raw: string;
 }
 
-function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, records: RecordRange): void {
+function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, given: RecordRange): void {
   const available: RecordRange = { start: 0, count: header.recordCount };
+  /*
+   * Read off a stand-in when there is no range at all.
+   *
+   * `io/read.ts` holds the third copy of this guard and has had this line since 0.4.443, with the
+   * reason written beside it: every wrong SHAPE already reached the message below — an array, a
+   * string, `{ start: 0 }` all read as `{ start: undefined, count: undefined }` and are refused with
+   * a next step — "while `undefined` and `null` threw `TypeError: Cannot read properties of
+   * undefined (reading 'start')` from the two lines under this one, which names neither the option
+   * nor anything to do about it".
+   *
+   * That fix went into the I/O copy. These two are the PRIMITIVES, exported from `edfcore` and
+   * documented as the layer a consumer drops to, and they still threw it — from a package where
+   * every thrown message ends with a `Next:` clause and `next-clause.test.ts` proves it, which a
+   * `TypeError` raised by the engine is not bound by.
+   *
+   * `requested` carries the stand-in rather than the absent value, so a handler reading it finds an
+   * object, which is what the I/O copy does.
+   */
+  const records: RecordRange = given ?? ({} as RecordRange);
   const validIndices =
     Number.isSafeInteger(records.start) &&
     records.start >= 0 &&
