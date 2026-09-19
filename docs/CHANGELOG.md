@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.216
+
+- **Fixed** two annotation-region diagnostics naming more bytes than they quote. Every diagnostic in
+  the package satisfies one invariant — `raw` is the bytes at `byteOffset..byteOffset + byteLength` —
+  and `reportTimekeepingDefect` states it outright, having been fixed for breaking it: a narrow `raw`
+  beside a wide span "contradicted the field's own meaning".
+- `raw` and `rawBytes` are capped at 48 bytes, deliberately, because "a diagnostic must not carry an
+  unbounded copy of a record". The span was not capped with them, so a 70-byte unterminated region
+  reported `byteLength: 70` beside a 48-character `raw`, and a reader slicing the file by those two
+  numbers saw bytes the diagnostic never quoted.
+- The span now describes the evidence. The region's own width is `signal.recordByteLength`, which
+  the header already carries, and each message says what it is quoting — "Bytes at that offset",
+  "Region starts with" — with the ellipsis the preview appends when it cut.
+
 ## 0.6.215
 
 - **Fixed** the index guard's own advice leading back to itself. `segmentAt`, `gapAt` and

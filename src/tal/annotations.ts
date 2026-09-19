@@ -259,7 +259,14 @@ function reportIssue(sink: DiagnosticSink, context: RegionContext, issue: TalIss
       `Next: ${ISSUE_NEXT_STEPS[issue.code]}.`,
     field: 'annotation region',
     byteOffset: context.fileOffset + issue.byteOffsetInRegion,
-    byteLength: issue.byteLength,
+    // `evidenceLength`, not `issue.byteLength`. The rule is the one `reportTimekeepingDefect` states
+    // below and was fixed for: `EdfDiagnostic.raw` is "those bytes as text, exactly as written
+    // including padding", so a `byteLength` wider than the evidence "contradicted the field's own
+    // meaning". `raw` and `rawBytes` are capped at 48 bytes — a diagnostic must not carry an
+    // unbounded copy of a record — and the span was not, so a reader slicing
+    // `byteOffset..byteOffset + byteLength` got 70 bytes where `raw` held 48, with nothing saying
+    // which. The message says "Bytes at that offset" and shows the `...` the preview appends.
+    byteLength: evidenceLength,
     rawBytes: sliceBytes(context.bytes, context.offset + issue.byteOffsetInRegion, evidenceLength),
     // `rawText`, not `raw`. `issue.raw` is the ESCAPED preview built for the message above;
     // `EdfDiagnostic.raw` is documented as "those bytes as text, exactly as written including
@@ -288,7 +295,10 @@ function reportTimekeepingMissing(sink: DiagnosticSink, context: RegionContext):
       'validateRecording() to see how many records are affected.',
     field: 'timekeeping TAL',
     byteOffset: context.fileOffset,
-    byteLength: context.signal.recordByteLength,
+    // `shown`, not the whole region, for the reason above: the evidence is capped and the span must
+    // describe the evidence. The region's own width is `signal.recordByteLength`, which the header
+    // already carries, and the message says the region "starts with" what is quoted.
+    byteLength: shown,
     rawBytes: sliceBytes(context.bytes, context.offset, shown),
     signalIndex: context.signal.index,
     recordIndex: context.recordIndex,
