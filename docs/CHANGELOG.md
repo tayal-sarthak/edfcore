@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.215
+
+- **Fixed** the index guard's own advice leading back to itself. `segmentAt`, `gapAt` and
+  `contiguityOf` share a refusal whose next step is "the index buildRecordIndex(recording) returns" —
+  and that call is async, so a reader who takes the advice and forgets the `await` gets the same
+  sentence back, pointing at the same call.
+- It now names the keyword instead: `contiguityOf(buildRecordIndex(recording))` is told it has a
+  pending Promise and to await that call, which is the one fact the old message withheld.
+- 0.6.89 coined the phrase for the recording and 0.6.214 taught `describeValue` to say it, which
+  covers every message that reads its subject out of that helper. This family names its subject in
+  fixed text, and it is the one whose advice leads here.
+
 ## 0.6.214
 
 - **Fixed** a forgotten `await` being described as "an object". 0.6.89 made the argument for the

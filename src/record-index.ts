@@ -550,9 +550,31 @@ export async function buildRecordIndex(
  */
 function assertIndex(index: EdfRecordIndex, call: string, because: string): void {
   if (typeof (index as { coverage?: unknown } | null | undefined)?.coverage === 'string') return;
+  /*
+   * A FORGOTTEN AWAIT, which the next step points a reader straight at.
+   *
+   * This message's own advice is "the index buildRecordIndex(recording) returns" — and that call is
+   * async, so following it without the keyword hands these three the pending Promise and earns this
+   * same sentence again. `contiguityOf(buildRecordIndex(recording))` is the whole loop: read the
+   * advice, take it, get the advice.
+   *
+   * 0.6.89 coined the phrase for the recording and said why it is worth a branch: a message that
+   * names a field rather than the argument says "nothing about the one keyword that fixes it".
+   * 0.6.214 taught `describeValue` to say it, which covers every message that reads its subject out
+   * of that helper — this one names its subject in fixed text, so it is the family that needs saying
+   * separately, and it is the one whose advice leads here.
+   */
+  const pending = typeof (index as { then?: unknown } | null | undefined)?.then === 'function';
   throw new RangeError(
-    `${call}(): that is not a record index — it has no \`coverage\`, and ${because}. ` +
-      'Next: pass recording.index, or the index buildRecordIndex(recording) returns.',
+    `${call}(): that is ${
+      pending
+        ? 'a pending Promise, not a record index'
+        : 'not a record index — it has no `coverage`'
+    }, and ${because}. Next: ${
+      pending
+        ? 'await buildRecordIndex(recording) — it resolves to the index this takes.'
+        : 'pass recording.index, or the index buildRecordIndex(recording) returns.'
+    }`,
   );
 }
 
