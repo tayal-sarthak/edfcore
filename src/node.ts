@@ -217,6 +217,32 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
       { offset: 0, requestedLength: 0 },
     );
   }
+  /*
+   * And a URL that names something other than a file on disk.
+   *
+   * A URL OBJECT is an accepted argument — the check above says so — and `fs.open` takes one only
+   * when its scheme is `file:`. Anything else was Node's own `TypeError: The URL must be of scheme
+   * file`: no `Next:` clause, not an `EdfSourceError`, so `isEdfError` was false, and nothing about
+   * the adapter that does read an address. A string spelled `https://…` fared no better: it became a
+   * relative filename and came back as `ENOENT`, naming a path nobody meant.
+   *
+   * `http://` is the mistake this argument invites, because `httpSource` is the sibling one subpath
+   * over and both take "where the file is". 0.6.184 made exactly this courtesy in the other
+   * direction — `httpSource` refuses a `file:` address and names `fileSource` — and left this side
+   * of the pair saying nothing.
+   */
+  const scheme =
+    typeof path === 'string'
+      ? /^([a-z][a-z0-9+.-]*):\/\//i.exec(path)?.[1]?.toLowerCase()
+      : ((path as { protocol?: unknown }).protocol as string | undefined)?.replace(':', '');
+  if (scheme !== undefined && scheme !== 'file') {
+    throw new EdfSourceError(
+      `fileSource() reads a file on disk, and ${JSON.stringify(String(path))} is a ${scheme} ` +
+        'address. Next: use httpSource(url) from "edfcore" for one served over HTTP, blobSource(file) ' +
+        'for one a browser handed you, or pass the filesystem path with no scheme on it.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   const handle = await fs.open(path, 'r');
   try {
     const stats = await handle.stat();

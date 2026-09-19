@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.207
+
+- **Fixed** `fileSource` handing a non-file URL to `fs.open`. A URL object is an accepted argument —
+  its own guard says so — and `fs.open` takes one only when the scheme is `file:`, so anything else
+  came back as Node's `TypeError: The URL must be of scheme file`: no `Next:` clause, not an
+  `EdfSourceError`, so `isEdfError` was false. A string spelled `https://…` became a relative
+  filename and came back as `ENOENT`, naming a path nobody meant.
+- `http://` is the mistake this argument invites, since `httpSource` is the sibling one subpath over
+  and both take "where the file is". 0.6.184 made exactly this courtesy in the other direction —
+  `httpSource` refuses a `file:` address and names `fileSource` — and left this side saying nothing.
+- A colon with no `//` after it is a path, not a scheme, so a Windows drive letter still reaches the
+  syscall.
+
 ## 0.6.206
 
 - **Fixed** `formatHeader` telling a reader which way an EDF+D file's records fail to run end to
