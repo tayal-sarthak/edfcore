@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.214
+
+- **Fixed** a forgotten `await` being described as "an object". 0.6.89 made the argument for the
+  recording and coined the phrase — a message that names an internal field says "nothing about the
+  one keyword that fixes it" — and `assertRecording` was the only guard that said "a pending
+  Promise".
+- Five async calls here resolve to values other guards take: `readHeader` to a header,
+  `buildRecordIndex` to an index, `readWindow` to the chunk array, `validateRecording` to a report,
+  `readAnnotations` to a result. So `mergeChunks(readWindow(recording, selection))` and
+  `contiguityOf(buildRecordIndex(recording))` are one keyword short, and each was told it had passed
+  "an object" — which is true of the thing it meant to pass too.
+- Named in `describeValue`, the module whose subject is a value "said in a way that cannot read as an
+  accepted one", so roughly forty messages get it at once. A property read, never a call: nothing
+  awaits, settles or subscribes to anything.
+
 ## 0.6.213
 
 - **Fixed** `EdfRangeError.requested` carrying whatever was refused. The field is declared a

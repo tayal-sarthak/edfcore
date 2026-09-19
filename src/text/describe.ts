@@ -34,6 +34,27 @@ export function describeValue(value: unknown): string {
   if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
     return Object.prototype.toString.call(value).slice(8, -1);
   }
+  /*
+   * A PENDING PROMISE, which is the one object worth naming.
+   *
+   * `assertRecording` made the argument in 0.6.89 and coined the phrase: a forgotten `await` "passes
+   * the pending Promise `openEdf` returns", and a message that names an internal field instead says
+   * "nothing about the one keyword that fixes it". It then named it for the recording alone.
+   *
+   * Five async calls in this package resolve to values other guards take: `readHeader` to a header,
+   * `buildRecordIndex` to an index, `readWindow` to the chunk array, `validateRecording` to a report,
+   * `readAnnotations` to a result. So `formatHeader(readHeader(source))`,
+   * `mergeChunks(readWindow(recording, selection))` and `contiguityOf(buildRecordIndex(recording))`
+   * are all one keyword short — and every one of them was told it had passed "an object", which is
+   * true of the thing they meant to pass too.
+   *
+   * Named here rather than at each guard, because this is the module whose whole subject is a value
+   * "said in a way that cannot read as an accepted one", and roughly forty messages read their
+   * subject out of it.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything.
+   */
+  if (typeof (value as { then?: unknown }).then === 'function') return 'a pending Promise';
   // `an object` covers an array too: a reader who passed one knows which they passed, and printing
   // its contents is how a 512-signal selection ends up on one line behind `edfcore: `.
   return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
