@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.209
+
+- **Fixed** `readTriggers` answering `[]` for a BDF whose `Status` channel declares no samples.
+  `samplesPerRecord` of zero makes the scan loop run zero times, so the sweep completed and returned
+  an empty list — one of this function's real answers, read by an experimenter as "no stimulus in
+  this window", on the path whose own docblocks say twice that a missing event cannot be told from no
+  events.
+- `getStatusSignal` was given a guard for that outcome twice, in 0.6.120 and 0.6.179, both for a
+  wrong ARGUMENT. This is the FILE producing it, one call later.
+- The parser already names the defect — `ZERO_SAMPLES_PER_RECORD` — and `sample-grid.ts` and
+  `sample-locate.ts` both refuse such a signal in these words. This was the third place a signal with
+  no grid is read from, and the only one that answered.
+
 ## 0.6.208
 
 - **Fixed** the four annotation queries answering over an array of something else. Their shared guard

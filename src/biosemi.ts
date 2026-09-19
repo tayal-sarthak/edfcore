@@ -294,6 +294,29 @@ export async function readTriggers(
     );
   }
 
+  /*
+   * A Status channel the file declares with NO SAMPLES, which this counted as no triggers.
+   *
+   * `samplesPerRecord` of zero makes the inner loop below run zero times, so the scan completed and
+   * returned `[]` — and `[]` is one of this function's real answers. An experimenter reads it as "no
+   * stimulus in this window", on the one path in the package where a missing event is
+   * indistinguishable from no events; the refusal `getStatusSignal` grew in 0.6.120 and 0.6.179 was
+   * for exactly that, one call earlier.
+   *
+   * It is a defect the parser already names — `ZERO_SAMPLES_PER_RECORD` — and one the sample-grid
+   * family already refuses in these words, in `sample-grid.ts` and `sample-locate.ts`. This is the
+   * third place a signal with no grid is read from, and the only one that answered.
+   */
+  if (status.samplesPerRecord <= 0) {
+    throw new RangeError(
+      `readTriggers(): the Status channel (signal ${status.index}) declares ` +
+        `${status.samplesPerRecord} samples per record, so this file stores no trigger samples at ` +
+        'all — and an empty result here reads as a recording with no stimulus in it. Next: check ' +
+        'header.diagnostics for ZERO_SAMPLES_PER_RECORD; the channel is declared but carries ' +
+        'nothing.',
+    );
+  }
+
   const ranges = resolveTimeWindow(
     timeline,
     recording.index,
