@@ -169,10 +169,27 @@ function assertRecordRange(header: EdfHeader, recordBytes: Uint8Array, given: Re
     Number.isSafeInteger(records.count) &&
     records.count >= 0;
   if (!validIndices || records.start + records.count > header.recordCount) {
+    /*
+     * A CLAMP is advice you can only follow when there are two numbers to clamp.
+     *
+     * 0.6.221 made this argument for the I/O copy, whose own shape branches are each documented as a
+     * fix for the same half of this sentence: advice "to clamp it against `header.recordCount`, which
+     * no clamp can satisfy". Every range with no numbers in it reaches here — the stand-in one line
+     * up, a half-built `{ start: 0 }`, a range whose fields arrived from JSON as strings — and was
+     * told to clamp.
+     *
+     * The next step differs from the I/O copy's, because this is a decoder: it cannot take any range,
+     * only the one the buffer beside it was read with. The check below pins exactly that, and it is
+     * what a caller with no range should be sent back to.
+     */
+    const clampable = typeof records.start === 'number' && typeof records.count === 'number';
     throw new EdfRangeError(
       `records ${describeRecordRange(records)} is not inside the ` +
-        `${header.recordCount} records this file has. ` +
-        `Next: clamp the range to [0, ${header.recordCount}).`,
+        `${header.recordCount} records this file has. Next: ` +
+        (clampable
+          ? `clamp the range to [0, ${header.recordCount}).`
+          : 'pass the range readRecordBytes(source, header, records) was called with — this ' +
+            'decodes the buffer that call returned, so the two have to name the same records.'),
       { requested: records, available },
     );
   }

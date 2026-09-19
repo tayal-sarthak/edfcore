@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.224
+
+- **Fixed** `decodeDigital` and `decodeAnnotations` advising a clamp for a range with no numbers in
+  it. 0.6.221 withdrew that advice from the I/O copy of this guard, whose own shape branches are
+  each documented as a fix for the same half of the sentence: advice "to clamp it against
+  `header.recordCount`, which no clamp can satisfy". The two decoding copies kept offering it — to
+  the `records ?? {}` stand-in 0.6.223 has just given them, to a half-built `{ start: 0 }`, and to
+  a range whose fields arrived from JSON as strings.
+- The next step is not the I/O copy's, because these are decoders: they cannot take any range, only
+  the one the buffer beside them was read with. The check one line below pins exactly that —
+  `recordBytes.length` must equal `records.count * header.recordByteLength`, and `decodeDigital`
+  "cannot tell which record a differently sized buffer begins at, so it will not guess". So a
+  caller with no range is sent back to the `readRecordBytes` call that produced the bytes.
+- A range that is two numbers and runs past the end keeps its clamp in both, each phrased the way
+  it always was.
+
 ## 0.6.223
 
 - **Fixed** `decodeDigital` and `decodeAnnotations` throwing the engine's
