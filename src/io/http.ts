@@ -217,6 +217,29 @@ function assertHeaders(headers: unknown): void {
 
 function resolveFetch(options: HttpSourceOptions | undefined): FetchLike {
   const provided = options?.fetch;
+  /*
+   * That it is a FUNCTION, which this took on trust while refusing the case below with care.
+   *
+   * The refusal underneath is for a runtime that exposes no `fetch` and a caller who supplied none,
+   * and it ends "pass options.fetch with any function matching FetchLike". A caller who passed
+   * something that is not one got nothing of the sort: the value was handed on, called at the first
+   * request, and threw V8's `fetchImpl is not a function` — an internal name, no `Next:` clause, and
+   * by then the adapter had already resolved an address and built a range header.
+   *
+   * One function, two members of the same question, guarded on one side only. And this is the option
+   * the guard above the call site calls the one that costs most, "because `fetch` is among them":
+   * supplying one is how an authenticated client, a signed-URL wrapper, a proxy or a test double
+   * gets in.
+   */
+  if (provided !== undefined && typeof provided !== 'function') {
+    throw new EdfSourceError(
+      `httpSource(): options.fetch is ${describeValue(provided)}, not a function. It is called ` +
+        'once per request, so this would have failed at the first one with the whole address and ' +
+        'range already worked out. Next: pass any function matching FetchLike, or omit it to use ' +
+        'the global fetch.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   if (provided !== undefined) return provided;
   // `fetch` cannot be named as a global without the DOM lib, so it is reached structurally.
   const ambient = (globalThis as { fetch?: FetchLike }).fetch;

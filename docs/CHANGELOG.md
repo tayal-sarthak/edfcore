@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.211
+
+- **Fixed** `options.fetch` being handed on without checking it is a function. `resolveFetch` asks
+  two halves of one question — is there a fetch to use, and is the one supplied usable — and guarded
+  only the first, whose refusal ends "pass options.fetch with any function matching FetchLike".
+- A caller who passed something else got nothing of the sort: the value was called at the first
+  request and threw V8's `fetchImpl is not a function` — an internal name, no `Next:` clause, and by
+  then the adapter had already resolved an address and built a range header.
+- It is the option the guard above the call site calls the one that costs most, "because `fetch` is
+  among them": supplying one is how an authenticated client, a signed-URL wrapper, a proxy or a test
+  double gets in.
+
 ## 0.6.210
 
 - **Fixed** `options.headers` being spread into whatever shape it happened to have. `httpSource`
