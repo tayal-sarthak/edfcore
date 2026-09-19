@@ -6,6 +6,18 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.217
+
+- **Fixed** `getSignal`, `findSignals` and `matchSignals` describing a header that had not arrived as
+  one with no signals. Their shared guard's next step names `parseHeader`, which is synchronous — but
+  the call a reader reaches for when they have a SOURCE rather than bytes is `readHeader`, and that
+  one is async.
+- So `getSignal(readHeader(source), 'Fp1')` is one keyword short, and the whole of what it was told
+  is that the argument has no signals: true of a pending Promise, and true of almost everything else.
+- 0.6.89 made this argument for the recording and 0.6.214 taught `describeValue` to say it, which
+  covers every message that reads its subject out of that helper. This guard names its subject in
+  fixed text, and it stands in front of three of the five published lookups.
+
 ## 0.6.216
 
 - **Fixed** two annotation-region diagnostics naming more bytes than they quote. Every diagnostic in

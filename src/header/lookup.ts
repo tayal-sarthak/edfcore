@@ -101,6 +101,25 @@ function assertLabel(label: unknown, call: string): void {
 function assertHeaderSignals(header: EdfHeader, call: string): void {
   const signals = (header as { signals?: unknown } | null | undefined)?.signals;
   if (!Array.isArray(signals)) {
+    /*
+     * A FORGOTTEN AWAIT, which this message's own advice walks a reader into.
+     *
+     * The next step names `parseHeader`, which is synchronous — but the call a reader reaches for
+     * when they have a source rather than bytes is `readHeader`, and that one is async. So
+     * `getSignal(readHeader(source), 'Fp1')` is one keyword short, and was told it had passed
+     * something with no signals: true of a pending Promise, and true of almost everything else, so
+     * it named nothing a reader could act on.
+     *
+     * 0.6.89 made this argument for the recording and 0.6.214 taught `describeValue` to say it,
+     * which covers every message that reads its subject out of that helper. This one names its
+     * subject in fixed text, and it stands in front of three of the five published lookups.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        `${call}(): that is a pending Promise, not a header. Next: await readHeader(source) — it ` +
+          'resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       `${call}(): that is not a header — it has no signals. Next: pass recording.header, or what ` +
         'parseHeader(bytes, sourceByteLength) returned.',
