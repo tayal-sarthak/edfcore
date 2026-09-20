@@ -92,9 +92,30 @@ export function filterAnnotationsByTime(
   // Cannot read properties of undefined (reading 'startSeconds')`, naming a field rather than the
   // argument, with no `Next:` clause.
   if (typeof window !== 'object' || window === null) {
+    /*
+     * A NUMBER, which is an INSTANT, and the one wrong window whose advice led somewhere worse than
+     * where it started.
+     *
+     * "Pass a window carrying startSeconds and durationSeconds" is followable: a reader holding a
+     * cursor position writes `{ startSeconds: t, durationSeconds: 0 }`, because a window over one
+     * instant has no length. `annotationsAt`'s own docblock says what that does — the window form
+     * "works — a zero-length window — except that `filterAnnotationsByTime` returns nothing for a
+     * non-positive duration, so the obvious call returns an empty list at every position" — and it
+     * is why that function exists at all. So the advice ended in silence rather than in an error,
+     * at the call a viewer makes on every mouse move.
+     *
+     * The sibling is one export away and takes exactly what was passed. 0.6.88 made this argument
+     * for `readWindow` and `readRecords`, the other pair in this package that differ only in the
+     * unit they bound by.
+     */
     throw new RangeError(
-      `filterAnnotationsByTime(): the window is ${describeValue(window)}, not an object. ` +
-        'Next: pass a window carrying startSeconds and durationSeconds.',
+      `filterAnnotationsByTime(): the window is ${describeValue(window)}, not an object.` +
+        (typeof window === 'number'
+          ? ' That is an instant, and this call bounds events by an interval — a zero-length one ' +
+            'returns nothing, so a cursor position asked for as a window reads as no annotations ' +
+            'at every position. Next: call annotationsAt(annotations, seconds), which takes the ' +
+            'instant, or pass a window carrying startSeconds and durationSeconds.'
+          : ' Next: pass a window carrying startSeconds and durationSeconds.'),
     );
   }
   /*
@@ -213,6 +234,23 @@ export function annotationsAt(
   seconds: number,
 ): readonly EdfAnnotation[] {
   assertAnnotations(annotations, 'annotationsAt');
+  /*
+   * And the OTHER WAY. `filterAnnotationsByTime` is the neighbour this function's docblock names,
+   * the two differ only in whether they bound by an instant or by an interval, and a window here
+   * reached `secondsToTicks` — which answered "seconds must be a number of seconds, and was given
+   * an object. Next: convert it first". There is no conversion: a window is not a number spelled
+   * differently, and the reader was being sent to invent one.
+   */
+  const given = seconds as { startSeconds?: unknown; durationSeconds?: unknown } | null | undefined;
+  if (typeof given === 'object' && given !== null && !Array.isArray(given)) {
+    if ('startSeconds' in given || 'durationSeconds' in given) {
+      throw new RangeError(
+        'annotationsAt(): that is a time window, and this call takes a single instant in seconds. ' +
+          'Next: pass window.startSeconds for the instant under a cursor, or call ' +
+          'filterAnnotationsByTime(annotations, window), which is the one that takes an interval.',
+      );
+    }
+  }
   const at = secondsToTicks(seconds, 'seconds');
   return Object.freeze(
     annotations.filter((annotation) => {

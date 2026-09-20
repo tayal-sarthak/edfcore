@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.227
+
+- **Fixed** `annotationsAt` and `filterAnnotationsByTime` refusing each other's argument without
+  naming each other. They differ in one thing — an instant or an interval — and `annotationsAt`
+  exists because of it: the window form "works — a zero-length window — except that
+  `filterAnnotationsByTime` returns nothing for a non-positive duration, so the obvious call
+  returns an empty list at every position".
+- A number where the window belongs was the costly direction, because its advice was followable. A
+  reader holding a cursor position, told to "pass a window carrying startSeconds and
+  durationSeconds", writes `{ startSeconds: t, durationSeconds: 0 }` — and gets `[]` at every
+  position, with no error, at the call a viewer makes on every mouse move. The sibling that takes
+  the number is one export away and is now named.
+- A window where the instant belongs reached `secondsToTicks` and was told to "convert it first".
+  A window is not a number spelled differently, so there was nothing to convert; it now names
+  `window.startSeconds` and `filterAnnotationsByTime`. 0.6.88 made the same argument for
+  `readWindow` and `readRecords`, the other pair that differ only in the unit they bound by.
+- Every other wrong window keeps the refusal it had, including the array one that names
+  `resolveTimeWindow`, and neither function's answer changes.
+
 ## 0.6.226
 
 - **Fixed** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` calling the canonical
