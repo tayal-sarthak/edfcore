@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.226
+
+- **Fixed** `sampleAt`, `sampleStartTicksOf` and `sampleStartSecondsOf` calling the canonical
+  decimal string the one thing it is not. The lookup they share is
+  `recording.header.signals[signalIndex]`, so `signals['9']` is the property access `signals[9]` is
+  — the coercion `a-selection-from-json.test.ts` names and 0.6.135 deduplicates against — and a
+  selection built from JSON, a query parameter or a form arrives with its index as text.
+- The refusal said `signalIndex is the string "9", not a number this header can be indexed by`.
+  Index 9 is simply not in a 3-signal file, which is the sentence the same guard prints for `9`;
+  the message blamed the spelling instead and sent a reader to convert a value that needed no
+  converting.
+- 0.6.218 made this argument for the refusal the five reading calls share and 0.6.225 for
+  `decodeDigital`. This copy is older than both — 0.6.133 wrote it, and its comment calls itself
+  "the other copy of that message" — so all three now agree.
+- Only a round-trip-exact spelling counts: `'  9  '`, `''` and `'0x10'` are still described as the
+  strings they are, a label is untouched, and every number keeps its sentence.
+
 ## 0.6.225
 
 - **Fixed** `decodeDigital` answering three different selector mistakes with one sentence and the

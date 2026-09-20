@@ -63,12 +63,24 @@ function resolveSignal(recording: EdfRecording, signalIndex: number, call: strin
      * falls between two, which is the distinction 0.6.93 drew in `getSignal` itself. This is the
      * other copy of that message (fixed in 0.6.133).
      */
-    const problem = !Number.isFinite(signalIndex)
+    // The canonical decimal string is a SPELLING of an index here, not text: the lookup one line up
+    // IS `recording.header.signals['9']`, which is the property access `recording.header.signals[9]`
+    // is — the coercion `a-selection-from-json.test.ts` names. Until 0.6.226 it was called "not a
+    // number this header can be indexed by", which is the one thing it is: index 9 simply is not in
+    // a 3-signal file, and the message said the spelling was the problem. 0.6.218 made this argument
+    // for the refusal the five reading calls share and 0.6.225 for `decodeDigital`; this is the copy
+    // that predates both. `'  9  '` and `''` are not spellings this header can be indexed by, and
+    // reading 9 or 0 out of them would name a signal nobody wrote.
+    const index =
+      typeof signalIndex === 'string' && signalIndex === String(Number(signalIndex))
+        ? Number(signalIndex)
+        : signalIndex;
+    const problem = !Number.isFinite(index)
       ? `signalIndex is ${describeValue(signalIndex)}, not a number this header can be indexed by`
-      : Number.isInteger(signalIndex)
-        ? `signalIndex ${signalIndex} is outside the ` +
+      : Number.isInteger(index)
+        ? `signalIndex ${index} is outside the ` +
           `${recording.header.signals.length} signals this file declares`
-        : `signalIndex ${signalIndex} is not a whole number, so it falls between two signals ` +
+        : `signalIndex ${index} is not a whole number, so it falls between two signals ` +
           'rather than outside them';
     throw new EdfChannelNotFoundError(
       `${problem}. Next: pass an index from ` +
