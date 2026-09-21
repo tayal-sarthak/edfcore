@@ -112,12 +112,21 @@ describe('validateRecording', () => {
   it.each([
     ['missing', undefined],
     ['null', null],
-    ['a pending open', 'pending'],
   ])('refuses %s', async (_described, given) => {
-    const value = given === 'pending' ? opened() : given;
-    const message = await refusal(() => validateRecording(loosely<EdfRecording>(value)));
+    const message = await refusal(() => validateRecording(loosely<EdfRecording>(given)));
     expect(message).toContain('the recording is not the object openEdf() returns');
-    if (given === 'pending') await value;
+  });
+
+  it('refuses a pending open by naming the keyword', async () => {
+    // Not the sentence above: `openEdf(source)` is async, so a pending Promise IS what it returns,
+    // and the recording is what that Promise resolves to (0.6.231 for the reading calls, 0.6.232
+    // here).
+    const value = opened();
+    const message = await refusal(() => validateRecording(loosely<EdfRecording>(value)));
+    expect(message).toContain('the recording is a pending Promise');
+    expect(message).toContain('the recording is what it resolves to');
+    expect(message).toContain('await openEdf(source)');
+    await value;
   });
 
   it('still sweeps a real recording', async () => {

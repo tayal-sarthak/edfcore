@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.232
+
+- **Fixed** `buildRecordIndex` and `validateRecording` telling a pending Promise it was not the
+  object `openEdf` returns. 0.6.231 corrected the guard the five reading calls share; these two are
+  the other copies of that sentence, and they had no branch for a forgotten `await` at all, so a
+  Promise landed in the arm written for a number or a string.
+- They are also the two calls a reader reaches for on the line after `openEdf` —
+  `buildRecordIndex(recording)` is the whole of the scan step and `validateRecording(recording)` the
+  whole of the sweep — so the first argument is where a missing keyword shows up.
+- Each keeps its own tail: `validateRecording` still names `validateHeader` for the checks that need
+  only a header, and the header arm of each still says what that call in particular needs. All three
+  copies say the same thing for a Promise now.
+
 ## 0.6.231
 
 - **Fixed** the refusal every read shares telling a pending Promise it was not the object `openEdf`

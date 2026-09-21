@@ -828,6 +828,24 @@ export async function validateRecording(
 ): Promise<ValidationReport> {
   const given = recording as { header?: unknown; signals?: unknown } | null | undefined;
   if (given == null || typeof given.header !== 'object' || given.header === null) {
+    /*
+     * A FORGOTTEN AWAIT, which the other two copies of this sentence both name and this one did not.
+     *
+     * `openEdf(source)` is async, so a pending Promise is what it returns and the recording is what
+     * that Promise resolves to. 0.6.231 said so in `assertRecording`, the guard the five reading
+     * calls share; here the Promise fell into the arm written for a number or a string and was told
+     * it "is not the object openEdf() returns" — which it is exactly.
+     *
+     * Both of these calls are reached with the recording as their FIRST argument on the line after
+     * `openEdf`, so the keyword is the thing most likely to be missing.
+     */
+    if (typeof (given as { then?: unknown } | undefined)?.then === 'function') {
+      throw new RangeError(
+        'validateRecording(): the recording is a pending Promise — openEdf(source) is async, so ' +
+          'that is what it returns, and the recording is what it resolves to. Next: pass `await ' +
+          'openEdf(source)`.',
+      );
+    }
     throw new RangeError(
       `validateRecording(): ${
         Array.isArray(given?.signals)

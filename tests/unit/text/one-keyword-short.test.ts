@@ -127,9 +127,13 @@ describe('the calls that are one keyword short', () => {
   });
 
   it('leaves the 0.6.89 refusal for the recording saying its own thing', async () => {
+    // Still fixed text rather than anything read out of `describeValue`, which is what this checks.
+    // The text changed in 0.6.232: `openEdf(source)` is async, so a pending Promise is what it
+    // returns, and saying it "is not the object openEdf() returns" was the one thing that could not
+    // be true of one.
     const pending = openEdf(byteSource(FILE));
     await expect(buildRecordIndex(pending as never)).rejects.toThrow(
-      /the recording is not the object openEdf\(\) returns/,
+      /the recording is a pending Promise — openEdf\(source\) is async/,
     );
     await pending;
   });
