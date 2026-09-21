@@ -30,10 +30,25 @@ import type { EdfChunk, EdfChunkSignal, EdfDiagnostic } from './types.js';
 /** Reads as one line at the call site, and keeps the `chunks[i]` non-null assertions out of it. */
 function at(chunks: readonly EdfChunk[], index: number): EdfChunk {
   const chunk = chunks[index];
-  if (chunk === undefined) {
+  /*
+   * `null` as well as `undefined`, because JSON is how a hole arrives.
+   *
+   * The advice below is about a hole, and the transport that produces one spells it `null`:
+   * `JSON.stringify` writes an absent element as `null`, so a chunk array crossing a worker
+   * boundary, a cache or a message channel comes back with `null` where nothing was. That is the
+   * same route `a-selection-from-json.test.ts` follows for the selection, and
+   * `design-decisions.md` follows for a chunk — "what parses back has no `.length` where a caller
+   * expects one".
+   *
+   * `undefined` was refused here in a sentence; `null` reached `chunk.records` on the next check
+   * and threw V8's `Cannot read properties of null (reading 'records')`. Every other wrong element
+   * — a number, a string, an object, one signal of a chunk — already had a sentence of its own, so
+   * `null` was the one value in this array that left the package without a `Next:` clause.
+   */
+  if (chunk === undefined || chunk === null) {
     throw new RangeError(
       `mergeChunks: no chunk at ${index}. Next: pass the array readWindow() returned, with no ` +
-        'holes and nothing spliced out of it.',
+        'holes and nothing spliced out of it — JSON writes one as null.',
     );
   }
   /*

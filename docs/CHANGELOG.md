@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.228
+
+- **Fixed** `mergeChunks` throwing V8's `Cannot read properties of null (reading 'records')` for a
+  `null` element. Every other wrong element in that array already had a sentence — `undefined` is
+  "no chunk at 0", a number, a string and an object are "the value at 0 is …, not a chunk", and one
+  signal of a chunk is named as that — so `null` was the one value in it that left the package with
+  no `Next:` clause.
+- It is also how a hole actually arrives. The advice already says "with no holes and nothing
+  spliced out of it", and the transport that makes one spells it `null`: `JSON.stringify` writes an
+  absent element that way, so a chunk array that crossed a worker boundary, a cache or a message
+  channel comes back with `null` where nothing was.
+- Same sentence as `undefined`, because it is the same mistake, with the spelling named.
+
 ## 0.6.227
 
 - **Fixed** `annotationsAt` and `filterAnnotationsByTime` refusing each other's argument without
