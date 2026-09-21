@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.229
+
+- **Fixed** `validateHeader` describing a header that had not arrived as one with no signals. The
+  header a caller has in hand comes from `readHeader(source)` whenever they have a source rather
+  than bytes, and that call is async — so `validateHeader(readHeader(source))` is one keyword
+  short, and the whole of what it was told is true of a pending Promise and of almost everything
+  else, so it named nothing a reader could act on.
+- This guard is otherwise a copy of the one in `header/lookup.ts`, which got the branch in 0.6.217
+  for the same reason; 0.6.89 made the argument for the recording and 0.6.214 taught
+  `describeValue` to say it. `edfcore/validate` is a separate entry point, and it was the copy
+  nobody carried it to.
+- `validateRecording` already names the keyword for its own argument, so the module's two exported
+  checks agree now. Every other wrong header keeps the refusal it had, including the chunk one.
+
 ## 0.6.228
 
 - **Fixed** `mergeChunks` throwing V8's `Cannot read properties of null (reading 'records')` for a

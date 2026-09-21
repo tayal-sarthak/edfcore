@@ -507,6 +507,25 @@ export function validateHeader(header: EdfHeader): readonly EdfDiagnostic[] {
   // telling a caller precisely what is wrong (fixed in 0.6.113).
   const signals = (header as { signals?: unknown } | null | undefined)?.signals;
   if (!Array.isArray(signals)) {
+    /*
+     * A FORGOTTEN AWAIT, in the entry point this module is named for.
+     *
+     * The header a caller has in hand comes from `readHeader(source)` when they have a source
+     * rather than bytes, and that call is async — so `validateHeader(readHeader(source))` is one
+     * keyword short. It was told it had passed something with no signals: true of a pending
+     * Promise, and true of almost everything else, so it named nothing a reader could act on.
+     *
+     * 0.6.89 made this argument for the recording, 0.6.214 taught `describeValue` to say it, and
+     * 0.6.217 put it in front of the three published lookups in `header/lookup.ts`, whose guard
+     * this one is otherwise a copy of. `edfcore/validate` is a separate entry point and was the
+     * copy nobody carried it to.
+     */
+    if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'validateHeader(): that is a pending Promise, not a header. Next: await ' +
+          'readHeader(source) — it resolves to the header this takes.',
+      );
+    }
     throw new RangeError(
       'validateHeader(): that is not a header — it has no signals. Next: pass recording.header, ' +
         'or call validateRecording(recording) for the checks that need the bytes too.',
