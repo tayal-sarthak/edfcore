@@ -76,11 +76,25 @@ export async function openEdf(source: ByteSource, options?: OpenOptions): Promis
  * Exported for `stream.ts`, which must produce the byte-identical refusal `readWindow` does — not
  * for the barrel. Validating a selection is not a public operation.
  */
-/** What arrived, for a selection that is not an array. Never prints the value: it could be huge. */
+/**
+ * What arrived, for a selection that is not an array. Never prints the value: it could be huge.
+ *
+ * The article is written out here rather than left off, which `io/source.ts` chose for its own
+ * version and gave the reason for: "An article needs to know that `Uint8Array` is said 'yoo-int',
+ * which no rule about vowels gets right, and getting it wrong is the kind of thing a reader notices
+ * instead of the message." That is the cost, and this hard-coded `a` was paying it — on `object`,
+ * which is exactly what the two arguments that reach it here are when they are wrong. A `Set` of
+ * indices, a `Map` from a config, an object keyed by label: `signalIndices is a object`. A header,
+ * a chunk or `header.signals` where the recording belongs: `the recording is a object`.
+ *
+ * No rule about vowels is needed. `undefined` and `null` are answered above without an article at
+ * all, and of the seven strings `typeof` can still return here — object, boolean, number, bigint,
+ * string, symbol, function — exactly one begins with a vowel.
+ */
 function describeSelection(value: unknown): string {
   if (value === null) return 'null';
   if (value === undefined) return 'missing';
-  return `a ${typeof value}`;
+  return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
 }
 
 /**

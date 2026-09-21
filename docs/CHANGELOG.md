@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.230
+
+- **Fixed** `signalIndices is a object` and `the recording is a object`. `describeSelection` names
+  what arrived for `assertSignalIndices` and for `assertRecording`, and it built the phrase as
+  `a ${typeof value}`. Six of the seven things `typeof` can still return there take "a"; the
+  seventh is `object`, which is exactly what those two arguments are when they are wrong — a `Set`
+  of indices, a `Map` from a config, an object keyed by label, a header or `header.signals` where
+  the recording belongs.
+- `io/source.ts` made the opposite choice for its own version and gave the reason: "An article
+  needs to know that `Uint8Array` is said 'yoo-int', which no rule about vowels gets right, and
+  getting it wrong is the kind of thing a reader notices instead of the message." This helper was
+  paying that cost on the one type it meets most.
+- No rule about vowels is needed. `undefined` and `null` are answered above the article, and of the
+  seven strings that can still arrive exactly one begins with a vowel — which the test executes
+  rather than assuming.
+- Nothing else changes: not the reason, not the `Next:` clause, not the class.
+
 ## 0.6.229
 
 - **Fixed** `validateHeader` describing a header that had not arrived as one with no signals. The
