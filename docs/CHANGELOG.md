@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.233
+
+- **Fixed** "or call readRecords(), which is the one that takes records" being said by three calls
+  that have no such sibling. 0.6.87 wrote the clause for `readWindow`, where it is exactly right —
+  `readWindow` and `readRecords` are the same read in two units — and `streamRecords`, called
+  streamRECORDS and taking a window, is the other call it was written for. `assertSelection` is
+  shared by five.
+- `readEnvelope` and `readEnvelopeAtResolution` have no records form: `readRecords` hands back
+  samples, and reducing them to an envelope is a second call, `envelopeOfSamples`. The advice named
+  only the first step of a two-step answer, and both are named now.
+- `readTriggers` has no records form at all. It decodes BioSemi trigger EVENTS, so a reader who
+  followed the advice got the Status channel's samples — after finding that channel themselves —
+  rather than the events they asked for. Its clause says that instead.
+- The clause is a parameter now, defaulted so the two calls it was written for keep it verbatim.
+  Same branch, same class, same shape in the `Next:`.
+
 ## 0.6.232
 
 - **Fixed** `buildRecordIndex` and `validateRecording` telling a pending Promise it was not the

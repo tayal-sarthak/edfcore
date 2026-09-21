@@ -269,7 +269,13 @@ export async function readTriggers(
   options?: ReadOptions,
 ): Promise<readonly EdfTriggerEvent[]> {
   assertRecording(recording, 'readTriggers');
-  assertSelection(selection, 'readTriggers', '{ startSeconds, durationSeconds }');
+  assertSelection(
+    selection,
+    'readTriggers',
+    '{ startSeconds, durationSeconds }',
+    'there is no records form of a trigger scan: readRecords() would hand back the Status ' +
+      'channel as samples, which you would still have to find and decode.',
+  );
   /*
    * The OPTIONS, here rather than on the first read, for the reason `streamRecords` states in full
    * at 0.6.169: the guard that catches them is inside the read, so whether it fires at all depends

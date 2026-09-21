@@ -164,6 +164,7 @@ export async function readEnvelope(
     selection,
     'readEnvelope',
     '{ signalIndices, startSeconds, durationSeconds, buckets }',
+    'there is no records form of an envelope: readRecords() gives you those records as samples, and envelopeOfSamples() reduces each signal of them.',
   );
   /*
    * And the SIBLING'S field, left on the selection.
@@ -748,6 +749,7 @@ export async function readEnvelopeAtResolution(
     selection,
     'readEnvelopeAtResolution',
     '{ signalIndices, startSeconds, durationSeconds, secondsPerBucket }',
+    'there is no records form of an envelope: readRecords() gives you those records as samples, and envelopeOfSamples() reduces each signal of them.',
   );
   // And the sibling's field, for the reason `readEnvelope` states in full: a selection carrying
   // both asks two different questions about the bucket width, and each call answered its own

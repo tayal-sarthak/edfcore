@@ -112,7 +112,26 @@ function describeSelection(value: unknown): string {
  * `shape` is the call's own selection spelled out, so the message names what to pass rather than
  * what was missing.
  */
-export function assertSelection(selection: unknown, call: string, shape: string): void {
+export function assertSelection(
+  selection: unknown,
+  call: string,
+  shape: string,
+  /*
+   * The call to reach for INSTEAD, when the selection names records.
+   *
+   * 0.6.87 wrote "or call readRecords(), which is the one that takes records" into the branch
+   * below, and it is true of the caller it was written for: `readWindow` and `readRecords` are the
+   * same read in two units. The clause is shared by five calls, and it is the sibling of two of
+   * them. `readEnvelope` and `readEnvelopeAtResolution` have no records form — `readRecords` hands
+   * back samples, and turning those into an envelope is a second call, `envelopeOfSamples`. And
+   * `readTriggers` has no records form at all: it decodes BioSemi trigger EVENTS, so a reader who
+   * takes the advice gets the Status channel's samples and still has to find that channel
+   * themselves.
+   *
+   * Defaulted, so the two calls the sentence was written for keep it verbatim.
+   */
+  recordsForm = 'or call readRecords(), which is the one that takes records.',
+): void {
   if (typeof selection !== 'object' || selection === null) {
     throw new RangeError(
       `${call}(): the selection is ${describeSelection(selection)}, not an object. ` +
@@ -154,7 +173,7 @@ export function assertSelection(selection: unknown, call: string, shape: string)
   if (given.records !== undefined && given.startSeconds === undefined && shape.includes('start')) {
     throw new RangeError(
       `${call}(): the selection has a \`records\` range, and this call takes a time window. ` +
-        `Next: pass ${shape} — or call readRecords(), which is the one that takes records.`,
+        `Next: pass ${shape} — ${recordsForm}`,
     );
   }
   /*
