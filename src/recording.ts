@@ -210,10 +210,29 @@ export function assertRecording(
         'openEdf(source) resolved to, rather than its .header.',
     );
   }
+  /*
+   * "Not the object openEdf() returns", said to someone holding the object openEdf() returns.
+   *
+   * `openEdf(source)` is async, so the object it returns IS a pending Promise — which is the one
+   * branch of this sentence where the tail denies what the head just named. The recording is what
+   * that Promise RESOLVES to, and every sibling guard in the package says it that way: 0.6.215 for
+   * the index ("it resolves to the index this takes"), 0.6.217 for the header, 0.6.229 for
+   * `validateHeader`. This is the guard all five reading calls share, and it was the one saying
+   * the opposite.
+   *
+   * The other arm is untouched: a number, a string or an object is not what `openEdf` returns, and
+   * for those the sentence was always true.
+   */
+  if (typeof given?.then === 'function') {
+    throw new RangeError(
+      `${call}(): the recording is a pending Promise — openEdf(source) is async, so that is what ` +
+        'it returns, and the recording is what it resolves to. Next: pass `await ' +
+        'openEdf(source)`.',
+    );
+  }
   throw new RangeError(
-    `${call}(): the recording is ${
-      typeof given?.then === 'function' ? 'a pending Promise' : describeSelection(recording)
-    }, not the object openEdf() returns. Next: pass \`await openEdf(source)\`.`,
+    `${call}(): the recording is ${describeSelection(recording)}, not the object openEdf() ` +
+      'returns. Next: pass `await openEdf(source)`.',
   );
 }
 

@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.231
+
+- **Fixed** the refusal every read shares telling a pending Promise it was not the object `openEdf`
+  returns. `openEdf(source)` is async, so a pending Promise is exactly what it returns; the
+  recording is what that Promise RESOLVES to. 0.6.89 gave this guard a branch naming the argument,
+  and the shared tail then denied what the branch had just said.
+- Every sibling says it the other way — 0.6.215 for the index ("it resolves to the index this
+  takes"), 0.6.217 for the header, 0.6.229 for `validateHeader`. This is the guard they were
+  modelled on, and the one saying the opposite.
+- The `Next:` clause was right throughout and is unchanged, so this cost a reader nothing beyond a
+  sentence that could not both be true. The other arm keeps its wording: a number, a string or an
+  object is not what `openEdf` returns, and there the sentence was always true.
+
 ## 0.6.230
 
 - **Fixed** `signalIndices is a object` and `the recording is a object`. `describeSelection` names
