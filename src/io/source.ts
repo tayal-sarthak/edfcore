@@ -261,6 +261,27 @@ function adapterFor(source: unknown): string {
    * primitive takes the header and the shape is easy to reach for. This is that confusion pointed
    * the other way, and it is the one direction the package answered with a list.
    */
+  /*
+   * A FORGOTTEN AWAIT, and the one whose advice named the call that produced it.
+   *
+   * `fileSource(path)` is the only async adapter in the package — it opens the file to learn its
+   * size — and `openEdf(fileSource("recording.edf"))` is the Node quickstart with one keyword
+   * missing. The list below answered it with `fileSource(path) from "edfcore/node" for a file`,
+   * which is the call the reader had just made. 0.6.215 named that shape for the index guard:
+   * advice a reader follows and arrives back where they started.
+   *
+   * Four published entry points take a source — `openEdf`, `readHeader`, `readRecordBytes`,
+   * `inspectEdf` — and `cachedSource` wraps one, so all five said it.
+   *
+   * The other adapters are synchronous, which is why the keyword is worth naming rather than just
+   * the shape: there is exactly one call in this package whose result needs awaiting here.
+   */
+  if (typeof (source as { then?: unknown } | null | undefined)?.then === 'function') {
+    return (
+      'that is a pending Promise — fileSource(path) from "edfcore/node" is async, so it is the ' +
+      'one adapter whose result needs awaiting; byteSource, blobSource and httpSource are not'
+    );
+  }
   const opened = source as { source?: { read?: unknown }; header?: unknown } | null | undefined;
   if (typeof opened?.source?.read === 'function' && typeof opened.header === 'object') {
     return 'that is a recording — it carries the source on .source rather than being one, so pass recording.source';

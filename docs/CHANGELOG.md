@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.234
+
+- **Fixed** the source guard answering a forgotten `await` with the call the reader had just made.
+  `fileSource(path)` is the only async adapter in the package — it opens the file to learn its size
+  — so `openEdf(fileSource("recording.edf"))` is the Node quickstart one keyword short, and the
+  generic list it got back has `fileSource(path) from "edfcore/node" for a file` as its middle
+  item. 0.6.215 named that shape for the index guard: advice a reader follows and arrives back
+  where they started.
+- It is reached from five places — `openEdf`, `readHeader`, `readRecordBytes` and `inspectEdf` all
+  take a source, and `cachedSource` wraps one — and it is the first call of the package.
+- The clause names the keyword and says which adapter needs it, because exactly one does:
+  `byteSource`, `blobSource` and `httpSource` are synchronous.
+- It stays an `EdfSourceError` carrying `offset` and `requestedLength`, and every other wrong
+  argument keeps the adapter it had, including the recording named in 0.6.222.
+
 ## 0.6.233
 
 - **Fixed** "or call readRecords(), which is the one that takes records" being said by three calls
