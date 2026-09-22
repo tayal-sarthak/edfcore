@@ -582,6 +582,32 @@ export function toPhysicalEnvelope(
    * And `out.max` was never checked for existence at all, so an object carrying only `min` reached
    * `out.max.length` and threw V8's `Cannot read properties of undefined (reading 'length')`.
    */
+  /*
+   * And `out` ITSELF, which the loop below reads two fields off without asking whether it has any.
+   *
+   * The note above names the shape this call does not share: "the other three take a single typed
+   * array, this takes an object carrying two". So `toPhysicalEnvelope(signal, envelope, scratch)`
+   * with `scratch` a `Float64Array` — the buffer the other three resolvers want — is the mistake
+   * this signature invites, and it was answered `out.min is undefined, not a Float64Array`: a
+   * complaint about a field, on a value that has none, while the array the caller actually passed
+   * went unmentioned.
+   *
+   * `null` did not even get that. It reached `(out).min` in the list below and threw V8's `Cannot
+   * read properties of null (reading 'min')`, which is the one way out of here with no `Next:`
+   * clause — the same hole 0.6.228 closed in `mergeChunks`, and `null` arrives the same way: JSON
+   * writes an absent value as one.
+   *
+   * A typed array is tested for by name rather than left to the object check, because it IS one.
+   * It is also the single buffer the siblings take, which is the whole point of naming it.
+   */
+  if (out !== undefined && (out === null || typeof out !== 'object' || ArrayBuffer.isView(out))) {
+    throw new RangeError(
+      `toPhysicalEnvelope(): out is ${describeValue(out)}, not the pair this one takes. The other ` +
+        'resolvers in this family reuse a single typed array; this writes a lower and an upper ' +
+        'bound, so it takes an object carrying a min and a max. Next: pass an object with a min ' +
+        'and a max Float64Array on it, or omit out and let toPhysicalEnvelope allocate.',
+    );
+  }
   if (out !== undefined) {
     for (const [name, side] of [
       ['min', (out as { min?: unknown }).min],

@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.241
+
+- **Fixed** `toPhysicalEnvelope` reading two fields off an `out` without asking whether it has any.
+  The note above that check names the shape this call does not share with its siblings — "the other
+  three take a single typed array, this takes an object carrying two" — so passing the single
+  buffer `toPhysical`, `clampToDigitalRange` and `decodeDigital` all want is the mistake the
+  signature invites, and it was answered `out.min is undefined, not a Float64Array`: a complaint
+  about a field, on a value that has none, with the array the caller passed never mentioned.
+- `null` did not even get that. It reached `out.min` and threw V8's `Cannot read properties of null`
+  — the one way out of this function with no `Next:` clause, and the same hole 0.6.228 closed in
+  `mergeChunks`, where `null` arrives the same way: JSON writes an absent value as one.
+- A typed array is named rather than left to the object check, because it is one, and it is the
+  buffer the siblings take. An `out` that IS the pair keeps every message it had: the per-side ones
+  naming `out.min` and `out.max`, and the length check under them.
+- The "4,500+ tests" figure in the README, `installation.md` and `browser-safety.test.ts` moves to
+  4,600. `test-count-claims.test.ts` exists to catch that figure falling behind the suite, and this
+  release's tests are what carried it past — so the two go together rather than leaving a release
+  whose own checks fail.
+
 ## 0.6.240
 
 - **Fixed** an envelope signal being called a chunk signal and told it carries samples it does not
