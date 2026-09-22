@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.244
+
+- **Fixed** `a object` in the last of this package's five describers still saying it.
+  `describeSample` names what `decodeStatusWord` refused, and built the phrase as
+  `a ${typeof sample}`. Five of the six things `typeof` can still return there take "a"; the sixth
+  is `object`, which is exactly what this guard exists to catch — its own comment says `&` "coerces
+  rather than refuses", so a caller who passed the signal, or the typed array one field along, gets
+  a well-formed Status word out of a wrong argument unless something refuses it.
+- 0.6.230 fixed the describer behind every read and quoted `io/source.ts` for the reason: "an
+  article needs to know that `Uint8Array` is said 'yoo-int', which no rule about vowels gets right,
+  and getting it wrong is the kind of thing a reader notices instead of the message".
+  `io/bytes.ts`, `tal/ticks.ts` and `text/describe.ts` already special-cased `object`.
+- The test reads the property out of `src/` rather than asserting the single case, so a sixth
+  describer cannot appear with the same slip. Every other value this one names is unchanged, and so
+  is the rest of the sentence.
+
 ## 0.6.243
 
 - **Fixed** "pass a start and a count" being said to a caller who passed both. 0.6.221 split that

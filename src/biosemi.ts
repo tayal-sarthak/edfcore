@@ -40,10 +40,26 @@ import type {
 /** BioSemi's own label for the channel. Matched case-insensitively after trimming. */
 const STATUS_LABEL = 'status';
 
-/** `undefined`, `a string`, `NaN`, `1.5` — named as itself, since `&` would have taken them all. */
+/**
+ * `undefined`, `an object`, `NaN`, `1.5` — named as itself, since `&` would have taken them all.
+ *
+ * The article is written out here rather than left off, and `object` is the one `typeof` answer
+ * that does not take "a". This was the last of the package's five describers still saying `a
+ * object`; 0.6.230 fixed the one behind every read and gave the reason `io/source.ts` states — "an
+ * article needs to know that `Uint8Array` is said 'yoo-int', which no rule about vowels gets right,
+ * and getting it wrong is the kind of thing a reader notices instead of the message".
+ *
+ * It is reachable from the mistake this guard exists for. `decodeStatusWord(chunk.signals[0])` —
+ * the signal rather than one sample of its `digital` — is an object, and so is the typed array one
+ * field along.
+ *
+ * `null` and `undefined` are answered above the article, so of the six that can still arrive
+ * exactly one begins with a vowel.
+ */
 function describeSample(sample: unknown): string {
   if (sample === null) return 'null';
   if (sample === undefined) return 'undefined';
+  if (typeof sample === 'object') return 'an object';
   if (typeof sample !== 'number') return `a ${typeof sample}`;
   return String(sample);
 }
