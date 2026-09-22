@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.242
+
+- **Fixed** a BigInt signal index being told it is "not a number this header can be indexed by".
+  It is the one thing it is: `header.signals[9n]` is the property access `header.signals[9]` is,
+  because a BigInt key stringifies exactly as the number does. That is why an IN-RANGE one already
+  resolved — `signalIndices: [1n]` reads signal 1 today, reports `signalIndex` as the number 1 on
+  the chunk, and `[1, 1n]` deduplicates to one signal since 0.6.135 keys on the resolved index.
+- So the spelling was accepted where it worked and blamed where it did not. 0.6.218 drew this
+  distinction for the canonical decimal string, and 0.6.225 and 0.6.226 carried it to the other two
+  copies; a BigInt is the other spelling the same property access takes, and one this package
+  produces — ticks are BigInt everywhere in it, so an index derived from tick arithmetic arrives
+  written this way.
+- The round trip is what makes it a spelling. Past the safe-integer range `Number()` loses digits,
+  and a BigInt there names no index, so it stays described as the BigInt it is.
+- Nothing else changes: a label, a padded string, a fraction and an index past the end all keep the
+  sentence each was given.
+
 ## 0.6.241
 
 - **Fixed** `toPhysicalEnvelope` reading two fields off an `out` without asking whether it has any.

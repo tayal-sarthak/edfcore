@@ -341,7 +341,17 @@ export function channelNotFound(header: EdfHeader, signalIndex: number): EdfChan
   const index =
     typeof signalIndex === 'string' && signalIndex === String(Number(signalIndex))
       ? Number(signalIndex)
-      : signalIndex;
+      : // The BIGINT spelling, for the same reason and with the same round trip. `signals[9n]` is the
+        // property access `signals[9]` is — a BigInt key stringifies exactly as the number does — so an
+        // in-range one already resolved silently, and an out-of-range one was told it is "not a number
+        // this header can be indexed by", which is the one thing it is. Ticks are BigInt everywhere in
+        // this package, so an index derived from tick arithmetic arrives spelled this way. Beyond the
+        // safe-integer range `Number()` loses digits, and there the spelling is not the index.
+        typeof signalIndex === 'bigint' &&
+          Number.isSafeInteger(Number(signalIndex)) &&
+          BigInt(Number(signalIndex)) === signalIndex
+        ? Number(signalIndex)
+        : signalIndex;
   const problem = !Number.isFinite(index)
     ? `signalIndex is ${describeValue(signalIndex)}, not a number this header can be indexed by`
     : Number.isInteger(index)
