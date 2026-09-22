@@ -312,6 +312,31 @@ function resolveInt32Out(
  */
 export function assertSignal(signal: EdfSignal, call: string): void {
   if (typeof signal?.index === 'number' && typeof signal.physicalMinimum === 'number') return;
+  /*
+   * An ENVELOPE signal, which the chunk test below cannot tell from a chunk signal.
+   *
+   * `EdfEnvelopeSignal` and `EdfChunkSignal` both carry `signalIndex`, which is the whole of that
+   * test — the ambiguity `time/window.ts` names in full, where the two "share eight of their nine
+   * fields". So an envelope signal was called a chunk signal, and told it "carries the samples
+   * rather than the declaration they are scaled by". It carries no samples: an envelope holds the
+   * smallest and largest of each bucket, which is what `envelopeOfSamples` says when refusing one.
+   *
+   * `toPhysicalEnvelope(signal, envelope)` is why it reaches here at all. It is the one call in the
+   * package whose two arguments are a header signal and an envelope signal, so passing them the
+   * other way round is the slip it invites — and the message then described the argument that was
+   * wrong as the kind of thing the caller does not have either.
+   *
+   * `min` is the field that separates them, the same test `toPhysicalEnvelope` uses one line later
+   * on its own second argument.
+   */
+  if (ArrayBuffer.isView((signal as { min?: unknown } | null | undefined)?.min)) {
+    throw new RangeError(
+      `${call}(): the signal is an envelope signal, which carries the smallest and largest sample ` +
+        'of each bucket rather than the declaration they are scaled by. Next: pass ' +
+        'header.signals[envelopeSignal.signalIndex] — on toPhysicalEnvelope the envelope is the ' +
+        'second argument, not the first.',
+    );
+  }
   const chunk = typeof (signal as unknown as EdfChunkSignal | undefined)?.signalIndex === 'number';
   throw new RangeError(
     `${call}(): the signal is ${

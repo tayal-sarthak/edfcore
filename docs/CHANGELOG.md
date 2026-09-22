@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.240
+
+- **Fixed** an envelope signal being called a chunk signal and told it carries samples it does not
+  have. `assertSignal` guards the header signal for `toPhysical`, `physicalRangeOf`,
+  `clampToDigitalRange` and `toPhysicalEnvelope`, and it names a wrong one by testing `signalIndex`
+  — which `EdfEnvelopeSignal` and `EdfChunkSignal` both carry. That is the ambiguity
+  `time/window.ts` names in full, where the two "share eight of their nine fields".
+- An envelope holds the smallest and largest of each bucket, which is what `envelopeOfSamples`
+  already says when it refuses one. The reply here said the opposite: that it "carries the samples
+  rather than the declaration they are scaled by".
+- `toPhysicalEnvelope(signal, envelope)` is why an envelope signal reaches the guard at all — it is
+  the one call in the package taking a header signal and an envelope signal, so passing them the
+  other way round is the slip it invites, and the message described the wrong argument as a third
+  thing the caller does not have either. The clause names that swap now.
+- `min` is the field that separates them, the same test `toPhysicalEnvelope` applies one line later
+  to its own second argument. A chunk signal keeps the sentence written for it.
+
 ## 0.6.239
 
 - **Fixed** `formatValidationReport` answering a forgotten `await` with the call the reader had just
