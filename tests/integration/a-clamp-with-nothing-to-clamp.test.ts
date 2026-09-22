@@ -131,7 +131,6 @@ describe('the other shapes that have nothing to clamp', () => {
     ['a half-built range with no count', { start: 0 }],
     ['a string', '0-6'],
     ['only a count', { count: 1 }],
-    ['fields that arrived from JSON as strings', { start: '0', count: '1' }],
     ['a null field', { start: null, count: 1 }],
   ])('answers %s the same way', async (_shape, records) => {
     const recording = await opened();

@@ -187,15 +187,38 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
    * every caller of this guard is pinned on, and it is true of both.
    */
   const clampable = typeof range.start === 'number' && typeof range.count === 'number';
+  /*
+   * "Pass a start and a count", said to a caller who passed both.
+   *
+   * 0.6.221 split this clause on whether there are two numbers to clamp, and treated everything
+   * that is not two numbers as a missing range. `{ start: 0n, count: 2n }` is not one: both bounds
+   * are there, named, and in the right order — they are BigInts, which this call cannot use because
+   * it ADDS and MULTIPLIES them rather than keying by them. So the advice for an absent range went
+   * to a caller holding a complete one, telling them a whole-file read has no default when what
+   * they wanted was a two-record read they had already written out.
+   *
+   * A BigInt reaches here because ticks are BigInt everywhere in this package, which is the same
+   * route 0.6.242 traced for the signal index — and there the spelling resolves, because a key
+   * stringifies. Here it does not.
+   *
+   * BOTH bounds have to be there for this to be the right sentence. `{ start: 0 }` named one, and
+   * the caller who wrote it is missing a count rather than holding the wrong kind of one, so it
+   * keeps the clause 0.6.221 wrote.
+   */
+  const bound = (value: unknown): boolean => value !== undefined && value !== null;
+  const mistyped = !clampable && bound(range.start) && bound(range.count);
   throw new EdfRangeError(
     `records ${describeRecordRange(range)} is not inside the ` +
       `${header.recordCount} data records this file contains. Next: ` +
       (clampable
         ? 'clamp the range against header.recordCount, or call index.locate(seconds) to find a ' +
           'record index for a time.'
-        : 'pass a start and a count — there is no default, so a whole-file read is written out ' +
-          `rather than implied, and here that is start 0, count ${header.recordCount}. Or call ` +
-          'readWindow(), which takes seconds and resolves the records itself.'),
+        : mistyped
+          ? 'pass the two bounds as numbers — this counts and adds them rather than using them as ' +
+            'keys, so a BigInt or a string is not the same value here. Number(value) converts one.'
+          : 'pass a start and a count — there is no default, so a whole-file read is written out ' +
+            `rather than implied, and here that is start 0, count ${header.recordCount}. Or call ` +
+            'readWindow(), which takes seconds and resolves the records itself.'),
     { requested: range, available },
   );
 }

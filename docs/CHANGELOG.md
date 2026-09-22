@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.243
+
+- **Fixed** "pass a start and a count" being said to a caller who passed both. 0.6.221 split that
+  clause on whether there are two numbers to clamp and treated everything else as a missing range.
+  `{ start: 0n, count: 2n }` is not one: both bounds are there, named and in the right order. They
+  are BigInts, which this call cannot use because it ADDS and MULTIPLIES them —
+  `records.start + records.count`, `records.count * header.recordByteLength` — rather than keying
+  by them.
+- So the advice written for an absent range went to a caller holding a complete one, telling them a
+  whole-file read has no default when what they had written was the two-record read they wanted.
+  The clause now says what the bounds are used for and that `Number(value)` converts one.
+- A BigInt gets here because ticks are BigInt everywhere in this package, the same route 0.6.242
+  traced for the signal index. There the spelling resolves, because a property key stringifies;
+  here it does not, because arithmetic mixing a BigInt and a number throws.
+- Both bounds have to be present for this to be the right sentence. `{ start: 0 }` names one, and a
+  caller missing a count keeps the clause 0.6.221 wrote — as do an absent range, `null`, an empty
+  object and a string. A range that is two numbers keeps the clamp.
+
 ## 0.6.242
 
 - **Fixed** a BigInt signal index being told it is "not a number this header can be indexed by".
