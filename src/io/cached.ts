@@ -113,6 +113,27 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
    * Silently, and this is the wrapper whose whole reason for existing is what it holds. 0.6.130
    * made the same argument for the three formatters' own item limit.
    */
+  /*
+   * An ARRAY, which is an object, so the check below cannot see it.
+   *
+   * The same shape `assertSelection` names one argument along — "an ARRAY, which is an object, so
+   * the check above let it through" — and the cost is the one the note above states: both
+   * `requireFiniteOption` calls take their defaults, so "the wrapper cached up to 64 MiB in 1 MiB
+   * blocks — sixteen times the budget asked for, on the one wrapper a caller reaches for to bound
+   * memory".
+   *
+   * 0.6.245 closed this in the read and parse options and 0.6.247 in the formatters, where
+   * `redactFields` made the list the caller already holds. Here nothing is array-valued, so the
+   * route is the plainer one: options built by `Object.values`, or a spread of a config that was a
+   * list.
+   */
+  if (Array.isArray(options)) {
+    throw new RangeError(
+      'cachedSource(): the options are an array, and blockBytes and maxBytes are fields on the ' +
+        'options rather than entries in a list, so this call would have cached up to the default ' +
+        '64 MiB rather than that. Next: pass maxBytes on an options object.',
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new RangeError(
       `cachedSource(): the options are ${describeValue(options)}, not an object — blockBytes and ` +

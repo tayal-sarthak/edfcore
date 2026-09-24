@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.249
+
+- **Fixed** `cachedSource(source, [])` taking every default. The guard here was written against a
+  bare value and states the cost: "a bare number has no `maxBytes`, so both `requireFiniteOption`
+  calls took their defaults and the wrapper cached up to 64 MiB in 1 MiB blocks — sixteen times the
+  budget asked for, on the one wrapper a caller reaches for to bound memory". An array is an
+  object, so it paid that in full without being seen.
+- `assertSelection` names the shape one argument along — "an ARRAY, which is an object, so the
+  check above let it through" — and 0.6.245 closed it in the read and parse options, 0.6.247 in the
+  formatters. Nothing here is array-valued, so the route is the plainer one: options built by
+  `Object.values`, or a spread of a config that was a list.
+- The bare-value guard, the block-size floor and the finite-number checks all keep their sentences,
+  and a real options object is unchanged.
+
 ## 0.6.248
 
 - **Fixed** `MaterializeOptions` having no guard at all. `ReadOptions` and `ParseOptions` have each
