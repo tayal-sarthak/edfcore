@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.250
+
+- **Fixed** `httpSource(url, [])` sending the request on the global `fetch`. The guard here was
+  written against a bare value and its note lists the cost: `resolveFetch` falls back to the
+  global, "and the whole point of supplying one is that the global is not what should serve this
+  request: an authenticated client, a signed-URL wrapper, a proxy, or the double a test suite
+  installs instead of reaching the network at all". `headers` went with it, so "a bearer token was
+  dropped and the server answered 401 or, worse, served a different resource anonymously".
+- An array is an object, so it paid all of that without being seen. Of the four options families
+  this package guards, this is the one where an unseen options object reaches the network rather
+  than a default — 0.6.245 closed the read and parse options, 0.6.247 the formatters and 0.6.249
+  the cache.
+- It stays an `EdfSourceError` carrying `offset` and `requestedLength`, the bare-value and
+  per-field guards keep their sentences, and the address check still runs first.
+
 ## 0.6.249
 
 - **Fixed** `cachedSource(source, [])` taking every default. The guard here was written against a

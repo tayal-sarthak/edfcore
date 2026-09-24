@@ -405,6 +405,29 @@ export async function httpSource(
    *
    * `undefined` and `null` still mean "no options", which is what they already meant.
    */
+  /*
+   * An ARRAY, which is an object, so the check below cannot see it — and it pays every cost the
+   * note above lists.
+   *
+   * `resolveFetch` falls back to the global, "and the whole point of supplying one is that the
+   * global is not what should serve this request: an authenticated client, a signed-URL wrapper, a
+   * proxy, or the double a test suite installs instead of reaching the network at all". `headers`
+   * goes with it, so "a bearer token was dropped and the server answered 401 or, worse, served a
+   * different resource anonymously". Of the four families this package guards, this is the one
+   * where an unseen options object reaches the network rather than a default.
+   *
+   * 0.6.245 closed this in the read and parse options, 0.6.247 in the formatters and 0.6.249 in
+   * the cache; `assertSelection` states the shape — "an ARRAY, which is an object, so the check
+   * above let it through".
+   */
+  if (Array.isArray(options)) {
+    throw new EdfSourceError(
+      'httpSource(): the options are an array, and fetch, headers and byteLength are fields on ' +
+        'the options rather than entries in a list — so this request would have gone out on the ' +
+        'global fetch with none of them. Next: pass them on an options object.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new EdfSourceError(
       `httpSource(): the options are ${describeValue(options)}, not an object — fetch, headers ` +
