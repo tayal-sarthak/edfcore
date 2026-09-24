@@ -83,6 +83,41 @@ export function requireFiniteOption(
  *
  * `null` and `undefined` still mean "no options", which is what they already meant.
  */
+/**
+ * The OPTIONS object, in the family that has `maxMaterializeBytes` and never had a guard.
+ *
+ * `ReadOptions` and `ParseOptions` have each been given one — 0.6.130 for the formatters and the
+ * cache, 0.6.154 for a parse, 0.6.166 for a read — and the read guard states the reason this family
+ * needed it most: "the read options are where the number a caller writes is likeliest to be a byte
+ * count, because `maxMaterializeBytes` is one". `MaterializeOptions` carries that field and nothing
+ * else, so the number is the WHOLE of what a caller holds, and
+ * `toPhysical(signal, digital, out, 64 * 1024 * 1024)` is what gets written.
+ *
+ * It read as `undefined`, so `resolveMaterializeBudget` returned the 256 MiB default and the
+ * allocation went ahead — on the option whose entire job, as the field's own docblock puts it, is
+ * to "refuse before allocating rather than dying inside it". A caller who capped it at four
+ * megabytes got the refusal that cap exists for on no call at all.
+ *
+ * An array is refused for the reason `assertSelection` gives one argument along — "an ARRAY, which
+ * is an object, so the check above let it through" — and `null` and `undefined` still mean "no
+ * options".
+ */
+export function assertMaterializeOptions(options: unknown, call: string): void {
+  if (Array.isArray(options)) {
+    throw new RangeError(
+      `${call}(): the options are an array, and maxMaterializeBytes is a field on them rather ` +
+        'than an entry in a list, so this call took the default budget. Next: pass it on an ' +
+        'options object.',
+    );
+  }
+  if (options === undefined || options === null || typeof options === 'object') return;
+  throw new RangeError(
+    `${call}(): the options are ${describeValue(options)}, not an object — maxMaterializeBytes ` +
+      'is the field on them, so this call took the default budget rather than that one. Next: ' +
+      'pass maxMaterializeBytes on an options object.',
+  );
+}
+
 export function assertOptions(options: unknown, call: string, listed: string): void {
   /*
    * An ARRAY, which is an object, so the check below let it through — and here the slip is not

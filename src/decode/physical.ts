@@ -10,7 +10,7 @@
  */
 
 import { EdfBudgetError, EdfScalingError } from '../errors.js';
-import { resolveMaterializeBudget } from '../options.js';
+import { assertMaterializeOptions, resolveMaterializeBudget } from '../options.js';
 import { describeValue } from '../text/describe.js';
 import type { EdfChunkSignal, EdfDiagnosticCode, EdfSignal } from '../types.js';
 import type { MaterializeOptions } from './digital.js';
@@ -428,6 +428,7 @@ export function toPhysical(
   out?: Float64Array,
   options?: MaterializeOptions,
 ): Float64Array {
+  assertMaterializeOptions(options, 'toPhysical');
   assertSignal(signal, 'toPhysical');
   const scale = signal.scale;
   if (scale === undefined) throw scalingError(signal);
@@ -516,6 +517,7 @@ export function clampToDigitalRange(
   out?: Int32Array,
   options?: MaterializeOptions,
 ): Int32Array {
+  assertMaterializeOptions(options, 'clampToDigitalRange');
   assertSignal(signal, 'clampToDigitalRange');
   /*
    * The ANNOTATIONS CHANNEL, whose digital fields describe nothing either.

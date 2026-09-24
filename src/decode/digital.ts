@@ -12,7 +12,7 @@
 
 import { isByteArray } from '../bytes/latin1.js';
 import { EdfBudgetError, EdfChannelNotFoundError, EdfRangeError } from '../errors.js';
-import { resolveMaterializeBudget } from '../options.js';
+import { assertMaterializeOptions, resolveMaterializeBudget } from '../options.js';
 import { pluralise } from '../text/counted.js';
 import { describeRecordRange, describeValue } from '../text/describe.js';
 import type { EdfHeader, EdfSignal, RecordRange } from '../types.js';
@@ -411,6 +411,7 @@ export function decodeDigitalCounted(
   out?: Int32Array,
   options?: MaterializeOptions,
 ): DecodedDigital {
+  assertMaterializeOptions(options, 'decodeDigital');
   assertDecodable(header, recordBytes, 'decodeDigital');
   const signal = signalAt(header, signalIndex);
   /*

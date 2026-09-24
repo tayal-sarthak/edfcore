@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.248
+
+- **Fixed** `MaterializeOptions` having no guard at all. `ReadOptions` and `ParseOptions` have each
+  been given one — 0.6.130 for the formatters and the cache, 0.6.154 for a parse, 0.6.166 for a
+  read — and the read guard states the reason this family needed one most: "the read options are
+  where the number a caller writes is likeliest to be a byte count, because `maxMaterializeBytes`
+  is one". This family carries that field and nothing else, so the number is the whole of what a
+  caller holds, and `toPhysical(signal, digital, out, 64 * 1024 * 1024)` is what gets written.
+- A number, a string, a boolean and an array were each read as `undefined`, so
+  `resolveMaterializeBudget` returned the 256 MiB default and the allocation went ahead — on the
+  option whose entire job, in its own words, is to "refuse before allocating rather than dying
+  inside it". A caller who capped it at four megabytes got that refusal on no call at all.
+- `decodeDigital`, `toPhysical` and `clampToDigitalRange` are the three published primitives that
+  take these options, and all three check them now. `null` and `undefined` still mean "no options",
+  and a budget passed on an object is unchanged.
+
 ## 0.6.247
 
 - **Fixed** `formatDiagnostics(diagnostics, ['patientId', 'recordingId'])` printing the patient's
