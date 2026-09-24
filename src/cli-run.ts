@@ -126,7 +126,30 @@ export function parseArgs(argv: readonly string[]): Args {
     else if (arg === '--version' || arg === '-v') version = true;
     else if (arg === '--help' || arg === '-h') help = true;
     else if (arg === '--limit') {
-      const value = Number(argv[i + 1]);
+      const written = argv[i + 1];
+      /*
+       * A BLANK value, which `Number()` reads as zero rather than as nothing.
+       *
+       * The comment below refuses `NaN` because it "would disable the cap silently, which is the
+       * opposite of what was asked for". An empty string is the same accident — a value that was
+       * meant to be there and is not — and `Number('')` is `0`, so it lands on the other extreme
+       * and prints no rows at all. `' '` is `0` too.
+       *
+       * It is the shape a shell produces. `edfcore events "$f" --limit "$LIMIT"` with `LIMIT`
+       * unset hands this exactly one empty argument; unquoted it would vanish and leave `--limit`
+       * last, which the check below already refuses by name.
+       *
+       * `--limit 0` stays what it is: a real request for the counts without the rows, which the
+       * output still says how to widen.
+       */
+      if (written !== undefined && written.trim() === '') {
+        throw new CliUsageError(
+          '--limit was given a blank value, which is not a count — an unset shell variable in ' +
+            'quotes arrives this way, and reads as zero rather than as the default. Next: pass a ' +
+            `count, or omit --limit for the default of ${DEFAULT_ITEM_LIMIT}.`,
+        );
+      }
+      const value = Number(written);
       // A NaN limit would disable the cap silently, which is the opposite of what was asked for.
       // `value < 0` is refused too, and the message says so: `-1` IS a whole number, so naming
       // only that half described a rule the rejected input satisfied. Every other guard in the
@@ -134,7 +157,7 @@ export function parseArgs(argv: readonly string[]): Args {
       // `envelope.ts` and `stream.ts` say "positive whole number" (fixed in 0.6.50).
       if (!Number.isSafeInteger(value) || value < 0) {
         throw new CliUsageError(
-          `--limit needs a non-negative whole number, received ${String(argv[i + 1])}. ` +
+          `--limit needs a non-negative whole number, received ${String(written)}. ` +
             `Next: pass a count, ` +
             `or omit --limit for the default of ${DEFAULT_ITEM_LIMIT}.`,
         );

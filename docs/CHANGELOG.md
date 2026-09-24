@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.246
+
+- **Fixed** `--limit ""` reading as a count of zero rather than as a missing value. The guard beside
+  it refuses `NaN` because that "would disable the cap silently, which is the opposite of what was
+  asked for", and refuses a negative because `-1` is a whole number and naming only that half
+  "described a rule the rejected input satisfied". An empty string is the same accident, and
+  `Number('')` is `0`, so it landed on the other extreme and printed no rows at all.
+- It is a shape a shell produces rather than one anyone types. `edfcore events "$f" --limit
+  "$LIMIT"` with `LIMIT` unset hands the parser one empty argument; unquoted it would vanish and
+  leave `--limit` last, which the existing check already refuses by name. The quoted form — the one
+  a careful script writer uses — was the one that read as zero.
+- `--limit 0` is unchanged: a real request for the counts without the rows, with the output still
+  saying how to widen it. A blank value is a `CliUsageError` and exits 2, which `cli.md` documents
+  as "bad flag value".
+
 ## 0.6.245
 
 - **Fixed** options passed as an array being accepted by every call that takes them. Both options
