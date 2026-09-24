@@ -155,6 +155,19 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
    *
    * `undefined` and `null` still mean "no options", which is what they already meant.
    */
+  /*
+   * An ARRAY, which is an object, so the check below cannot see it. Same argument as `assertOptions`
+   * makes for the three listing formatters, and the same cost: `redactFields` is an array-valued
+   * option, so the list a caller holds is written where the options go, and the identification
+   * bytes this call exists to withhold were printed in full.
+   */
+  if (Array.isArray(options)) {
+    throw new RangeError(
+      'formatHeader(): the options are an array, and includePatientId and redactFields are ' +
+        'fields on the options rather than entries in a list — so nothing was withheld. ' +
+        'Next: pass them on an object.',
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new RangeError(
       `formatHeader(): the options are ${describeValue(options)}, not an object — ` +

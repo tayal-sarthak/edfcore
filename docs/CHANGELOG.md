@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.247
+
+- **Fixed** `formatDiagnostics(diagnostics, ['patientId', 'recordingId'])` printing the patient's
+  name. `redactFields` is the one option in these formatters whose VALUE is an array, so the list a
+  caller holds is exactly what gets written where the options go — and an array is an object, so
+  the guard looking for one let it through. The array has no `redactFields` of its own, so nothing
+  was redacted and the identification bytes were printed in full.
+- That is the single outcome the option exists to prevent. Its own docblock says why: "for an
+  identification field those bytes are a person's name and birth date, and a diagnostic about them
+  is not rare — a writer that packs the name into one token is non-conformant, which is exactly the
+  file someone runs a tool on and pastes the output of", and "withholding `header.patient` while
+  the diagnostic below it spells the same string out is not withholding it at all".
+- The bare string spelling was already refused by name; the array — the shape the option actually
+  takes — was not. 0.6.245 closed the same hole in the read and parse options; this is the family
+  where it costs a name rather than a default.
+- `formatValidationReport` forwards the option and `formatHeader` keeps its own copy of the guard,
+  so all four formatters refuse it. A real options object and no options at all are unchanged.
+
 ## 0.6.246
 
 - **Fixed** `--limit ""` reading as a count of zero rather than as a missing value. The guard beside

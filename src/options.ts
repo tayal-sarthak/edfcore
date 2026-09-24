@@ -84,6 +84,28 @@ export function requireFiniteOption(
  * `null` and `undefined` still mean "no options", which is what they already meant.
  */
 export function assertOptions(options: unknown, call: string, listed: string): void {
+  /*
+   * An ARRAY, which is an object, so the check below let it through — and here the slip is not
+   * hypothetical, because one of these options IS an array.
+   *
+   * `redactFields` takes `['patientId', 'recordingId']`, so a caller holding that list writes it
+   * where the options go. It has no `redactFields` of its own, so nothing was redacted: the
+   * identification bytes were printed in full, which is the one outcome that option exists to
+   * prevent. Its own docblock says why — "for an identification field those bytes are a person's
+   * name and birth date", and "withholding `header.patient` while the diagnostic below it spells
+   * the same string out is not withholding it at all". `formatValidationReport` forwards the
+   * option, so it printed them too.
+   *
+   * The bare STRING spelling was already refused by the check below; the array one is the shape
+   * the option actually takes. 0.6.245 closed the same hole in the read and parse options.
+   */
+  if (Array.isArray(options)) {
+    throw new RangeError(
+      `${call}(): the options are an array, and maxItems and redactFields are fields on the ` +
+        'options rather than entries in a list — so nothing was redacted and every ' +
+        `${listed} was listed. Next: pass them on an object.`,
+    );
+  }
   if (options === undefined || typeof options === 'object') return;
   throw new RangeError(
     `${call}(): the options are ${describeValue(options)}, not an object — maxItems is a field ` +
