@@ -162,6 +162,24 @@ export function assertReadOptions(options: unknown): void {
    * one option whose job is to refuse an allocation before it is attempted, and any `signal` a
    * caller meant went with it: the read was neither bounded nor cancellable, and it resolved.
    */
+  /*
+   * An ARRAY, which is an object, so the check below let it through.
+   *
+   * `assertSelection` makes this exact argument one argument along — "an ARRAY, which is an object,
+   * so the check above let it through" — and it is the same cost here: every field is read off the
+   * object, so `options[0]` is nothing this package looks at and each one silently took its
+   * default.
+   *
+   * The cost is the one the guard below states: the read "took the default budget and no
+   * cancellation", and it resolved. `[controller.signal]` is the spelling that gets here —
+   * the same wrapping mistake 0.6.155 named for the bare signal, one bracket further on.
+   */
+  if (Array.isArray(options)) {
+    throw new RangeError(
+      `the read options are an array, and maxMaterializeBytes and signal are fields on the options rather than ` +
+        'entries in a list. Next: pass them on an object.',
+    );
+  }
   if (options !== undefined && options !== null && typeof options !== 'object') {
     throw new RangeError(
       `the read options are ${describeValue(options)}, not an object — maxMaterializeBytes and ` +

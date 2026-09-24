@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.245
+
+- **Fixed** options passed as an array being accepted by every call that takes them. Both options
+  guards were written against a BARE value — `openEdf(source, true)`,
+  `readRecords(recording, selection, 64 * 1024 * 1024)` — and an array is an object, so it walked
+  past the check for one. `assertSelection` makes this exact argument one argument along: "an
+  ARRAY, which is an object, so the check above let it through."
+- An array pays the cost both guards state, without being seen. The read options guard says the
+  read "took the default budget and no cancellation"; the parse options guard says the parse
+  "collected its diagnostics rather than throwing on the first of them", for a caller who asked to
+  receive no such file at all. `[controller.signal]` is the spelling that gets there — the wrapping
+  mistake 0.6.155 named for the bare signal, one bracket further on.
+- Twelve published calls reach one of the two guards, so all twelve refuse it now. `null` and
+  `undefined` still mean "no options", a real options object is untouched, and the bare-value and
+  AbortSignal branches keep their own sentences.
+
 ## 0.6.244
 
 - **Fixed** `a object` in the last of this package's five describers still saying it.

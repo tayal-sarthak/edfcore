@@ -175,6 +175,24 @@ export function fatalError(init: DiagnosticInit, cause?: unknown): EdfFormatErro
  * `null` and `undefined` still mean "no options", which is what they already meant.
  */
 export function assertParseOptions(options: unknown): void {
+  /*
+   * An ARRAY, which is an object, so the check below let it through.
+   *
+   * `assertSelection` makes this exact argument one argument along — "an ARRAY, which is an object,
+   * so the check above let it through" — and it is the same cost here: every field is read off the
+   * object, so `options[0]` is nothing this package looks at and each one silently took its
+   * default.
+   *
+   * The cost is the one the guard below states: the parse "collected its diagnostics rather
+   * than throwing on the first of them", for a caller who asked to receive no such file at
+   * all — reached through an object rather than past the check for one.
+   */
+  if (Array.isArray(options)) {
+    throw new RangeError(
+      'the parse options are an array, and strict is a field on the options rather than an ' +
+        'entry in a list. Next: pass it on an object.',
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new RangeError(
       `the parse options are ${describeValue(options)}, not an object — strict is a field on one, ` +
