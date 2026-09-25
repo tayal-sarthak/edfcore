@@ -127,8 +127,19 @@ export function formatAnnotations(
         'readAnnotations(recording, records).',
     );
   }
-  if (annotations.length === 0) return '';
-
+  /*
+   * The options BEFORE the empty list, so which of them a caller got wrong does not depend on the
+   * file. `formatValidationReport` states the rule one module over — its own `assertOptions` sits
+   * "outside the `diagnostics.length > 0` branch below" because "the typo belongs to the call, and
+   * the clean file is the cheap place to find out about it" — and this listing had the early return
+   * in front of all three of its guards.
+   *
+   * A recording with no events is the common one, not an edge case: most EDF files carry no
+   * annotations at all, and `readAnnotations` on a plain EDF file resolves to an empty list. So
+   * `formatAnnotations(annotations, 20)` — the bare number `assertOptions` exists for, which prints
+   * every one of fifty thousand events instead of twenty — was refused on the files that have
+   * events and accepted in silence on the files a caller develops against.
+   */
   assertOptions(options, 'formatAnnotations', 'annotation');
   // The flag, on the same rule as 0.6.182 and 0.6.193: `=== true` never coerces, so text read as
   // OFF and the `description@@channel` column a caller asked for was simply not there.
@@ -138,6 +149,7 @@ export function formatAnnotations(
     'the channel column was left off a listing that asked for it',
   );
   const limit = requireItemLimit(options?.maxItems, annotations.length);
+  if (annotations.length === 0) return '';
 
   /*
    * Both time columns are sized from the rows being printed, the way `formatHeader` sizes its

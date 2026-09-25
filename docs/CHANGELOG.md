@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.251
+
+- **Fixed** `formatAnnotations` deciding whether to refuse a wrong options argument by looking at
+  the file. All three of its option guards sat behind `if (annotations.length === 0) return ''`, so
+  `formatAnnotations(annotations, 20)` — the bare number that prints every event instead of twenty —
+  was refused on a recording that carries events and accepted in silence on one that carries none.
+  A list, a string, `includeChannel: 'true'` and `maxItems: '20'` all read the same way.
+- The empty list is the common case, not an edge case: most EDF files hold no annotations at all, so
+  the silent reading is the one a caller gets while the code is being written and the refusal arrives
+  later, from someone else's file.
+- `formatValidationReport` already states the rule one module over — its own `assertOptions` sits
+  "outside the `diagnostics.length > 0` branch below" because "the typo belongs to the call, and the
+  clean file is the cheap place to find out about it".
+- `formatAnnotations([])` with no options, with `{}`, with `null` or with `undefined` still returns
+  the empty string, and every message is unchanged.
+
 ## 0.6.250
 
 - **Fixed** `httpSource(url, [])` sending the request on the global `fetch`. The guard here was
