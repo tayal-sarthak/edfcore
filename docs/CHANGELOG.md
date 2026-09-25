@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.252
+
+- **Fixed** `validateRecording` letting the file decide whether its read options were checked at all.
+  The sweep traverses only when `scanSamples` is on or when the onsets live in the records, so on a
+  plain EDF asked for the cheap check nothing downstream of the option guards ever saw the options —
+  and `assertReadOptions` was reached from inside that traversal or not at all.
+- So `validateRecording(recording, [controller.signal])` was refused against an EDF+ recording and
+  accepted in silence against an EDF one, from the same line of a caller's code. The signal handed
+  over as the whole options object read the same way. `assertReadOptions` names this call in its own
+  note, among those "the rest of the package has been closing since 0.6.130", while this was the one
+  call that never asked it anything.
+- `record-index.ts` states the rule for `locate` and `onsetTicks` — "the read options, HERE, because
+  nothing downstream of this line can ever see them". There the laundering is a spread of the
+  options; here it is the shape of the file.
+- The bare-value guard keeps its own sentence, which names `scanSamples` rather than the read
+  options, and a real options object — including a `signal` on the field it belongs on — is
+  unchanged.
+
 ## 0.6.251
 
 - **Fixed** `formatAnnotations` deciding whether to refuse a wrong options argument by looking at

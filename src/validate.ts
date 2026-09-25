@@ -39,6 +39,7 @@ import {
 } from './header/dates.js';
 import { signalFieldOffset } from './header/signals.js';
 import { readRecordBytes } from './io/read.js';
+import { assertReadOptions } from './io/source.js';
 import { scanChunkRecords } from './record-index.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { buildSegmentation } from './time/segments.js';
@@ -878,6 +879,23 @@ export async function validateRecording(
         'reported a verdict. Next: pass scanSamples on an options object.',
     );
   }
+  /*
+   * And the READ half of the same object, HERE, because whether anything downstream ever sees it is
+   * decided by the file. `traverse` runs only when `scanSamples` is on or the onsets have to be
+   * read, so on a plain EDF asked for the cheap sweep nothing below this line looks at the options
+   * at all — and `assertReadOptions` was reached from inside that traversal or not at all.
+   *
+   * So `validateRecording(recording, [controller.signal])` was refused on an EDF+ file and accepted
+   * in silence on an EDF one, from the same line of a caller's code. `record-index.ts` states the
+   * rule for `locate` and `onsetTicks` — "the read options, HERE, because nothing downstream of
+   * this line can ever see them" — and this is the same rule with the file rather than a spread
+   * doing the laundering.
+   *
+   * `assertReadOptions` names this call in its own note, among those "the rest of the package has
+   * been closing since 0.6.130". The guard above is the one that answered for it, and it answers
+   * only for a bare value.
+   */
+  assertReadOptions(options);
   /*
    * And the FIELD, once the object is there. The guard above describes what a dropped `scanSamples`
    * costs — "this sweep would have skipped the samples and still reported a verdict" — and
