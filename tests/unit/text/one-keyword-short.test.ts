@@ -96,10 +96,12 @@ describe('the calls that are one keyword short', () => {
     const recording = await openEdf(byteSource(FILE));
     const pending = readAnnotations(recording, { start: 0, count: 6 });
     expect(() => formatDiagnostics(pending as never)).toThrow(/a pending Promise/);
-    // Not `summarizeDiagnostics`: that module "imports one type module and nothing else", which is
-    // the property that lets any layer summarise, so it cannot reach `describeValue` and says only
-    // that the argument is not an array. Recorded here rather than worked around.
-    expect(() => summarizeDiagnostics(pending as never)).toThrow(/not an array/);
+    // `summarizeDiagnostics` says it too, and says it without `describeValue`: that module "imports
+    // one type module and nothing else", which is the property that lets any layer summarise, so it
+    // cannot reach one. Until 0.6.254 that was recorded here as the reason it said only "not an
+    // array" — the constraint is about the import, not about the sentence, and a property read
+    // written out in words satisfies both.
+    expect(() => summarizeDiagnostics(pending as never)).toThrow(/a pending Promise/);
     await pending;
   });
 

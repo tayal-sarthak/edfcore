@@ -92,6 +92,33 @@ export function summarizeDiagnostics(diagnostics: readonly EdfDiagnostic[]): Edf
   // no mention of the three places a caller gets a list (fixed in 0.6.107).
   // Cast in the test, not on the value: `Array.isArray` over a `readonly T[]` narrows the whole
   // parameter to `any[]` and the element type is lost for the rest of the function.
+  /*
+   * A FORGOTTEN AWAIT, ahead of it, because "not an array" is true of a pending Promise and the
+   * advice below names three fields the caller does not have yet.
+   *
+   * `formatDiagnostics` names the keyword one directory over — it reads its subject out of
+   * `describeValue`, whose own note lists the five async calls whose resolved values other guards
+   * take and says a message about "an object" is "true of the thing they meant to pass too". This
+   * function is that note's twin and was left out of it: it takes the same array, `format.ts`
+   * says so in its own `Next:` clause, and a reader who follows that clause from there arrives
+   * here with the same Promise.
+   *
+   * The keyword is half of it, the way it is for `resolveTimeWindow` and `buildTimeline` (0.6.253):
+   * none of these calls resolves to a diagnostics array. Each resolves to the header, the report,
+   * the chunk or the recording that CARRIES one, so the fix is a field as well as a keyword.
+   *
+   * A property read and said in words, for the two reasons this module already gives: nothing here
+   * awaits or subscribes to anything, and the check below is "described in words rather than by
+   * type" so that any layer can summarise without taking on a dependency.
+   */
+  if (typeof (diagnostics as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      'summarizeDiagnostics(): the diagnostics are a pending Promise, so there is nothing to ' +
+        'summarise yet — and no call in this package resolves to a diagnostics array, so the ' +
+        'keyword is half of the fix. Next: pass (await readHeader(source)).diagnostics, or the ' +
+        'diagnostics on the recording, chunk or report you already have.',
+    );
+  }
   if (!Array.isArray(diagnostics as unknown)) {
     throw new RangeError(
       'summarizeDiagnostics(): the diagnostics are not an array, so there is nothing to ' +

@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.254
+
+- **Fixed** `summarizeDiagnostics` telling a pending Promise only that "the diagnostics are not an
+  array" — true of a Promise, and of a header, a report, a chunk, a recording, a string and a number.
+  It and `formatDiagnostics` are the two calls that take a diagnostics array, `format.ts` sends
+  readers across in its own `Next:` clause, and one of the two named the keyword.
+- The keyword is half of the fix, as it is for `resolveTimeWindow` in 0.6.253: no call in this
+  package resolves to a diagnostics array. `readHeader` resolves to the header carrying one,
+  `validateRecording` to the report, `readWindow` to the chunks — so the message names a field too.
+- `one-keyword-short.test.ts` recorded the old wording as a consequence of this module importing "one
+  type module and nothing else", which is what lets any layer summarise without taking on a
+  dependency. That constraint is about the import and not about the sentence: the new branch is a
+  property read written out in words and adds no import, so both hold.
+- The existing refusal is unchanged for the values it was written for, and an empty array is still a
+  summary of nothing.
+
 ## 0.6.253
 
 - **Fixed** `resolveTimeWindow` telling a pending `buildTimeline(source, header)` that it "has no
