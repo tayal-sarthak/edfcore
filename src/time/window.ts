@@ -185,6 +185,23 @@ export function resolveTimeWindow(
    * on onsets nobody has read, and this function refuses rather than guessing them" — reachable by
    * passing the wrong first argument (fixed in 0.6.123).
    */
+  /*
+   * A FORGOTTEN AWAIT, ahead of it, because "it has no spanTicks" is true of a pending Promise and
+   * the advice below names a field on a recording the caller may not have built yet.
+   *
+   * 0.6.217 made this argument for the three calls that take a header; the timeline is reached the
+   * same way. `buildTimeline(source, header)` is the published way to get one without opening a
+   * recording, and it is async — so the mistake is one keyword, and it costs twice, because what
+   * that call resolves to is a PAIR carrying the timeline rather than the timeline itself.
+   */
+  if (typeof (timeline as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      'resolveTimeWindow(): that is a pending Promise, not a timeline — ' +
+        'buildTimeline(source, header) is async, and it resolves to a pair carrying the timeline ' +
+        'rather than to the timeline itself. Next: pass recording.timeline, or ' +
+        '(await buildTimeline(source, header)).timeline.',
+    );
+  }
   if (typeof (timeline as { spanTicks?: unknown } | null | undefined)?.spanTicks !== 'bigint') {
     throw new RangeError(
       'resolveTimeWindow(): that is not a timeline — it has no spanTicks, and the check that ' +

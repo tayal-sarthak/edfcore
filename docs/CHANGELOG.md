@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.253
+
+- **Fixed** `resolveTimeWindow` telling a pending `buildTimeline(source, header)` that it "has no
+  spanTicks" — true of a Promise, and of almost everything else, which is the objection 0.6.217
+  raised for the three calls that take a header. `buildTimeline` is the published way to get a
+  timeline without opening a recording, and it is async.
+- The advice was the unusable part. "Pass recording.timeline" names a field on the object a caller
+  reaching for `buildTimeline` has deliberately not built, since `buildTimeline` is what `openEdf`
+  calls to make one.
+- And `await` alone is not the fix: `buildTimeline` resolves to a pair, `{ timeline, index }`, whose
+  awaited form has no `spanTicks` either and earns the same wrong message. Both halves are named in
+  one sentence.
+- The existing refusal is unchanged for the shapes it was written for — a header, a recording, a
+  record index — and so is the second-argument check.
+- The suite's test-count claim goes from 4,600+ to 4,700+ in the README, `installation.md` and
+  `browser-safety.test.ts`. It has to move with this release rather than after it, because
+  `test-count-claims.test.ts` reads the written-out cases and this release's own tests pushed them
+  past the old figure.
+
 ## 0.6.252
 
 - **Fixed** `validateRecording` letting the file decide whether its read options were checked at all.
