@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.256
+
+- **Fixed** `decodeStatusWord(digital)` — the whole Status channel where one sample of it belongs —
+  being refused as "an object". Two shapes reach this guard and its own note named both: "the signal
+  rather than one sample of its `digital` — is an object, and so is the typed array one field along".
+  The typed array is the nearer miss, one field and one index from correct, and it is the `Int32Array`
+  the same message goes on to tell the reader to take an element of.
+- The describer now delegates to `describeValue`, which already owns the answer and the reason: a
+  binary value is named by its built-in tag "because that IS the mistake wherever one turns up", and
+  "an object" there "says nothing a reader can act on". It also states the rule this module was
+  breaking by keeping its own list — "two copies of a rule have to be kept in agreement, and one does
+  not". This was the fifth and last of those copies.
+- Three values gain by it. A pending Promise is named as one, which matters in this module because
+  `readTriggers` is its async sibling. A string and a BigInt are named with their values rather than
+  only their kind, on the two types `describe.ts` exists for.
+- Nothing else moves: numbers keep their bare spelling, so `NaN`, `1.5` and an out-of-range integer
+  read as before; `null` and `undefined` keep theirs; and a plain object, an array and a `Map` are
+  still "an object", which is the article 0.6.244 was spent on.
+
 ## 0.6.255
 
 - **Fixed** `edfcore events file.edf --limit` — the flag last on the line — being refused with

@@ -36,7 +36,9 @@ const COERCED: ReadonlyArray<readonly [string, unknown, string]> = [
   ['undefined', undefined, 'undefined'],
   ['null', null, 'null'],
   ['NaN', Number.NaN, 'NaN'],
-  ['a string', 'x', 'a string'],
+  // Named with its value since 0.6.256, when this describer became `describeValue`: the module
+  // whose subject is "a rejected value, said in a way that cannot read as an accepted one".
+  ['a string', 'x', 'the string "x"'],
   ['a fraction', 1.5, '1.5'],
   ['a value wider than 24 bits', 2 ** 30, '1073741824'],
   ['one past the unsigned end', 0x1000000, '16777216'],

@@ -67,10 +67,13 @@ describe('an object where a Status sample belongs', () => {
       durationSeconds: 2,
     });
     const signal = chunks[0]?.signals[0];
-    // The signal rather than one sample of it, and the typed array one field along.
+    // The signal rather than one sample of it, and the typed array one field along. This file
+    // asserted "an object" for both until 0.6.256, which is the sentence the nearer of the two was
+    // owed a tag for: `describe.ts` names a binary value by its built-in tag "because that IS the
+    // mistake wherever one turns up".
     expect(refusal(() => decodeStatusWord(signal as never)).message).toContain('an object');
     expect(refusal(() => decodeStatusWord(signal?.digital as never)).message).toContain(
-      'an object',
+      'Int32Array is not a 24-bit',
     );
   });
 
@@ -82,12 +85,15 @@ describe('an object where a Status sample belongs', () => {
   });
 });
 
+// `a string` and `a bigint` said less than the rest of the row: every other entry here names the
+// value, and those two named only its kind — on the two types `describe.ts` was written for, where
+// "a BigInt is the case that costs the most". Delegating to it in 0.6.256 brought them into line.
 describe('everything else this describer names', () => {
   it.each([
     ['null', null, 'null is not a 24-bit'],
     ['undefined', undefined, 'undefined is not a 24-bit'],
-    ['a string', '5', 'a string is not a 24-bit'],
-    ['a bigint', 5n, 'a bigint is not a 24-bit'],
+    ['a string', '5', 'the string "5" is not a 24-bit'],
+    ['a bigint', 5n, 'the BigInt 5n is not a 24-bit'],
     ['a boolean', true, 'a boolean is not a 24-bit'],
     ['NaN', Number.NaN, 'NaN is not a 24-bit'],
     ['a fraction', 1.5, '1.5 is not a 24-bit'],

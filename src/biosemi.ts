@@ -24,6 +24,7 @@ import { assertReadOptions } from './io/source.js';
 import { scanChunkRecords } from './record-index.js';
 import { assertRecording, assertSelection, gapBefore } from './recording.js';
 import { ceilDiv, secondsToTicks, ticksToSeconds } from './tal/ticks.js';
+import { describeValue } from './text/describe.js';
 import { resolveTimeWindow } from './time/window.js';
 import type {
   EdfHeader,
@@ -41,28 +42,21 @@ import type {
 const STATUS_LABEL = 'status';
 
 /**
- * `undefined`, `an object`, `NaN`, `1.5` — named as itself, since `&` would have taken them all.
+ * `undefined`, `Int32Array`, `NaN`, `1.5` — named as itself, since `&` would have taken them all.
  *
- * The article is written out here rather than left off, and `object` is the one `typeof` answer
- * that does not take "a". This was the last of the package's five describers still saying `a
- * object`; 0.6.230 fixed the one behind every read and gave the reason `io/source.ts` states — "an
- * article needs to know that `Uint8Array` is said 'yoo-int', which no rule about vowels gets right,
- * and getting it wrong is the kind of thing a reader notices instead of the message".
+ * `describeValue` rather than a sixth copy of the same list. This one was written for the article —
+ * `object` is the one `typeof` answer that does not take "a" — and it answered the two shapes the
+ * guard exists for identically. Its own note named them both: "`decodeStatusWord(chunk.signals[0])`
+ * — the signal rather than one sample of its `digital` — is an object, and so is the typed array one
+ * field along". The typed array is the nearer miss of the two, one field from correct, and "an
+ * object" is what it heard.
  *
- * It is reachable from the mistake this guard exists for. `decodeStatusWord(chunk.signals[0])` —
- * the signal rather than one sample of its `digital` — is an object, and so is the typed array one
- * field along.
- *
- * `null` and `undefined` are answered above the article, so of the six that can still arrive
- * exactly one begins with a vowel.
+ * `describe.ts` names a binary value by its built-in tag "because that IS the mistake wherever one
+ * turns up", and gives the rule this module was reproducing: "two copies of a rule have to be kept
+ * in agreement, and one does not". Numbers keep their bare spelling there, which is what every
+ * numeric refusal here prints.
  */
-function describeSample(sample: unknown): string {
-  if (sample === null) return 'null';
-  if (sample === undefined) return 'undefined';
-  if (typeof sample === 'object') return 'an object';
-  if (typeof sample !== 'number') return `a ${typeof sample}`;
-  return String(sample);
-}
+const describeSample = describeValue;
 
 /*
  * The Status word, as BioSemi assigns it ("Trigger signals", biosemi.com; the same table is in
