@@ -142,7 +142,28 @@ export function parseArgs(argv: readonly string[]): Args {
        * `--limit 0` stays what it is: a real request for the counts without the rows, which the
        * output still says how to widen.
        */
-      if (written !== undefined && written.trim() === '') {
+      /*
+       * NO value at all, which the generic check below refused by printing one.
+       *
+       * The note under it says an unquoted unset variable "would vanish and leave `--limit` last,
+       * which the check below already refuses by name" — it refuses it, and the name it gives is
+       * `undefined`: `Number(undefined)` is `NaN`, so the flag fell into the branch written for a
+       * value that is not a count and reported the word as though the shell had handed it over.
+       * `ticks.ts` makes the argument for separating this case — "nothing computes undefined, so
+       * this is a field that is not there" — and the blank-value branch below was given its own
+       * sentence for the same reason one step earlier.
+       *
+       * `--limit` last on the line is how it arrives: `edfcore events file.edf --limit`, or the
+       * unquoted `$LIMIT` the note describes.
+       */
+      if (written === undefined) {
+        throw new CliUsageError(
+          '--limit was given no value at all — nothing follows it on the command line, so there ' +
+            'is no count to read. Next: pass a count after it, or omit --limit for the default ' +
+            `of ${DEFAULT_ITEM_LIMIT}.`,
+        );
+      }
+      if (written.trim() === '') {
         throw new CliUsageError(
           '--limit was given a blank value, which is not a count — an unset shell variable in ' +
             'quotes arrives this way, and reads as zero rather than as the default. Next: pass a ' +

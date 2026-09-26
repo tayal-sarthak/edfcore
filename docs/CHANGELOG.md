@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.255
+
+- **Fixed** `edfcore events file.edf --limit` — the flag last on the line — being refused with
+  "received undefined". `Number(undefined)` is `NaN`, so a flag given nothing at all fell into the
+  branch written for a value that is not a count, and that branch printed the value. Nobody typed
+  that word, so a reader checking their own command finds it nowhere.
+- It is the unquoted half of the route 0.6.246 closed: the note there says an unset variable without
+  quotes "would vanish and leave `--limit` last, which the check below already refuses by name". It
+  refuses it, and the name it gave was `undefined`. `ticks.ts` separates the same case for the same
+  reason — "nothing computes undefined, so this is a field that is not there".
+- Every value a reader can find in what they typed is still printed, because there it is the point:
+  a word, a negative, a fraction, `--patient`, and a filename the flag swallowed. The blank value
+  keeps 0.6.246's sentence, and `--limit 0` is still a real request for the counts without the rows.
+- 0.6.246's own test recorded this case under the heading "refuses a missing value by name". That
+  assertion is corrected here rather than left standing.
+
 ## 0.6.254
 
 - **Fixed** `summarizeDiagnostics` telling a pending Promise only that "the diagnostics are not an

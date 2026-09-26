@@ -94,10 +94,12 @@ describe('what it used to do', () => {
 });
 
 describe('every other spelling keeps its answer', () => {
-  it('refuses a missing value by name', () => {
-    expect(refusal(['events', 'a.edf', '--limit']).message).toContain(
-      '--limit needs a non-negative whole number',
-    );
+  // This one did NOT keep its answer, and the heading was the reason to look. It was written here
+  // as "by name", and the name the generic branch gave a value nobody typed was `undefined`.
+  // 0.6.255 gave the missing value its own sentence, the way the blank one has had since 0.6.246.
+  it('refuses a missing value as missing, rather than printing one', () => {
+    expect(refusal(['events', 'a.edf', '--limit']).message).toContain('no value at all');
+    expect(refusal(['events', 'a.edf', '--limit']).message).not.toContain('undefined');
   });
 
   it.each([
