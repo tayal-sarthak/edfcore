@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.257
+
+- **Fixed** `formatHeader`'s array refusal naming `redactFields`, which is not an option of this call.
+  `FormatHeaderOptions` is `includePatientId` and `diagnosticsHint`, and nothing here reads a
+  `redactFields` at all — so the message told a reader to pass it on an object, and passing it does
+  nothing. That is the failure `format.ts` reserves its strongest wording for, "the one option in this
+  package whose silent failure sends a person's name somewhere it should not go", reached by following
+  edfcore's own advice and around `assertRedactableFields`, which exists so a name outside the
+  vocabulary "is refused rather than ignored".
+- 0.6.247 wrote `assertOptions`' argument into this guard when it gave the four formatters an array
+  branch. It holds for the three listing formatters, whose `redactFields` really is the array-valued
+  option that makes the mistake likely. It does not hold here.
+- **Fixed** the same message stating the consequence backwards. This formatter withholds by default —
+  `includePatientId` is opt-in and read as `=== true` — so an array leaves the identification OUT, not
+  in. "Nothing was withheld" was the opposite of the bare-value guard three lines below it, which has
+  always said "the identification lines would have been left out and the summary would look exactly
+  like one that never asked for them". Two copies of one fact, in one function, disagreeing about
+  which way a person's name leaks.
+- The refusal now names the two real options, states the direction both guards agree on, and says
+  where redaction lives: `formatDiagnostics()`, which prints the raw bytes of a field it reports on.
+
 ## 0.6.256
 
 - **Fixed** `decodeStatusWord(digital)` — the whole Status channel where one sample of it belongs —

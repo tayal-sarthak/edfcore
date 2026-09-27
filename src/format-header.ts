@@ -157,15 +157,28 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
    */
   /*
    * An ARRAY, which is an object, so the check below cannot see it. Same argument as `assertOptions`
-   * makes for the three listing formatters, and the same cost: `redactFields` is an array-valued
-   * option, so the list a caller holds is written where the options go, and the identification
-   * bytes this call exists to withhold were printed in full.
+   * makes for the three listing formatters.
+   *
+   * NOT the same cost, and 0.6.247 wrote theirs in here. `redactFields` is the array-valued option
+   * that argument turns on, and it is not an option of this call — `FormatHeaderOptions` is
+   * `includePatientId` and `diagnosticsHint`. So the message named a field to pass on an object,
+   * and a reader who passed it got the silent failure `format.ts` reserves its strongest wording
+   * for: "the one option in this package whose silent failure sends a person's name somewhere it
+   * should not go", here spelled as an option that does nothing at all.
+   *
+   * And "nothing was withheld" is backwards for this formatter, which withholds by DEFAULT:
+   * `includePatientId` is opt-in and read as `=== true`, so an array left the identification OUT.
+   * The guard below says so correctly for a bare value, three lines away, and this one said the
+   * opposite of it.
    */
   if (Array.isArray(options)) {
     throw new RangeError(
-      'formatHeader(): the options are an array, and includePatientId and redactFields are ' +
-        'fields on the options rather than entries in a list — so nothing was withheld. ' +
-        'Next: pass them on an object.',
+      'formatHeader(): the options are an array, and includePatientId and diagnosticsHint are ' +
+        'fields on the options rather than entries in a list — so the identification lines were ' +
+        'left out and the summary looks exactly like one that never asked for them. ' +
+        'Next: pass them on an object. Redaction is not an option here: this formatter omits the ' +
+        'identification unless includePatientId asks for it, and redactFields belongs to ' +
+        'formatDiagnostics(), which prints the raw bytes of a field it reports on.',
     );
   }
   if (options !== undefined && typeof options !== 'object') {
