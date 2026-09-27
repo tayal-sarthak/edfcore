@@ -180,6 +180,26 @@ export function assertReadOptions(options: unknown): void {
         'entries in a list. Next: pass them on an object.',
     );
   }
+  /*
+   * A PENDING PROMISE, which is the last shape that reaches this guard as an object and leaves as
+   * one. The array branch above closed the bracketed spelling in 0.6.245; this is the awaited one.
+   *
+   * Every field is read off the object, never awaited, so the cost is the one the branch below
+   * states in full: the read "took the default budget and no cancellation", and it RESOLVED. A
+   * viewer whose options come from a stored setting or a config file — anything behind an async
+   * helper of the caller's own — got an unbounded, uncancellable read that looked like a successful
+   * one. `assertRecording` coined the argument for naming the keyword (0.6.89) and the options are
+   * the one argument in this package where making the mistake produces data rather than an error.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything.
+   */
+  if (typeof (options as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      'the read options are a pending Promise, and every field is read off the object rather than ' +
+        'awaited — so this read took the default budget and no cancellation, and it resolved. ' +
+        'Next: await them before passing them.',
+    );
+  }
   if (options !== undefined && options !== null && typeof options !== 'object') {
     throw new RangeError(
       `the read options are ${describeValue(options)}, not an object — maxMaterializeBytes and ` +

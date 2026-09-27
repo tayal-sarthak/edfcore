@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.258
+
+- **Fixed** read options handed over as the Promise that will produce them being accepted. Every field
+  is read off the object rather than awaited, so `options.signal` and `options.maxMaterializeBytes`
+  were both `undefined` and both took their defaults: the cost the bare-value branch already spells
+  out, "took the default budget and no cancellation" — and the read RESOLVED.
+- This is the argument where the mistake produces data rather than an error. Every other forgotten
+  `await` lands on a guard — `formatHeader(readHeader(source))` throws, `mergeChunks(readWindow(...))`
+  throws — while `readWindow(recording, selection, optionsFor(session))` came back with the samples,
+  unbounded and uncancellable, indistinguishable from a read whose options were honoured.
+- It closes the last object shape that reached `assertReadOptions` and left as one. The `AbortSignal`
+  passed whole went in 0.6.155, the bracketed spelling in 0.6.245. Covers `readWindow`, `readRecords`,
+  `readAnnotations`, `readEnvelope`, `readEnvelopeAtResolution`, `readTriggers`, `streamRecords`,
+  `readRecordBytes`, `buildRecordIndex`, `inspectEdf`, `validateRecording` (wired up in 0.6.252) and
+  `index.locate`/`index.onsetTicks`.
+- A property read, never a call: a Promise that never settles is still refused rather than awaited.
+  The three existing branches keep their own sentences, and a real options object is unchanged.
+- Not yet closed: `assertParseOptions` — `openEdf`, `readHeader` and `decodeAnnotations` still take a
+  pending Promise where `strict` belongs. Same shape, smaller cost, and its own release.
+
 ## 0.6.257
 
 - **Fixed** `formatHeader`'s array refusal naming `redactFields`, which is not an option of this call.
