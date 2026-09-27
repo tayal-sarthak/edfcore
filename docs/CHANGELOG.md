@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.259
+
+- **Fixed** parse options handed over as the Promise that will produce them, which 0.6.258 named as
+  the half it had not closed. `strict` is read off the object rather than awaited, so it was
+  `undefined` and the parse took the lenient path: a file with a would-be diagnostic came back "as a
+  header carrying a list, from a caller who asked to receive no such file at all", which is this
+  guard's own account of the cost.
+- `parseHeader` is the sharp case. It is synchronous and `strict` is its only option, so `strict` is
+  the whole of what a caller behind an async settings lookup holds — nothing else on the object could
+  have survived to make the call look wrong. `decodeAnnotations` is the same one argument along.
+- `openEdf` and `readHeader` carry both families and were already refused by the read guard. They are
+  pinned here too, so the two halves cannot drift into disagreeing about the same argument.
+- A property read, never a call: a Promise that never settles is refused rather than awaited. The
+  array, bare-value and `strict`-field branches keep their own sentences.
+
 ## 0.6.258
 
 - **Fixed** read options handed over as the Promise that will produce them being accepted. Every field

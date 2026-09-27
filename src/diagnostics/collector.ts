@@ -193,6 +193,25 @@ export function assertParseOptions(options: unknown): void {
         'entry in a list. Next: pass it on an object.',
     );
   }
+  /*
+   * A PENDING PROMISE, the other object that reaches this guard and leaves as one. 0.6.258 closed it
+   * for the read options and names the shape: every field is read off the object, never awaited, so
+   * `options.strict` is `undefined` and the parse took the lenient path.
+   *
+   * `parseHeader` is the sharp one, because it is synchronous and `strict` is its only option — so
+   * `strict` is the WHOLE of what a caller behind an async settings lookup holds, and a file with a
+   * would-be diagnostic came back "as a header carrying a list, from a caller who asked to receive no
+   * such file at all", which is this guard's own account of the cost.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything.
+   */
+  if (typeof (options as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      'the parse options are a pending Promise, and strict is read off the object rather than ' +
+        'awaited — so this parse collected its diagnostics rather than throwing on the first of ' +
+        'them. Next: await them before passing them.',
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new RangeError(
       `the parse options are ${describeValue(options)}, not an object — strict is a field on one, ` +
