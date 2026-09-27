@@ -6,6 +6,20 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.261
+
+- **Fixed** `MaterializeOptions` accepted as the Promise that will produce it. 0.6.248 gave this family
+  its first guard and gave the reason: it "carries that field and nothing else, so the number is the
+  WHOLE of what a caller holds". A pending Promise is that sentence from the other side — there is no
+  second field left on the object that could make the call look wrong.
+- `maxMaterializeBytes` read as `undefined`, `resolveMaterializeBudget` returned the 256 MiB default,
+  and the allocation went ahead — on the option whose entire job is to "refuse before allocating rather
+  than dying inside it". A caller who capped a browser tab at four megabytes got that cap on no call.
+- Covers `toPhysical`, `clampToDigitalRange` and `decodeDigital`, the three calls that resolve it. The
+  read half went in 0.6.258, the parse half in 0.6.259 and the listing half in 0.6.260.
+- A property read, never a call: a Promise that never settles is refused rather than awaited. The array
+  and bare-value branches keep their own sentences.
+
 ## 0.6.260
 
 - **Fixed** the three listing formatters accepting their options as the Promise that will produce them.

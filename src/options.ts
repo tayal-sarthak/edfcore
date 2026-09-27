@@ -110,6 +110,25 @@ export function assertMaterializeOptions(options: unknown, call: string): void {
         'options object.',
     );
   }
+  /*
+   * A PENDING PROMISE, the other object the check below lets through — and in this family the one
+   * field is the whole of the argument, so there is nothing left on it to look wrong.
+   *
+   * 0.6.248 added this guard because `MaterializeOptions` "carries that field and nothing else, so
+   * the number is the WHOLE of what a caller holds". A Promise is that sentence again: the budget
+   * read as `undefined`, `resolveMaterializeBudget` returned the 256 MiB default, and the allocation
+   * went ahead — on the option whose entire job is to "refuse before allocating rather than dying
+   * inside it".
+   *
+   * A property read, never a call.
+   */
+  if (typeof (options as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      `${call}(): the options are a pending Promise, and maxMaterializeBytes is read off the ` +
+        'object rather than awaited — so this call took the default budget and allocated. Next: ' +
+        'await them before passing them.',
+    );
+  }
   if (options === undefined || options === null || typeof options === 'object') return;
   throw new RangeError(
     `${call}(): the options are ${describeValue(options)}, not an object — maxMaterializeBytes ` +
