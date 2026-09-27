@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.260
+
+- **Fixed** the three listing formatters accepting their options as the Promise that will produce them.
+  `maxItems` and `redactFields` are both read off the object rather than awaited, so both took their
+  defaults at once: a call asking for twenty rows with the identification withheld printed every row it
+  had, with the identification in them, and no `... and N more` line to show the truncation — because
+  there was none.
+- This is the family where the dropped option costs the most. `format.ts` calls `redactFields` "the one
+  option in this package whose silent failure sends a person's name somewhere it should not go", and a
+  redaction policy out of a config file, a session record or a per-user setting is exactly the kind of
+  thing that sits behind an async helper.
+- `assertRedactableFields` exists so a name outside the vocabulary "is refused rather than ignored". A
+  pending Promise has no names on it at all, so that guard saw an empty list and had nothing to refuse.
+- Covers `formatDiagnostics`, `formatAnnotations` and `formatValidationReport`, which resolve these
+  options through one guard. The read half went in 0.6.258 and the parse half in 0.6.259.
+- A property read, never a call: a Promise that never settles is refused rather than awaited. The array
+  and bare-value branches keep their own sentences.
+
 ## 0.6.259
 
 - **Fixed** parse options handed over as the Promise that will produce them, which 0.6.258 named as

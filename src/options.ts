@@ -141,6 +141,22 @@ export function assertOptions(options: unknown, call: string, listed: string): v
         `${listed} was listed. Next: pass them on an object.`,
     );
   }
+  /*
+   * A PENDING PROMISE, the other object the check below lets through. 0.6.258 and 0.6.259 closed the
+   * read and parse halves; this is the family where the dropped option is `redactFields`, and
+   * `format.ts` says what that costs: it is "the one option in this package whose silent failure
+   * sends a person's name somewhere it should not go".
+   *
+   * Both options go at once, so a listing asked for twenty rows printed fifty thousand with the
+   * identification bytes in them. A property read, never a call.
+   */
+  if (typeof (options as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      `${call}(): the options are a pending Promise, and maxItems and redactFields are read off ` +
+        `the object rather than awaited — so nothing was redacted and every ${listed} was ` +
+        'listed. Next: await them before passing them.',
+    );
+  }
   if (options === undefined || typeof options === 'object') return;
   throw new RangeError(
     `${call}(): the options are ${describeValue(options)}, not an object — maxItems is a field ` +
