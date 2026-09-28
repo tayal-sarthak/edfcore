@@ -428,6 +428,30 @@ export async function httpSource(
       { offset: 0, requestedLength: 0 },
     );
   }
+  /*
+   * A PENDING PROMISE, the last object the check below lets through — and the only family where that
+   * means a REQUEST, not a default.
+   *
+   * Every field is read off the object rather than awaited, so `resolveFetch` fell back to the
+   * global and `headers` went with it: the note above says what both cost, and the second is the one
+   * that leaves the machine. "A bearer token was dropped and the server answered 401 or, worse,
+   * served a different resource anonymously."
+   *
+   * And the credential is what sits behind the async call. A token is fetched, refreshed or read out
+   * of a keychain, so `httpSource(url, authFor(session))` is how the options for this adapter get
+   * built — which makes it the one family where the forgotten keyword is the common spelling rather
+   * than the odd one.
+   *
+   * A property read, never a call.
+   */
+  if (typeof (options as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new EdfSourceError(
+      'httpSource(): the options are a pending Promise, and fetch, headers and byteLength are ' +
+        'read off the object rather than awaited — so this request would have gone out on the ' +
+        'global fetch with no headers. Next: await them before passing them.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new EdfSourceError(
       `httpSource(): the options are ${describeValue(options)}, not an object — fetch, headers ` +

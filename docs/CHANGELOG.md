@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.263
+
+- **Fixed** `httpSource` accepting its options as the Promise that will produce them. Every field is
+  read off the object rather than awaited, so `resolveFetch` fell back to the global and `headers` went
+  with it: "a bearer token was dropped and the server answered 401 or, worse, served a different
+  resource anonymously", which is the guard's own account of the cost.
+- Of the six families this shape has now been closed in, this is the only one where an unseen options
+  object means a request rather than a default — and the one where the forgotten keyword is the common
+  spelling rather than the odd one, because a credential is what sits behind an async call. A token is
+  fetched, refreshed or read out of a keychain, so `httpSource(url, authFor(session))` is how these
+  options get built.
+- It is refused at the call rather than at the first range request, because the branch only reads
+  `.then`: a Promise that never settles is refused rather than awaited.
+- The array, bare-value and per-field branches keep their own sentences, the error is still an
+  `EdfSourceError` carrying `offset` and `requestedLength`, and the address check still runs first.
+
 ## 0.6.262
 
 - **Fixed** `cachedSource` accepting its options as the Promise that will produce them. Both
