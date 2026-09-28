@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.262
+
+- **Fixed** `cachedSource` accepting its options as the Promise that will produce them. Both
+  `requireFiniteOption` calls read their field off the object rather than awaiting it, so both took
+  their defaults — and the guard above states what that is: "the wrapper cached up to 64 MiB in 1 MiB
+  blocks — sixteen times the budget asked for, on the one wrapper a caller reaches for to bound
+  memory".
+- Of the five families this shape has now been closed in, this is where the route is most ordinary,
+  because a cache budget is a setting: it comes out of a config file, a stored preference or a probe of
+  available memory, and every one of those is behind an async call of the caller's own. The other
+  families' options are usually literals at the call site.
+- Nothing about the wrapper said so. It read correctly, cached correctly, and held sixteen times what
+  it was asked to — the failure a memory bound exists to make impossible.
+- A property read, never a call: a Promise that never settles is refused rather than awaited. The
+  array, bare-value and per-field branches keep their own sentences.
+
 ## 0.6.261
 
 - **Fixed** `MaterializeOptions` accepted as the Promise that will produce it. 0.6.248 gave this family

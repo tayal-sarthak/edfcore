@@ -134,6 +134,25 @@ export function cachedSource(source: ByteSource, options?: CacheOptions): ByteSo
         '64 MiB rather than that. Next: pass maxBytes on an options object.',
     );
   }
+  /*
+   * A PENDING PROMISE, the other object the check below lets through. Both `requireFiniteOption`
+   * calls read their field off it rather than awaiting, so both took their defaults and the note
+   * above says what that is: "the wrapper cached up to 64 MiB in 1 MiB blocks — sixteen times the
+   * budget asked for, on the one wrapper a caller reaches for to bound memory".
+   *
+   * This is the wrapper where the route is most ordinary, because a cache budget is a SETTING. It
+   * comes out of a config file, a stored preference or a device-memory probe, and every one of those
+   * is behind an async call of the caller's own.
+   *
+   * A property read, never a call.
+   */
+  if (typeof (options as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      'cachedSource(): the options are a pending Promise, and blockBytes and maxBytes are read ' +
+        'off the object rather than awaited — so this wrapper cached up to the default 64 MiB in ' +
+        '1 MiB blocks. Next: await them before passing them.',
+    );
+  }
   if (options !== undefined && typeof options !== 'object') {
     throw new RangeError(
       `cachedSource(): the options are ${describeValue(options)}, not an object — blockBytes and ` +
