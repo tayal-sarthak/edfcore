@@ -551,6 +551,48 @@ export function toPhysicalEnvelope(
         'are reusing to the third parameter instead, which is what reuses it.',
     );
   }
+  /*
+   * And that the two arguments are the SAME SIGNAL, which nothing asked.
+   *
+   * They arrive separately and are only ever paired by a caller, which is the shape
+   * `resolveTimeWindow` guards for its timeline and index — "not a wrong number but a wrong FILE:
+   * the segments and gaps of recording A reported as the structure of recording B". Here it is a
+   * wrong CHANNEL, and unlike that one it answered: a full-length `{ min, max }` pair, every bound
+   * a real number, scaled by another signal's gain.
+   *
+   * The two arrays are indexed differently and that is the whole mistake. `header.signals` is in
+   * FILE order; `chunk.signals` is in the order `signalIndices` was given. So `signalIndices:
+   * [3, 7]` makes `header.signals[i]` and `chunk.signals[i]` name different channels for every `i`,
+   * and the pairing a reader writes from a plot loop — index against index — is wrong on every
+   * iteration. Both existing messages already spell the right one out, `header.signals[envelope
+   * Signal.signalIndex]`, which is a correction nobody was being given.
+   *
+   * What it costs is the thing this package exists to prevent. An SaO2 channel declared 0..100 %
+   * drawn through an EEG's ±500 µV gain comes back as a flat trace near zero — "numbers that look
+   * exactly like a signal", which is how `resolveSignals` names the failure. No exception, no
+   * diagnostic, and a plot that a reader has no way to tell from a quiet channel.
+   *
+   * Checked here rather than in `assertSignal`, because this is the only published call in the
+   * package that takes a header signal and a per-signal result as two arguments without looking the
+   * first one up itself: `trimToWindow` resolves it from `chunkSignal.signalIndex`, and `toPhysical`
+   * is handed a bare array that carries no index to compare.
+   *
+   * Both indices have to be numbers for there to be a disagreement at all. `EdfEnvelopeSignal`
+   * declares `signalIndex`, so everything `readEnvelope` and `envelopeOfSamples` hand back carries
+   * one; a `{ min, max, counts }` literal assembled by hand does not, and there is nothing to
+   * compare it against — saying "the envelope is for signal undefined" would name a mismatch that
+   * was never established.
+   */
+  if (typeof envelope.signalIndex === 'number' && signal.index !== envelope.signalIndex) {
+    throw new RangeError(
+      `toPhysicalEnvelope(): the signal is header.signals[${signal.index}] and the envelope is ` +
+        `for signal ${envelope.signalIndex}, so this would have scaled one channel's bounds by ` +
+        "another channel's gain and returned numbers that read as measurements. Next: pass " +
+        'header.signals[envelopeSignal.signalIndex] — chunk.signals is in the order signalIndices ' +
+        'was given, and header.signals is in file order, so the two are only index-for-index when ' +
+        'every signal was selected in order.',
+    );
+  }
   const scale = signal.scale;
   if (scale === undefined) {
     // `scalingError`, not a hard-coded SCALE_UNAVAILABLE. That code is defined as "none of the

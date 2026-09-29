@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.265
+
+- **Fixed** `toPhysicalEnvelope` scaling one channel's bounds by another channel's gain, silently.
+  The signal and the envelope arrive as separate arguments and are only ever paired by a caller, and
+  nothing checked that they name the same signal — so the call answered: a full-length `{ min, max }`
+  pair, every bound a finite number, converted through the wrong declaration.
+- The two arrays are indexed differently, which is the whole mistake. `header.signals` is in file
+  order and `chunk.signals` is in the order `signalIndices` was given, so a plot loop pairing index
+  against index is correct only when every signal was selected in order. `signalIndices: [3, 7]` makes
+  it wrong on every iteration.
+- What it cost is what this package exists to prevent. An SaO2 channel declared 0..100 % drawn through
+  an EEG's ±500 µV gain comes back as a flat trace near zero — "numbers that look exactly like a
+  signal", which is how `resolveSignals` names the failure. No exception, no diagnostic, and a plot a
+  reader cannot tell from a quiet channel.
+- `resolveTimeWindow` guards the same shape for its timeline and index, where it is "not a wrong
+  number but a wrong FILE". This is a wrong channel, and unlike that one it had an answer.
+- Both of this function's existing messages already named the right pairing,
+  `header.signals[envelopeSignal.signalIndex]`. It was advice for getting the shape right, given only
+  to callers who had already made a different mistake.
+- This is the only published call that takes a header signal and a per-signal result as two arguments
+  without looking the first one up itself: `trimToWindow` resolves it from `chunkSignal.signalIndex`,
+  and `toPhysical` is handed a bare array with no index to compare.
+- Both indices have to be numbers for there to be a disagreement, so a `{ min, max, counts }` literal
+  assembled by hand is unchanged — there is nothing to compare it against.
+
 ## 0.6.264
 
 - **Fixed** the forgotten-await advice every source guard gives listing `httpSource` among the adapters
