@@ -65,20 +65,28 @@ describe('the adapters the advice names as needing a keyword', () => {
   });
 
   it('really are async, which is what the sentence now claims', async () => {
-    expect(fileSource(__filename)).toBeInstanceOf(Promise);
-    const probe = httpSource('https://example.invalid/x.edf', {
-      byteLength: 8,
-      fetch: (() =>
-        Promise.resolve({
-          ok: true,
-          status: 206,
-          headers: { get: () => 'bytes 0-0/8' },
-          arrayBuffer: () => Promise.resolve(new ArrayBuffer(1)),
-        })) as never,
-    });
-    expect(probe).toBeInstanceOf(Promise);
-    await probe;
-    await (await fileSource(__filename)).close();
+    // Bound and closed, both of them. `fileSource` "holds a descriptor and closing it is yours",
+    // and on Node 26 one collected while still open is an uncaught ERR_INVALID_STATE rather than a
+    // warning — so a test that only checks the return type still has to close what it opened.
+    const opening = fileSource(__filename);
+    expect(opening).toBeInstanceOf(Promise);
+    const opened = await opening;
+    try {
+      const probe = httpSource('https://example.invalid/x.edf', {
+        byteLength: 8,
+        fetch: (() =>
+          Promise.resolve({
+            ok: true,
+            status: 206,
+            headers: { get: () => 'bytes 0-0/8' },
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(1)),
+          })) as never,
+      });
+      expect(probe).toBeInstanceOf(Promise);
+      await probe;
+    } finally {
+      await opened.close();
+    }
   });
 });
 
