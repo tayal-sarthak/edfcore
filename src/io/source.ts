@@ -302,22 +302,31 @@ function adapterFor(source: unknown): string {
   /*
    * A FORGOTTEN AWAIT, and the one whose advice named the call that produced it.
    *
-   * `fileSource(path)` is the only async adapter in the package — it opens the file to learn its
-   * size — and `openEdf(fileSource("recording.edf"))` is the Node quickstart with one keyword
-   * missing. The list below answered it with `fileSource(path) from "edfcore/node" for a file`,
-   * which is the call the reader had just made. 0.6.215 named that shape for the index guard:
-   * advice a reader follows and arrives back where they started.
+   * `openEdf(fileSource("recording.edf"))` is the Node quickstart with one keyword missing, and the
+   * list below answered it with `fileSource(path) from "edfcore/node" for a file` — the call the
+   * reader had just made. 0.6.215 named that shape for the index guard: advice a reader follows and
+   * arrives back where they started.
+   *
+   * TWO adapters are async, not one. 0.6.222 wrote "fileSource(path) is the only async adapter in
+   * the package" into this branch and listed `httpSource` among the ones that do not need awaiting;
+   * `httpSource` is declared `async` and its own docblock gives the reason — "async because it
+   * probes the server for range support and a length before returning". So the reader who wrote
+   * `openEdf(httpSource(url))`, which is the browser and remote quickstart with the same keyword
+   * missing, was told in the same sentence that their adapter is not one of the ones this is about.
+   *
+   * That is worse than saying nothing. The shape is already named correctly — "that is a pending
+   * Promise" — and the clause after it then argued the reader out of the fix.
+   *
+   * `byteSource`, `blobSource` and `cachedSource` are synchronous, which is why naming the keyword
+   * is worth it at all: the two that need it are the two that touch something outside the process.
    *
    * Four published entry points take a source — `openEdf`, `readHeader`, `readRecordBytes`,
    * `inspectEdf` — and `cachedSource` wraps one, so all five said it.
-   *
-   * The other adapters are synchronous, which is why the keyword is worth naming rather than just
-   * the shape: there is exactly one call in this package whose result needs awaiting here.
    */
   if (typeof (source as { then?: unknown } | null | undefined)?.then === 'function') {
     return (
-      'that is a pending Promise — fileSource(path) from "edfcore/node" is async, so it is the ' +
-      'one adapter whose result needs awaiting; byteSource, blobSource and httpSource are not'
+      'that is a pending Promise — fileSource(path) from "edfcore/node" and httpSource(url) are ' +
+      'both async, so both need awaiting; byteSource, blobSource and cachedSource do not'
     );
   }
   const opened = source as { source?: { read?: unknown }; header?: unknown } | null | undefined;

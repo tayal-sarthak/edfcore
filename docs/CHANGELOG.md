@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.264
+
+- **Fixed** the forgotten-await advice every source guard gives listing `httpSource` among the adapters
+  that do **not** need awaiting. It does: `httpSource` is declared `async`, and its own docblock says
+  why — "async because it probes the server for range support and a length before returning".
+- So `openEdf(httpSource(url))` — the browser and remote quickstart with exactly the keyword this
+  branch exists to name left off — was told "that is a pending Promise", correctly, and then told in
+  the same sentence that its adapter is not one of the ones that is async. Saying nothing would have
+  been better: the list this branch replaced in 0.6.222 at least did not contradict the mistake.
+- Both async adapters are now named together, and `byteSource`, `blobSource` and `cachedSource` are
+  named as the synchronous ones. `cachedSource` was missing from either side.
+- Five published surfaces share the sentence — `openEdf`, `readHeader`, `readRecordBytes`,
+  `inspectEdf` and `cachedSource` — so all five were saying it, and all five are pinned.
+- 0.6.222's own test recorded the claim under the heading "names the pending Promise and the one
+  adapter that is async". That assertion is corrected here rather than left standing.
+
 ## 0.6.263
 
 - **Fixed** `httpSource` accepting its options as the Promise that will produce them. Every field is

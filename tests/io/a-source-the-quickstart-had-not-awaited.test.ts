@@ -74,16 +74,22 @@ describe.each(CALLS)('%s, given fileSource(path) unawaited', (_name, call) => {
     expect(thrown.message).not.toContain('fileSource(path) from "edfcore/node" for a file');
   });
 
-  it('names the pending Promise and the one adapter that is async', async () => {
+  // Written here as "the one adapter that is async", which is what 0.6.222 believed and what the
+  // message said. `httpSource` is async too — it probes the server before returning — so the clause
+  // this pinned listed the reader's own adapter among the ones that do not need awaiting. Corrected
+  // in 0.6.264; both async adapters are named together now, and `cachedSource` joins the
+  // synchronous list it was missing from.
+  it('names the pending Promise and both adapters that are async', async () => {
     const thrown = await refusal(() => call(pendingSource()));
     expect(thrown.message).toContain('that is a pending Promise');
-    expect(thrown.message).toContain('fileSource(path) from "edfcore/node" is async');
-    expect(thrown.message).toContain('needs awaiting');
+    expect(thrown.message).toContain('fileSource(path) from "edfcore/node"');
+    expect(thrown.message).toContain('httpSource(url)');
+    expect(thrown.message).toContain('both need awaiting');
   });
 
   it('says which adapters do not need it', async () => {
     const thrown = await refusal(() => call(pendingSource()));
-    expect(thrown.message).toContain('byteSource, blobSource and httpSource are not');
+    expect(thrown.message).toContain('byteSource, blobSource and cachedSource do not');
   });
 
   it('stays an EdfSourceError with the fields a handler branches on', async () => {
