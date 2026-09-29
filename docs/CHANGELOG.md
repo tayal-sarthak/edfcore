@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.266
+
+- **Fixed** `fileSource('')` escaping as Node's own `ENOENT: no such file or directory, open ''`. That
+  is a plain `Error`: no `Next:` clause, not an `EdfSourceError`, so `isEdfError` said false and a
+  caller's file-or-bug branch took the wrong arm. It is also not true in the way it reads — "no such
+  file or directory" describes a lookup that failed, and there was never a name to look up.
+- Both guards above it exist because Node's error "names a path nobody meant". This is the case where
+  it names no path at all, which is the one a reader can do least with.
+- It is the shape a shell and an argv produce, which is why it earns its own sentence: `edfcore
+  "$FILE"` with the variable unset, `process.argv[2]` on a bare invocation, and an empty form field
+  all arrive as the empty string, and a config value trimmed to nothing arrives as whitespace. 0.6.246
+  and 0.6.255 closed both halves of this for `--limit`.
+- Only blank. Every other path that does not exist keeps Node's `ENOENT`, because that error names the
+  path, and the path is the most useful thing anyone can say about it. The non-string and wrong-scheme
+  guards keep their own sentences and still run first.
+- The suite's test-count claim goes from 4,700+ to 4,800+ in the README, `installation.md` and
+  `browser-safety.test.ts`. As in 0.6.253 it has to move in the same release as the tests that push it
+  over, because `test-count-claims.test.ts` reads the written-out cases.
+
 ## 0.6.265
 
 - **Fixed** `toPhysicalEnvelope` scaling one channel's bounds by another channel's gain, silently.

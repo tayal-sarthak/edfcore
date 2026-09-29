@@ -243,6 +243,34 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
       { offset: 0, requestedLength: 0 },
     );
   }
+  /*
+   * And a path that is BLANK, which `fs.open` answers with a sentence about nothing.
+   *
+   * `ENOENT: no such file or directory, open ''` is a plain `Error`: no `Next:` clause, not an
+   * `EdfSourceError`, so `isEdfError` says false and a caller's file-or-bug branch takes the wrong
+   * arm. The two guards above exist because Node's own error "names a path nobody meant"; this is
+   * the case where it names no path at all, and "no such file or directory" is not what went wrong —
+   * there was never a name to look up.
+   *
+   * It is the shape a shell and an argv produce, which is why it is worth its own sentence rather
+   * than an `ENOENT`. `edfcore "$FILE"` with the variable unset, `process.argv[2]` on a bare
+   * invocation, and a form field nobody filled in all arrive here as the empty string, and
+   * whitespace arrives the same way from a trimmed-to-nothing config value. 0.6.246 and 0.6.255
+   * closed both halves of this for `--limit`: a blank value reads as zero rather than as the
+   * default, and a missing one printed the word `undefined`.
+   *
+   * Only blank. Every other path that does not exist keeps Node's `ENOENT`, which names the path and
+   * is the most useful thing anyone can say about it.
+   */
+  if (typeof path === 'string' && path.trim() === '') {
+    throw new EdfSourceError(
+      `fileSource() was given ${path === '' ? 'an empty path' : 'a path of only whitespace'}, ` +
+        'which names no file — an unset shell variable, a missing argv entry and an empty form ' +
+        'field all arrive this way. Next: pass the path to the recording, and check the expression ' +
+        'that produced it rather than the filesystem.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   const handle = await fs.open(path, 'r');
   try {
     const stats = await handle.stat();
