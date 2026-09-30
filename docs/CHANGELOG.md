@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.267
+
+- **Fixed** a time bound that is still a Promise being described as "an object". Every time-bounded
+  call converts its seconds through one helper, and that sentence is true of a pending Promise and
+  equally true of the window object a reader might have passed instead — so it named nothing about the
+  one keyword that fixes it. The advice was wrong for it too: "convert it first — Number(text) for a
+  string" is for a value that exists.
+- The route is ordinary. `startSeconds` and `durationSeconds` come from a seek position, a playhead or
+  a viewport read back from storage, and `index.locate(seconds)` takes one directly — so
+  `readWindow(recording, { signalIndices, startSeconds: seekPosition(), durationSeconds: 10 })` with
+  an async `seekPosition` is one keyword short. `trimToWindow` and every window-taking read share it.
+- Said in words rather than through `describeValue`, because `tal/ticks.ts` "imports `constants.ts` and
+  nothing else" — the property AGENTS.md cites as the point of the layer rule, and the reason that
+  module sits at layer 1 rather than with the rest of `tal/`. `summarizeDiagnostics` closed its own
+  copy the same way in 0.6.254: the constraint is about the import, not the sentence.
+- Numbers keep their bare spelling, so `NaN`, `Infinity` and `undefined` still read as themselves and
+  still get the advice 0.6.87 wrote for an absent field. A string and a BigInt keep the spellings this
+  helper was written for in 0.6.92, and a plain object is still an object.
+
 ## 0.6.266
 
 - **Fixed** `fileSource('')` escaping as Node's own `ENOENT: no such file or directory, open ''`. That

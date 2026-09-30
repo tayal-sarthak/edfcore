@@ -237,6 +237,25 @@ function describeSeconds(seconds: unknown): string {
   if (typeof seconds === 'bigint') return `the BigInt ${seconds}n`;
   if (typeof seconds === 'string') return `the string ${JSON.stringify(seconds)}`;
   if (seconds === null) return 'null';
+  /*
+   * A PENDING PROMISE, which "an object" is true of and says nothing about.
+   *
+   * `describeValue` names it everywhere else and gives the reason: a forgotten `await` is told
+   * "nothing about the one keyword that fixes it". This module cannot reach that helper — it imports
+   * `constants.ts` and nothing else, which is the property `AGENTS.md` cites as the point of the
+   * layer rule — so it is said here in words, the way `summarizeDiagnostics` said its own in 0.6.254.
+   *
+   * It is reachable on every time-bounded call in the package. `startSeconds` and `durationSeconds`
+   * come from a seek position, a playhead or a stored viewport, and `locate(seconds)` takes one
+   * directly — so `readWindow(recording, { signalIndices, startSeconds: seekPosition(), ... })` with
+   * an async `seekPosition` is one keyword short, and it was told its bound was "an object", which is
+   * true of the window object a reader might have passed instead.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything.
+   */
+  if (typeof (seconds as { then?: unknown } | undefined)?.then === 'function') {
+    return 'a pending Promise';
+  }
   return typeof seconds === 'object' ? 'an object' : `a ${typeof seconds}`;
 }
 
