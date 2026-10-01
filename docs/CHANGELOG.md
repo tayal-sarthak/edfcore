@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.270
+
+- **Fixed** `formatValidationReport(report, { header: readHeader(source) })` being told "options.header
+  is not a header — nothing on it carries the labels this names the rows with". True of a pending
+  Promise, and of a chunk, a recording, a number and `{}`.
+- The forgotten-await sweep of 0.6.229–0.6.239 reached every published call that takes a header, and
+  0.6.238 recorded it as closed: "every header-taking call now names the keyword". That was true of
+  the arguments. `options.header` is the one field in the package that holds a header, so it is the
+  one place a sweep over entry points could not reach by walking their parameters.
+- It is also where the keyword is likeliest to be on screen already and in the wrong place. This
+  option "is the one a caller adds last, to a call that already worked", and that call is awaited — so
+  a reader writing `{ header: readHeader(source) }` has an `await` in the line and no reason to look
+  at it.
+- The old advice named `recording.header`, which a caller holding the bare header `readHeader` hands
+  back does not have. The new one says to await it once into a variable.
+- The existing sentence is unchanged for the shapes it was written for — a chunk, whose `signals`
+  entries carry samples rather than labels, is the case 0.6.183 and 0.6.186 settled this rule for.
+
 ## 0.6.269
 
 - **Fixed** a RegExp being described as "an object" by the guards that refuse one. `typeof` answers

@@ -121,6 +121,28 @@ export function formatValidationReport(
       Array.isArray(signals) &&
       (signals.length === 0 || typeof (signals[0] as { label?: unknown })?.label === 'string');
     if (!named) {
+      /*
+       * A FORGOTTEN AWAIT, which the sweep across 0.6.229–0.6.239 reached every header-taking CALL
+       * for and no header-taking OPTION. This is the only one: `options.header` is the one field in
+       * the package that holds a header, so it is the one place that sweep could not have covered by
+       * walking the entry points.
+       *
+       * `{ header: readHeader(source) }` is how it gets written, because this option "is also the
+       * one a caller adds last, to a call that already worked" — and the call it is added to is
+       * already `await`-ed, so the keyword is in the line and in the wrong place. "Nothing on it
+       * carries the labels" is true of a pending Promise and of almost everything else, and the
+       * advice names a field on a recording a caller holding a bare header may not have.
+       *
+       * A property read, never a call.
+       */
+      if (typeof (options.header as { then?: unknown } | null | undefined)?.then === 'function') {
+        throw new RangeError(
+          'formatValidationReport(): options.header is a pending Promise — readHeader(source) is ' +
+            'async, so the header is what it resolves to rather than what it returns. Next: await ' +
+            'it once into a variable and put that on the option, or pass recording.header, which ' +
+            'is already resolved.',
+        );
+      }
       throw new RangeError(
         'formatValidationReport(): options.header is not a header — nothing on it carries the ' +
           'labels this names the rows with, which is all this option does. Next: pass ' +
