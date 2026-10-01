@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.268
+
+- **Fixed** an array of Promises where a diagnostics array belongs being refused as a by-code summary.
+  `summarizeDiagnostics(recordings.map((r) => validateRecording(r)))` — the across-several-files
+  summary a batch report wants, written without `Promise.all` — got "the value at 0 carries no
+  message, so it is not a diagnostic — a row of a by-code summary counts a code rather than being
+  one", which names a shape the caller never passed.
+- 0.6.254 closed the list level of this, where the whole argument is one Promise. The array is the
+  other spelling and a different mistake: the array is real and every element of it is pending, which
+  is what `.map` over async work produces.
+- The advice has to be `Promise.all`, not `await`. One keyword in front of the array does nothing —
+  awaiting an array of Promises yields the array of Promises — so this is the one forgotten-await
+  family where naming the keyword alone would send a reader somewhere that still fails.
+- `formatDiagnostics` names it one directory over, and `mergeChunks` names it per element too. This
+  was the last per-element guard in the package that did not.
+- Said in words rather than through `describeValue`, since this module imports one type module and
+  nothing else. The by-code-row sentence is unchanged for the rows it was written for.
+
 ## 0.6.267
 
 - **Fixed** a time bound that is still a Promise being described as "an object". Every time-bounded

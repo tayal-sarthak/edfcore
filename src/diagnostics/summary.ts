@@ -66,6 +66,30 @@ const SEVERITY_RANK: Record<EdfSeverity, number> = { error: 3, warning: 2, info:
  */
 function assertDiagnostic(diagnostic: EdfDiagnostic, index: number): void {
   if (typeof (diagnostic as { message?: unknown } | null | undefined)?.message === 'string') return;
+  /*
+   * A PENDING PROMISE, which the sentence below is wrong about twice: it is not a by-code row, and
+   * "carries no message" is true of it the way it is true of almost everything.
+   *
+   * 0.6.254 closed the LIST level here, where the whole argument is one Promise. This is the other
+   * spelling, and it is a different mistake: an ARRAY of them, which is what `.map` over async work
+   * produces without `Promise.all`. `recordings.map((r) => validateRecording(r))` is the summary
+   * across several files that a batch report wants, and every element of it is pending.
+   *
+   * `formatDiagnostics` names it one directory over and `mergeChunks` names it per element too —
+   * "the value at 1 is a pending Promise, not a chunk". This was the last per-element guard in the
+   * package that did not.
+   *
+   * Said in words, for the reason the checks above give: this module imports one type module and
+   * nothing else, and a property read needs nothing.
+   */
+  if (typeof (diagnostic as { then?: unknown } | null | undefined)?.then === 'function') {
+    throw new RangeError(
+      `summarizeDiagnostics(): the value at ${index} is a pending Promise, so this array was ` +
+        'mapped from async work and never awaited — nothing in this package resolves to a ' +
+        'diagnostic. Next: await the calls first, with Promise.all over the array, and pass the ' +
+        'diagnostics off what they resolved to.',
+    );
+  }
   throw new RangeError(
     `summarizeDiagnostics(): the value at ${index} carries no message, so it is not a ` +
       'diagnostic — a row of a by-code summary counts a code rather than being one, and counting ' +
