@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.269
+
+- **Fixed** a RegExp being described as "an object" by the guards that refuse one. `typeof` answers
+  `object` for a RegExp and `function` for a predicate, so of the two kinds of matcher this package
+  accepts, exactly one was flattened into the word every wrong value shares — while the same
+  sentence's advice already named the kind: "matchSignals(header, pattern) for a RegExp or a
+  predicate".
+- It is the spelling worth naming. `a-pattern-where-a-label-belongs.test.ts` states why: `matchSignals`
+  takes a pattern and `findSignals` takes a label, and "a montage selector is more often a pattern
+  than an exact label" — so the RegExp handed to the label-matching half is the commoner of the two,
+  and it was the one whose message could not say what had arrived.
+- Named by its built-in tag, which `describe.ts` already uses for a binary value "because that IS the
+  mistake wherever one turns up", and 0.6.256 applied to a typed array. The tag rather than
+  `instanceof`, because it is the same across realms.
+- The pattern is printed as written, flags and all — `the RegExp /EEG Fp1/i` — which is what a reader
+  needs to recognise something they typed. Every other spelling is unchanged, including a plain
+  object, an array and a `Map`, and the calls that genuinely take a pattern still take one.
+
 ## 0.6.268
 
 - **Fixed** an array of Promises where a diagnostics array belongs being refused as a by-code summary.

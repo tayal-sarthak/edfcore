@@ -35,6 +35,25 @@ export function describeValue(value: unknown): string {
     return Object.prototype.toString.call(value).slice(8, -1);
   }
   /*
+   * A REGEXP, by the same tag, for the same reason, in the place it is likeliest to turn up.
+   *
+   * `a-pattern-where-a-label-belongs.test.ts` makes the argument: `matchSignals` takes a pattern and
+   * `findSignals` takes a label, and "a montage selector is more often a pattern than an exact
+   * label" — so a RegExp handed to the label-matching half is the commoner of the two spellings of
+   * that confusion. The guard's advice already names the kind, "matchSignals(header, pattern) for a
+   * RegExp or a predicate", while the subject called it "an object" and left the reader to work out
+   * that the object they passed was one.
+   *
+   * A predicate needs nothing here: `typeof` answers `function` and the message says so. A RegExp is
+   * the only matcher `typeof` flattens into `object`.
+   *
+   * `String(value)` is the source as written — `/EEG/i` — which is the whole of what a reader needs
+   * to recognise it, and it is a pattern they typed rather than data read out of a file.
+   */
+  if (Object.prototype.toString.call(value) === '[object RegExp]') {
+    return `the RegExp ${String(value)}`;
+  }
+  /*
    * A PENDING PROMISE, which is the one object worth naming.
    *
    * `assertRecording` made the argument in 0.6.89 and coined the phrase: a forgotten `await` "passes
