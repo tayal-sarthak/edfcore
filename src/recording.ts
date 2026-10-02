@@ -94,6 +94,26 @@ export async function openEdf(source: ByteSource, options?: OpenOptions): Promis
 function describeSelection(value: unknown): string {
   if (value === null) return 'null';
   if (value === undefined) return 'missing';
+  /*
+   * A SET or a MAP, by its built-in tag.
+   *
+   * The docblock above names both as the shapes that reach this — "a `Set` of indices, a `Map` from
+   * a config" — and then answered each of them with the word they share with everything else. A Set
+   * is the one worth naming: it is what a caller reaches for precisely because a channel list must
+   * not contain the same index twice, so it is the wrong container chosen for a right reason, and
+   * `[...indices]` is the whole fix.
+   *
+   * `describe.ts` gives the rule this follows — a value named by its built-in tag "because that IS
+   * the mistake wherever one turns up" — and 0.6.256 and 0.6.269 applied it to a typed array and a
+   * RegExp. The tag rather than `instanceof`, because it is the same across realms.
+   *
+   * Everything else keeps "an object", which is what 0.6.230 was spent on: a plain object keyed by
+   * label, a header, a chunk, `header.signals`. None of those has a name that says more than its
+   * shape does.
+   */
+  const tag = Object.prototype.toString.call(value);
+  if (tag === '[object Set]') return 'a Set';
+  if (tag === '[object Map]') return 'a Map';
   return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
 }
 

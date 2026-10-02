@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.279
+
+- **Fixed** `signalIndices: new Set([3, 7])` being described as "an object". `describeSelection`'s own
+  docblock names the shapes that reach it — "a `Set` of indices, a `Map` from a config, an object
+  keyed by label" — and then answered all three with the word they share with every other wrong
+  value. 0.6.230 was spent on the article in that sentence and left the noun alone.
+- A Set is the one worth naming, because it is not a careless choice: a channel list must not hold
+  the same index twice, which is exactly what a Set is for, so a caller building one from a montage
+  picked the wrong container for a right reason — and `[...indices]` is the whole fix. "An object"
+  does not get them there, and it is equally true of the header and the object keyed by label the
+  same guard refuses.
+- Named by the built-in tag, which `describe.ts` uses "because that IS the mistake wherever one turns
+  up": 0.6.256 applied it to a typed array and 0.6.269 to a RegExp, and this is the third, in the
+  guard every read goes through. The recording argument shares the describer and is named the same
+  way.
+- Everything else keeps "an object", and the article property 0.6.230 added is pinned alongside it: no
+  message from here says `a object` for any shape.
+
 ## 0.6.278
 
 - **Fixed** `EdfSourceError.offset` and `requestedLength` carrying a non-number under fields declared

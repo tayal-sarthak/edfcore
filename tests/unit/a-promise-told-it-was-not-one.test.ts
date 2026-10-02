@@ -123,7 +123,10 @@ describe('the arm where the sentence was true', () => {
   it.each([
     ['a number', 5, 'the recording is a number'],
     ['a string', 'edf', 'the recording is a string'],
-    ['an object', new Set(), 'the recording is an object'],
+    // A plain object, not a `Set`: 0.6.279 gave a Set its own name, and this row is about the arm
+    // that says "an object".
+    ['an object', { header: undefined }, 'the recording is an object'],
+    ['a Set', new Set(), 'the recording is a Set'],
     ['null', null, 'the recording is null'],
     ['undefined', undefined, 'the recording is missing'],
   ])('keeps it for %s', async (_shape, given, expected) => {

@@ -126,14 +126,18 @@ const CALLS: ReadonlyArray<
 ];
 
 describe.each(CALLS)('%s', (_name, call) => {
+  // The article is the subject here, and a Set and a Map were the vehicles for it. 0.6.279 gave both
+  // their own names, for the reason this file's own docblock states them by: a Set is what a caller
+  // reaches for because a channel list must not hold the same index twice. The article property is
+  // what this pins, so every row still asserts there is no `a object` in the message.
   it.each([
-    ['a Set of indices', new Set([0])],
-    ['a Map from a config', new Map([['Fp1', 0]])],
-    ['an object keyed by label', { Fp1: 0 }],
-  ])('says signalIndices is "an object" rather than "a object", for %s', async (_shape, given) => {
+    ['a Set of indices', new Set([0]), 'signalIndices is a Set'],
+    ['a Map from a config', new Map([['Fp1', 0]]), 'signalIndices is a Map'],
+    ['an object keyed by label', { Fp1: 0 }, 'signalIndices is an object'],
+  ])('never says "a object", and names %s as itself', async (_shape, given, expected) => {
     const thrown = await refusal(async () => call(await opened(), given));
     expect(thrown.message).not.toContain('a object');
-    expect(thrown.message).toContain('signalIndices is an object');
+    expect(thrown.message).toContain(expected);
   });
 
   it('keeps the reason and the next step unchanged', async () => {
@@ -145,14 +149,14 @@ describe.each(CALLS)('%s', (_name, call) => {
   });
 
   it.each([
-    ['header.signals, which is an array', 'signals'],
-    ['a Set', 'set'],
-  ])('says the recording is "an object" too, for %s', async (_shape, kind) => {
+    ['header.signals, which is an array', 'signals', 'the recording is an object'],
+    ['a Set', 'set', 'the recording is a Set'],
+  ])('never says "a object" for the recording either, for %s', async (_shape, kind, expected) => {
     const recording = await opened();
     const given = kind === 'signals' ? recording.header.signals : new Set([recording]);
     const thrown = await refusal(() => call(given, [0]));
     expect(thrown.message).not.toContain('a object');
-    expect(thrown.message).toContain('the recording is an object');
+    expect(thrown.message).toContain(expected);
   });
 
   it('still reads for a selection that is one', async () => {
