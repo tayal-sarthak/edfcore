@@ -203,7 +203,22 @@ function assertHeaders(headers: unknown): void {
     typeof (headers as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
   if (typeof headers === 'object' && !iterable) {
     const values = Object.values(headers as Record<string, unknown>);
-    if (values.every((value) => typeof value === 'string')) return;
+    /*
+     * `every` on an EMPTY array is true, which is the shape `options.ts` warns about in its own
+     * module note: a guard that does not fire.
+     *
+     * An object with no own enumerable values passes this check and then spreads to nothing — which
+     * is the outcome the message below already names for a Map and a Headers, reached through the
+     * guard rather than past it. Two shapes get here that way, and a credential is what both are
+     * carrying: a pending `fetchToken()`, and a class instance holding the token behind a prototype
+     * getter. The request went out on the global `fetch` with no authorization at all and came back
+     * as fetch's own `TypeError`, or as a 401, or anonymously — which 0.6.250 calls the worse case.
+     *
+     * `{}` is the one empty object that is legitimate, and it is what `undefined` already means, so
+     * it keeps passing. Everything else with no values on it is a container this cannot carry.
+     */
+    if (values.length > 0 && values.every((value) => typeof value === 'string')) return;
+    if (values.length === 0 && Object.getPrototypeOf(headers) === Object.prototype) return;
   }
   throw new EdfSourceError(
     `httpSource(): options.headers is ${describeValue(headers)}, not a plain object of header ` +

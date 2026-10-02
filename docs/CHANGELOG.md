@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.276
+
+- **Fixed** `options.headers` accepting a container with no own enumerable values. `assertHeaders`
+  accepts an object whose values are all strings, and `every` on an empty array is true — the shape
+  `options.ts` warns about in its own note: a guard that does not fire. So an object with nothing
+  enumerable on it passed, and then spread to nothing, which is the outcome the refusal already names
+  for a Map and a Headers.
+- Two shapes reached it that way, and a credential is what both were carrying: a pending Promise from
+  `headers: fetchToken()` with the keyword left off, and a class instance holding the token behind a
+  prototype getter, which `Object.values` does not see. The request then went out on the global
+  `fetch` with no authorization — "a bearer token was dropped and the server answered 401 or, worse,
+  served a different resource anonymously" — with no edfcore error at all: the failure arrived as
+  fetch's own `TypeError`, as a 401, or not at all.
+- `{}` keeps passing. It is the one empty object that is legitimate, and it is what `undefined`
+  already means. Every other shape keeps the sentence it had.
+- The suite's test-count claim goes from 4,800+ to 4,900+ in the README, `installation.md` and
+  `browser-safety.test.ts`, in the same release as the tests that push it over.
+
 ## 0.6.275
 
 - **Fixed** `filterAnnotationsByText(annotations, async (text) => …)` keeping every event. 0.6.274
