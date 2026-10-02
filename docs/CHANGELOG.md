@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.274
+
+- **Fixed** `matchSignals(header, async (label) => …)` matching every channel in the file.
+  `assertMatcher` checks that the matcher is a function; nothing checked what it answers with. An
+  `async` function answers with a Promise, a Promise is always truthy, so every data signal passed the
+  filter and the call that exists to narrow a montage returned the whole recording.
+- This is the selector, which is the worst place for it. `assertSignalIndices` states the rule a read
+  is built on — "there is no 'all signals' default, so that the whole of a 256-channel file is never
+  read because an argument was omitted" — and an async predicate produced exactly that outcome through
+  an argument that was supplied, so nothing about the call looked careless.
+- A montage lookup is where it comes from: `isInMontage(label)` against IndexedDB, a config file or a
+  server is async, and the predicate wrapping it is the obvious thing to write.
+- Tested on the first signal's answer rather than by inspecting the function, because `AsyncFunction`
+  is not the only way to return a Promise. A `.then` property read, never a call, so a predicate
+  returning a Promise that never settles is refused rather than awaited.
+- A predicate returning a truthy non-boolean is not refused: `(label) => label.length` is ordinary
+  JavaScript and the caller means it. A Promise is the one truthy value nobody means. RegExp matchers
+  never had this problem and are unchanged.
+
 ## 0.6.273
 
 - **Fixed** `validateRecording`'s `index` option being discarded in silence when it is not an index.

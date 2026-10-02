@@ -368,6 +368,36 @@ export function matchSignals(
           'pass a RegExp for a pattern, or findSignals(header, label) for an exact label — the ' +
             'case this function deliberately does not cover',
         );
+  /*
+   * An ASYNC predicate, which matches EVERYTHING.
+   *
+   * `assertMatcher` checks that the matcher is a function; nothing checked what it answers with. An
+   * `async` function answers with a Promise, a Promise is always truthy, so every data signal passed
+   * the filter and the call returned the whole file's channels.
+   *
+   * This is the selector, which is what makes it the worst place for that. `assertSignalIndices`
+   * states the rule a read is built on — "there is no 'all signals' default, so that the whole of a
+   * 256-channel file is never read because an argument was omitted" — and an async predicate
+   * produces exactly that outcome through an argument that was supplied. A montage lookup is where
+   * it comes from: `matchSignals(header, async (label) => isInMontage(label))` against IndexedDB, a
+   * config file or a server.
+   *
+   * Tested on the first signal's answer rather than by inspecting the function. `AsyncFunction` is
+   * not the only way to return a Promise — a plain function whose body returns one does too — and
+   * what matters is the value, which is the same rule `describeValue`'s own Promise branch follows:
+   * a `.then` property read, never a call.
+   */
+  const answered = header.signals.find((signal) => signal.kind === 'data');
+  if (answered !== undefined) {
+    const first = test(answered.label) as unknown;
+    if (typeof (first as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'matchSignals(): the predicate returned a pending Promise, and a Promise is always ' +
+          'truthy — so every data signal in the file would have matched. Next: make the predicate ' +
+          'synchronous; resolve whatever it needs first, then match against the resolved value.',
+      );
+    }
+  }
   return Object.freeze(
     header.signals.filter((signal) => signal.kind === 'data' && test(signal.label)),
   );
