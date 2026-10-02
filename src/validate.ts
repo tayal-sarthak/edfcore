@@ -589,6 +589,35 @@ function finaliseStats(accumulator: StatsAccumulator): ObservedSignalStats {
 }
 
 /** A supplied index is only usable when it covers this file completely. */
+/*
+ * The `index` option, before `usableIndex` decides whether it can be REUSED.
+ *
+ * That function answers one question — is this a complete index for this file — and answers it with
+ * `undefined` for four different reasons: not an index at all, a probed one, one built for a
+ * different record count, one missing its segments. Three of those are a reason to rebuild and say
+ * nothing. The first is a caller mistake, and it was silent too.
+ *
+ * `validateRecording(recording, { index: buildRecordIndex(recording) })` is the shape: this option
+ * exists to "reuse a completed index so conformance costs one traversal, not two", so it is reached
+ * for on exactly the files where a traversal is expensive, and it is handed the result of an async
+ * call. One keyword short, the option was dropped and the sweep read the whole file again — the cost
+ * the option exists to avoid, paid in full, with a correct report at the end of it and nothing
+ * saying the index had not been used.
+ *
+ * `coverage` is the test, because it is the field `contiguityOf` and `resolveTimeWindow` both
+ * identify an index by: "the second argument is not a record index — it has no coverage".
+ */
+function assertIndexOption(index: unknown): void {
+  if (index === undefined) return;
+  if (typeof (index as { coverage?: unknown } | null)?.coverage === 'string') return;
+  throw new RangeError(
+    `validateRecording(): options.index is ${describeValue(index)}, not a record index — it has ` +
+      'no coverage, so this sweep would have silently rebuilt one and read the whole file again, ' +
+      'which is the cost the option exists to avoid. Next: pass `await buildRecordIndex(recording)`, ' +
+      'or recording.index, or omit it.',
+  );
+}
+
 function usableIndex(
   index: EdfRecordIndex | undefined,
   recordCount: number,
@@ -919,6 +948,7 @@ export async function validateRecording(
   const { header, timeline } = recording;
   const recordCount = header.recordCount;
   const scanSamples = options?.scanSamples === true;
+  assertIndexOption(options?.index);
   const supplied = usableIndex(options?.index, recordCount);
   const onsetsAreArithmetic = header.annotationSignalIndices.length === 0;
 

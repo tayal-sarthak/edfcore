@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.273
+
+- **Fixed** `validateRecording`'s `index` option being discarded in silence when it is not an index.
+  `usableIndex` answers one question — is this a complete index for this file — with `undefined` for
+  four different reasons. Three are a reason to rebuild and say nothing. The fourth, not an index at
+  all, is a caller mistake, and it was silent too.
+- `validateRecording(recording, { index: buildRecordIndex(recording) })` is how it gets written. The
+  option exists to "reuse a completed index so conformance costs one traversal, not two", so it is
+  reached for on exactly the files where a traversal is expensive, and it is handed the result of an
+  async call. One keyword short, the sweep read the whole file again and the report at the end was
+  correct — the only symptom was the cost the option was added to avoid.
+- `coverage` is the test, because it is the field the other two index-taking calls identify one by:
+  "the second argument is not a record index — it has no coverage".
+- The three silent cases stay silent and are now pinned so they cannot become refusals by accident: a
+  probed index (which is what `recording.index` is), an index built for a different record count, and
+  a complete index with no segments on it are all real indices, and rebuilding is right for them.
+
 ## 0.6.272
 
 - **Fixed** `validateRecording` counting one malformed identification field as two warnings.
