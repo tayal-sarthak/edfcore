@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.278
+
+- **Fixed** `EdfSourceError.offset` and `requestedLength` carrying a non-number under fields declared
+  `number`, which 0.6.277 closed on `EdfRangeError`'s pair. `ByteSource.read` is the guard that
+  reaches them: its refusal says the argument "is not a non-negative safe integer", and then put the
+  string `'0'` or the BigInt `0n` on `offset`.
+- These are the fields a consumer branches on, and a handler adding `offset + requestedLength` to
+  retry at the next block got `'04'`, or V8's "Cannot mix BigInt and other types".
+- `receivedLength` keeps `undefined`, which is a declared value for it rather than a stand-in: it
+  means no read completed, which is a different fact from a read that returned an unusable count.
+- Every real read is unchanged — an out-of-range request still reports the offset and length it asked
+  for, because those were numbers — and the messages are untouched.
+
 ## 0.6.277
 
 - **Fixed** `EdfRangeError.requested` carrying a non-number under a field declared `number`. The

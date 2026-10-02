@@ -224,9 +224,25 @@ export class EdfSourceError extends EdfError {
   ) {
     super(message, { cause: init.cause });
     this.name = 'EdfSourceError';
-    this.offset = init.offset;
-    this.requestedLength = init.requestedLength;
-    this.receivedLength = init.receivedLength;
+    /*
+     * As NUMBERS, for the reason `EdfRangeError` above gives for its own pair (0.6.277): these three
+     * are declared `number`, and the guards that build this error hand over the value they refused.
+     *
+     * `ByteSource.read` is the one that reaches it. Its own refusal says the argument "is not a
+     * non-negative safe integer" — and then put the string `'0'` or the BigInt `0n` on `offset`,
+     * under the field `a-request-that-went-out-on-the-global-fetch.test.ts` calls "the fields an
+     * EdfSourceError handler branches on". A handler adding `offset + requestedLength` to retry at
+     * the next block got `'04'`, or V8's "Cannot mix BigInt and other types".
+     *
+     * `receivedLength` is optional and keeps `undefined`, which is a declared value for it rather
+     * than a stand-in: it means no read completed, which is a different fact from a read that
+     * returned an unusable count.
+     */
+    const numeric = (value: unknown): number => (typeof value === 'number' ? value : Number.NaN);
+    this.offset = numeric(init.offset);
+    this.requestedLength = numeric(init.requestedLength);
+    this.receivedLength =
+      init.receivedLength === undefined ? undefined : numeric(init.receivedLength);
   }
 }
 
