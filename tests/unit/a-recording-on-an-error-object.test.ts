@@ -104,14 +104,19 @@ describe('a range that really is one', () => {
     expect(error.available).toEqual({ start: 0, count: RECORDS });
   });
 
+  // The point of this one is that `requested` is an OBJECT rather than `undefined`, "so a handler
+  // reading it finds an object" — which still holds. Its two fields are declared `number`, and
+  // 0.6.277 made them one: an absent bound reads NaN rather than undefined.
   it('still reports a half-built one as the stand-in, which a handler reads', async () => {
     const { recording } = await opened();
     const error = await thrownBy(() => readRecords(recording, { signalIndices: [0] } as never));
-    expect(error.requested).toEqual({});
-    expect(error.requested.start).toBeUndefined();
+    expect(error.requested).toEqual({ start: Number.NaN, count: Number.NaN });
+    expect(Number.isFinite(error.requested.start)).toBe(false);
   });
 
-  it('still carries what a bad start and count held, under their own names', async () => {
+  // Written as "under their own names", and until 0.6.277 it carried their own TYPES too: a string
+  // or a BigInt under a field a handler adds. The names are what this was about, and they are kept.
+  it('still carries a bad start and count under their own names, as numbers', async () => {
     const { recording } = await opened();
     const error = await thrownBy(() =>
       readRecords(recording, {
@@ -119,6 +124,9 @@ describe('a range that really is one', () => {
         records: { start: '0', count: '1' } as never,
       }),
     );
-    expect(error.requested).toEqual({ start: '0', count: '1' });
+    expect(Object.keys(error.requested).sort()).toEqual(['count', 'start']);
+    expect(error.requested).toEqual({ start: Number.NaN, count: Number.NaN });
+    // The message is where the value a caller wrote is still named.
+    expect(error.message).toContain('the string "0"');
   });
 });

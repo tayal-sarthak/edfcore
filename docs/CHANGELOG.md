@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.277
+
+- **Fixed** `EdfRangeError.requested` carrying a non-number under a field declared `number`. The
+  narrowing on this error stops at the two names — "a wrong shape keeps whatever it had under those
+  two names and nothing else" — and a range refused for being the wrong type put its string or its
+  BigInt straight onto the payload.
+- So `error.requested.start + error.requested.count` was `'01'`, or threw V8's "Cannot mix BigInt and
+  other types" inside the handler. The message had already said the values cannot be counted — "this
+  counts and adds them rather than using them as keys, so a BigInt or a string is not the same value
+  here" — and the payload beside it handed them back as though they could be.
+- A typed payload is the one part of an error a program acts on rather than reads, which is the whole
+  reason `errors.ts` carries these fields. A field that lies about its type is worse here than a
+  message that does, because nothing prints it for a human to notice.
+- `NaN` rather than a dropped field or a coercion: both fields are declared and required,
+  `Number.isFinite` is already how a handler has to check them, `NaN` is the one number that cannot
+  be mistaken for a count, and `Number('0')` would make the payload agree with a value the call
+  refused. An absent bound reads `NaN` for the same reason.
+- `requested` is still an object rather than `undefined`, still carries exactly those two names, and a
+  well-formed range still arrives as itself. The value a caller wrote is still named in the message,
+  through `describeRecordRange`.
+
 ## 0.6.276
 
 - **Fixed** `options.headers` accepting a container with no own enumerable values. `assertHeaders`

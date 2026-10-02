@@ -178,10 +178,31 @@ export class EdfRangeError extends EdfError {
      * range is unchanged; a wrong shape keeps whatever it had under those two names and nothing
      * else, which is the same pair the message prints.
      */
-    const requested = init.requested as { start?: number; count?: number } | null | undefined;
-    const available = init.available as { start?: number; count?: number } | null | undefined;
-    this.requested = { start: requested?.start, count: requested?.count } as RecordRange;
-    this.available = { start: available?.start, count: available?.count } as RecordRange;
+    /*
+     * And as NUMBERS, which the narrowing above did not make them.
+     *
+     * "A wrong shape keeps whatever it had under those two names" was the limit this stopped at, and
+     * the two names are declared `number`. A range refused for being the wrong TYPE — the case
+     * 0.6.243 wrote the `mistyped` branch for — put its string or its BigInt straight onto the
+     * error: `requested.start` was `'0'` or `0n` under a field a handler reads as a count.
+     *
+     * So `error.requested.start + error.requested.count` was `'01'`, or threw V8's "Cannot mix
+     * BigInt and other types" inside the handler. The message says the values cannot be counted —
+     * "this counts and adds them rather than using them as keys, so a BigInt or a string is not the
+     * same value here" — and the payload beside it handed them back as though they could be. A typed
+     * payload is the one part of an error a program acts on rather than reads, which is the whole
+     * reason `errors.ts` carries these fields at all.
+     *
+     * `NaN` rather than dropping the field: both are declared and required, `Number.isFinite` is
+     * already how a handler has to check them, and `NaN` is the one number that cannot be mistaken
+     * for a count. `Number('0')` is not used — coercing would make the payload agree with a value
+     * the call refused.
+     */
+    const numeric = (value: unknown): number => (typeof value === 'number' ? value : Number.NaN);
+    const requested = init.requested as { start?: unknown; count?: unknown } | null | undefined;
+    const available = init.available as { start?: unknown; count?: unknown } | null | undefined;
+    this.requested = { start: numeric(requested?.start), count: numeric(requested?.count) };
+    this.available = { start: numeric(available?.start), count: numeric(available?.count) };
   }
 }
 

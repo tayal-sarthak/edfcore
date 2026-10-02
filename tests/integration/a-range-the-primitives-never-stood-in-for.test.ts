@@ -117,7 +117,9 @@ describe.each(PRIMITIVES)('%s, with no record range', (_name, primitive) => {
     const thrown = (await refusal(() =>
       primitive.without(header, bytes, undefined),
     )) as EdfRangeError;
-    expect(thrown.requested).toEqual({});
+    // An object rather than `undefined`, with both declared fields present. Since 0.6.277 an
+    // absent bound reads NaN, because the fields are typed `number`.
+    expect(thrown.requested).toEqual({ start: Number.NaN, count: Number.NaN });
     expect(thrown.available).toEqual({ start: 0, count: RECORDS });
   });
 

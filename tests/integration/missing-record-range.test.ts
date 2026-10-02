@@ -82,7 +82,8 @@ describe.each([...CALLS.entries()])('%s', (_name, call) => {
     const failure = (await refusalOf(call, undefined)) as EdfRangeError;
     expect(failure.available).toEqual({ start: 0, count: RECORDS });
     // `requested` is the stand-in, so a handler reading it finds an object rather than undefined.
-    expect(failure.requested).toEqual({});
+    // Its two fields are declared `number`, so since 0.6.277 an absent bound reads NaN.
+    expect(failure.requested).toEqual({ start: Number.NaN, count: Number.NaN });
   });
 
   it.each([
