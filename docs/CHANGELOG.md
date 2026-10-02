@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.271
+
+- **Fixed** `formatValidationReport(report, { header })` accepting a header from a different
+  recording, and labelling the rows with it. The two arrive as separate arguments and are only ever
+  paired by a caller — the shape `resolveTimeWindow` guards for its timeline and index, where it is
+  "not a wrong number but a wrong FILE". Here it is a wrong file's names on a right file's numbers,
+  and this option's whole job is those names.
+- It answered. Row 0 took the other recording's signal 0 label and the rows that header had no signal
+  for fell back to `signal 1`, `signal 2` — so the output read as a file where only some channels are
+  named, which makes the wrong label harder to notice rather than easier. A reader comparing an
+  observed range against a channel name was reading two recordings on one line.
+- The check is the one fact the two share: every signal the report mentions must exist in the header,
+  counting both `signalStats` and the diagnostics' own indices, since `signalStats` is only filled
+  when `scanSamples` was on.
+- It is a floor rather than a proof, and the test says so: a wrong header with enough signals still
+  passes, because a report and a header carry no identifier to compare. A report with no rows at all,
+  and an omitted option, are unchanged.
+
 ## 0.6.270
 
 - **Fixed** `formatValidationReport(report, { header: readHeader(source) })` being told "options.header

@@ -149,6 +149,40 @@ export function formatValidationReport(
           'recording.header, or omit it and the rows read `signal 0`.',
       );
     }
+    /*
+     * And that it is THIS file's header, which nothing asked.
+     *
+     * The report and the header arrive as separate arguments and are only ever paired by a caller —
+     * the shape `resolveTimeWindow` guards for its timeline and index, where it is "not a wrong
+     * number but a wrong FILE". Here it is a wrong file's NAMES on a right file's numbers, and this
+     * option's whole job is those names: the difference between `EEG Fpz-Cz` and `signal 0`.
+     *
+     * A header from another recording labelled row 0 with its own signal 0 and left the rest reading
+     * `signal 1`, `signal 2` — so the output looks like a file where only some channels are named,
+     * which makes the wrong label harder to notice rather than easier. `validate-index-reuse.test.ts`
+     * lists the routes for the sibling mistake and they are the same here: "a viewer holding indices
+     * for several open recordings, a helper that caches one per session, a loop that forgets to
+     * rebuild".
+     *
+     * The test is the one fact the two share: every signal the report mentions has to exist in the
+     * header. A header that cannot name every row is certainly not this report's. It is a floor
+     * rather than a proof — a wrong header with enough signals still passes — and `signalStats` is
+     * only filled when `scanSamples` was on, so the diagnostics' own indices are counted too.
+     */
+    const mentioned = [
+      ...report.signalStats.map((stat) => stat.signalIndex),
+      ...report.diagnostics.map((diagnostic) => diagnostic.signalIndex),
+    ].filter((index): index is number => typeof index === 'number');
+    const signalCount = (options.header as EdfHeader).signals.length;
+    const beyond = mentioned.find((index) => index >= signalCount);
+    if (beyond !== undefined) {
+      throw new RangeError(
+        `formatValidationReport(): options.header has ${signalCount} signals and this report has ` +
+          `rows for signal ${beyond}, so it is not the header this file was validated with — the ` +
+          "rows it could name would carry another recording's channel labels. Next: pass the " +
+          'header of the recording you passed to validateRecording(recording).',
+      );
+    }
   }
   const header = options?.header;
 
