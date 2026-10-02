@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.272
+
+- **Fixed** `validateRecording` counting one malformed identification field as two warnings.
+  `validateHeader` re-derives `PATIENT_ID_NONCONFORMANT` and `RECORDING_ID_NONCONFORMANT` because it
+  has to stand alone for a caller who holds only a header, and the parser had already reported them —
+  so spreading both into the report put each in the list twice.
+- The verdict line read "2 warnings", the `by code:` block read `2`, the block itself was printed
+  twice, and `summarizeDiagnostics(report.diagnostics).total` was one higher than the number of
+  things wrong with the file. The two codes that overlap are the identification fields, which is to
+  say the two a reader is likeliest to be looking at.
+- `inspectEdf` reports them once, so the two published ways of asking what is wrong with a file
+  disagreed about how many things there were — the divergence `scalingError` was written to stop.
+- Matched on code, field, signal and offset rather than on the code alone. A code can legitimately
+  fire more than once: `TIMEKEEPING_TAL_NONCONFORMANT` is reported per record on purpose, because
+  "each one names a different annotation that was lost", and `time/timeline.ts` keeps its own
+  `priorDiagnostics.some(...)` test for the same reason. Two signals failing the same check still
+  produce two diagnostics.
+
 ## 0.6.271
 
 - **Fixed** `formatValidationReport(report, { header })` accepting a header from a different

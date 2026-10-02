@@ -922,9 +922,32 @@ export async function validateRecording(
   const supplied = usableIndex(options?.index, recordCount);
   const onsetsAreArithmetic = header.annotationSignalIndices.length === 0;
 
+  /*
+   * The header's diagnostics and the header CHECKS, which overlap.
+   *
+   * `validateHeader` re-derives two of the parser's own findings — `PATIENT_ID_NONCONFORMANT` and
+   * `RECORDING_ID_NONCONFORMANT` — because it has to stand alone for a caller who holds only a
+   * header. Spread together they were both in the list twice, so one malformed identification field
+   * was reported as two warnings: `summarizeDiagnostics` counted two, the `by code:` block printed
+   * `2`, the verdict line said "2 warnings", and the block itself was printed twice.
+   *
+   * Those two codes are the identification fields, which is to say the two a reader is likeliest to
+   * be looking at. And `inspectEdf` reports them once, so the two published ways of asking what is
+   * wrong with a file disagreed about how many things there were — the divergence `scalingError` was
+   * written to stop, where "the two published entry points answered ... with different codes for one
+   * signal".
+   *
+   * Matched on code, field, signal and offset rather than on the code alone. A code can legitimately
+   * fire more than once — `time/timeline.ts` keeps its own `priorDiagnostics.some(...)` test for the
+   * same reason — and `TIMEKEEPING_TAL_NONCONFORMANT` is reported per record on purpose, because
+   * "each one names a different annotation that was lost".
+   */
+  const identity = (diagnostic: EdfDiagnostic): string =>
+    `${diagnostic.code}|${diagnostic.field ?? ''}|${diagnostic.signalIndex ?? ''}|${diagnostic.byteOffset ?? ''}`;
+  const fromHeader = new Set(header.diagnostics.map(identity));
   const diagnostics: EdfDiagnostic[] = [
     ...header.diagnostics,
-    ...validateHeader(header),
+    ...validateHeader(header).filter((diagnostic) => !fromHeader.has(identity(diagnostic))),
     ...timeline.diagnostics,
   ];
 
