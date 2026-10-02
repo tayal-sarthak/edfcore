@@ -198,6 +198,35 @@ export function filterAnnotationsByText(
             'pass the label as a string, or (text) => text.trim() === label for a file whose ' +
               'vocabulary is padded',
           );
+  /*
+   * An ASYNC predicate, which keeps EVERYTHING.
+   *
+   * 0.6.274 closed this in `matchSignals`, where an async predicate matched every channel. Here the
+   * cost points the other way: the three query helpers in this module "answer with a list", and this
+   * module's own note says why that matters — "a wrong one reads as a recording with nothing in it".
+   * A filter that keeps everything reads as a recording where every event matched, which on a
+   * scoring file is a listing nobody can tell from a correct one.
+   *
+   * A Promise is always truthy, so the answer never mattered. `isScoredEvent(text)` against a
+   * database or a server is where it comes from, and the predicate wrapping it is the obvious thing
+   * to write.
+   *
+   * Tested on the first annotation's answer rather than by inspecting the function, for the reason
+   * 0.6.274 gives: `AsyncFunction` is not the only way to return a Promise. A `.then` property read,
+   * never a call.
+   */
+  const first = annotations[0];
+  if (first !== undefined) {
+    const answered = test(first.text) as unknown;
+    if (typeof (answered as { then?: unknown } | null | undefined)?.then === 'function') {
+      throw new RangeError(
+        'filterAnnotationsByText(): the predicate returned a pending Promise, and a Promise is ' +
+          'always truthy — so every annotation would have been kept, and a list that kept ' +
+          'everything reads as a recording where everything matched. Next: make the predicate ' +
+          'synchronous; resolve whatever it needs first, then match against the resolved value.',
+      );
+    }
+  }
   return Object.freeze(annotations.filter((annotation) => test(annotation.text)));
 }
 

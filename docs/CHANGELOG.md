@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.275
+
+- **Fixed** `filterAnnotationsByText(annotations, async (text) => …)` keeping every event. 0.6.274
+  closed this in `matchSignals`; here the cost points the other way. This module's note says what
+  makes a wrong answer dangerous in these calls — three of them "answer with a list, so a wrong one
+  reads as a recording with nothing in it" — and a filter that keeps everything is the same confusion
+  from the other side: on a scoring file with fifty thousand events, a listing nobody can tell from a
+  correct one.
+- A Promise is always truthy, so the predicate's answer never mattered. `isScoredEvent(text)` against
+  a database or a server is async, and the predicate wrapping it is the obvious thing to write.
+- Tested on the first annotation's answer rather than by inspecting the function, because
+  `AsyncFunction` is not the only way to return a Promise. A `.then` property read, never a call.
+- The string and RegExp forms never had this problem and are unchanged, a truthy non-boolean is still
+  accepted, and an empty list has no first answer to test, so nothing changes for it.
+
 ## 0.6.274
 
 - **Fixed** `matchSignals(header, async (label) => …)` matching every channel in the file.
