@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.282
+
+- **Fixed** `formatStartTimeNaive` describing a pending Promise with the sentence written for a header
+  or a recording: "that is not a start time — it has no clockSource". True of all three, and of
+  almost everything else.
+- It matters here for the reason 0.6.110 added the guard: `undefined` is this function's own answer
+  for a file whose start cannot be resolved, so a reader already handling that answer has no reason
+  to suspect their argument. And the advice named a field — `header.startTime` — on an object a
+  caller holding a Promise has not unwrapped yet.
+- The route is a caller's own helper, because nothing published resolves to an `EdfStartTime`: a
+  viewer listing the start time of several files wraps `openEdf` and returns
+  `recording.header.startTime`, and that wrapper is async. 0.6.267 named the same route for a time
+  bound.
+- A property read, never a call: a Promise that never settles is refused rather than awaited. The
+  existing sentence is unchanged for a header and a recording, which genuinely have no `clockSource`.
+
 ## 0.6.281
 
 - **Fixed** `EdfChannelNotFoundError.selector` being declared `string | number` while holding

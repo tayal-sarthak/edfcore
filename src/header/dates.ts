@@ -530,7 +530,30 @@ export function formatStartTimeNaive(startTime: EdfStartTime): string | undefine
    * found no `resolvedDate` and returned exactly that: a well-formed "this file has no usable
    * start" for a file whose start is on the very object that was passed (fixed in 0.6.110).
    */
-  const given = startTime as { clockSource?: unknown } | null | undefined;
+  const given = startTime as { clockSource?: unknown; then?: unknown } | null | undefined;
+  /*
+   * A FORGOTTEN AWAIT, ahead of the sentence below, which is true of a pending Promise and of the
+   * header and recording that sentence was written for.
+   *
+   * The route is a caller's own helper, because nothing published resolves to an `EdfStartTime`:
+   * a viewer that reads a file's start for a list of recordings wraps `openEdf` and returns
+   * `recording.header.startTime`, and the wrapper is async. That is the same route 0.6.267 named
+   * for a time bound, where the value also comes from the caller rather than from this package.
+   *
+   * It matters here for the reason the note below gives: `undefined` is this function's own answer
+   * for a file whose start cannot be resolved, so a reader who is already handling that answer has
+   * no reason to suspect their argument — and the advice, "pass header.startTime", names a field on
+   * an object a caller holding a Promise has not unwrapped yet.
+   *
+   * A property read, never a call.
+   */
+  if (typeof given?.then === 'function') {
+    throw new RangeError(
+      'formatStartTimeNaive(): that is a pending Promise, not a start time — so the start is on ' +
+        'what it resolves to rather than on what it returns. Next: await it, then pass ' +
+        '.header.startTime off the recording or the header you get back.',
+    );
+  }
   if (typeof given?.clockSource !== 'string') {
     throw new RangeError(
       'formatStartTimeNaive(): that is not a start time — it has no clockSource, and undefined is ' +
