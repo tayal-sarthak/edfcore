@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.280
+
+- **Fixed** `edfcore` with no arguments writing its usage to **stdout** while exiting 2. Three branches
+  in `runCli` print the same `USAGE`, and they did not agree: an unknown command and a missing file
+  both write to stderr, and no command at all wrote to stdout.
+- The distinction is the one `--help` makes three lines above it. Help is an answer, so it goes to
+  stdout and exits 0. No command is bad usage, so it is a diagnostic — and `cli.md` says what stdout
+  is for here: every command "prints to stdout, and returns an exit code a script can branch on".
+- What it cost is ordinary shell use. `edfcore > out.txt` with the command forgotten wrote the usage
+  into the file and left the terminal empty, which reads as a command that worked; and
+  `edfcore json "$f" | jq .` fed jq the help screen instead of failing on an empty input — the
+  pipeline this CLI documents itself for.
+- The exit code was always right, which is what kept it quiet: a script branching on the code behaved
+  correctly, and only a human or a pipe reading the stream saw the wrong thing. `--help`, `-h`, `help`
+  and `--version` keep stdout and exit 0.
+
 ## 0.6.279
 
 - **Fixed** `signalIndices: new Set([3, 7])` being described as "an object". `describeSelection`'s own

@@ -64,10 +64,13 @@ describe('parseArgs', () => {
 });
 
 describe('exit codes', () => {
-  it('exits 2 with usage when no command is given', async () => {
-    const { code, out } = await invoke([], {});
+  // On stderr since 0.6.280. This is a failure, and `--help` three lines up in `runCli` is the same
+  // text on stdout with exit 0 — which is the distinction between the two.
+  it('exits 2 with usage on stderr when no command is given', async () => {
+    const { code, out, err } = await invoke([], {});
     expect(code).toBe(2);
-    expect(out).toContain('npx edfcore header');
+    expect(err).toContain('npx edfcore header');
+    expect(out).toBe('');
   });
 
   it('exits 0 for an explicit help request', async () => {
@@ -439,10 +442,11 @@ describe('--help', () => {
     }
   });
 
-  it('still exits 2 for no arguments at all', async () => {
-    const { code, out } = await invoke([], {});
+  it('still exits 2 for no arguments at all, with the usage on stderr', async () => {
+    const { code, out, err } = await invoke([], {});
     expect(code).toBe(2);
-    expect(out).toContain('npx edfcore header');
+    expect(err).toContain('npx edfcore header');
+    expect(out).toBe('');
   });
 });
 

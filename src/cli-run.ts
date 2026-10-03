@@ -267,8 +267,20 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
     io.out(USAGE);
     return 0;
   }
+  /*
+   * STDERR, because this is a failure. The branch above it is the same text on the other channel,
+   * and that is the distinction: `--help` is a result and exits 0; no command at all is bad usage
+   * and exits 2. The two branches below — an unknown command and a missing file — already write to
+   * `io.err` with this same `USAGE` appended.
+   *
+   * `cli.md` says every command "prints to stdout, and returns an exit code a script can branch
+   * on", and that is what stdout is for here: the answer. A diagnostic on it makes
+   * `edfcore > out.txt` write the usage into the file and show the user nothing, and puts usage text
+   * where a pipeline expects data — `edfcore json "$f" | jq .` with the command forgotten fed jq the
+   * help screen rather than failing with an empty input.
+   */
   if (command === undefined) {
-    io.out(USAGE);
+    io.err(USAGE);
     return 2;
   }
   /*
