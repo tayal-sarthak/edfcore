@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.285
+
+- **Fixed** `matchSignals` refusing a RegExp built in another realm — an iframe, a worker, an Electron
+  contextBridge, jsdom, a Node `vm` context — with a message that named it a RegExp: "the matcher is
+  the RegExp /EEG/i, and this call takes a RegExp or a predicate on the label. Next: pass a RegExp for
+  a pattern". Every clause of that is true of what the caller did.
+- The dispatch said `match instanceof RegExp`, which is false across a realm boundary, so the pattern
+  fell through to the branch that wants a function. The subject was right because `describeValue` has
+  read the built-in tag since 0.6.269, so one half of `header/lookup.ts` could name the value a RegExp
+  while the half beside it decided it was not one.
+- Nothing in the matching needed changing: `matchesText` recompiles from `.source` and `.flags`, which
+  every realm spells the same, so the dispatch was keeping out a pattern the matcher could always have
+  used.
+- The rule now lives in one place, `isRegExpMatcher`, for the two calls that dispatch on it.
+
 ## 0.6.284
 
 - **Fixed** `describeValue` naming an `ArrayBuffer` from another realm "an object". `ArrayBuffer.isView`

@@ -330,6 +330,24 @@ export function assertMatcher<T>(match: T, call: string, accepts: string, instea
   );
 }
 
+/**
+ * Whether a matcher is a RegExp, by the built-in tag.
+ *
+ * `instanceof RegExp` is false for a pattern built in another realm — an iframe, a worker, an
+ * Electron contextBridge, jsdom, a Node `vm` context — which is the rule `io/bytes.ts`,
+ * `bytes/latin1.ts`, `io/source.ts`, `decode/digital.ts` and `errors.ts` each state for their own
+ * guard, and `text/describe.ts` applied to its buffer arm in 0.6.284. A tag comes from
+ * `Symbol.toStringTag` on the prototype and every realm agrees on it.
+ *
+ * One home for the two calls that dispatch on it, `matchSignals` here and `filterAnnotationsByText`
+ * next door, for the reason 0.6.121 gives for `isByteArray`: two copies of a rule have to be kept
+ * in agreement and one does not. A type guard rather than a bare comparison, so the `else` branch
+ * still narrows to the predicate (0.6.285).
+ */
+export function isRegExpMatcher(match: unknown): match is RegExp {
+  return Object.prototype.toString.call(match) === '[object RegExp]';
+}
+
 export function matchesText(match: RegExp): (text: string) => boolean {
   const pattern = new RegExp(match.source, match.flags);
   return (text: string): boolean => {
@@ -358,16 +376,35 @@ export function matchSignals(
 ): readonly EdfSignal[] {
   assertHeaderSignals(header, 'matchSignals');
   assertSelector(match, 'matchSignals', 'a RegExp, or a function taking a label');
-  const test =
-    match instanceof RegExp
-      ? matchesText(match)
-      : assertMatcher(
-          match,
-          'matchSignals',
-          'a RegExp or a predicate on the label',
-          'pass a RegExp for a pattern, or findSignals(header, label) for an exact label — the ' +
-            'case this function deliberately does not cover',
-        );
+  /*
+   * The TAG, not `instanceof`, which refused a RegExp by naming it a RegExp.
+   *
+   * `instanceof RegExp` is false for a pattern built in another realm — an iframe, a worker, an
+   * Electron contextBridge, jsdom, a Node `vm` context — so a cross-realm `/EEG/i` fell to
+   * `assertMatcher`, which wants a function, and was refused with "the matcher is the RegExp /EEG/i,
+   * and this call takes a RegExp or a predicate on the label. Next: pass a RegExp for a pattern".
+   * The subject is right because `describeValue` reads the tag (0.6.269); the rule and the advice
+   * then both describe what the caller had already done.
+   *
+   * Nothing below needs changing for it to work: `matchesText` recompiles from `.source` and
+   * `.flags`, which every realm spells the same, so the pattern this dispatch was keeping out was
+   * one the matcher could always have used.
+   *
+   * The rule is the package's own, stated in `io/bytes.ts`, `bytes/latin1.ts`, `io/source.ts`,
+   * `decode/digital.ts`, `errors.ts` and `text/describe.ts`, and extended to the describer's buffer
+   * arm in 0.6.284. A montage selector is the likeliest cross-realm matcher there is: the browser
+   * inspector in `website/` is where one is typed, and a worker is where the filtering goes
+   * (0.6.285).
+   */
+  const test = isRegExpMatcher(match)
+    ? matchesText(match)
+    : assertMatcher(
+        match,
+        'matchSignals',
+        'a RegExp or a predicate on the label',
+        'pass a RegExp for a pattern, or findSignals(header, label) for an exact label — the ' +
+          'case this function deliberately does not cover',
+      );
   /*
    * An ASYNC predicate, which matches EVERYTHING.
    *
