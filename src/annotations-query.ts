@@ -19,7 +19,7 @@
  * offset.
  */
 
-import { assertMatcher, matchesText } from './header/lookup.js';
+import { assertMatcher, isRegExpMatcher, matchesText } from './header/lookup.js';
 import { secondsToTicks } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
 import type { EdfAnnotation, EdfAnnotationWindow } from './types.js';
@@ -187,9 +187,19 @@ export function filterAnnotationsByText(
   const test =
     typeof match === 'string'
       ? (text: string): boolean => text === match
-      : match instanceof RegExp
+      : isRegExpMatcher(match)
         ? // Not `match.test` directly: a `g` or `y` flag makes `test` stateful across the array
           // and silently returns about half the true matches. See `matchesText`.
+          //
+          // `isRegExpMatcher`, not `instanceof RegExp`, which was false for a pattern built in
+          // another realm — an iframe, a worker, an Electron contextBridge, jsdom, a Node `vm`
+          // context. 0.6.285 fixed the same dispatch in `matchSignals` and has the argument; this
+          // is the second of the two calls that share the rule, and the likelier of them to be
+          // running inside a worker, since narrowing a hypnogram to its stages is the work a viewer
+          // moves off the main thread. A cross-realm `/stage/i` was refused as "the matcher is the
+          // RegExp /stage/i, and this call takes a string matched verbatim, a RegExp, or a
+          // predicate on the text" — a sentence whose rule the argument satisfies, from a guard
+          // whose subject `describeValue` had already read off the same tag (0.6.286).
           matchesText(match)
         : assertMatcher(
             match,

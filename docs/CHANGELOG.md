@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.286
+
+- **Fixed** the second of the two calls that dispatched on `match instanceof RegExp`.
+  `filterAnnotationsByText` refused a RegExp built in another realm the same way `matchSignals` did
+  before 0.6.285 — "the matcher is the RegExp /stage/i, and this call takes a string matched
+  verbatim, a RegExp, or a predicate on the text" — naming the kind it had just refused, because
+  `describeValue` reads the built-in tag the dispatch would not.
+- This is the likelier of the two to be running across a realm boundary. `annotations-query.ts` is
+  Layer 7 and pure, so narrowing a hypnogram to its stages is work a viewer can move into a worker,
+  and the pattern is then built there.
+- The verbatim-string and predicate forms were never affected: `typeof` is realm-agnostic. Both calls
+  now share `isRegExpMatcher`.
+
 ## 0.6.285
 
 - **Fixed** `matchSignals` refusing a RegExp built in another realm — an iframe, a worker, an Electron
