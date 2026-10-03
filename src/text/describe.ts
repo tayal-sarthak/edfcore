@@ -30,9 +30,23 @@ export function describeValue(value: unknown): string {
    * `decodeHeaderLatin1(buffer)` is a fetch result, and "an object" says nothing a reader can act
    * on. The tag, not `instanceof`: it is the same across realms, which is why `io/bytes.ts` uses it
    * too. Never the contents (0.6.116).
+   *
+   * The buffer half of that said `instanceof` anyway, which is the defect `io/bytes.ts` describes
+   * in those same words and fixed in its own guard in 0.3.20: an ArrayBuffer from another realm —
+   * an iframe, an Electron contextBridge, jsdom, a Node `vm` context — is a "real, fully usable
+   * ArrayBuffer", and `byteSource` accepts one. This module then could not name the thing the
+   * package next door takes, so `toPhysical(signal, thatBuffer)` was refused as "an object" while
+   * the identical buffer from this realm was refused as "ArrayBuffer". `SharedArrayBuffer` comes
+   * with it, because `byteSource` admits that tag too. Inlined rather than imported: layer 1
+   * cannot reach layer 5 (0.6.284).
    */
-  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
-    return Object.prototype.toString.call(value).slice(8, -1);
+  const tag = Object.prototype.toString.call(value);
+  if (
+    ArrayBuffer.isView(value) ||
+    tag === '[object ArrayBuffer]' ||
+    tag === '[object SharedArrayBuffer]'
+  ) {
+    return tag.slice(8, -1);
   }
   /*
    * A REGEXP, by the same tag, for the same reason, in the place it is likeliest to turn up.
@@ -50,7 +64,7 @@ export function describeValue(value: unknown): string {
    * `String(value)` is the source as written — `/EEG/i` — which is the whole of what a reader needs
    * to recognise it, and it is a pattern they typed rather than data read out of a file.
    */
-  if (Object.prototype.toString.call(value) === '[object RegExp]') {
+  if (tag === '[object RegExp]') {
     return `the RegExp ${String(value)}`;
   }
   /*

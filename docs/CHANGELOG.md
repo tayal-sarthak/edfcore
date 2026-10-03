@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.284
+
+- **Fixed** `describeValue` naming an `ArrayBuffer` from another realm "an object". `ArrayBuffer.isView`
+  is a brand check and so is realm-safe, but the buffer arm beside it said `instanceof ArrayBuffer`,
+  which is false for a buffer that crossed an iframe, an Electron contextBridge, jsdom or a Node `vm`
+  boundary.
+- `byteSource` takes such a buffer: `io/bytes.ts` has matched the built-in tag since 0.3.20, and its
+  docblock calls one "a real, fully usable ArrayBuffer from another realm". So the package accepted the
+  buffer at the door and could not name it at any of the roughly forty guards that read their subject
+  out of `describeValue` — `toPhysical(signal, buffer)` was refused as "the samples are an object"
+  while the identical buffer built in this realm was refused as "the samples are ArrayBuffer".
+- The describer's own docblock has stated the rule since 0.6.116 — "The tag, not `instanceof`: it is
+  the same across realms, which is why `io/bytes.ts` uses it too" — three lines above the branch that
+  did not follow it.
+- `SharedArrayBuffer` is named too, because `byteSource` admits that tag as well.
+
 ## 0.6.283
 
 - **Fixed** `trimToWindow` answering with an empty signal for a channel that declares no samples per
