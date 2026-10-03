@@ -298,5 +298,40 @@ export function secondsToTicks(seconds: number, name: string): bigint {
             'Infinity.'),
     );
   }
-  return BigInt(Math.round(seconds * TICKS_PER_SECOND_FLOAT));
+  /*
+   * The PRODUCT, which the finiteness check above cannot see.
+   *
+   * A tick is 100 ns, so this multiplies by ten million — and above about 1.8e301 seconds the
+   * result is `Infinity` for an argument that was finite. `Math.round(Infinity)` is `Infinity`, and
+   * `BigInt(Infinity)` is V8's "The number Infinity cannot be converted to a BigInt because it is
+   * not an integer": no `Next:` clause, no mention of edfcore, naming an internal conversion and
+   * saying "is not an integer" about a value the caller never produced. It escaped on eleven public
+   * calls — `readWindow` on either bound, `readEnvelope`, `readEnvelopeAtResolution`,
+   * `streamRecords`, `resolveTimeWindow`, `trimToWindow`, `segmentAt`, `filterAnnotationsByTime`,
+   * `annotationsAt` and `gridSampleIndexAt`.
+   *
+   * `nan-seconds-reaches.test.ts` is the sweep this belongs to and states the premise: "The
+   * guarantee is that a `NaN` cannot get PAST it." A finite bound that overflows inside the
+   * conversion is the fourth value, and the one the guard above lets through.
+   *
+   * `Number.MAX_VALUE` is how it arrives, and the check above is what sends a caller to it. Asking
+   * for "as much as there is" is what a sentinel is for, and this package accepts one for a row
+   * limit — so `Infinity` is the first thing tried on a time bound, it is refused here with advice
+   * to go and audit the expression that produced it, and `Number.MAX_VALUE` is the second. That one
+   * broke the contract instead of refusing.
+   *
+   * No caller-specific advice: the docblock above records what that costs — the old wording was
+   * "right for five of the fifteen call sites and wrong for the rest" — so this names the mistake
+   * itself, which is the same for a window, an instant and a bucket width (0.6.287).
+   */
+  const ticks = Math.round(seconds * TICKS_PER_SECOND_FLOAT);
+  if (!Number.isFinite(ticks)) {
+    throw new RangeError(
+      `${name} is ${seconds} seconds, which is finite but has no tick count — a tick is 100 ns, ` +
+        'so the conversion overflows float64 above about 1.8e301 seconds. Next: pass the value ' +
+        'you mean rather than a sentinel for as much as possible — a bound past the end of the ' +
+        'recording is clamped to it, so none of them has to be large.',
+    );
+  }
+  return BigInt(ticks);
 }

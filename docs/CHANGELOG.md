@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.287
+
+- **Fixed** a finite time bound escaping as V8's "The number Infinity cannot be converted to a BigInt
+  because it is not an integer" — no `Next:` clause, no mention of edfcore, naming an internal
+  conversion and saying "is not an integer" about a value the caller never produced.
+- A tick is 100 ns, so `secondsToTicks` multiplies by ten million, and above about 1.8e301 seconds
+  that product is `Infinity` for an argument `Number.isFinite` had just accepted. The finiteness check
+  sits one line above the multiplication that creates one.
+- It escaped on eleven public calls: `readWindow` on either bound, `readEnvelope`,
+  `readEnvelopeAtResolution`, `streamRecords`, `resolveTimeWindow`, `trimToWindow`, `segmentAt`,
+  `filterAnnotationsByTime`, `annotationsAt` and `gridSampleIndexAt`.
+- `Number.MAX_VALUE` is how it arrives, and the existing check is what sends a caller to it: asking
+  for "as much as there is" is what a sentinel is for, `Infinity` is refused with advice to audit the
+  expression that produced it, and `Number.MAX_VALUE` is the next thing tried.
+- No sentinel was ever needed — a duration past the end of the recording is clamped to it, which is
+  what the new advice says. The message names the mistake rather than a window, because fifteen call
+  sites share this resolver and the resolver's docblock records what caller-specific advice costs.
+
 ## 0.6.286
 
 - **Fixed** the second of the two calls that dispatched on `match instanceof RegExp`.
