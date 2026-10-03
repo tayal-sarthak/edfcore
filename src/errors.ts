@@ -294,7 +294,25 @@ export class EdfAmbiguousChannelError extends EdfError {
  */
 export class EdfChannelNotFoundError extends EdfError {
   readonly edfErrorKind = 'channel' as const;
-  readonly selector: string | number;
+  /*
+   * `undefined` is DECLARED, because it is a value this field holds.
+   *
+   * The narrowing below keeps only "what the declared type can hold" and leaves everything else
+   * empty — and `undefined` was not in that type, so the field was cast to `string | number` while
+   * holding neither. Every selector that is not a label, an index, or a signal carrying one lands
+   * there: a BigInt index, a plain object, `null`.
+   *
+   * A handler then branches `typeof selector === 'number' ? byIndex : byLabel` and looked up
+   * `undefined` as a label, or printed "undefined" beside `availableLabels` in a log line. The
+   * cast is what hid it: the one part of an error a program acts on rather than reads was the one
+   * part the compiler had been told to stop checking, which is what 0.6.277 and 0.6.278 closed on
+   * the other two payloads.
+   *
+   * Widened rather than substituted. `NaN` would say "an index that is not a number", and these
+   * selectors were not indices at all. `concepts.md` gives the reason this is the honest shape:
+   * `sampleRateHz` is `number | undefined` so that "`strictNullChecks` makes you handle it".
+   */
+  readonly selector: string | number | undefined;
   readonly availableLabels: readonly string[];
 
   constructor(
@@ -320,13 +338,12 @@ export class EdfChannelNotFoundError extends EdfError {
      */
     const selector = init.selector as unknown;
     const index = (selector as { index?: unknown } | null | undefined)?.index;
-    this.selector = (
+    this.selector =
       typeof selector === 'string' || typeof selector === 'number'
         ? selector
         : typeof index === 'number'
           ? index
-          : undefined
-    ) as string | number;
+          : undefined;
     this.availableLabels = init.availableLabels;
   }
 }

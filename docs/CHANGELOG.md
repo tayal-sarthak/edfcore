@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.281
+
+- **Fixed** `EdfChannelNotFoundError.selector` being declared `string | number` while holding
+  `undefined`. The narrowing on this error keeps "only what the declared type can hold" and leaves
+  everything else empty — and `undefined` was not in that type, so the field was cast to a label-or-
+  index while holding neither.
+- Every selector that is not a label, an index, or a signal carrying one lands there: a BigInt index,
+  a plain object, `null`. A handler branching `typeof selector === 'number' ? byIndex : byLabel` then
+  looked up `undefined` as a label, or printed "undefined" beside `availableLabels` in a log line.
+  The cast is what hid it: the one part of an error a program acts on rather than reads was the one
+  part the compiler had been told to stop checking.
+- Widened rather than substituted. 0.6.277 and 0.6.278 put `NaN` in the two payloads that are counts,
+  because `NaN` is a number that cannot be mistaken for one. This field is not a count — `NaN` would
+  say "an index that is not a number", and these selectors were not indices at all. `concepts.md`
+  gives the precedent: `sampleRateHz` is `number | undefined` so that "`strictNullChecks` makes you
+  handle it".
+- A type-only change, so the canary is a typecheck failure rather than a failing assertion: nothing
+  observable moved. A label is still a string, an index still a number, a signal still contributes
+  its own `index`, and `availableLabels` is untouched.
+
 ## 0.6.280
 
 - **Fixed** `edfcore` with no arguments writing its usage to **stdout** while exiting 2. Three branches
