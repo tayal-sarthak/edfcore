@@ -453,6 +453,34 @@ export function trimToWindow(
 ): EdfChunkSignal {
   assertChunkSignal(chunkSignal, 'trimToWindow', 'trim');
   const signal = signalAt(header, chunkSignal.signalIndex);
+  /*
+   * A signal with NO GRID, which this narrowed onto a window anyway and answered with nothing.
+   *
+   * `samplesPerRecord` of zero makes every bound below collapse, so the trim returned an empty
+   * signal — and an empty signal is also what a window that selects nothing returns. The two are
+   * different facts: one is a channel the parser has already diagnosed `ZERO_SAMPLES_PER_RECORD`,
+   * the other is a window a caller chose. `biosemi.ts` makes this argument for its own case, where
+   * "an empty result here reads as a recording with no stimulus in it".
+   *
+   * The declaration is what is tested, not the samples in hand. `chunkSignal.digital.length` is
+   * legitimately zero for a zero-duration window, and refusing on that would break a trim a caller
+   * meant; `signal.samplesPerRecord` is a property of the header and says the channel has no grid
+   * at all.
+   *
+   * `sample-locate.ts` and `sample-grid.ts` refuse this in these exact words, and `readTriggers`
+   * refuses it too. `trimToWindow` is a single-signal call like all three — a caller asking about
+   * one channel — so refusing here cannot make a multi-channel file unreadable, which is why this
+   * is not done in `readWindow`.
+   */
+  if (signal.samplesPerRecord <= 0) {
+    throw new RangeError(
+      `trimToWindow(): signal ${signal.index} (${JSON.stringify(signal.label)}) declares ` +
+        `${signal.samplesPerRecord} samples per record, so it has no sample grid to narrow — and ` +
+        'an empty result here reads as a window that selected nothing. Next: check ' +
+        'header.diagnostics for ZERO_SAMPLES_PER_RECORD; the channel is declared but carries no ' +
+        'samples.',
+    );
+  }
   const samplesPerRecord = signal.samplesPerRecord;
   const durationTicks = header.recordDurationTicks;
   const available = Math.min(chunkSignal.sampleCount, chunkSignal.digital.length);

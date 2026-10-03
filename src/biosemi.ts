@@ -340,8 +340,14 @@ export async function readTriggers(
    * for exactly that, one call earlier.
    *
    * It is a defect the parser already names — `ZERO_SAMPLES_PER_RECORD` — and one the sample-grid
-   * family already refuses in these words, in `sample-grid.ts` and `sample-locate.ts`. This is the
-   * third place a signal with no grid is read from, and the only one that answered.
+   * family already refuses in these words, in `sample-grid.ts` and `sample-locate.ts`.
+   *
+   * There were FOUR places, not three. `trimToWindow` read the same declaration to narrow samples
+   * onto a window and answered with an empty signal, which 0.6.283 closed in these words too — so
+   * every single-signal call that reads a grid now refuses one that is not there. The reading calls
+   * that take a SELECTION still answer: `readWindow` and its siblings would have to fail a whole
+   * multi-channel read for one dead channel, and the precedent is `signal.scale`, where
+   * `decodeDigital` still works and `toPhysical` throws.
    */
   if (status.samplesPerRecord <= 0) {
     throw new RangeError(

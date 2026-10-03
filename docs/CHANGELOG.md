@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.283
+
+- **Fixed** `trimToWindow` answering with an empty signal for a channel that declares no samples per
+  record. `samplesPerRecord` of zero makes every bound inside the trim collapse, and an empty signal
+  is also what a window that selects nothing returns — so the two were the same value for two
+  different facts: a channel the parser has already diagnosed `ZERO_SAMPLES_PER_RECORD`, and a window
+  the caller chose.
+- `biosemi.ts` makes exactly this argument for its own case — "an empty result here reads as a
+  recording with no stimulus in it" — and claimed to be "the third place a signal with no grid is read
+  from, and the only one that answered". There were four. That comment is corrected here.
+- The declaration is what is tested, not the samples in hand: `chunkSignal.digital.length` is
+  legitimately zero for a zero-duration window, and refusing on that would break a trim a caller
+  meant.
+- Here and not in `readWindow`, because this is a single-signal call like the three that already
+  refuse. A selection-taking read would have to fail a whole multi-channel read for one dead channel,
+  and the precedent for per-signal failure at the per-signal call is `signal.scale` — `decodeDigital`
+  still works and `toPhysical` throws. That is stated rather than left implicit, and the reading calls
+  are unchanged.
+
 ## 0.6.282
 
 - **Fixed** `formatStartTimeNaive` describing a pending Promise with the sentence written for a header
