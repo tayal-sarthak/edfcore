@@ -27,6 +27,7 @@ import { assertSignal, scalingError } from './decode/physical.js';
 import { appendChunkDiagnostics } from './diagnostics/collector.js';
 import { EdfBudgetError } from './errors.js';
 import { readRecordBytes } from './io/read.js';
+import { assertReadOptions } from './io/source.js';
 import { resolveMaterializeBudget } from './options.js';
 import { scanChunkRecords } from './record-index.js';
 import {
@@ -188,6 +189,20 @@ export async function readEnvelope(
     );
   }
   assertPositiveInteger(selection.buckets, 'buckets');
+  /*
+   * The OPTIONS, by the same rule as the line below it.
+   *
+   * That comment names `readWindow`'s reason and applies it to the signals; this is the third
+   * argument, which neither call covered. `assertReadOptions` runs inside the read, and both of
+   * these return `[]` for a window that resolves to no records — the docblock above promises
+   * exactly that, "so a caller that already handles gaps handles envelopes for free" — so a bad
+   * options object on such a window was never examined at all.
+   *
+   * 0.6.288 closed this in `readWindow`, and `stream.ts` in 0.6.166 before it: "an abort that was
+   * never wired up and a window with nothing in it both end as a stream that yielded nothing".
+   * These two are the remaining reads that resolve a window before touching a byte (0.6.289).
+   */
+  assertReadOptions(options);
   // Validated before the window is resolved, for the same reason readWindow does it: a bad
   // signalIndices must not read back as an empty stretch of recording.
   resolveEnvelopeSignals(recording.header, selection.signalIndices);
@@ -838,6 +853,9 @@ export async function readEnvelopeAtResolution(
         'bucket count if what you have is a plot width.',
     );
   }
+  // The options too, exactly as `readEnvelope` does it and for the reason given there: this call
+  // also answers `[]` for a window that selects nothing, so the guard has to precede the window.
+  assertReadOptions(options);
   // Validated before the window is resolved, exactly as `readEnvelope` does it and for the same
   // reason: a bad signalIndices must not read back as an empty stretch of recording.
   resolveEnvelopeSignals(recording.header, selection.signalIndices);

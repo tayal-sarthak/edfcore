@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.289
+
+- **Fixed** the same hole in `readEnvelope` and `readEnvelopeAtResolution`, which are the last two
+  reads that resolve a window before touching a byte. Both answer `[]` for a window past the end,
+  entirely inside an EDF+D gap, or of zero duration, and both examined their read options only inside
+  the read — so on those windows a wrong third argument produced the documented empty answer.
+- Each already carried the comment that makes the case, naming its sibling: "Validated before the
+  window is resolved, for the same reason readWindow does it: a bad signalIndices must not read back
+  as an empty stretch of recording." It applied that to the signals and not to the options.
+- An envelope is the call most likely to be cancelled — a viewer redraws one on every pan — so
+  `readEnvelope(recording, selection, controller.signal)` dropping the cancellation silently was the
+  costliest version of this. With `readWindow` in 0.6.288 and `streamRecords` in 0.6.166, the family
+  is closed: every read now refuses a wrong options object wherever its window lands.
+- The shape only, as in 0.6.288. An already-aborted signal passed correctly still does not fire on a
+  window that reads nothing.
+
 ## 0.6.288
 
 - **Fixed** `readWindow` returning `[]` without ever examining its read options, for a window that
