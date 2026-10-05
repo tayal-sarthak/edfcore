@@ -746,6 +746,36 @@ export function envelopeOfSamples(chunkSignal: EdfChunkSignal, buckets: number):
   // 'length')` (fixed in 0.6.117).
   assertChunkSignal(chunkSignal, 'envelopeOfSamples', 'fold');
   assertPositiveInteger(buckets, 'buckets');
+  /*
+   * And the COUNT, which the docblock above says this function bounds itself by.
+   *
+   * It says "`sampleCount` bounds the reduction, not `digital.length`", that the bound is here
+   * "because a CALLER can build an `EdfChunkSignal`", and that "two helpers defending and one not
+   * is the worst of the three states". The bound it got was `Math.min` against `digital.length`,
+   * which only defends against a count that is too LARGE. Below zero it defended nothing, and the
+   * buckets argument one line up was checked while the count was not.
+   *
+   * Every answer it produced was a lie about the samples in hand. A negative count left `total`
+   * negative, so the fold loop never ran and the result was one empty bucket carrying the
+   * caller's own `sampleCount: -5` — and `toPhysicalEnvelope` renders a bucket of count zero as
+   * `NaN`, which is how this package spells a dropout. Forty real samples came back as a hole.
+   * `NaN` was worse: `Math.max(1, Math.min(buckets, NaN))` is `NaN`, `new Int32Array(NaN)` has
+   * length 0, so the envelope had NO buckets at all — a shape no read in this package produces and
+   * nothing downstream expects. A fractional count rode through onto the result as it arrived.
+   *
+   * `Number.isSafeInteger` and `>= 0`, not `> 0`: zero samples is a real `EdfChunkSignal`, which
+   * `trimToWindow` returns for a window that selected nothing, and folding it to empty buckets is
+   * the honest answer (0.6.290).
+   */
+  if (!Number.isSafeInteger(chunkSignal.sampleCount) || chunkSignal.sampleCount < 0) {
+    throw new RangeError(
+      `envelopeOfSamples(): the chunk signal declares ${describeValue(chunkSignal.sampleCount)} ` +
+        'samples, which is not a count of them — and this folds by the declared count rather ' +
+        'than by digital.length, so the buckets would have described neither. Next: pass one ' +
+        'element of chunk.signals unaltered; readWindow() and readRecords() set sampleCount to ' +
+        'the samples they decoded.',
+    );
+  }
   const samples = chunkSignal.digital;
   const total = Math.min(chunkSignal.sampleCount, samples.length);
   const bucketCount = Math.max(1, Math.min(buckets, total));

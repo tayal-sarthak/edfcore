@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.290
+
+- **Fixed** `envelopeOfSamples` folding by a `sampleCount` that is not a count. The bound it had was
+  `Math.min(sampleCount, digital.length)`, which defends only against a count that is too large;
+  below zero, fractional, or `NaN` it defended nothing, while `buckets` — the other argument — was
+  checked one line above.
+- A negative count made the fold loop never run, so the result was one bucket of count zero carrying
+  the caller's own `sampleCount: -5`. `toPhysicalEnvelope` renders a bucket of count zero as `NaN`,
+  which is how this package spells a dropout — so forty real samples came back as a hole in the
+  recording, from the function whose job is to make samples drawable.
+- `NaN` was worse: `Math.max(1, Math.min(buckets, NaN))` is `NaN` and `new Int32Array(NaN)` has
+  length 0, so the envelope had no buckets at all — a shape no read in this package produces.
+- The function's own docblock already required this: "`sampleCount` bounds the reduction, not
+  `digital.length`... The bound is here because a CALLER can build an `EdfChunkSignal`... two helpers
+  defending and one not is the worst of the three states."
+- Zero is still accepted. `trimToWindow` returns a real zero-sample chunk signal for a window that
+  selected nothing, and folding it to empty buckets is the honest answer.
+
 ## 0.6.289
 
 - **Fixed** the same hole in `readEnvelope` and `readEnvelopeAtResolution`, which are the last two
