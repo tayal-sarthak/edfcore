@@ -26,7 +26,7 @@
 import { decodeDigitalCounted } from './decode/digital.js';
 import { EdfChannelNotFoundError } from './errors.js';
 import { readHeader, readRecordBytes } from './io/read.js';
-import { assertByteSource } from './io/source.js';
+import { assertByteSource, assertReadOptions } from './io/source.js';
 import { buildTimeline } from './record-index.js';
 import { decodeAnnotations } from './tal/annotations.js';
 import { ticksToSeconds } from './tal/ticks.js';
@@ -611,6 +611,26 @@ export async function readWindow(
    */
   assertRecording(recording, 'readWindow');
   assertSelection(selection, 'readWindow', '{ signalIndices, startSeconds, durationSeconds }');
+  /*
+   * The OPTIONS, which the paragraph above left out.
+   *
+   * It argues for the selection and ends "a caller mistake is a caller mistake wherever the window
+   * lands". The third argument was not covered by it: `assertReadOptions` runs inside the read, so
+   * a window that resolves to no records — past the end, entirely inside an EDF+D gap, of zero
+   * duration — never reached it and `[]` came back with the options unexamined.
+   *
+   * `stream.ts` closed this for itself in 0.6.166 and has the sentence for it: "An abort that was
+   * never wired up and a window with nothing in it both end as a stream that yielded nothing." That
+   * module exists to issue the read `readWindow` issues, so the guard it added up front belongs
+   * here too — and `readWindow(recording, selection, controller.signal)` is the spelling it names,
+   * an `AbortSignal` where the options belong, which `typeof options === 'object'` cannot see.
+   *
+   * The SHAPE only. An already-aborted signal passed correctly still does not fire on an empty
+   * window, which `aborted-before-it-starts.test.ts` documents deliberately — "a call that reads
+   * nothing has nothing to abort" — and `assertReadOptions` reads `.aborted` to recognise a signal
+   * handed over as the options, never to poll one (0.6.288).
+   */
+  assertReadOptions(options);
   resolveSignals(recording.header, selection.signalIndices);
 
   const ranges = resolveTimeWindow(

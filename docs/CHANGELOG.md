@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.288
+
+- **Fixed** `readWindow` returning `[]` without ever examining its read options, for a window that
+  resolves to no records — past the end of the recording, entirely inside an EDF+D gap, or of zero or
+  negative duration. `[]` is this function's documented answer for exactly those windows, so a wrong
+  third argument was indistinguishable from the right one.
+- `assertReadOptions` ran inside the read, and those windows issue none. The spelling that matters is
+  `readWindow(recording, selection, controller.signal)` — an `AbortSignal` where the options belong,
+  which the bare-value guards cannot see because `typeof options === 'object'` is true of one. The
+  read it was handed ran uncancellable, and on an empty window nothing was said at all.
+- The function's own docblock already made this argument for the selection and ends "a caller mistake
+  is a caller mistake wherever the window lands". The third argument was not covered by it.
+- `stream.ts` closed the same hole for itself in 0.6.166 — "an abort that was never wired up and a
+  window with nothing in it both end as a stream that yielded nothing" — and that module exists to
+  issue the read this one issues. The two now give the same refusal for the same argument.
+- The shape only. An already-aborted signal passed correctly still does not fire on a window that
+  reads nothing, which `aborted-before-it-starts.test.ts` documents deliberately.
+
 ## 0.6.287
 
 - **Fixed** a finite time bound escaping as V8's "The number Infinity cannot be converted to a BigInt
