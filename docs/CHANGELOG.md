@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.291
+
+- **Fixed** `trimToWindow` and `envelopeOfSamples` telling four different wrong arguments "that is an
+  envelope signal, not a chunk signal". The guard tested the ABSENCE of a typed-array `digital` and
+  inferred an envelope from it, so anything with a numeric `signalIndex` and any other `digital` got
+  that sentence. Of the five arguments that reach the branch, one was an envelope signal.
+- The costly route is JSON. `JSON.stringify` writes an `Int32Array` as `{"0":1,"1":2}`, so a chunk out
+  of a cache, a saved session, or a `postMessage` that serialises as JSON arrives with every sample
+  intact and only its container gone — a route `chunks.ts` already names for this package ("JSON is
+  how a hole arrives") and `design-decisions.md` states of a chunk.
+- The advice was the expensive half: "readEnvelope() has already reduced its samples away", said to
+  someone holding all forty samples, who did pass one element of `chunk.signals` from `readWindow()`.
+  It now names what `digital` actually is and says how to rebuild it.
+- An envelope signal is identified by what it carries — `min`, `max` and `counts`, the three fields
+  the guard's own comment already named — rather than by what it lacks. A real envelope signal still
+  gets its own message, and a header signal and a value with no `signalIndex` still get theirs.
+- The test-count claim in `README.md`, `installation.md` and `browser-safety.test.ts` moves 4,900+ to
+  5,000+, which this release's own tests pushed it past.
+
 ## 0.6.290
 
 - **Fixed** `envelopeOfSamples` folding by a `sampleCount` that is not a count. The bound it had was

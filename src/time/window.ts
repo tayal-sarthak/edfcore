@@ -55,6 +55,46 @@ export function assertChunkSignal(chunkSignal: EdfChunkSignal, call: string, ver
   if (typeof chunkSignal?.signalIndex === 'number') {
     if (ArrayBuffer.isView((chunkSignal as { digital?: unknown }).digital)) return;
     /*
+     * An envelope signal is what it SAYS it is, not merely what is left over.
+     *
+     * The branch below tested the absence of a typed-array `digital` and then declared the argument
+     * an envelope signal — so everything with a numeric `signalIndex` and any other `digital` got
+     * that sentence: a plain array from `Array.from(chunkSignal.digital)`, a `digital` the caller
+     * built field by field, a pending Promise, and above all a chunk signal that has been through
+     * JSON. `JSON.stringify` writes an `Int32Array` as `{"0":1,"1":2}`, so a chunk out of a cache, a
+     * saved session or a worker boundary arrives with its samples intact and its container gone.
+     * `chunks.ts` names that route for this package already — "JSON is how a hole arrives" — and
+     * `design-decisions.md` puts it of a chunk: "what parses back has no `.length` where a caller
+     * expects one".
+     *
+     * The advice is what made it costly: "readEnvelope() has already reduced its samples away", said
+     * to someone holding the samples, who did pass one element of `chunk.signals` from
+     * `readWindow()`. Of the five arguments that reached it, one was an envelope signal.
+     *
+     * The comment below already names what tells the two shapes apart — "`digital` against
+     * `min`/`max`/`counts`" — so this tests for those three instead of inferring them (0.6.291).
+     */
+    const envelope = chunkSignal as unknown as {
+      min?: unknown;
+      max?: unknown;
+      counts?: unknown;
+    };
+    if (
+      !ArrayBuffer.isView(envelope.min) ||
+      !ArrayBuffer.isView(envelope.max) ||
+      !ArrayBuffer.isView(envelope.counts)
+    ) {
+      throw new RangeError(
+        `${call}(): the chunk signal's \`digital\` is ` +
+          `${describeValue((chunkSignal as { digital?: unknown }).digital)}, not the Int32Array a ` +
+          'read fills — so there are no samples here to ' +
+          `${verb}. Next: pass one element of chunk.signals as readWindow() or readRecords() ` +
+          'returned it; JSON.stringify writes an Int32Array as a plain object, so a chunk that ' +
+          'went through a cache, a saved session or postMessage with JSON needs its samples ' +
+          'rebuilt with new Int32Array(Object.values(digital)).',
+      );
+    }
+    /*
      * An ENVELOPE signal, which the check above cannot tell from a chunk signal.
      *
      * `EdfEnvelopeSignal` and `EdfChunkSignal` share eight of their nine fields — `signalIndex`,
