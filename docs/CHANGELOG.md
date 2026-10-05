@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.294
+
+- **Fixed** the form 0.6.293 left open and pinned: a pending Promise passed as the whole SELECTION.
+  `assertSelection` tests `typeof selection === 'object'`, which a Promise satisfies, and neither
+  shape pair below that fires without a `records` or a `startSeconds` — so it reached the field read
+  after them and came back as "signalIndices is missing, not an array of signal indices... Next: pass
+  header.dataSignalIndices", naming a field the caller never left out.
+- `assertReadOptions` gives the same sentence about the same blind spot one argument over:
+  "`typeof options === 'object'` is true of an `AbortSignal`".
+- The selection is the likelier of the two to arrive async, because the whole object is what gets
+  stored and reloaded — a saved viewport, a view restored from IndexedDB, a montage and its bounds
+  fetched together. `signalIndices` alone is only the montage half of that.
+- Checked ahead of the records-versus-window pairs, so the subject is the argument rather than
+  whichever field those two read first, and each call still names its own shape in the advice. All
+  six calls that take a selection are covered.
+
 ## 0.6.293
 
 - **Fixed** `signalIndices` holding a pending Promise being told it was "an object", which is true of

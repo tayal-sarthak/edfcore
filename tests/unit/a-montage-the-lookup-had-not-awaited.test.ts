@@ -121,15 +121,16 @@ describe('a montage the lookup had not awaited', () => {
     }
   });
 
-  it('does not reach the SELECTION, which a Promise passes before the describer runs', async () => {
+  it('does not reach the SELECTION, which needed a branch in the assertion instead', async () => {
     const recording = await opened();
-    // `assertSelection` tests `typeof selection === 'object'`, which a Promise satisfies, and then
-    // the two shape pairs it checks need `records` or `startSeconds` — a Promise has neither. So
-    // the selection form of this mistake is still blamed on the field read after it, and closing
-    // that needs a branch in the assertion rather than in this describer. Pinned so the gap is on
-    // the record rather than implied.
+    // This pinned the gap when 0.6.293 shipped: `assertSelection` tests `typeof selection ===
+    // 'object'`, which a Promise satisfies, so the selection form was blamed on `signalIndices`
+    // and no describer of this one was ever consulted. 0.6.294 closed it where it lives, in the
+    // assertion rather than here — so the subject below is the selection, and this test now
+    // records which of the two branches owns the sentence.
     const message = await settle(() => readWindow(recording, Promise.resolve({}) as never));
-    expect(message).toContain('signalIndices is missing');
+    expect(message).toContain('the selection is a pending Promise');
+    expect(message).not.toContain('signalIndices is');
   });
 
   it('leaves the recording branch alone, which has said this since 0.6.89', async () => {

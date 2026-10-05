@@ -189,6 +189,34 @@ export function assertSelection(
     );
   }
   /*
+   * A PENDING PROMISE, which the check above cannot see and 0.6.293 pinned as still open.
+   *
+   * `typeof options === 'object'` is true of a Promise — the same sentence `assertReadOptions` gives
+   * for an `AbortSignal` — so it passed this guard, and the two shape pairs below need a `records`
+   * or a `startSeconds` that a Promise has neither of. It reached the field read after them and was
+   * refused as "signalIndices is missing, not an array of signal indices... Next: pass
+   * header.dataSignalIndices", which names a field the caller never left out and sends them to
+   * build a list they already had.
+   *
+   * 0.6.293 gave `signalIndices` its own branch for this and recorded that the SELECTION form was
+   * untouched; this is that form. It is the likelier of the two, because the whole selection is what
+   * gets stored and reloaded: a saved viewport, a view restored from IndexedDB, a montage plus its
+   * bounds fetched as one object. `describeValue` names it everywhere else and gives the reason —
+   * a forgotten `await` is told "nothing about the one keyword that fixes it".
+   *
+   * Ahead of the records-versus-window pairs rather than after them, so the subject is the argument
+   * rather than whichever field those two happen to read first.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything (0.6.294).
+   */
+  if (typeof (selection as { then?: unknown }).then === 'function') {
+    throw new RangeError(
+      `${call}(): the selection is a pending Promise, and every field is read off it rather than ` +
+        `awaited — so this read was given no signals and no bounds. Next: await it, then pass ` +
+        `${shape}.`,
+    );
+  }
+  /*
    * An ARRAY, which is an object, so the check above let it through.
    *
    * 0.6.79 added that check because a selection that was not an object made each of these calls
