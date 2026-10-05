@@ -218,7 +218,31 @@ function assertHeaders(headers: unknown): void {
      * it keeps passing. Everything else with no values on it is a container this cannot carry.
      */
     if (values.length > 0 && values.every((value) => typeof value === 'string')) return;
-    if (values.length === 0 && Object.getPrototypeOf(headers) === Object.prototype) return;
+    /*
+     * A plain object by its PROTOTYPE CHAIN, not by identity with this realm's `Object.prototype`.
+     *
+     * 0.6.276 wrote `Object.getPrototypeOf(headers) === Object.prototype`, which is false for a `{}`
+     * built in another realm — an iframe, a worker, an Electron contextBridge, jsdom, a Node `vm`
+     * context — exactly as `instanceof` is. It is the same defect 0.6.284, 0.6.285 and 0.6.286 swept
+     * out of the describer and the two RegExp dispatches, and this is the site that sweep missed: a
+     * prototype comparison rather than an `instanceof`, so grepping for the operator did not find
+     * it.
+     *
+     * `headers: config.headers ?? {}` is the spelling, and a cross-realm `{}` was then refused by a
+     * sentence listing containers the caller had not passed — for the one empty object this guard
+     * was written to accept, because "it is what `undefined` already means".
+     *
+     * The tag is not available here: `Object.prototype.toString.call` answers `[object Object]` for
+     * a class instance too, and refusing those is the whole point of this arm — a token behind a
+     * prototype getter has no own enumerable values and would spread to nothing. The chain
+     * distinguishes them. A plain object's prototype is some realm's `Object.prototype`, whose own
+     * prototype is `null`; a class instance's is `X.prototype`, whose prototype is not.
+     *
+     * `Object.create(null)` comes with it, and is a header bag a caller may reasonably build — it
+     * has no prototype at all and spreads exactly like `{}` (0.6.292).
+     */
+    const proto: unknown = Object.getPrototypeOf(headers);
+    if (values.length === 0 && (proto === null || Object.getPrototypeOf(proto) === null)) return;
   }
   throw new EdfSourceError(
     `httpSource(): options.headers is ${describeValue(headers)}, not a plain object of header ` +

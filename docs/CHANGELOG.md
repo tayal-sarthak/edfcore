@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.292
+
+- **Fixed** `httpSource` refusing an empty `options.headers` object built in another realm — an
+  iframe, a worker, an Electron contextBridge, jsdom, a Node `vm` context. The arm that accepts `{}`
+  compared `Object.getPrototypeOf(headers) === Object.prototype`, and that `Object.prototype` is this
+  realm's, so a cross-realm `{}` failed it exactly as `instanceof Object` would.
+- This is the site the 0.6.284–0.6.286 sweep missed. Those three took `instanceof` out of the places
+  that still decided something with it; this one is a prototype comparison, so grepping for the
+  operator did not find it. `headers: config.headers ?? {}` is the spelling that reaches it, and it
+  was refused by a sentence about strings and Maps for the one empty object the arm exists to accept.
+- The built-in tag is not the fix here: `Object.prototype.toString.call` answers `[object Object]` for
+  a class instance too, and refusing those is this arm's purpose — a credential behind a prototype
+  getter spreads to `{}` and the request goes out anonymously. The prototype CHAIN separates them,
+  so that case is still refused, along with a Map, a Headers, an array of pairs and a string.
+- `Object.create(null)` is now accepted too. It has no prototype at all and spreads exactly like
+  `{}`, and it is a header bag a caller may reasonably build.
+
 ## 0.6.291
 
 - **Fixed** `trimToWindow` and `envelopeOfSamples` telling four different wrong arguments "that is an
