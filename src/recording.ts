@@ -114,6 +114,36 @@ function describeSelection(value: unknown): string {
   const tag = Object.prototype.toString.call(value);
   if (tag === '[object Set]') return 'a Set';
   if (tag === '[object Map]') return 'a Map';
+  /*
+   * A TYPED ARRAY, which is the Set's argument with a different container.
+   *
+   * The paragraph above says why a Set earns its name: "it is what a caller reaches for precisely
+   * because a channel list must not contain the same index twice, so it is the wrong container
+   * chosen for a right reason, and `[...indices]` is the whole fix". `new Int32Array(montage)` is
+   * the same sentence with a different reason — a numeric list, in the shape every other array in
+   * this package's own output has — and the same one-expression fix. `describeValue` has named
+   * these by tag since 0.6.116; this describer was the one place that did not.
+   */
+  if (ArrayBuffer.isView(value)) return tag.slice(8, -1);
+  /*
+   * A PENDING PROMISE, which "an object" is true of and says nothing about.
+   *
+   * `describe.ts` names it everywhere else and gives the reason — a forgotten `await` is told
+   * "nothing about the one keyword that fixes it" — and `assertRecording` below has said it since
+   * 0.6.89. But the recording is only one of the three arguments this describer speaks for, and the
+   * other two had no branch: `assertSelection` and `assertSignalIndices` both answered a Promise
+   * with "an object", which is true of the thing the caller meant to pass.
+   *
+   * `signalIndices` is where it comes from, and this package has already written down why. 0.6.274
+   * closed an async predicate in `matchSignals` and named the route: "A montage lookup is where it
+   * comes from: `matchSignals(header, async (label) => isInMontage(label))` against IndexedDB, a
+   * config file or a server." An async montage LOOKUP is the same call one keyword short —
+   * `signalIndices: loadMontage(header)` — and it was told its channel list was an object.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything
+   * (0.6.293).
+   */
+  if (typeof (value as { then?: unknown }).then === 'function') return 'a pending Promise';
   return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
 }
 

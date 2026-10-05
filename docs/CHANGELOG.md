@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.293
+
+- **Fixed** `signalIndices` holding a pending Promise being told it was "an object", which is true of
+  the array the caller meant to pass. `recording.ts` has its own describer, and it speaks for three
+  arguments — the recording, the selection and `signalIndices`. Only the recording had a Promise
+  branch, and that one sits in `assertRecording` ahead of the describer.
+- The route is already written down in this package. 0.6.274 closed an async predicate in
+  `matchSignals` and named it: "A montage lookup is where it comes from... against IndexedDB, a
+  config file or a server." A montage lookup that resolves to the indices is the same call one
+  keyword short, `signalIndices: loadMontage(header)`.
+- A typed array is named by its tag too, for the reason the `Set` branch beside it already gives: a
+  Set "is the wrong container chosen for a right reason, and `[...indices]` is the whole fix".
+  `new Int32Array(montage)` is that with a different reason and the same one-expression fix, and
+  `describeValue` has named typed arrays this way since 0.6.116.
+- Still open, and now pinned by a test rather than left implied: a pending Promise passed as the
+  whole SELECTION never reaches this describer. `assertSelection` tests `typeof selection ===
+  'object'`, which a Promise satisfies, so that form is still blamed on the field read after it.
+
 ## 0.6.292
 
 - **Fixed** `httpSource` refusing an empty `options.headers` object built in another realm — an
