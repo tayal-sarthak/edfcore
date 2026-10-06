@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.295
+
+- **Fixed** `blobSource` answering a forgotten `await` with advice for a different program. The
+  subject was right — `describeValue` has said "a pending Promise" since 0.6.116 — and the `Next:`
+  clause said "pass the File an `<input type="file">` or a drop event hands you", which names the two
+  routes that are not async.
+- Almost every way a browser hands over a Blob is: `Response.blob()`, `FileSystemFileHandle.getFile()`
+  and `ClipboardItem.getType()` all resolve to one, and `<input type="file">` and a drop event are the
+  only two that give it to you outright. So the reader who forgot the keyword on `r.blob()` was told
+  to go and find a file picker — the route they had deliberately not used.
+- `assertByteSource` has named this keyword since 0.6.264, but for the ADAPTER: "byteSource,
+  blobSource and cachedSource do not" need awaiting. That is true and is a different question from
+  what their arguments need.
+- The other arm is unchanged: a number, a string, a plain object or a `Uint8Array` is not a Blob, and
+  for those the file-picker advice was always the useful thing to say.
+
 ## 0.6.294
 
 - **Fixed** the form 0.6.293 left open and pinned: a pending Promise passed as the whole SELECTION.

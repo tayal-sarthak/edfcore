@@ -32,8 +32,13 @@ export function blobSource(blob: BlobLike): ByteSource {
   if (typeof given?.size !== 'number' || typeof given.slice !== 'function') {
     throw new EdfSourceError(
       'blobSource() needs a Blob or a File — an object with a size and a slice() — and received ' +
-        `${describeValue(blob)}. Next: pass the File an <input type="file"> or a drop event hands ` +
-        'you, or byteSource(bytes) if you already have the bytes in memory.',
+        `${describeValue(blob)}. ` +
+        (typeof (blob as { then?: unknown } | null | undefined)?.then === 'function'
+          ? 'Next: await it — every other way a browser hands over a Blob is async. ' +
+            'Response.blob(), FileSystemFileHandle.getFile() and ClipboardItem.getType() all ' +
+            'resolve to one; only an <input type="file"> and a drop event give it to you outright.'
+          : 'Next: pass the File an <input type="file"> or a drop event hands you, or ' +
+            'byteSource(bytes) if you already have the bytes in memory.'),
       { offset: 0, requestedLength: 0 },
     );
   }
