@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.296
+
+- **Fixed** `httpSource` answering a forgotten `await` with "pass the address as a string, or as
+  new URL(address)". A pending Promise is neither of those, so the sentence reads as a request to
+  convert the value when what is missing is one keyword.
+- An address that has to be fetched is not an edge case for this adapter. `data-sources.md` publishes
+  "a signed-URL refresher" as a supported use of `options.fetch`, and the comment on `resolveFetch`
+  names "a signed-URL wrapper" twice among the reasons the option exists — so an address minted by a
+  presigning call or a token service is a shape `httpSource` is built for, and minting one is async.
+- The advice names the refresher alongside the keyword, because the two halves pair: `await` the
+  address to build the source, and pass `options.fetch` to re-sign it for the reads that follow.
+- 0.6.264 made this argument for the SOURCE and named the two adapters that need awaiting.
+  `httpSource` is one of them, and its own first argument had the same hole.
+- The other arm is unchanged: a number, an object with no `href`, `null` or an omitted argument is
+  not an address, and for those the conversion advice was always the useful thing to say.
+
 ## 0.6.295
 
 - **Fixed** `blobSource` answering a forgotten `await` with advice for a different program. The

@@ -142,9 +142,28 @@ function hrefOf(url: string | { readonly href: string }): string {
   // issued, so there was nothing about the network in it either (fixed in 0.6.102).
   const href = (url as { href?: unknown } | null | undefined)?.href;
   if (typeof href === 'string') return href;
+  /*
+   * A FORGOTTEN AWAIT, in the one adapter whose address is routinely fetched.
+   *
+   * The advice below is "pass the address as a string, or as new URL(address)" — and a pending
+   * Promise is neither, so it reads as a request to convert something, when what is needed is one
+   * keyword. 0.6.264 made this argument for the SOURCE and named the two async adapters;
+   * `httpSource` is one of them, and its own first argument had the same hole.
+   *
+   * An address that has to be fetched is not an edge case here. `data-sources.md` publishes "a
+   * signed-URL refresher" as a supported pattern for `options.fetch`, and the comment on
+   * `resolveFetch` names "a signed-URL wrapper" twice — so an address minted by a token service or
+   * a presigning call is a shape this adapter is built for, and `getSignedUrl(key)` is async.
+   *
+   * A property read, never a call: nothing here awaits, settles or subscribes to anything (0.6.296).
+   */
+  const pending = typeof (url as { then?: unknown } | null | undefined)?.then === 'function';
   throw new EdfSourceError(
     `httpSource() needs a URL string or a URL object, and received ${describeValue(url)}. ` +
-      'Next: pass the address as a string, or as new URL(address).',
+      (pending
+        ? 'Next: await it — a signed or presigned address is minted by a call that resolves to ' +
+          'one, and options.fetch is the hook for refreshing it once the source exists.'
+        : 'Next: pass the address as a string, or as new URL(address).'),
     { offset: 0, requestedLength: 0 },
   );
 }
