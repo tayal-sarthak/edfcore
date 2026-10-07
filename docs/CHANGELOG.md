@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.297
+
+- **Fixed** the third adapter with this hole, and the last. `fileSource` answered a forgotten `await`
+  with "pass the path as a string" — which is exactly what the caller did, except that what they
+  passed was a Promise OF one. Of the three it is the advice most likely to be taken literally.
+- `node:fs/promises` is where it comes from, and this adapter's whole subject is that module.
+  `fs.realpath`, `fs.mkdtemp` and `fs.readdir` all resolve to paths rather than returning them, and a
+  resolved symlink is the commonest of the three: `fileSource(fs.realpath(p))` is a line someone
+  writes when a recording arrives through a symlinked spool directory.
+- `assertByteSource` has named the keyword for `fileSource` itself since 0.6.264. That is about this
+  function's RESULT; its argument is the other half, and it said nothing.
+- `byteSource(bytes)` stays in the other arm, because that is the mistake it was written for in
+  0.6.116: `fs.open` accepts a `Uint8Array` as a path, so a file already in memory is opened as the
+  bytes of a filename.
+- With 0.6.295 and 0.6.296, all three source adapters now name the keyword their argument was one
+  short of.
+
 ## 0.6.296
 
 - **Fixed** `httpSource` answering a forgotten `await` with "pass the address as a string, or as

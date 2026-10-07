@@ -210,10 +210,30 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
    * courtesy in the other direction (fixed in 0.6.116).
    */
   if (typeof path !== 'string' && Object.prototype.toString.call(path) !== '[object URL]') {
+    /*
+     * The third adapter with this hole, and the last. 0.6.295 and 0.6.296 closed it for a Blob and
+     * for an address; a path is the one left, and the advice below is the one most likely to be
+     * taken literally — "pass the path as a string" is exactly what the caller did, except that
+     * what they passed was a Promise OF one.
+     *
+     * `node:fs/promises` is where it comes from, and this adapter's whole subject is that module:
+     * `fs.realpath`, `fs.mkdtemp` and `fs.readdir` all resolve to paths, and a resolved symlink is
+     * the commonest of the three — `fileSource(fs.realpath(p))` is a line someone writes when a
+     * recording arrives through a symlinked spool directory.
+     *
+     * `byteSource(bytes)` stays in the other arm, because that is the mistake 0.6.116 wrote it for:
+     * `fs.open` accepts a `Uint8Array` as a path, so a file already in memory passed here is opened
+     * as the bytes of a filename (0.6.297).
+     */
+    const pending = typeof (path as { then?: unknown } | null | undefined)?.then === 'function';
     throw new EdfSourceError(
-      `fileSource() needs a path, and received ${describeValue(path)}. Next: pass the path as a ` +
-        'string, or byteSource(bytes) for a file you have already read into memory — a Uint8Array ' +
-        'here would be opened as the bytes of a filename.',
+      `fileSource() needs a path, and received ${describeValue(path)}. ` +
+        (pending
+          ? 'Next: await it — fs.realpath, fs.mkdtemp and fs.readdir from "node:fs/promises" ' +
+            'all resolve to paths rather than returning them, and a resolved symlink is the usual ' +
+            'way one arrives here.'
+          : 'Next: pass the path as a string, or byteSource(bytes) for a file you have already ' +
+            'read into memory — a Uint8Array here would be opened as the bytes of a filename.'),
       { offset: 0, requestedLength: 0 },
     );
   }
