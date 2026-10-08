@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.298
+
+- **Fixed** `toPhysicalEnvelope` accepting one buffer for both bounds and returning a band of zero
+  height. Both halves of `out` were checked for kind and for length, and neither check says they have
+  to be two arrays — so `{ min: buf, max: buf }` wrote the lower bound of every bucket and then
+  overwrote it with the upper one.
+- That is the reuse `out` exists for: a viewer pooling allocations across a pan. What came back was an
+  envelope whose min equals its max, which is what a flat signal looks like, from the function whose
+  entire output is the distance between the two.
+- Nothing downstream could see it. Both sides are narrowed with `subarray` on the way out and those
+  are distinct view objects, so `result.min === result.max` is false even though the numbers are
+  identical. The buffer and the byte range are what agree, so the guard is an overlap test.
+- Overlap rather than identity, so the legitimate pooled use still works: `pool.subarray(0, n)` for
+  `min` and `pool.subarray(n, 2 * n)` for `max` are two views into one buffer and stay accepted.
+- `api-helpers.md` already records that this function guards the ORDER of the two bounds — on a
+  decreasing scale the lower one "sits above its upper bound, and a viewer would draw it inside out",
+  so they are swapped. It defended which bound is which and not that there are two of them.
+
 ## 0.6.297
 
 - **Fixed** the third adapter with this hole, and the last. `fileSource` answered a forgotten `await`

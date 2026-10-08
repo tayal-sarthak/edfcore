@@ -689,6 +689,43 @@ export function toPhysicalEnvelope(
         'toPhysicalEnvelope allocate.',
     );
   }
+  /*
+   * And that the two bounds land in DIFFERENT memory, which every check above lets pass.
+   *
+   * Both sides were checked for kind and for length, and neither says they have to be two arrays.
+   * `{ min: buf, max: buf }` — one buffer reused for both, which is what a viewer pooling
+   * allocations across a pan reaches for, and `out` exists for exactly that caller — wrote the
+   * lower bound of every bucket and then overwrote it with the upper one. What came back was an
+   * envelope whose min equals its max: a band of ZERO HEIGHT, which is what a flat signal looks
+   * like, on a function whose entire output is the distance between the two.
+   *
+   * Nothing downstream could see it. `out.min === out.max` is false by the time a caller inspects
+   * the result, because both are narrowed with `subarray` below and those are distinct views — so
+   * the one identity test that would have caught it is false on the way out. The buffer and the
+   * byte range are what agree, which is why this is an overlap test rather than an equality one.
+   *
+   * Overlap, not identity, so the legitimate pooled use still works: two views into one buffer at
+   * different offsets are what a pool actually hands out, and `pool.subarray(0, n)` with
+   * `pool.subarray(n, 2 * n)` is correct and stays accepted.
+   *
+   * `api-helpers.md` already records that this function guards the ORDER of the two bounds — a
+   * decreasing scale "sits above its upper bound, and a viewer would draw it inside out", so they
+   * are swapped. It defended which bound is which and not that there are two of them (0.6.298).
+   */
+  if (
+    out !== undefined &&
+    out.min.buffer === out.max.buffer &&
+    out.min.byteOffset < out.max.byteOffset + out.max.byteLength &&
+    out.max.byteOffset < out.min.byteOffset + out.min.byteLength
+  ) {
+    throw new RangeError(
+      'toPhysicalEnvelope(): out.min and out.max overlap in memory, so the upper bound of every ' +
+        'bucket would overwrite the lower one and the envelope would come back with both bounds ' +
+        'equal — a band of zero height, which is what a flat signal looks like. Next: pass two ' +
+        'separate Float64Arrays, or two views over one buffer that do not overlap — ' +
+        'pool.subarray(0, n) for min and pool.subarray(n, 2 * n) for max.',
+    );
+  }
   // A longer `out` is narrowed to a view over its own memory, so reuse allocates nothing while
   // the result length stays equal to the real bucket count.
   const low = out === undefined ? new Float64Array(length) : out.min.subarray(0, length);
