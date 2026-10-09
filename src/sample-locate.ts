@@ -221,6 +221,26 @@ export function sampleAt(
     if (recordOffset < 0n || recordOffset >= BigInt(segment.records.count)) return undefined;
 
     const recordIndex = segment.records.start + Number(recordOffset);
+    /*
+     * And by the FILE, which the segment bound above only implies for a matched index.
+     *
+     * The comment on the nominal branch below states this function's rule: both halves of its bound
+     * are "what separates this from `gridSampleIndexAt`, which happily names a record the file does
+     * not have". That branch checks the record count; this one checked the segment and took the rest
+     * as an invariant — and the invariant is about an index built from THIS header.
+     *
+     * `readWindow`'s docblock teaches rebuilding a recording around a scanned index —
+     * `readWindow({ ...rec, index }, selection)` — so a recording assembled by spread is a shape the
+     * package asks for, and an index from another file is then one field away. `resolveTimeWindow`
+     * refuses that pair, which covers `readWindow`, `readEnvelope` and `streamRecords`; this
+     * function does not go through it, so it was the member of the family that answered. On a
+     * four-record file carrying a nine-record index it named record 8 and the sample index that
+     * follows from it, which is a location in a file that ends five records earlier.
+     *
+     * Integer-only and exact, so a matched index cannot reach it: its segments are built from this
+     * header's own record count (0.6.299).
+     */
+    if (recordIndex >= recording.header.recordCount) return undefined;
     const withinTicks = offsetTicks - recordOffset * duration;
     const sampleWithinRecord = Number(floorDiv(withinTicks * perRecord, duration));
     return {

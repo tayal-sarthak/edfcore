@@ -6,6 +6,25 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.299
+
+- **Fixed** `sampleAt` naming a record the file does not have. Its scanned-index branch bounded the
+  answer by the SEGMENT and took the rest as an invariant — "a segment it returned already implies
+  `0 <= recordOffset < segment.records.count`" — which holds for an index built from the same header
+  and is not what the type guarantees.
+- `readWindow`'s docblock teaches rebuilding a recording around a scanned index,
+  `readWindow({ ...rec, index }, selection)`, so a recording assembled by spread is a shape the
+  package asks for and an index from another file is one field away. `resolveTimeWindow` refuses that
+  pair, which is why `readWindow`, `readEnvelope` and `streamRecords` all throw for it; `sampleAt`
+  does not go through it and was the member of the family that answered.
+- On a four-record file carrying a nine-record index it named record 8 and the sample index that
+  follows from it — a location in a file that ended five records earlier.
+- The function's own comment on its nominal branch already stated the rule: both halves of the bound
+  there are "what separates this from `gridSampleIndexAt`, which happily names a record the file does
+  not have".
+- `undefined` rather than a throw, because that is already this function's answer for a time the
+  recording does not cover. The check is integer-only, so a matched index cannot reach it.
+
 ## 0.6.298
 
 - **Fixed** `toPhysicalEnvelope` accepting one buffer for both bounds and returning a band of zero
