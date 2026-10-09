@@ -6,6 +6,27 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.300
+
+- **Fixed** a read blaming the source for a header from another file. `readRecordBytes(source,
+  header, records)` takes the two as separate arguments and nothing but the caller pairs them.
+  `openEdf` establishes the relation at open time — a source too small for the header it parsed
+  lowers `recordCount` and records that it did — and nothing re-checked it afterwards.
+- The first read then asked for a range the HEADER describes, the source was shorter, and the
+  refusal was "ByteSource.read(...) past the end of a 1088-byte source. Next: clamp the request, or
+  check that the source was built over the whole file rather than a prefix of it" — advice to clamp a
+  range that is inside the file it was computed for, about a source that is the whole of a different
+  one.
+- `readWindow`'s docblock teaches rebuilding a recording by spread, so a recording whose four fields
+  do not all come from one file is a shape the package asks for. `resolveTimeWindow` catches the
+  index against the timeline; this is the other pair, and it reaches every read because they all
+  funnel through this one function.
+- **A lower bound only, and that is the whole of what can be checked here.** Trailing bytes are legal
+  and diagnosed rather than refused — `TRAILING_BYTES`, `PARTIAL_FINAL_RECORD` — so a source longer
+  than its header implies is a real file and keeps reading. The reverse mix, a header describing less
+  than its source holds, is indistinguishable from one of those files and is still not caught; a test
+  pins that it reads, so the limit is on the record rather than implied.
+
 ## 0.6.299
 
 - **Fixed** `sampleAt` naming a record the file does not have. Its scanned-index branch bounded the

@@ -324,6 +324,45 @@ export async function readRecordBytes(
     );
   }
   assertRecordRange(header, records);
+  /*
+   * The SOURCE against the HEADER, which are this function's own two arguments and are paired by
+   * nobody but the caller.
+   *
+   * `openEdf` establishes the relation at open time — a source too small for the header it parsed
+   * lowers `recordCount` and sets `recordCountSource` to `'sourceByteLength'` — and nothing
+   * re-checks it afterwards. `readWindow`'s docblock teaches rebuilding a recording by spread,
+   * `readWindow({ ...rec, index }, selection)`, so a recording whose four fields do not all come
+   * from one file is a shape the package asks for. `resolveTimeWindow` catches the index against
+   * the timeline; this is the other pair.
+   *
+   * What it did was blame the source. The first read asked for a range the HEADER describes, the
+   * source was shorter, and `assertReadRange` answered "ByteSource.read(offset 768, length 720)
+   * ends at byte 1488, past the end of a 1088-byte source. Next: clamp the request, or check that
+   * the source was built over the whole file rather than a prefix of it" — advice to clamp a range
+   * that is inside the file it was computed for, about a source that is the whole of a different
+   * one.
+   *
+   * A LOWER bound only, and that is the whole of what can be checked here: trailing bytes are legal
+   * and diagnosed rather than refused (`TRAILING_BYTES`, `PARTIAL_FINAL_RECORD`), so a source
+   * longer than the header implies is a real file and must keep reading. The reverse mix — a header
+   * describing less than its source holds — is therefore indistinguishable from one of those files
+   * and is not caught.
+   *
+   * Integer arithmetic on fields `assertRecordRange` above has already established, so a matched
+   * pair cannot reach it (0.6.300).
+   */
+  const impliedByteLength = header.headerByteLength + header.recordCount * header.recordByteLength;
+  if (source.byteLength < impliedByteLength) {
+    throw new EdfRangeError(
+      `this header describes a ${impliedByteLength}-byte file — a ${header.headerByteLength}-byte ` +
+        `header and ${pluralise(header.recordCount, 'record')} of ` +
+        `${header.recordByteLength} bytes — but the source holds ${source.byteLength}. A shorter ` +
+        'source is not a shorter file here: openEdf() lowers recordCount for one and records that ' +
+        'it did, so these two were not opened together. Next: pass the source this header was ' +
+        'parsed from — recording.source is the one openEdf() kept.',
+      { requested: records, available: { start: 0, count: header.recordCount } },
+    );
+  }
   const byteLength = records.count * header.recordByteLength;
   if (byteLength === 0) return new Uint8Array(0);
 
