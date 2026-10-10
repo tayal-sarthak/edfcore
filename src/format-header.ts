@@ -263,9 +263,14 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
       `(${header.recordCount} × ${header.recordDurationSeconds} s)`,
   );
   if (discontinuous) {
+    // Three hand-wrapped lines are ONE sentence, and it ran straight from "each other" into
+    // "buildRecordIndex(recording)" with nothing between them — so the only place `edfcore header`
+    // explains a discontinuous file printed two independent clauses as a run-on. The terminator
+    // also settles what the last clause points at: "which it is" had nothing to attach to across
+    // the break, and gaps-or-overlaps is the choice it means (0.6.301).
     lines.push('             what the records cover, which on this file is not the span: its');
-    lines.push('             records may leave gaps between them, and may overlap each other');
-    lines.push('             buildRecordIndex(recording) reports the span and which it is');
+    lines.push('             records may leave gaps between them, and may overlap each other.');
+    lines.push('             buildRecordIndex(recording) reports the span and which of the two.');
   }
   if (header.recordCountSource === 'sourceByteLength') {
     // Worth saying out loud: the count came from the file size, not from the header field.

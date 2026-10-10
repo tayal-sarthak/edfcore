@@ -82,8 +82,11 @@ describe('a file whose records overlap', () => {
   it('is told both ways the records can fail to run end to end', async () => {
     const recording = await opened(OVERLAPPING);
     const text = formatHeader(recording.header);
-    expect(text).toContain('may leave gaps between them, and may overlap each other');
-    expect(text).toContain('buildRecordIndex(recording) reports the span and which it is');
+    expect(text).toContain('may leave gaps between them, and may overlap each other.');
+    // The clause reads `which of the two` since 0.6.301: the three wrapped lines are one sentence
+    // and it ran from "each other" straight into "buildRecordIndex(recording)" with no terminator,
+    // leaving "which it is" nothing to attach to across the break.
+    expect(text).toContain('buildRecordIndex(recording) reports the span and which of the two.');
   });
 });
 

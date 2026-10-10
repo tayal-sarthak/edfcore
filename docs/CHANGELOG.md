@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.301
+
+- **Fixed** the note `edfcore header` prints for a discontinuous file running two clauses together.
+  It is three hand-wrapped lines forming one sentence, and there was nothing between the second and
+  the third: "...may leave gaps between them, and may overlap each other" then straight into
+  "buildRecordIndex(recording) reports the span and which it is".
+- The break did more than look wrong. "which it is" is a back-reference to the gaps-or-overlaps
+  choice in the clause before it, and with no terminator between them it reads as attaching to
+  `buildRecordIndex(recording)` instead — which is not a thing a span can be. The clause now reads
+  "and which of the two".
+- This is the note a reader meets when the tool tells them their file is EDF+D, so it is the sentence
+  that has to survive being read once, quickly, in a terminal. `counted.ts` records what this package
+  thinks of that: the first line of `edfcore header` once read "1 signals", and "two commands over
+  one file disagreed about the same number".
+- The continuous-file path prints none of it, which is pinned.
+
 ## 0.6.300
 
 - **Fixed** a read blaming the source for a header from another file. `readRecordBytes(source,
