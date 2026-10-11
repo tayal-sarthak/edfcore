@@ -36,6 +36,8 @@ import {
 const DEFAULT_MAX_CONCURRENCY = 4;
 
 const HTTP_PARTIAL_CONTENT = 206;
+/** The server read the Range header and the range is outside the resource as it stands now. */
+const HTTP_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_OK = 200;
 
 type RequestInitLike = { headers: Record<string, string>; method?: string };
@@ -714,6 +716,37 @@ export async function httpSource(
           });
       }
       return sliceFullBody(await fullBodyInflight, offset, length, href, byteLength);
+    }
+
+    /*
+     * 416 is the one status that says what is wrong, so it must not be guessed at.
+     *
+     * The sentence below covers the statuses that mean "we could not serve you" — 404, 500, 304 —
+     * and its advice is about reaching the resource at all: the URL, the auth headers, an expired
+     * signature. 416 is the opposite of unreachable. The server read the Range header, understood
+     * it, and is reporting that the range lies past the end of the resource AS IT STANDS NOW — so
+     * the length this source was built on is stale, and nothing about the URL or its credentials
+     * has anything to do with it.
+     *
+     * `blob.ts` makes exactly this argument for its own short read: `assertExactRead` "accuses the
+     * browser of breaking a contract it kept", and "a picked File is a handle on a file that can
+     * still change — the backing file was truncated or replaced since it was chosen, so ask for it
+     * again". A URL is the same handle over the network, and this adapter already diagnoses two
+     * other transport specifics by hand — a 200 that ignored Range, and a Content-Range naming a
+     * different part of the resource — so 416 was the one it lumped in with the rest.
+     *
+     * Not advice to clamp the read, either: the range was inside the file this source measured,
+     * and a caller who clamps is reading a prefix of a resource that changed under them (0.6.302).
+     */
+    if (response.status === HTTP_RANGE_NOT_SATISFIABLE) {
+      throw new EdfSourceError(
+        `Reading bytes ${offset}..${offset + length - 1} of ${href}: the server answered HTTP 416 ` +
+          'Range Not Satisfiable, so it read the Range header and that range is past the end of ' +
+          `the resource as it stands now — this source was built for ${byteLength} bytes. Next: ` +
+          'the resource was replaced or truncated since its length was probed, so build the source ' +
+          'again rather than clamping the read.',
+        { offset, requestedLength: length },
+      );
     }
 
     throw new EdfSourceError(

@@ -6,6 +6,26 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.302
+
+- **Fixed** `httpSource` answering HTTP 416 with advice about authentication. The catch-all it fell
+  into covers the statuses that mean "we could not serve you" — 404, 500, 304 — and its advice is
+  about reaching the resource at all: "check the URL, its authentication headers and whether a signed
+  URL has expired."
+- 416 is the opposite of unreachable. The server read the Range header, understood it, and is
+  reporting that the range lies past the end of the resource as it stands now — so the length this
+  source was built on is stale, and the URL and its credentials have nothing to do with it. The
+  message now says that, and names the byte length the source was built for.
+- Nor is clamping the answer: the range was inside the file this source measured, so a caller who
+  clamps reads a prefix of a resource that changed under them. The advice is to build the source
+  again.
+- `blob.ts` is the precedent and makes the same argument for its own short read — `assertExactRead`
+  "accuses the browser of breaking a contract it kept", and a picked File "was truncated or replaced
+  since it was chosen, so ask for it again". A URL is the same handle over the network.
+- This adapter already diagnoses two other transport specifics by hand — a 200 that ignored Range,
+  and a Content-Range naming a different part of the resource — so 416 was the one status that says
+  what is wrong and the one being guessed at. The unreachable statuses keep their own advice.
+
 ## 0.6.301
 
 - **Fixed** the note `edfcore header` prints for a discontinuous file running two clauses together.
