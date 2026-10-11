@@ -6,6 +6,24 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.303
+
+- **Fixed** the weekly Corpus workflow, which had been failing on every run. It executed `npm test`
+  on a tree that had never been built, so the seven `packaging-claims.test.ts` assertions — each of
+  which reads an export target out of `package.json` and checks it exists in `dist/` — failed every
+  time. `ci.yml` satisfies them two ways, `npm run build` for the package and site jobs and
+  `npm run check` for the main one; the corpus job did neither.
+- The cost was the signal, not the tests. The workflow's own header says "a corpus host being down is
+  not a broken library, and a red cross on a scheduled job is the honest way to say so" — so the
+  cross IS the report, and a permanent one carries nothing. A corpus host actually going down had
+  been invisible for weeks, and that is the one event this job exists to tell anyone about.
+- `tests/corpus/` is the only place edfcore is compared against bytes real hardware and real software
+  produced, including the pyEDFlib and MNE parity goldens, and nothing else runs it: `ci.yml` never
+  fetches and `scripts/release.mjs` runs `npm run check`, which downloads nothing.
+- A test now takes the set from the workflow files rather than from a list, so a new workflow that
+  runs the suite is covered the day it is added. `ci-verifications.test.ts` makes the same argument
+  one file over about a deleted `- run:` line.
+
 ## 0.6.302
 
 - **Fixed** `httpSource` answering HTTP 416 with advice about authentication. The catch-all it fell

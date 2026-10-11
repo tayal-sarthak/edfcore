@@ -45,6 +45,19 @@ jobs:
           path: tests/corpus/files
           key: corpus-${{ hashFiles('tests/corpus/manifest.json') }}
       - run: npm run corpus:fetch
+      # BEFORE the suite, because `npm test` alone is not `npm run check`.
+      #
+      # `packaging-claims.test.ts` reads the export targets out of `package.json` and asserts each
+      # one exists in `dist/`, and `ci.yml` satisfies it two different ways — `npm run check` for
+      # the main job, an explicit `npm run build` for the package and site jobs. This job ran
+      # `npm test` on a tree that had never been built, so those seven assertions failed on every
+      # run and the job was red for a reason that has nothing to do with the corpus.
+      #
+      # That is what made it worth fixing rather than tolerating. The header above says "a corpus
+      # host being down is not a broken library, and a red cross on a scheduled job is the honest
+      # way to say so" — so the cross IS the signal, and a permanent one carries nothing. A real
+      # outage had been invisible here for weeks.
+      - run: npm run build
       # The whole suite, not the corpus directory alone: several files outside it read a corpus
       # file when one is there, and the point is the run that has them.
       - run: npm test
