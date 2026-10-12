@@ -82,6 +82,29 @@ describe('a suite run on an unbuilt tree', () => {
     );
   });
 
+  it('keeps actions/cache off the deprecated Node 20 runtime', () => {
+    // It sat on v4 while everything beside it was v7, and v4 targets the Node 20 runtime GitHub has
+    // deprecated and is currently FORCING onto Node 24 — every run printed "Node.js 20 is
+    // deprecated... being forced to run on Node.js 24", so it worked only until the forcing stopped.
+    //
+    // The floor is v5, because v5.0.0 is exactly that fix upstream ("Upgrade to use node24"). Not
+    // "the same major as its siblings": actions version independently, and cache's current major is
+    // v6 while checkout and setup-node are v7, so that rule would be false the day it was written.
+    //
+    // It is the cache step, so the break would have been quiet: the fetch still runs and the job
+    // still passes, downloading ~102 MB a week from third-party servers instead of restoring
+    // (0.6.304).
+    const uses = workflows.flatMap(({ name }) => [
+      ...readFileSync(new URL(name, WORKFLOWS), 'utf8').matchAll(
+        /^\s*- uses:\s*actions\/cache@v(\d+)/gm,
+      ),
+    ]);
+    expect(uses.length, 'no actions/cache step found, so this check is vacuous').toBeGreaterThan(0);
+    for (const match of uses) {
+      expect(Number(match[1]), 'actions/cache is on a Node 20 major').toBeGreaterThanOrEqual(5);
+    }
+  });
+
   it('leaves the workflows that never run the suite alone', () => {
     for (const { name, steps } of workflows) {
       if (steps.includes('npm test')) continue;

@@ -40,7 +40,19 @@ jobs:
       # Keyed on the manifest, which carries every URL and every hash: a file added, removed or
       # re-pointed changes the key and the next run fetches. `fetch-corpus.mjs` verifies each
       # file against its sha256 either way, so a restored cache is checked, not trusted.
-      - uses: actions/cache@v4
+      #
+      # v6, not v4, and it was the only action here not on its current major. v4 targets the Node 20
+      # runtime, which GitHub has deprecated and is currently FORCING onto Node 24 — every run of
+      # this job printed "Node.js 20 is deprecated... being forced to run on Node.js 24" — so it
+      # works until the forcing stops. v5.0.0 is exactly that fix upstream ("Upgrade to use node24")
+      # and v6.0.0 changes only internals; `path` and `key` are the inputs this uses and neither
+      # major touched them.
+      #
+      # It is the cache step, so a break here would not be loud: the fetch below still runs and the
+      # job still passes, just downloading ~102 MB from third-party servers every week instead of
+      # restoring. 0.6.303 is about the other way this job stopped reporting what it was built to
+      # report.
+      - uses: actions/cache@v6
         with:
           path: tests/corpus/files
           key: corpus-${{ hashFiles('tests/corpus/manifest.json') }}

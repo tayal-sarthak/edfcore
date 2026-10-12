@@ -6,6 +6,22 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.304
+
+- **Fixed** `actions/cache` sitting on `@v4` in the Corpus workflow, the one action in this
+  repository not on a current major. v4 targets the Node 20 runtime, which GitHub has deprecated and
+  is currently FORCING onto Node 24 — every run of the job printed "Node.js 20 is deprecated... being
+  forced to run on Node.js 24" — so it works only until the forcing stops. `v5.0.0` is exactly that
+  fix upstream, "Upgrade to use node24"; `v6.0.0` changes only internals, and `path` and `key` are
+  the inputs this step uses, which neither major touched.
+- The break would have been quiet, which is why it was worth doing now rather than when it happened:
+  it is the cache step, so the fetch below it still runs and the job still passes — it would simply
+  download ~102 MB from third-party servers every week instead of restoring. 0.6.303 is about the
+  other way this job had stopped reporting what it was built to report.
+- The pin is a floor of v5 rather than "the same major as its siblings": actions version
+  independently, and `cache` is at v6 while `checkout` and `setup-node` are at v7, so that rule
+  would have been false the day it was written.
+
 ## 0.6.303
 
 - **Fixed** the weekly Corpus workflow, which had been failing on every run. It executed `npm test`
