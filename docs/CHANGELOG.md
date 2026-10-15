@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.308
+
+- `fast-check` 4.9.0 to 4.10.2, the generator behind 26 property files and 174 properties.
+- Worth running rather than assuming: every property here is pinned to a fixed `seed`, so a change
+  in the generator changes which values that seed produces. A bump is therefore a fresh draw against
+  the same invariants, not a no-op — all 174 hold, and the suite is unchanged at 9,191 tests.
+- The 4.10 fixes themselves are for the `interruptAfterTimeLimit` plugin, which this repository does
+  not use; the bump is hygiene, and the re-draw is the part with value.
+
 ## 0.6.307
 
 - `@biomejs/biome` 2.5.6 to 2.5.15, with `biome.json`'s `$schema` migrated to match. The two travel
