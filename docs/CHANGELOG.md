@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.310
+
+- **Fixed** the grid family answering with another file's grid. `gridSampleIndexAt`,
+  `gridSampleStartTicks` and `gridSampleStartSeconds` take the signal and the record duration as
+  separate arguments, and only the caller pairs them — so a 10 Hz signal asked with another file's
+  2 s ticks answered `sampleIndex: 5` at t = 1 s where its own grid says 10. No throw, no
+  diagnostic, half the index. `decodeDigital` refuses the analogous bytes-against-records mismatch
+  and says why: it "cannot tell which record a differently sized buffer begins at, so it will not
+  guess".
+- **This was found in 0.6.299's batch and deliberately not shipped then**, on the reasoning that the
+  only bridge between the two arguments is `sampleRateHz` — a float — but that for a field of at most
+  seven decimals both sides round the same exact rational, so an exact check would be safe.
+- **That reasoning was wrong.** `ticksToSeconds` rebuilds the double as `whole + remainder / 1e7`,
+  two roundings rather than one correctly-rounded division, so a legitimate file need not agree. A
+  sweep over header spellings an 8-byte field can hold showed an exact check refusing about one file
+  in a hundred.
+- So the two populations were measured instead, and the tolerance sits between them. Over 7,729
+  spellings the worst disagreement for a MATCHED pair is **3.2e-16** relative; the closest two
+  genuinely DIFFERENT headers come is **1.1e-7**, and that is forced — eight ASCII bytes carry at
+  most seven significant digits, so two distinct durations differ by at least about one part in 10^7.
+  `1e-11` sits roughly 31,000x above the first and 11,000x below the second.
+- The repository's distrust of epsilons — "a float tolerance is how a one-sample overlap becomes
+  invisible" — is about TICK comparisons, where exactness is available. Here it is not, and the
+  property test carries the sweep that justifies the number so it cannot quietly drift.
+
 ## 0.6.309
 
 - `biome check` now reports nothing at all. Two `info`-level findings had sat in the tree

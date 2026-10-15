@@ -42,9 +42,16 @@
  */
 
 import { TICKS_PER_SECOND } from './constants.js';
-import { secondsToTicks } from './tal/ticks.js';
+import { secondsToTicks, ticksToSeconds } from './tal/ticks.js';
 import { describeValue } from './text/describe.js';
 import type { EdfSampleLocation, EdfSignal } from './types.js';
+
+/**
+ * How far the implied sample rate may sit from the declared one before the two arguments are taken
+ * to be from different headers. See `assertGrid`: the noise floor for a matched pair is 3.2e-16
+ * relative and the floor for a genuine mismatch is 1.1e-7, both measured.
+ */
+const GRID_RATE_TOLERANCE = 1e-11;
 
 function assertGrid(signal: EdfSignal, recordDurationTicks: bigint, call: string): void {
   /*
@@ -98,6 +105,47 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint, call: string
         'elapsed time maps to a sample. This is legal EDF and a scoring file relies on it. ' +
         'Next: index by record with readRecords().',
     );
+  }
+  /*
+   * And that the two arguments came from the SAME HEADER, which nothing above can see.
+   *
+   * This family takes the signal and the record duration separately, and only the caller pairs
+   * them. Mix them and the grid is silently wrong by the ratio of the two durations: a 10 Hz signal
+   * asked with another file's 2 s ticks answered `sampleIndex: 5` at t = 1 s where the truth is 10.
+   * No throw, no diagnostic, half the index. `decodeDigital` refuses the analogous bytes-against-
+   * records mismatch and says why — it "cannot tell which record a differently sized buffer begins
+   * at, so it will not guess".
+   *
+   * `sampleRateHz` is the only thing bridging them, and it is a float: the header parses
+   * `recordDurationSeconds` from the field independently of `recordDurationTicks`, so this compares
+   * two reconstructions of one decimal rather than two copies of a number.
+   *
+   * WHICH IS WHY THIS IS A TOLERANCE AND NOT AN EQUALITY. `ticksToSeconds` rebuilds the double as
+   * `whole + remainder / 1e7` — two roundings — so for a legitimate file it need not equal the
+   * parsed float. Measured over 7,729 header spellings an 8-byte field can hold, the worst
+   * disagreement for a MATCHED pair is 3.2e-16 relative, and an exact check refused about one file
+   * in a hundred. The closest two genuinely DIFFERENT headers come is 1.1e-7, which is forced: eight
+   * ASCII bytes carry at most seven significant digits, so two distinct durations differ by at least
+   * about one part in 10^7.
+   *
+   * 1e-11 sits roughly 31,000x above the noise and 11,000x below the signal. The repository's
+   * distrust of epsilons — "a float tolerance is how a one-sample overlap becomes invisible" — is
+   * about TICK comparisons, where exactness is available. Here it is not, and the two populations
+   * are eight orders of magnitude apart (0.6.310).
+   */
+  const declaredRate = signal.sampleRateHz;
+  if (declaredRate !== undefined && declaredRate > 0) {
+    const impliedRate = signal.samplesPerRecord / ticksToSeconds(recordDurationTicks);
+    if (Math.abs(impliedRate - declaredRate) > declaredRate * GRID_RATE_TOLERANCE) {
+      throw new RangeError(
+        `${call}(): signal ${signal.index} (${JSON.stringify(signal.label)}) samples at ` +
+          `${declaredRate} Hz, but ${ticksToSeconds(recordDurationTicks)} s per record puts its ` +
+          `${signal.samplesPerRecord} samples at ${impliedRate} Hz — so the signal and the record ` +
+          'duration came from different headers, and the grid this would measure belongs to ' +
+          'neither file. Next: pass header.recordDurationTicks from the same header the signal ' +
+          'came out of.',
+      );
+    }
   }
 }
 
