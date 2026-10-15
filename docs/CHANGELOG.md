@@ -6,6 +6,19 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.306
+
+- **Fixed** CI typechecking against older Node types than a contributor's machine resolves. The
+  lockfile pinned `@types/node` at 26.1.2 while the manifest range was `^26.1.2` and 26.6.5 was
+  current — and every workflow installs with `npm ci`, which honours the lockfile, whereas a fresh
+  clone running `npm install` takes the newest match in the range.
+- So the two disagreed by five minor versions of the type definitions for the runtime this package
+  targets, in a repository whose `typecheck` script runs **two** configs specifically to control what
+  can see Node and DOM globals. A type error introduced against one would pass on the other, in
+  whichever direction the author happened not to be.
+- Lockfile and range both now name 26.6.5. Nothing in `src/` changed: both typecheck configs are
+  clean against the newer definitions, and the suite is unchanged at 9,191 tests across 628 files.
+
 ## 0.6.305
 
 - **Security.** Four advisories in the dev toolchain, all now closed — `npm audit` reports zero.
