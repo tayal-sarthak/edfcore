@@ -6,6 +6,15 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.307
+
+- `@biomejs/biome` 2.5.6 to 2.5.15, with `biome.json`'s `$schema` migrated to match. The two travel
+  together: a CLI newer than the schema the config names reports a `deserialize` notice on every run,
+  which is noise on the tool that gates `npm run check`.
+- This is the linter and formatter for the whole repository, so it was checked against the tree
+  before shipping rather than after: nine patch versions of new and changed rules found nothing new —
+  the same two known `info`-level findings and no errors.
+
 ## 0.6.306
 
 - **Fixed** CI typechecking against older Node types than a contributor's machine resolves. The
