@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.305
+
+- **Security.** Four advisories in the dev toolchain, all now closed — `npm audit` reports zero.
+  Nothing here touches what is published: `npm audit --omit=dev` already found none, because the
+  package has no runtime dependencies and that is a permanent constraint rather than a current
+  state.
+- Two **high**, both transitive and fixed in the lockfile alone: `nanoid` 3.3.16 to 3.3.20
+  (GHSA-2v37-7h3g-55p8, a custom generator looping indefinitely at size zero) and `source-map-js`
+  1.2.1 to 1.2.2 (GHSA-68fv-2mgg-jv7q, event-loop denial of service through indexed source-map
+  section offsets).
+- Two **moderate**, both GHSA-82fw-gwwq-j7x9 — path traversal and arbitrary file read via
+  `@vitest/mocker`'s redirect mock — which needed `vitest` itself, 4.1.10 to 4.1.11. `npm audit fix`
+  could not reach it: every dev dependency here except `@types/node` is pinned to an exact version,
+  so a fix inside the same minor still requires editing the manifest.
+- The whole suite was run on the new runner before this shipped: 9,191 tests across 628 files, and
+  `npm run check` green end to end.
+
 ## 0.6.304
 
 - **Fixed** `actions/cache` sitting on `@v4` in the Corpus workflow, the one action in this

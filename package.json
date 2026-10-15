@@ -1,6 +1,6 @@
 {
   "name": "edfcore",
-  "version": "0.6.304",
+  "version": "0.6.305",
   "description": "Modern, typed, zero-dependency reader for EDF, EDF+, BDF and BDF+ biosignal files. Works in browsers and Node with true random access.",
   "keywords": [
     "edf",
@@ -59,7 +59,7 @@
     "@types/node": "^26.1.2",
     "fast-check": "4.9.0",
     "typescript": "5.9.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "scripts": {
     "build": "tsc -p config/tsconfig.build.json",
