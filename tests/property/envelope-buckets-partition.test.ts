@@ -164,7 +164,7 @@ describe('a bucket width finer than the sample interval', () => {
       secondsPerBucket: 0.01,
       signalIndices: [0],
     });
-    const empty = [...(thin?.signals[0]?.counts ?? [])].findIndex((size) => size === 0);
+    const empty = [...(thin?.signals[0]?.counts ?? [])].indexOf(0);
     expect(empty).toBeGreaterThan(-1);
 
     const zeroed = await openEdf(byteSource(flat));

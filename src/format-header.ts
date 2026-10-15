@@ -339,7 +339,7 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
             // is ordinary — two of the seven files in the corpus have one, and EDF requires nothing
             // of the field — and printing the space anyway left the row ending in whitespace, on
             // the last thing on the line, where nothing shows it (fixed in 0.6.10).
-            `${signal.physicalMinimum}..${signal.physicalMaximum}` + dimensionSuffix(signal);
+            `${signal.physicalMinimum}..${signal.physicalMaximum}${dimensionSuffix(signal)}`;
     lines.push(`${index}  ${label}${kind}${rate} ${range}`);
   }
 

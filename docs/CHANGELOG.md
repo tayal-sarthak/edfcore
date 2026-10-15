@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.309
+
+- `biome check` now reports nothing at all. Two `info`-level findings had sat in the tree
+  indefinitely, because `npm run lint` is `biome check --error-on-warnings .` — which escalates
+  warnings and leaves infos alone. Both were one-line, behaviour-identical rewrites: a string
+  concatenation where a template literal reads the same, and a `findIndex` comparing against a
+  single value where `indexOf` says it.
+- Neither was worth a release alone. Clearing them to ZERO is, for the reason 0.6.303 gives about the
+  Corpus job's red cross: a permanent signal carries nothing. With two tolerated infos the only way
+  to notice a third is to remember the number; from zero, any output at all is new.
+- The gate is unchanged. `npm run lint` still passes on an info, deliberately — an info is a
+  suggestion, and a failing build is not the right answer to one. A test holds the baseline instead,
+  asserting the count rather than the two rules by name, so it stays a baseline rather than becoming
+  a list to update.
+
 ## 0.6.308
 
 - `fast-check` 4.9.0 to 4.10.2, the generator behind 26 property files and 174 properties.
