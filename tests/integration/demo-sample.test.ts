@@ -16,9 +16,14 @@
  * The generator is compiled rather than imported. `transform-boundary.test.ts` forbids reaching
  * into `website/` for anything but markdown: vite would resolve that file's nearest tsconfig,
  * which extends `astro/tsconfigs/strict` out of `website/node_modules`, and the CI check job
- * installs the root workspace only. `tsc` invoked on a named file reads no tsconfig at all, so
- * compiling it into a temporary directory and importing the emitted JavaScript stays on the
- * correct side of that rule for the same reason the rule exists.
+ * installs the root workspace only. Compiling it into a temporary directory and importing the
+ * emitted JavaScript stays on the correct side of that rule for the same reason the rule exists.
+ *
+ * `--ignoreConfig` is what makes that true, and it did not used to be needed: a `tsc` invoked on a
+ * named file read no tsconfig at all. TypeScript 6 refuses instead — TS5112, "tsconfig.json is
+ * present but will not be loaded if files are specified on commandline" — so the flag now says
+ * out loud what the old silence meant. The flags below are the whole configuration either way
+ * (0.6.312).
  */
 
 import { execFileSync } from 'node:child_process';
@@ -50,6 +55,7 @@ const GENERATOR: string = (() => {
     join(ROOT, 'node_modules/.bin/tsc'),
     [
       'website/src/scripts/sample-edf.ts',
+      '--ignoreConfig',
       '--outDir',
       dir,
       '--target',

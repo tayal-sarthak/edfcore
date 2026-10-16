@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.312
+
+- TypeScript 5.9.3 to **6.0.3**, which Microsoft's own 6.0 announcement calls "the bridge between
+  TypeScript 5.9 and 7.0". 7.0 is the native Go port and is deliberately not taken here: it ships no
+  compiler API until 7.1, and the documented migration runs through 6.0 — "practically any TypeScript
+  code that compiles cleanly with TypeScript 6.0... should compile identically in TypeScript 7.0".
+- **The emitted output is byte-identical.** All 55 declaration files, their maps and the JavaScript
+  are unchanged across the compiler major, which is the evidence that matters for a package whose
+  `.d.ts` is its public surface. `verify:package` and `verify:tarball` both pass.
+- Nothing in the three tsconfigs needed changing: `rootDir`, `types`, `target`, `module` and
+  `moduleResolution` are all set explicitly, so none of 6.0's default flips applied, and none of the
+  options it removed — `baseUrl`, `outFile`, `downlevelIteration`, `node10`, `classic` — was in use.
+- **What did break: three test harnesses that shell out to `tsc <file>`.** TypeScript 6 refuses named
+  files when a `tsconfig.json` sits in the working directory — TS5112 — where 5.9 ignored the config
+  silently. `demo-sample.test.ts` compiles the inspector's sample generator, and
+  `doc-snippets-compile.test.ts` and `documented-signatures.test.ts` compile the documentation
+  examples and the printed signatures. All three pass `--ignoreConfig` now; the flags they already
+  passed were the whole configuration, so the refusal was never about a setting they needed.
+- `doc-snippets-compile.test.ts` caught its own harness breaking, by the assertion written for
+  exactly that — "Fragments MUST produce diagnostics. Zero of them would mean tsc never ran". It
+  failed with `expected 0 to be greater than 10` rather than passing on an empty run.
+- `demo-sample.test.ts`'s docblock had stated the old behaviour as its design premise — "`tsc`
+  invoked on a named file reads no tsconfig at all" — and is corrected.
+
 ## 0.6.311
 
 - **Fixed** the documentation site being built in CI from versions nobody developing it would have.

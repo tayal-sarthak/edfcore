@@ -148,6 +148,10 @@ function compile(): string {
       'npx',
       [
         'tsc',
+        // TypeScript 6 refuses named files when a tsconfig.json sits in the cwd — TS5112 — where
+        // it used to ignore the config silently. The flags below are the whole configuration, so
+        // the refusal was never about a setting this needed (0.6.312).
+        '--ignoreConfig',
         '--noEmit',
         '--strict',
         '--exactOptionalPropertyTypes',
