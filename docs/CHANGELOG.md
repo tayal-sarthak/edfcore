@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.311
+
+- **Fixed** the documentation site being built in CI from versions nobody developing it would have.
+  Every range in `website/package.json` is a caret and the lockfile pinned each one at its floor —
+  `astro` at 7.1.6 against a range admitting 7.4.2, `@astrojs/mdx` at 7.0.5, `@astrojs/sitemap` at
+  3.7.3, `@astrojs/check` at 0.9.10. `ci.yml` installs with `npm --prefix website ci`, which honours
+  the lockfile, so CI type-checked and built the published site three minors behind a fresh clone.
+- Same divergence 0.6.306 fixed for the library's own `@types/node`, one directory over.
+- Refreshed within the declared ranges, so this is what `npm install` already resolves rather than a
+  new set of versions. Verified rather than assumed, because it moves `astro` and `vite`:
+  `astro check` reports 0 errors, 0 warnings and 0 hints across 19 files; the site builds its 26
+  pages; and `verify:site` passes on the output — 23 pages, their markdown twins, 27 rendered heads,
+  4 endpoints and the inspector's sample recording.
+- Nothing in `src/` or the published package changes. The site is not part of the tarball.
+
 ## 0.6.310
 
 - **Fixed** the grid family answering with another file's grid. `gridSampleIndexAt`,
