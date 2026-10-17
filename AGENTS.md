@@ -41,7 +41,7 @@ layer is its dependencies, not its folder (0.4.256).
 
 ```bash
 npm run check       # lint + typecheck (both configs) + build + tests — run this before finishing
-npm test            # vitest, ~10s
+npm test            # vitest, ~60s
 npm run build       # tsc to dist/
 npm run format      # biome, formatting and import order; `lint` reports the same as errors
 npm run corpus:fetch # ~102 MB, gitignored — without it the corpus tests skip rather than fail
