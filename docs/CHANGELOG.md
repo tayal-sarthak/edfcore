@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.314
+
+- `vitest` 4.1.12 to **5.0.5**, a major, with the whole suite green on it: 630 files, 9,199 tests,
+  and both typecheck configs.
+- Checked against this repository rather than taken on faith. Of 5.0's breaking changes, two could
+  have applied and neither did: `sequential` test and suite options were removed in favour of
+  `concurrent`, and nothing here used them — every `sequential` in `tests/` is prose or a local
+  variable; and `$` title variables in `test.each` no longer quote string values, which this suite
+  uses heavily (`'$name -> $annotation'`) but only ever for reporter output, never in an assertion.
+- The Node floor is satisfied across the matrix. 5.0 requires `^22.12.0 || ^24.0.0 || >=26.0.0`,
+  `engines.node` here is `>=22.12.0`, and `ci.yml` runs 22.12, 24 and 26 — all three inside it.
+- `npm audit` stays at zero.
+- Noted and not acted on: the new reporter suggests `isolate: false` for about 3.7 s of the run.
+  Test isolation is not a performance knob to trade away in a suite that builds multi-megabyte
+  fixtures per file, and `config/vitest.config.ts` already explains why its one timing-related
+  setting is a hang detector rather than a budget.
+
 ## 0.6.313
 
 - **Security.** `vitest` 4.1.11 to 4.1.12, and `npm audit` is back to zero.
