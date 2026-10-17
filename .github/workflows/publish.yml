@@ -43,7 +43,12 @@ jobs:
       # Pinned for publish-side fixes and a predictable npm, whatever the runner's Node bundled.
       # This was originally here because trusted publishing needs npm >= 11.5.1; that is not how
       # this workflow authenticates — see the note on the publish step.
-      - run: npm install -g npm@latest
+      #
+      # To a major, not `latest`: the line above promises a predictable npm, and `latest` is the
+      # one spelling that cannot be one. npm 12 became `latest` on 2026-07-08 and every version
+      # since has published through it, so 12 is what this pins. A 13 then arrives as a commit
+      # here, rather than unannounced inside whichever release happens to run first.
+      - run: npm install -g npm@12
 
       - run: npm ci
 
