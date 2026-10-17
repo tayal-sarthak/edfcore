@@ -6,6 +6,21 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.313
+
+- **Security.** `vitest` 4.1.11 to 4.1.12, and `npm audit` is back to zero.
+- This is not a regression in 0.6.305. That release closed GHSA-82fw-gwwq-j7x9 — path traversal and
+  arbitrary file read via `@vitest/mocker`'s redirect mock — by taking the fix the advisory named at
+  the time, 4.1.11, against a stated range of `2.1.0 - 4.1.10`. **The advisory has since been
+  widened** to `<= 4.1.11`, with the fix moved to 4.1.12, so the version that was the remedy became
+  one of the affected ones.
+- Worth noting for anyone reading the audit on this repository: `npm audit fix` cannot apply either
+  of these on its own, because every dev dependency except `@types/node` is pinned exactly. A
+  same-minor security fix still needs a manifest edit here, so a clean `npm audit` is a thing to
+  check rather than a thing to assume.
+- Nothing published is affected — `npm audit --omit=dev` was zero throughout, since the package has
+  no runtime dependencies. The whole suite ran on the new runner first: 9,199 tests across 630 files.
+
 ## 0.6.312
 
 - TypeScript 5.9.3 to **6.0.3**, which Microsoft's own 6.0 announcement calls "the bridge between
