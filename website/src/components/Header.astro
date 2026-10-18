@@ -96,6 +96,9 @@ const isActive = (link: (typeof links)[number]) => link === best;
       (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     const next = current === 'dark' ? 'light' : 'dark';
     root.dataset.theme = next;
+    for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[data-theme-color]')) {
+      meta.media = meta.dataset.themeColor === next ? 'all' : 'not all';
+    }
     try {
       localStorage.setItem('edfcore-theme', next);
     } catch {
