@@ -41,7 +41,10 @@ const { code, lang = 'ts', caption } = Astro.props;
         await navigator.clipboard.writeText(code);
         button.textContent = 'copied';
       } catch {
-        // Clipboard access can be refused; say so rather than silently doing nothing.
+        // Clipboard access can be refused; say so rather than silently doing nothing. Selected
+        // first, or the keystroke this names would copy nothing.
+        const pre = button.closest('figure')?.querySelector('pre');
+        if (pre) window.getSelection()?.selectAllChildren(pre);
         button.textContent = 'press ⌘C';
       }
       window.setTimeout(() => {
