@@ -23,7 +23,8 @@ const { code, lang = 'ts', caption } = Astro.props;
     caption && (
       <figcaption>
         <span class="eyebrow">{caption}</span>
-        <button class="copy" type="button" data-code={code} aria-label="Copy code">
+        {/* No aria-label: it would replace the text that says "copied" with one that never changes. */}
+        <button class="copy" type="button" data-code={code} aria-live="polite">
           copy
         </button>
       </figcaption>
