@@ -42,10 +42,11 @@ const { code, lang = 'ts', caption } = Astro.props;
         button.textContent = 'copied';
       } catch {
         // Clipboard access can be refused; say so rather than silently doing nothing. Selected
-        // first, or the keystroke this names would copy nothing.
+        // first, so the visitor's own copy has something to take — and no key named, because ⌘C
+        // is wrong off a Mac and there is no keyboard at all on a phone.
         const pre = button.closest('figure')?.querySelector('pre');
         if (pre) window.getSelection()?.selectAllChildren(pre);
-        button.textContent = 'press ⌘C';
+        button.textContent = 'copy the selection';
       }
       window.setTimeout(() => {
         button.textContent = 'copy';
