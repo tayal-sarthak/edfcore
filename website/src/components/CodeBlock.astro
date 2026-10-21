@@ -35,6 +35,7 @@ const { code, lang = 'ts', caption } = Astro.props;
 
 <script>
   document.querySelectorAll<HTMLButtonElement>('.copy').forEach((button) => {
+    let reset: number | undefined;
     button.addEventListener('click', async () => {
       const code = button.dataset.code;
       if (!code) return;
@@ -49,7 +50,9 @@ const { code, lang = 'ts', caption } = Astro.props;
         if (pre) window.getSelection()?.selectAllChildren(pre);
         button.textContent = 'copy the selection';
       }
-      window.setTimeout(() => {
+      // Restarted on every click: the first click's timer would otherwise cut the second's short.
+      window.clearTimeout(reset);
+      reset = window.setTimeout(() => {
         button.textContent = 'copy';
       }, 1600);
     });
