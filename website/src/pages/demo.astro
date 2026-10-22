@@ -452,7 +452,7 @@ import Base from '../layouts/Base.astro';
     $<HTMLSpanElement>('event-count').textContent = `${annotations.length}`;
     $<HTMLTableSectionElement>('events').innerHTML = annotations
       .map(
-        (a) => `<tr data-onset="${a.onsetSecondsFromFirstRecord}">
+        (a) => `<tr data-onset="${a.onsetSecondsFromFirstRecord}" tabindex="0">
           <td class="tnum">${eventClock(a.onsetTicksFromFirstRecord)}</td>
           <td class="tnum">${a.durationSeconds === undefined ? '—' : `${fmt(a.durationSeconds)} s`}</td>
           <td>${escapeHtml(a.text)}</td>
@@ -460,14 +460,21 @@ import Base from '../layouts/Base.astro';
       )
       .join('');
 
-    // Clicking an event scrubs to it — the thing anyone actually wants from an event list.
+    // Clicking an event scrubs to it — the thing anyone actually wants from an event list. And
+    // Enter or Space does, since a row is no control a keyboard can reach on its own.
     $<HTMLTableSectionElement>('events')
       .querySelectorAll<HTMLTableRowElement>('tr')
       .forEach((row) => {
-        row.addEventListener('click', () => {
+        const scrub = () => {
           const onset = Number(row.dataset.onset ?? 0);
           position.value = String(Math.max(0, onset - Number(windowLength.value) / 3));
           void draw();
+        };
+        row.addEventListener('click', scrub);
+        row.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          scrub();
         });
       });
   }
@@ -1058,11 +1065,13 @@ import Base from '../layouts/Base.astro';
     color: var(--accent);
   }
 
-  .events tbody tr {
+  /* Global, like the rules above: the rows are written with innerHTML and carry no scope id. */
+  .events tbody :global(tr) {
     cursor: pointer;
   }
 
-  .events tbody tr:hover {
+  .events tbody :global(tr:hover),
+  .events tbody :global(tr:focus-visible) {
     background: var(--bg-inset);
   }
 
