@@ -433,7 +433,7 @@ import Base from '../layouts/Base.astro';
       .map(
         (s: EdfSignal) => `<tr${s.kind === 'annotations' ? ' class="ann"' : ''}>
           <td class="tnum">${s.index}</td>
-          <td>${escapeHtml(s.label)}${s.kind === 'annotations' ? '' : ''}</td>
+          <td>${escapeHtml(s.label)}</td>
           <td>${escapeHtml(s.physicalDimension.trim() || '—')}</td>
           <td class="tnum">${s.sampleRateHz === undefined ? '—' : `${fmt(s.sampleRateHz)} Hz`}</td>
           <td class="tnum">${s.samplesPerRecord}</td>
