@@ -6,6 +6,41 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.315
+
+- **The inspector's tables had no styling in their bodies.** Every row of the Signals and Events
+  tables is written with `innerHTML`, and Astro scopes a component's CSS by an attribute only the
+  markup it rendered itself carries — so the `th, td` rule reached the header cells and none of the
+  body ones. Headers sat in `8px 16px` of padding over a rule; the values beneath them got the
+  browser's default `1px`, no rule and free wrapping. The page's other injected markup was already
+  styled through `:global`, and these rules are now too.
+- The same miss hid the event list's only affordance: `cursor: pointer` and the hover band never
+  matched a row, so nothing said an event could be clicked to scrub to it. Both match now, and a
+  row is reachable by keyboard as well — `Tab` between events, `Enter` or `Space` to scrub — with a
+  focus band to match. A cell template that chose between two empty strings is gone.
+- Under reduced motion the inspector's reveal still slid. `motion` makes positional keys instant
+  for a visitor who asks for less motion, but the slide was a `transform` string, which it cannot
+  see inside, and the global rule in `tokens.css` stops CSS animations, not WAAPI ones. It is `y`
+  now; the fade stays.
+- The browser chrome followed the OS rather than the theme toggle. Both `theme-color` metas are
+  keyed on `prefers-color-scheme`, so choosing light on a dark system left a phone's address bar
+  dark above a light page — the stale band `palette.test.ts` exists to prevent. A saved choice now
+  pins the matching meta before first paint and the toggle repaints it live, with no literal colour
+  added outside `tokens.css`.
+- The landing page's copy button. When the clipboard was refused it said "press ⌘C" with nothing
+  selected, so the keystroke copied nothing — and ⌘ is the wrong key off a Mac, with no key at all
+  on a phone. It selects the snippet and says "copy the selection". Its `aria-label` replaced the
+  text that says "copied" with one that never changed, so a screen reader never heard the result;
+  the button is a polite live region instead. A second click is no longer cut short by the first
+  click's timer.
+- `publish.yml` installed `npm@latest` under a comment promising "a predictable npm". It pins 12,
+  the major every release since 2026-07-08 has published with, so a 13 arrives as a commit here
+  rather than inside whichever release runs first.
+- Two stale figures. `AGENTS.md` timed the suite at about ten seconds, where it takes about sixty
+  locally and 44 to 71 across the CI matrix; and `corpus.yml` counted 116 tests that only it
+  reaches, where there are 167 — 9,192 run there against 9,025 under `npm run check`.
+- Nothing in `src/` changed. The published library is identical to 0.6.314's.
+
 ## 0.6.314
 
 - `vitest` 4.1.12 to **5.0.5**, a major, with the whole suite green on it: 630 files, 9,199 tests,

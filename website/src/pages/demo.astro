@@ -1042,8 +1042,9 @@ import Base from '../layouts/Base.astro';
     text-align: left;
   }
 
+  /* Body cells are written with innerHTML too, so a scoped `td` never reached one of them. */
   th,
-  td {
+  tbody :global(td) {
     padding: var(--s-2) var(--s-4);
     border-bottom: 1px solid var(--rule-soft);
     white-space: nowrap;
