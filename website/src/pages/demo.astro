@@ -308,9 +308,12 @@ import Base from '../layouts/Base.astro';
 
       result.hidden = false;
       resize();
+      // `y`, not a `transform` string: motion makes positional keys instant under reduced motion
+      // and leaves the fade, but it cannot see a translate inside a string. tokens.css's global
+      // rule does not reach it either — that one stops CSS animations, and this is WAAPI.
       animate(
         result,
-        { opacity: [0, 1], transform: ['translateY(10px)', 'translateY(0px)'] },
+        { opacity: [0, 1], y: [10, 0] },
         { duration: 0.4 },
       );
 
