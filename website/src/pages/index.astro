@@ -76,12 +76,14 @@ if (series === undefined) throw new Error('no signal in that chunk');
 
 const microvolts = toPhysical(fp1, series.digital);`;
 
+// A byte that field can occupy: signal 7's digitalMinimum in a 26-signal header is at
+// 256 + 26 × 120 + 7 × 8. The 3400 this showed is not reachable for any signal count.
 const diagnosticExample = `const recording = await openEdf(source);
 
 for (const problem of recording.header.diagnostics) {
   console.log(problem.code, problem.byteOffset, problem.message);
 }
-// DEGENERATE_DIGITAL_RANGE 3400 signal 7 "EMG Chin" declares digitalMinimum ==
+// DEGENERATE_DIGITAL_RANGE 3432 signal 7 "EMG Chin" declares digitalMinimum ==
 //   digitalMaximum == 0, so physical scale is undefined (division by zero) …`;
 
 const gapExample = `// A discontinuous recording is a list of runs, never one continuous block.
