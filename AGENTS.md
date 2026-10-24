@@ -150,5 +150,5 @@ Biome, 2-space indent, single quotes, 100 columns. Comments state constraints th
 show — a spec clause, a numerical hazard, a deliberate non-obvious choice — and never narrate
 what the next line does. Match the surrounding voice.
 
-**Every thrown message ends with a `Next:` clause** naming what the caller should do — over 150
+**Every thrown message ends with a `Next:` clause** naming what the caller should do — over 300
 do. If the cause is an edfcore bug rather than a caller mistake, say that: `Next: report this`.
