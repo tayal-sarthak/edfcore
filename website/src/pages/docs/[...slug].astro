@@ -79,8 +79,8 @@ const schema = {
 
     {
       outline.length >= 4 && (
-        <aside class="outline">
-          <p class="eyebrow">On this page</p>
+        <nav class="outline" aria-labelledby="outline-heading">
+          <p class="eyebrow" id="outline-heading">On this page</p>
           <ul>
             {outline.map((heading) => (
               <li class={heading.depth === 3 ? 'sub' : ''}>
@@ -88,7 +88,7 @@ const schema = {
               </li>
             ))}
           </ul>
-        </aside>
+        </nav>
       )
     }
   </div>
