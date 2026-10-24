@@ -15,14 +15,15 @@ every EEG channel" filter ends up decoding a TAL region as if it were samples.
 import { matchSignals, declaredDurationSeconds, contiguityOf } from 'edfcore';
 
 const eeg = matchSignals(recording.header, /^EEG /);
-const byPredicate = matchSignals(recording.header, (s) => s.physicalDimension === 'uV');
+const byPredicate = matchSignals(recording.header, (label) => label.endsWith('-Cz'));
 ```
 
-`matchSignals` never returns an annotations channel. A `g` or `y` flag on the pattern is harmless:
-`RegExp.prototype.test` is stateful with those flags and would otherwise make each label's answer
-depend on the previous one — returning about half a montage, silently. Both this and
-`filterAnnotationsByText` test against a clone with `lastIndex` reset, so your own regex object is
-never mutated either (fixed in 0.2.21).
+The predicate is handed the label, not the signal — a test on `s.physicalDimension` sees a string,
+reads `undefined` and matches nothing. `matchSignals` never returns an annotations channel. A `g` or
+`y` flag on the pattern is harmless: `RegExp.prototype.test` is stateful with those flags and would
+otherwise make each label's answer depend on the previous one — returning about half a montage,
+silently. Both this and `filterAnnotationsByText` test against a clone with `lastIndex` reset, so
+your own regex object is never mutated either (fixed in 0.2.21).
 
 `getSignal` remains the right call for one channel by name — it throws `EdfChannelNotFoundError` or `EdfAmbiguousChannelError` rather than
 returning `undefined`; `matchSignals` returns a family, possibly empty.
