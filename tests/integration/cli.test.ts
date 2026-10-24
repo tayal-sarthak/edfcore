@@ -417,6 +417,12 @@ describe('bad usage is distinguishable from an unreadable file', () => {
     expect(() => parseArgs(['header', 'a.edf', '--patinet'])).toThrow(/unknown option/);
   });
 
+  it('names --limit=3 as a known option spelled the other way, not an unknown one', () => {
+    expect(() => parseArgs(['header', 'a.edf', '--limit=3'])).toThrow(CliUsageError);
+    expect(() => parseArgs(['header', 'a.edf', '--limit=3'])).toThrow(/Next: write --limit 3\./);
+    expect(() => parseArgs(['header', 'a.edf', '--limit=3'])).not.toThrow(/unknown option/);
+  });
+
   it('refuses extra files rather than checking one and reporting success', async () => {
     // `edfcore validate *.edf` expanded to five files used to validate the first, exit 0, and say
     // nothing about the other four — inside the CI gate the exit code exists for.

@@ -185,6 +185,13 @@ export function parseArgs(argv: readonly string[]): Args {
       }
       limit = value;
       i += 1;
+    } else if (arg?.startsWith('--limit=')) {
+      // The GNU spelling of an option this DOES know. "unknown option" sent the caller to a help
+      // text that lists --limit, which was the one thing they had already found.
+      throw new CliUsageError(
+        `--limit takes its count as the next argument, not after "=". Next: write --limit ` +
+          `${arg.slice('--limit='.length) || '<n>'}.`,
+      );
     } else if (arg?.startsWith('-')) {
       // An unrecognised flag is bad usage, not something to ignore: a misspelled --patinet would
       // otherwise print the output the caller was trying to avoid, quietly and with exit 0.
