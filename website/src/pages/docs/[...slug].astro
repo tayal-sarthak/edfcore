@@ -259,12 +259,15 @@ const schema = {
     font-variant-numeric: tabular-nums;
   }
 
-  /* A table can be wider than the measure; it scrolls in its own box so the page never does. */
+  /*
+   * A table can be wider than the measure; it scrolls in its own box so the page never does. Its
+   * cells wrap, though: some hold a paragraph, and unwrapped the longest put a 553-character
+   * sentence on one line, 3,769 px wide in a 689 px box. Only the header row stays on one line.
+   */
   .prose > table {
     display: block;
     overflow-x: auto;
     max-width: min(100%, 46rem);
-    white-space: nowrap;
   }
 
   .prose th,
