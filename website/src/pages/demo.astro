@@ -622,14 +622,19 @@ import Base from '../layouts/Base.astro';
         }
 
         // Scale to the lane from the values on screen, so a flat channel is visibly flat
-        // rather than amplified into noise.
+        // rather than amplified into noise. ON screen: a read returns whole records, and a spike
+        // in the part of a 30 s record outside the window would flatten everything inside it.
         let min = Infinity;
         let max = -Infinity;
         for (let i = 0; i < values.length; i += 1) {
+          const t = part.startSeconds + gridSampleStartSeconds(signal, i, durationTicks);
+          const x = secondsToX(t);
+          if (x < -4 || x > width + 4) continue;
           const v = values[i] as number;
           if (v < min) min = v;
           if (v > max) max = v;
         }
+        if (min > max) continue;
         const spread = Math.max(max - min, 1e-9);
         const amp = (LANE_H - 34) / 2;
         /*
