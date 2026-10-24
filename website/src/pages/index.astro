@@ -81,8 +81,8 @@ const diagnosticExample = `const recording = await openEdf(source);
 for (const problem of recording.header.diagnostics) {
   console.log(problem.code, problem.byteOffset, problem.message);
 }
-// DEGENERATE_DIGITAL_RANGE 3400 signal 7 "EMG Chin" declares digitalMinimum ===
-//   digitalMaximum === 0, so physical scale is undefined (division by zero). …`;
+// DEGENERATE_DIGITAL_RANGE 3400 signal 7 "EMG Chin" declares digitalMinimum ==
+//   digitalMaximum == 0, so physical scale is undefined (division by zero) …`;
 
 const gapExample = `// A discontinuous recording is a list of runs, never one continuous block.
 // Reading across a gap needs an index that has seen every onset; the one openEdf
