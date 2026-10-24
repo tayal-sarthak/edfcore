@@ -83,8 +83,9 @@ const { height = 260 } = Astro.props;
       return raw & 0x8000 ? raw - 0x10000 : raw;
     };
 
-    // Deliberately slow: roughly eight waves across the strip rather than the sixty a literal
-    // 10 Hz alpha rhythm would give. A true-density EEG reads as a scribble at this size.
+    // Deliberately slow: roughly eight waves across a 1,200 px strip rather than the sixty a
+    // literal 10 Hz alpha rhythm would give. A true-density EEG reads as a scribble at this size.
+    // Periods are in samples and a sample is one column, so a phone's strip holds two or three.
     const ALPHA_PERIOD = 150;
     const THETA_PERIOD = 390;
     const DELTA_PERIOD = 1700;
@@ -112,7 +113,8 @@ const { height = 260 } = Astro.props;
 
       if (eventSince < 0 && c >= nextEventAt) {
         eventSince = c;
-        // 3.2 s to 8 s apart at the sweep rate below, so events feel observed, not metronomic.
+        // 764 to 1,764 samples apart, so events feel observed, not metronomic: about 3.5 to 8 s
+        // on a 1,200 px strip and 11 to 26 s on a phone's, since the sweep crosses either in 5.6 s.
         nextEventAt = c + EVENT_SAMPLES + Math.floor(700 + random() * 1000);
       }
 
