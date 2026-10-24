@@ -542,7 +542,11 @@ import Base from '../layouts/Base.astro';
     const height = scope.getBoundingClientRect().height;
     const startSeconds = Number(position.value);
     const durationSeconds = Number(windowLength.value);
-    clock.textContent = `${hhmmss(startSeconds)} → ${hhmmss(startSeconds + durationSeconds)}`;
+    const from = hhmmss(startSeconds);
+    const to = hhmmss(startSeconds + durationSeconds);
+    clock.textContent = `${from} → ${to}`;
+    // Otherwise a screen reader reads the slider as its raw seconds, "66.7", beside this clock.
+    position.setAttribute('aria-valuetext', `${from} to ${to}`);
 
     const s = getComputedStyle(document.documentElement);
     const trace = s.getPropertyValue('--accent').trim();
