@@ -64,9 +64,10 @@ const schema = {
   skipTo="content"
 >
   <div class="page shell">
-    <aside class="rail">
+    {/* A div: an aside here was an unnamed landmark wrapped around a nav that already has one. */}
+    <div class="rail">
       <DocsNav current={entry.id} />
-    </aside>
+    </div>
 
     <article class="doc" id="content">
       <header>
