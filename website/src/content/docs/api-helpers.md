@@ -250,7 +250,7 @@ for await (const chunk of streamRecords(recording, {
   durationSeconds: recording.timeline.spanSeconds,
   chunkRecords: 256,
 })) {
-  process(chunk);
+  handle(chunk); // yours — named anything but `process`, which in Node is not a function
 }
 ```
 
