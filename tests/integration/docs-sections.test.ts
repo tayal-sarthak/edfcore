@@ -1,20 +1,18 @@
 /**
- * The four copies of the documentation section list agree.
+ * The documentation section list is one list, or agrees with it.
  *
- * `section` is a `z.enum` in `content.config.ts`, and three consumers write the same four names out
- * again: the sidebar in `DocsNav.astro`, and the `/llms.txt` and `/llms-full.txt` endpoints. Each
- * groups pages by walking its own array, so a section the array omits is a section whose pages
- * render at their URL and appear in no index — invisible in the sidebar and absent from both files
- * agents read.
+ * `section` is a `z.enum` in `content.config.ts`, and three consumers group pages by it: the
+ * sidebar in `DocsNav.astro`, and the `/llms.txt` and `/llms-full.txt` endpoints. Each walks a list
+ * of names, so a section the list omits is a section whose pages render at their URL and appear in
+ * no index — invisible in the sidebar and absent from both files agents read.
  *
- * DocsNav's own docblock says this cannot happen: "`section` is a `z.enum` over these same four, so
- * a fifth one fails the build rather than going missing from the sidebar." That is true only while
- * the lists agree, and nothing made them. Adding a name to the enum — the one edit that lets a new
- * section exist at all — is exactly the edit that breaks the assumption, and `astro check` sees
- * four well-typed arrays and says nothing.
+ * There were four copies of that list, and this file checked that they agreed. They now read one,
+ * `DOC_SECTIONS` in `website/src/doc-sections.ts`, and the schema is built from it. What is still
+ * checked is the way back to four: a file that groups by section and writes its own list out again
+ * must write the same names, as before.
  *
  * The ORDER is deliberately not checked. Sections appear in an editorial order that no property of
- * the entries expresses, and each consumer is entitled to its own.
+ * the entries expresses, and a consumer is entitled to its own.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -34,12 +32,13 @@ function names(source: string, marker: string): readonly string[] {
   return [...source.slice(open, close).matchAll(/'([^']+)'/g)].map((m) => m[1] as string);
 }
 
-const SCHEMA = names(read('../../website/src/content.config.ts'), 'section: z.enum(');
+const LIST = names(read('../../website/src/doc-sections.ts'), 'DOC_SECTIONS = ');
+const SCHEMA_SOURCE = read('../../website/src/content.config.ts');
 
 /**
- * Found, not listed. Naming the three consumers here would make this guard the same shape as the
- * defect it exists to catch: a fourth file writing the list out again would simply not be one of
- * the three, and the run would stay green while the new copy drifted.
+ * Every file that groups pages by section — found, not listed. Naming the three here would make
+ * this guard the same shape as the defect it exists to catch: a fourth file grouping by its own
+ * list would simply not be one of the three, and the run would stay green while it drifted.
  */
 const CONSUMERS = readdirSync(WEBSITE_SRC, { recursive: true, encoding: 'utf8' })
   .filter((relative) => relative.endsWith('.ts') || relative.endsWith('.astro'))
@@ -47,15 +46,19 @@ const CONSUMERS = readdirSync(WEBSITE_SRC, { recursive: true, encoding: 'utf8' }
     file: relative,
     source: readFileSync(new URL(relative, WEBSITE_SRC), 'utf8'),
   }))
-  .filter(({ source }) => source.includes('const SECTIONS'));
+  .filter(({ source }) => source.includes('data.section === section'));
 
 describe('the documentation section list', () => {
-  it('read a real enum out of the schema, so a passing run is not a vacuous one', () => {
-    expect(SCHEMA.length).toBeGreaterThanOrEqual(4);
-    expect(SCHEMA).toContain('Start here');
+  it('read a real list, so a passing run is not a vacuous one', () => {
+    expect(LIST.length).toBeGreaterThanOrEqual(4);
+    expect(LIST).toContain('Start here');
   });
 
-  it('found every copy that exists, so the search itself cannot go quiet', () => {
+  it('is what the schema is built from', () => {
+    expect(SCHEMA_SOURCE).toContain('section: z.enum(DOC_SECTIONS)');
+  });
+
+  it('found every consumer there is, so the search itself cannot go quiet', () => {
     // A typo in the pattern, or a move out of website/src, would leave nothing to compare and
     // every assertion below would pass by having nothing to say. A floor and one anchor rather
     // than the exact three: a fourth consumer is welcome here and should need no edit.
@@ -63,8 +66,9 @@ describe('the documentation section list', () => {
     expect(CONSUMERS.map((consumer) => consumer.file)).toContain('components/DocsNav.astro');
   });
 
-  it.each(CONSUMERS)('is the same set in $file as in the schema', ({ source }) => {
+  it.each(CONSUMERS)('is read by $file, or copied there exactly', ({ source }) => {
+    if (source.includes('DOC_SECTIONS')) return;
     const theirs = names(source, 'const SECTIONS');
-    expect([...theirs].sort()).toEqual([...SCHEMA].sort());
+    expect([...theirs].sort()).toEqual([...LIST].sort());
   });
 });

@@ -1,6 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { DOC_SECTIONS } from './doc-sections';
 
 /**
  * Documentation pages.
@@ -13,7 +14,7 @@ const docs = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    section: z.enum(['Start here', 'Guides', 'Reference', 'Background']),
+    section: z.enum(DOC_SECTIONS),
     order: z.number(),
     /** Shown under the page title when the page needs a longer lead-in than the description. */
     lead: z.string().optional(),
