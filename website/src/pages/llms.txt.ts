@@ -1,5 +1,6 @@
 import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
+import { DOC_SECTIONS } from '../doc-sections';
 
 /**
  * `/llms.txt`, per the proposal at https://llmstxt.org.
@@ -16,14 +17,12 @@ import type { APIRoute } from 'astro';
  * not visibility, and it costs one endpoint to provide.
  */
 
-const SECTIONS = ['Start here', 'Guides', 'Reference', 'Background'] as const;
-
 export const GET: APIRoute = async ({ site }) => {
   const origin = site ?? new URL('http://localhost:4321');
   const pages = await getCollection('docs');
   const url = (slug: string) => new URL(`docs/${slug}`, origin).href;
 
-  const grouped = SECTIONS.map((section) => ({
+  const grouped = DOC_SECTIONS.map((section) => ({
     section,
     entries: pages
       .filter((page) => page.data.section === section)
