@@ -111,7 +111,7 @@ function describe(input: ScaleInput): string {
   return `signal ${input.signalIndex} ${JSON.stringify(input.label)}`;
 }
 
-/** `'"0       " at byte offset 3400'`, or the value alone when the caller gave no context. */
+/** `' (raw "0       " at byte offset 3432)'`, either half alone, or `''` given neither. */
 function quoteField(input: ScaleInput, field: keyof ScaleFieldOffsets): string {
   const raw = input.raw?.[field];
   const byteOffset = input.byteOffsets?.[field];
