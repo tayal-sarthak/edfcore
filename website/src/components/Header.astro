@@ -93,13 +93,21 @@ const current = (link: (typeof links)[number]) =>
 <script>
   const root = document.documentElement;
   const toggle = document.getElementById('theme-toggle');
+  const prefersLight = window.matchMedia('(prefers-color-scheme: light)');
+  const shown = () => root.dataset.theme ?? (prefersLight.matches ? 'light' : 'dark');
+
+  // Names where the button goes, as its icon does — the markup's label cannot know the theme.
+  const label = () => {
+    const target = shown() === 'dark' ? 'light' : 'dark';
+    toggle?.setAttribute('aria-label', `Switch to the ${target} theme`);
+  };
+  label();
+  prefersLight.addEventListener('change', label);
 
   toggle?.addEventListener('click', () => {
-    const current =
-      root.dataset.theme ??
-      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-    const next = current === 'dark' ? 'light' : 'dark';
+    const next = shown() === 'dark' ? 'light' : 'dark';
     root.dataset.theme = next;
+    label();
     for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[data-theme-color]')) {
       meta.media = meta.dataset.themeColor === next ? 'all' : 'not all';
     }
