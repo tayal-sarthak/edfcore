@@ -745,6 +745,16 @@ import Base from '../layouts/Base.astro';
     const file = (e as DragEvent).dataTransfer?.files?.[0];
     if (file) void load(file, file.name);
   });
+  // A file let go of beside the zone is the browser's to open, and it opens it in place of this
+  // page — results gone. Outside the zone the cursor says no, and a drop there does nothing.
+  window.addEventListener('dragover', (e) => {
+    if (dropzone.contains(e.target as Node)) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+  });
+  window.addEventListener('drop', (e) => {
+    if (!dropzone.contains(e.target as Node)) e.preventDefault();
+  });
 
   position.addEventListener('input', () => void draw());
   windowLength.addEventListener('change', () => {
