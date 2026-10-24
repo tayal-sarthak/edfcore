@@ -19,6 +19,10 @@ const best = links
   .filter((link) => path.startsWith(link.match))
   .sort((a, b) => b.match.length - a.match.length)[0];
 const isActive = (link: (typeof links)[number]) => link === best;
+// `page` only on the page itself. "Docs" links to the quick start, so on any other docs page it
+// marks the section the reader is in, which is `true`, not a page it does not point at.
+const current = (link: (typeof links)[number]) =>
+  isActive(link) ? (path === link.href ? 'page' : 'true') : undefined;
 ---
 
 <header class="site-header">
@@ -41,7 +45,7 @@ const isActive = (link: (typeof links)[number]) => link === best;
         {
           links.map((link) => (
             <li>
-              <a href={link.href} aria-current={isActive(link) ? 'page' : undefined}>
+              <a href={link.href} aria-current={current(link)}>
                 {link.label}
               </a>
             </li>
@@ -181,7 +185,7 @@ const isActive = (link: (typeof links)[number]) => link === best;
     color: var(--text);
   }
 
-  nav a[aria-current='page'] {
+  nav a[aria-current] {
     color: var(--accent);
     border-bottom-color: var(--accent);
   }
