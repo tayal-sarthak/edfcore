@@ -109,5 +109,5 @@ gitignored `corpus/files/`. Only the JSON goldens reference it, by name and hash
 ```bash
 npm test          # once
 npm run test:watch
-npm run check     # lint + typecheck + test
+npm run check     # lint + typecheck + build + test — the packaging tests read dist/
 ```
