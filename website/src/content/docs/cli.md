@@ -76,9 +76,10 @@ in this order, annotations channel included:
 
 Column 6 was added in 0.2.42 and appended rather than inserted, so nothing that parsed the first
 five by position moved. Before that this page claimed the command emitted samples per record when
-it emitted `kind` instead, and the authoritative field was in no column at all. `gaps` runs a full scan rather
-than the two probes `openEdf` makes, because a probed index cannot see a gap in the middle and
-reporting "none" from it would be a claim nobody verified.
+it emitted `kind` instead, and the authoritative field was in no column at all.
+
+`gaps` runs a full scan rather than the two probes `openEdf` makes, because a probed index cannot
+see a gap in the middle and reporting "none" from it would be a claim nobody verified.
 
 Exit codes are the contract, so a script can act on them without parsing the output:
 
