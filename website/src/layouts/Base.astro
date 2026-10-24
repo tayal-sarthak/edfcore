@@ -46,6 +46,8 @@ interface Props {
    * data that contradicts the page ("schema drift") reads as spam to the crawlers it exists for.
    */
   schema?: Record<string, unknown> | Record<string, unknown>[];
+  /** Where "Skip to content" lands. A docs page names its article, past every sidebar link. */
+  skipTo?: string;
 }
 
 const {
@@ -56,6 +58,7 @@ const {
   schema,
   noindex = false,
   ogType = 'website',
+  skipTo = 'main',
 } = Astro.props;
 /*
  * The home page carries the query someone actually types ("read EEG files JavaScript"), since
@@ -173,7 +176,7 @@ const ogImageAlt =
     </script>
   </head>
   <body class={wide ? 'is-wide' : ''}>
-    <a class="skip" href="#main">Skip to content</a>
+    <a class="skip" href={`#${skipTo}`}>Skip to content</a>
     <Header />
     <main id="main">
       <slot />

@@ -61,13 +61,14 @@ const schema = {
   markdownPath={`/docs/${entry.id}.md`}
   schema={schema}
   ogType="article"
+  skipTo="content"
 >
   <div class="page shell">
     <aside class="rail">
       <DocsNav current={entry.id} />
     </aside>
 
-    <article class="doc">
+    <article class="doc" id="content">
       <header>
         <h1>{entry.data.title}</h1>
         <p class="lead">{entry.data.lead ?? entry.data.description}</p>
