@@ -6,6 +6,36 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.317
+
+- **The CLI named a known option unknown.** `--limit=3` was refused as `unknown option "--limit=3"`
+  and pointed at a help text that lists `--limit` — the one thing the caller had already found. It
+  now says the count goes in the next argument and spells it: `Next: write --limit 3.` Still exit 2.
+- **The inspector scaled each lane from samples it was not showing.** A read returns whole records,
+  so a 10-second window into a 30-second-record polysomnogram hands back 30 seconds of samples, and
+  the lane's min and max came from all of them: a spike in the 20 seconds off screen flattened the
+  10 on it. The comment above the loop said "from the values on screen", and now it is.
+- **Two documentation examples were wrong in a way nothing compiled.** `matchSignals` was shown a
+  predicate on the signal, `(s) => s.physicalDimension === 'uV'`, when it is handed the label: on a
+  string that reads `undefined` and matches nothing, silently. The streaming example called a
+  placeholder `process(chunk)`, which in Node is the global object and throws "process is not a
+  function" when pasted. Both are fragments the snippet compiler classifies as incomplete and so
+  never judges; they were found by compiling them anyway and keeping only the errors a missing
+  `recording` cannot explain.
+- **Documentation tables wrap their cells.** Every docs table was `white-space: nowrap`, and 84
+  cells run past a hundred characters — the longest put a 553-character sentence on one line,
+  3,769 px wide in a 689 px box. The header row still stays on one line.
+- **Accessibility.** The waveform canvas carried a name and no role, so assistive technology had
+  nothing to attach it to; it is an `img` now. The position slider announced raw seconds, "66.7",
+  beside a clock reading 00:01:06; it announces the clock. The docs sidebar sat in an unnamed
+  `aside`, a landmark with no name wrapped around a navigation that already had one.
+- Stale statements corrected: `tests/README.md` said "neither site" attaches a licence after naming
+  three, and PhysioNet's files are in fact ODC-By — the rule against committing them stands on their
+  being real people's recordings. It also described `npm run check` without the build the packaging
+  tests depend on. `robots.txt`'s docblock described several groups where it emits one, and the hero
+  trace gave event spacing and wave counts that only hold on a 1,200 px strip. The `gaps`
+  explanation on the CLI page has its own paragraph rather than ending the one about `signals`.
+
 ## 0.6.316
 
 - **The landing page quoted a diagnostic the library does not print.** Its sample output read
