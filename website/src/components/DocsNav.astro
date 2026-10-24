@@ -2,23 +2,22 @@
 /**
  * The documentation sidebar, grouped by section and ordered within each.
  *
- * `SECTIONS` is written out rather than derived from the pages, because the order sections appear
- * in is an editorial decision — "Start here" before "Reference" — and no property of the entries
- * expresses it. A page whose `section` is not in this list would render and never appear here,
- * which is what the collection schema prevents: `section` is a `z.enum` over these same four, so
- * a fifth one fails the build rather than going missing from the sidebar.
+ * `DOC_SECTIONS` is written out rather than derived from the pages, because the order sections
+ * appear in is an editorial decision — "Start here" before "Reference" — and no property of the
+ * entries expresses it. A page whose `section` is not in that list would render and never appear
+ * here, which is what the collection schema prevents: `section` is a `z.enum` over the same list,
+ * so a fifth one fails the build rather than going missing from the sidebar.
  */
 import { getCollection } from 'astro:content';
+import { DOC_SECTIONS } from '../doc-sections';
 
 interface Props {
   current: string;
 }
 const { current } = Astro.props;
 
-const SECTIONS = ['Start here', 'Guides', 'Reference', 'Background'] as const;
-
 const all = await getCollection('docs');
-const grouped = SECTIONS.map((section) => ({
+const grouped = DOC_SECTIONS.map((section) => ({
   section,
   pages: all
     .filter((page) => page.data.section === section)
