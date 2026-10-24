@@ -6,6 +6,31 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.316
+
+- **The landing page quoted a diagnostic the library does not print.** Its sample output read
+  `declares digitalMinimum === digitalMaximum === 0`, where the header parser writes `==`, and put
+  the field at byte 3400 — an offset no signal-7 `digitalMinimum` can occupy, since that field sits
+  at `256 + 120 × ns + 8 × 7` and no signal count lands on 3400. On a page whose pitch is "errors
+  that name the byte", the byte is now one a 26-signal header really has: 3432. The docblock on the
+  helper that formats the quote showed its output without the `raw` prefix or the parentheses, and
+  said it fell back to "the value alone" when it returns an empty string; it now shows what it
+  returns.
+- **The documentation section list is one list.** The schema, the sidebar and both `llms`
+  endpoints each wrote the four names out, and `docs-sections.test.ts` existed to catch them
+  drifting. They now read `DOC_SECTIONS` from `website/src/doc-sections.ts`, the schema is built
+  from it, and the test guards the way back: any file that groups pages by section and writes its
+  own list again must write the same names.
+- **Accessibility, in five places.** "Skip to content" on a docs page now lands on the article
+  rather than in front of every sidebar link. The page outline is a navigation landmark named "On
+  this page" instead of an unnamed aside. The header marked "Docs" as `aria-current="page"` on
+  every docs page although it links only to the quick start; elsewhere in the section it is now
+  `true`. The theme toggle's label said "switch between" and never which way — it names its target
+  now, as its icon always has. And the inspector refuses a file dropped beside the drop zone
+  instead of letting the browser open it in place of the page and its results.
+- `AGENTS.md` said over 150 thrown messages carry a `Next:` clause; 311 do.
+- Nothing in `src/` changed but one comment. The published library behaves exactly as 0.6.315's.
+
 ## 0.6.315
 
 - **The inspector's tables had no styling in their bodies.** Every row of the Signals and Events
