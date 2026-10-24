@@ -1,8 +1,9 @@
 /**
  * The fixture policy in `tests/README.md` is a licence rule, and it is enforced here.
  *
- * "**No file from teuniz.net, PhysioNet or edfplus.info may be committed.** Neither site attaches a
- * licence to its data, and `eeg_recording.zip` is an identifiable patient recording."
+ * "**No file from teuniz.net, PhysioNet or edfplus.info may be committed.** teuniz.net and
+ * edfplus.info attach no licence to their files, and PhysioNet's ODC-By, which would allow it, is
+ * not the question for a recording of a real person, de-identified or not."
  *
  * That is not a tidiness preference. One of those files is a real person's overnight
  * polysomnogram, and committing it would publish it to npm's mirrors and to every fork, permanently

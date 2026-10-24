@@ -97,11 +97,12 @@ Three tiers were planned, and all three are in use.
   [`corpus/corpus.test.ts`](corpus/corpus.test.ts) is `skipIf`-guarded so the default run
   stays offline.
 
-**No file from teuniz.net, PhysioNet or edfplus.info may be committed.** Neither site attaches a
-licence to its data, and `eeg_recording.zip` is an identifiable patient recording. That rule is
-unchanged by Tier 2 above: the committed files are ones this machine generated, and the downloaded
-corpus stays in the gitignored `corpus/files/`. Only the JSON goldens reference it, by name and
-hash.
+**No file from teuniz.net, PhysioNet or edfplus.info may be committed.** teuniz.net and edfplus.info
+attach no licence to their files, and PhysioNet's ODC-By, which would allow it, is not the question
+for a recording of a real person, de-identified or not. `eeg_recording.zip`, kept out of the
+manifest on purpose, is an identifiable patient recording. That rule is unchanged by Tier 2 above:
+the committed files are ones this machine generated, and the downloaded corpus stays in the
+gitignored `corpus/files/`. Only the JSON goldens reference it, by name and hash.
 
 ## Running
 
