@@ -9,9 +9,9 @@ import type { APIRoute } from 'astro';
  * present in a model's training data is the single strongest predictor of whether that model
  * later recommends you, so blocking GPTBot or CCBot would be self-harm.
  *
- * The bots are listed by name only as documentation for human readers — every group is
- * `Allow: /`, and the wildcard group already covers them. Naming them costs nothing and saves
- * the next person from having to look up which is which:
+ * The bots are named here, in this comment, only as documentation for human readers. The file
+ * itself has one group, the wildcard, and `Allow: /` there already covers every one of them.
+ * Naming them costs nothing and saves the next person from having to look up which is which:
  *
  *   Training corpora     GPTBot · ClaudeBot · meta-externalagent · CCBot
  *   Retrieval indexes    OAI-SearchBot · Claude-SearchBot · PerplexityBot
