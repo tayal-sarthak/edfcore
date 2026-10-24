@@ -1,5 +1,6 @@
 import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
+import { DOC_SECTIONS } from '../doc-sections';
 
 /**
  * `/llms-full.txt` — every documentation page concatenated as one markdown file.
@@ -12,13 +13,11 @@ import type { APIRoute } from 'astro';
  * of clean markdown instead of twenty HTML fetches whose markup it has to discard.
  */
 
-const SECTIONS = ['Start here', 'Guides', 'Reference', 'Background'] as const;
-
 export const GET: APIRoute = async ({ site }) => {
   const origin = site ?? new URL('http://localhost:4321');
   const pages = await getCollection('docs');
 
-  const ordered = SECTIONS.flatMap((section) =>
+  const ordered = DOC_SECTIONS.flatMap((section) =>
     pages
       .filter((page) => page.data.section === section)
       .sort((a, b) => a.data.order - b.data.order)
