@@ -308,7 +308,8 @@ export function annotationsAt(
    */
   const given = seconds as { startSeconds?: unknown; durationSeconds?: unknown } | null | undefined;
   if (typeof given === 'object' && given !== null && !Array.isArray(given)) {
-    if ('startSeconds' in given || 'durationSeconds' in given) {
+    // An ANNOTATION carries a durationSeconds too, and `secondsToTicks` below names it as one.
+    if (('startSeconds' in given || 'durationSeconds' in given) && !('onsetTicks' in given)) {
       throw new RangeError(
         'annotationsAt(): that is a time window, and this call takes a single instant in seconds. ' +
           'Next: pass window.startSeconds for the instant under a cursor, or call ' +
