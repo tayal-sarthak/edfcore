@@ -3,11 +3,11 @@
 /**
  * The generated endpoints say what the collection says.
  *
- * `llms.txt`, `llms-full.txt`, the `.md` twin of every page, `robots.txt` and the JSON the badge
- * reads are built, not written, and nothing checked what came out. They are also the half of the site
- * `npm run check` cannot reach: the generators live under `website/`, where importing them drags
- * in a tsconfig the CI check does not install, so this runs in the job that already builds the
- * site rather than in the test suite.
+ * `llms.txt`, `llms-full.txt`, the `.md` twin of every page, `robots.txt` and the `/api.json`
+ * counts the README links to are built, not written, and nothing checked what came out. They are
+ * also the half of the site `npm run check` cannot reach: the generators live under `website/`,
+ * where importing them drags in a tsconfig the CI check does not install, so this runs in the job
+ * that already builds the site rather than in the test suite.
  *
  * Each of these fails silently. A page missing from `llms.txt` is a page an agent never learns
  * about; a `.md` twin that did not render leaves a documented URL returning a 404 while the HTML
@@ -83,13 +83,12 @@ if (sitemap === null) fail('robots.txt names no sitemap');
 else if (!existsSync(join(DIST, sitemap[1])))
   fail(`robots.txt names ${sitemap[1]}, which is not in the build`);
 
-// --- the badge endpoint is the shape the README queries --------------------
+// --- /api.json is the shape the README describes ----------------------------
 
 const api = JSON.parse(read('api.json'));
-if (typeof api?.exports?.total !== 'number')
-  fail('the badge endpoint has no numeric exports.total');
+if (typeof api?.exports?.total !== 'number') fail('/api.json has no numeric exports.total');
 if (api?.version !== JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version) {
-  fail(`the badge endpoint reports version ${api?.version}, not the package's`);
+  fail(`/api.json reports version ${api?.version}, not the package's`);
 }
 
 // --- every page carries the head the layout promises ----------------------
