@@ -56,14 +56,13 @@ for (const entry of manifest.files) {
   if (entry.archiveEntry) {
     // The teuniz files ship as zips. Unpacking with the system tool keeps this script
     // dependency-free, which matters because the package itself has no dependencies.
-    const tmp = join(dir, `.${entry.name}.zip`);
+    const unpack = join(dir, '.unpack');
+    const tmp = join(unpack, `${entry.name}.zip`);
+    mkdirSync(unpack, { recursive: true });
     writeFileSync(tmp, payload);
-    execFileSync('unzip', ['-o', '-j', tmp, entry.archiveEntry, '-d', dir], { stdio: 'ignore' });
-    rmSync(tmp);
-    bytes = readFileSync(join(dir, entry.archiveEntry));
-    if (entry.archiveEntry !== entry.name) writeFileSync(target, bytes);
-  } else {
-    writeFileSync(target, bytes);
+    execFileSync('unzip', ['-o', '-j', tmp, entry.archiveEntry, '-d', unpack], { stdio: 'ignore' });
+    bytes = readFileSync(join(unpack, entry.archiveEntry));
+    rmSync(unpack, { recursive: true });
   }
 
   const actual = sha256(bytes);
@@ -72,6 +71,9 @@ for (const entry of manifest.files) {
     failed += 1;
     continue;
   }
+  // Only once verified. The corpus tests run on any file that EXISTS, so a mismatched download
+  // left under its real name would be read as the corpus and fail as if the library were wrong.
+  writeFileSync(target, bytes);
   console.log(`ok (${(bytes.length / 1e6).toFixed(2)} MB)`);
   ok += 1;
 }
