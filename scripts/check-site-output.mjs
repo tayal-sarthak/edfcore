@@ -157,7 +157,7 @@ for (const slug of slugs) {
 // --- the inspector's sample recording is a file edfcore can read ----------
 //
 // `website/src/scripts/sample-edf.ts` writes an EDF+C file in the browser so the demo has
-// something to decode without asking a visitor for a patient recording. Three hundred lines of
+// something to decode without asking a visitor for a patient recording. Two hundred lines of
 // EDF writing that nothing exercises: the test suite cannot import it, because anything under
 // `website/` drags in a tsconfig the root install does not have. Here it can — this runs in the
 // job that installed the site's dependencies.
