@@ -15,7 +15,7 @@
  * package runs `prepublishOnly`, which is `npm run check`, which runs the suite that contains the
  * test — so `npm pack --json` printed the entire test run before its JSON, and `JSON.parse` read
  * `npm notice run biome check` instead. `--ignore-scripts` did not settle it either; the publish
- * runner's npm ran the lifecycle regardless. Seven versions were tagged and never published while
+ * runner's npm ran the lifecycle regardless. Six versions were tagged and never published while
  * that was in the suite (0.4.287 through 0.4.292). Asking the question outside the suite removes
  * the recursion rather than parsing around it.
  *
