@@ -163,6 +163,14 @@ export function filterAnnotationsByTime(
         'durationSeconds — a chunk carries both, for the span it was read with.',
     );
   }
+  // An ANNOTATION, as the window around it: the events overlapping the one a reader clicked.
+  if (typeof (window as { onsetTicks?: unknown }).onsetTicks === 'bigint') {
+    throw new RangeError(
+      'filterAnnotationsByTime(): the window is an annotation, which has an onset rather than a ' +
+        'startSeconds. Next: pass annotation.onsetSecondsFromFirstRecord as startSeconds, with ' +
+        'the span to search as durationSeconds.',
+    );
+  }
   const from = secondsToTicks(window.startSeconds, 'window.startSeconds');
   const to = from + secondsToTicks(window.durationSeconds, 'window.durationSeconds');
   if (to <= from) return Object.freeze([]);
