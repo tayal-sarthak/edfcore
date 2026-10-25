@@ -44,13 +44,22 @@ for (const entry of manifest.files) {
   }
 
   process.stdout.write(`  get   ${entry.name} … `);
-  const response = await fetch(entry.url);
-  if (!response.ok) {
-    console.log(`HTTP ${response.status}`);
+  // A host that cannot be reached is one failed file, as an HTTP error status already was — not
+  // a thrown rejection that ends the run before the files after it and before the summary.
+  let payload;
+  try {
+    const response = await fetch(entry.url);
+    if (!response.ok) {
+      console.log(`HTTP ${response.status}`);
+      failed += 1;
+      continue;
+    }
+    payload = Buffer.from(await response.arrayBuffer());
+  } catch (error) {
+    console.log(`unreachable: ${error?.cause?.code ?? error?.cause?.message ?? error?.message}`);
     failed += 1;
     continue;
   }
-  const payload = Buffer.from(await response.arrayBuffer());
 
   let bytes = payload;
   if (entry.archiveEntry) {
