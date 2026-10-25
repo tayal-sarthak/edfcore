@@ -27,6 +27,11 @@ mkdirSync(dir, { recursive: true });
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
+// A hang detector, not a budget: ten minutes moves the largest file, 48 MB, at well under 1 Mbit/s.
+// Without one a host that accepts the connection and never answers holds the weekly job until
+// GitHub kills it six hours later, with no red cross in the meantime to say which host it was.
+const FETCH_TIMEOUT_MS = Number(process.env.CORPUS_FETCH_TIMEOUT_MS) || 10 * 60 * 1000;
+
 let ok = 0;
 let failed = 0;
 
@@ -48,7 +53,7 @@ for (const entry of manifest.files) {
   // a thrown rejection that ends the run before the files after it and before the summary.
   let payload;
   try {
-    const response = await fetch(entry.url);
+    const response = await fetch(entry.url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!response.ok) {
       console.log(`HTTP ${response.status}`);
       failed += 1;
