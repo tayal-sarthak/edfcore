@@ -140,6 +140,16 @@ describe('the other shapes that have nothing to clamp', () => {
   });
 });
 
+describe('the route from seconds', () => {
+  it('names the one that returns annotations, not only the one that returns samples', async () => {
+    // readAnnotations() reaches this guard too, and readWindow() alone answered it with a call
+    // that reads samples. resolveTimeWindow() is the route that ends back here.
+    const recording = await opened();
+    const thrown = await refusal(() => readAnnotations(recording, undefined as never));
+    expect(thrown.message).toContain('resolveTimeWindow() answers with the records to pass here');
+  });
+});
+
 describe('a range that really is two numbers', () => {
   it.each([
     ['past the end', { start: 0, count: RECORDS + 1 }],

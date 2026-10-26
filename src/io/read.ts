@@ -216,9 +216,13 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
         : mistyped
           ? 'pass the two bounds as numbers — this counts and adds them rather than using them as ' +
             'keys, so a BigInt or a string is not the same value here. Number(value) converts one.'
-          : 'pass a start and a count — there is no default, so a whole-file read is written out ' +
-            `rather than implied, and here that is start 0, count ${header.recordCount}. Or call ` +
-            'readWindow(), which takes seconds and resolves the records itself.'),
+          : // Both routes from seconds, because this guard serves readAnnotations() as well as
+            // readRecords(), and readWindow() alone sent an annotations caller to a call that
+            // returns samples.
+            'pass a start and a count — there is no default, so a whole-file read is written out ' +
+            `rather than implied, and here that is start 0, count ${header.recordCount}. From ` +
+            'seconds, resolveTimeWindow() answers with the records to pass here, and readWindow() ' +
+            'reads the samples of a window directly.'),
     { requested: range, available },
   );
 }
