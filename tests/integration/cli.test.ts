@@ -417,6 +417,25 @@ describe('bad usage is distinguishable from an unreadable file', () => {
     expect(() => parseArgs(['header', 'a.edf', '--patinet'])).toThrow(/unknown option/);
   });
 
+  it('says "see it" when exactly one event is withheld, and "see them" for more', async () => {
+    const oneEvent = minimalEdfPlus({
+      recordCount: 1,
+      annotationSignals: [
+        { samplesPerRecord: 30, tals: () => [{ onset: 0.5, texts: ['Arousal'] }] },
+      ],
+    });
+    const one = await invoke(['events', 'a.edf', '--list', '--limit', '0'], { 'a.edf': oneEvent });
+    expect(one.out).toContain('... 1 more (raise --limit to see it)');
+    const twoEvents = minimalEdfPlus({
+      recordCount: 2,
+      annotationSignals: [
+        { samplesPerRecord: 30, tals: (r) => [{ onset: r + 0.5, texts: ['A'] }] },
+      ],
+    });
+    const two = await invoke(['events', 'a.edf', '--list', '--limit', '0'], { 'a.edf': twoEvents });
+    expect(two.out).toContain('... 2 more (raise --limit to see them)');
+  });
+
   it('names --limit=3 as a known option spelled the other way, not an unknown one', () => {
     expect(() => parseArgs(['header', 'a.edf', '--limit=3'])).toThrow(CliUsageError);
     expect(() => parseArgs(['header', 'a.edf', '--limit=3'])).toThrow(/Next: write --limit 3\./);

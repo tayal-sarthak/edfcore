@@ -235,6 +235,9 @@ function redaction(args: Args): { redactFields?: readonly string[] } {
   return args.patient ? {} : { redactFields: ['patientId', 'recordingId'] };
 }
 
+/** For the withheld-rows notice, which read "... 1 more (raise --limit to see them)". */
+const pronounFor = (count: number): string => (count === 1 ? 'it' : 'them');
+
 /**
  * The one thing `formatDiagnostics` cannot say.
  *
@@ -420,7 +423,8 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
         // hanging under the count (fixed in 0.4.181).
         if (annotations.length > limit) {
           const gap = limit > 0 ? '\n' : '';
-          io.out(`${gap}... ${annotations.length - limit} more (raise --limit to see them)\n`);
+          const withheld = annotations.length - limit;
+          io.out(`${gap}... ${withheld} more (raise --limit to see ${pronounFor(withheld)})\n`);
         }
         return 0;
       }
@@ -481,9 +485,9 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
       // The blank line belongs to the rows above it, so `--limit 0` prints none and gets none —
       // the shape 0.4.181 fixed for the events listing.
       if (gaps.length > limit) {
-        io.out(
-          `${limit > 0 ? '\n' : ''}... ${gaps.length - limit} more (raise --limit to see them)\n`,
-        );
+        const withheld = gaps.length - limit;
+        const gap = limit > 0 ? '\n' : '';
+        io.out(`${gap}... ${withheld} more (raise --limit to see ${pronounFor(withheld)})\n`);
       }
       /*
        * Exit 0 either way: this command reports, it does not gate.
