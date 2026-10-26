@@ -6,6 +6,36 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.318
+
+- **Redaction took the rule with a one-letter value.** `redactFields` removes every spelling of a
+  withheld field from the message, bare as well as quoted, and a field of `X` — EDF+'s own mark for
+  an unknown subfield, and a common one-subfield patient identification — matched the grammar the
+  message quotes: "[redacted] for anything unknown". A field of `M` turned "sex(F|M)" and
+  "dd-MMM-yyyy" into strings of `[redacted]`. A bare spelling of one character is now left alone;
+  the quoted one is still removed, and one character names nobody.
+- **The CLI said "see them" for one row.** `events --list` and `gaps` print
+  `... 1 more (raise --limit to see it)` when exactly one is withheld.
+- **The corpus fetcher, three ways.** A download was written under its real name before its hash
+  was checked, so a mismatched file stayed in `tests/corpus/files/` — and the corpus tests run on
+  any file that exists, so they would read it as the corpus and fail as though the library were
+  wrong. An unreachable host threw out of the loop and skipped every file after it and the
+  summary, where an HTTP error status was already one counted failure. And nothing bounded a
+  download, so a host that accepted the connection and never answered held the weekly job until
+  GitHub killed it; each file now has ten minutes, overridable with `CORPUS_FETCH_TIMEOUT_MS`.
+- **`release.mjs`'s advice when main will not push** was to run the release again, which reaches
+  for the next number and stops at the changelog heading; its fallback tagged without pushing the
+  tag, which is the step that publishes. It now gives the three steps that finish the release.
+- Stale statements corrected. `check-tarball.mjs` counted the versions lost to the in-suite tarball
+  test as seven where every other record says six, 0.4.287 through 0.4.292.
+  `check-site-output.mjs` still called `/api.json` the badge endpoint, though no badge has read it
+  since 0.4.478, and sized the sample generator at three hundred lines where it has 220.
+  `release.mjs` described undoing a bump as a git checkout, under the comment explaining why it
+  restores from memory instead. `corpus.yml` called `chb01_01.edf` a seizure recording, and
+  PhysioNet's own summary lists no seizures in it. The README's status box named two of the four
+  corpora edfcore is checked against, and the golden README listed three of the seven parity
+  cases.
+
 ## 0.6.317
 
 - **The CLI named a known option unknown.** `--limit=3` was refused as `unknown option "--limit=3"`
