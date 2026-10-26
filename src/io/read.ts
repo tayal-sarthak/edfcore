@@ -154,11 +154,12 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
    * what it costs: advice that sends a reader to fix fields on a value that has none.
    */
   if (Array.isArray(records)) {
+    // "Once per range" first: readAnnotations() reaches this too, and readWindow() reads samples.
     throw new EdfRangeError(
       'that is an array of record ranges, not one of them: resolveTimeWindow() answers with one ' +
         'range per contiguous run, and this call reads a single range. Next: pass one element of ' +
-        'it — a continuous file gives exactly one — or call readWindow(), which takes the seconds ' +
-        'directly and reads every run.',
+        'it — a continuous file gives exactly one — or make this call once per range. For ' +
+        'samples, readWindow() takes the seconds directly and reads every run.',
       { requested: range, available },
     );
   }

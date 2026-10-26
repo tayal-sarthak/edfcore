@@ -87,6 +87,9 @@ describe.each(CALLS)('%s, given what resolveTimeWindow returned', (_name, call) 
     );
     expect(thrown?.message).toContain('Next:');
     expect(thrown?.message).toContain('readWindow()');
+    // The route every one of these calls can take, readAnnotations() included — readWindow()
+    // alone answered an annotations caller with a call that returns samples.
+    expect(thrown?.message).toContain('once per range');
   });
 
   it('stays the typed error every other bad range here throws', async () => {
