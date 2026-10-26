@@ -236,7 +236,13 @@ function redactDiagnostic(diagnostic: EdfDiagnostic): EdfDiagnostic {
     spellings.push(actual, JSON.stringify(actual));
   }
   for (const spelling of spellings) {
-    if (spelling.length > 0) message = message.split(spelling).join(REDACTED);
+    /*
+     * Not one character bare. The quoted spelling of it is still removed, and one character names
+     * nobody — but bare it is a letter of the RULE: a field of `X`, which is EDF+'s own mark for
+     * unknown, turned "X for anything unknown" into "[redacted] for anything unknown", and `M`
+     * would have taken "sex(F|M)" and "dd-MMM-yyyy" with it.
+     */
+    if (spelling.length > 1) message = message.split(spelling).join(REDACTED);
   }
   return {
     ...diagnostic,
