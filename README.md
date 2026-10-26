@@ -83,8 +83,9 @@ for (const event of annotations) {
 
 > **Status: 0.6.x, early.** edfcore runs 5,000+ tests on generated fixtures, and it's checked
 > against public corpora it didn't author: the EDF, EDF+ and 24-bit BDF+ test files from
-> teuniz.net, and PhysioNet's sleep-edfx (a real 22-hour polysomnography recording and its
-> sleep-staging file). Those checks are numeric. Channels labelled `sine 8.5 Hz` decode to
+> teuniz.net, PhysioNet's sleep-edfx (a real 22-hour polysomnography recording and its
+> sleep-staging file) and CHB-MIT (pediatric scalp EEG), and the format author's own calibration
+> file from edfplus.info. Those checks are numeric. Channels labelled `sine 8.5 Hz` decode to
 > 8.5 Hz at their stated amplitude, the 24-bit and 16-bit paths agree on identical signals,
 > and the rectal temperature channel of a real recording reads 37 °C. Run them with
 > `npm run corpus:fetch && npm test`.
