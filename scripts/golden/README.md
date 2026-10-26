@@ -44,8 +44,9 @@ golden file records it, and the tests assert it is present.
 | `mne-parity.test.ts` | synthetic | edfcore agrees with MNE | 1e-12 relative, **not** bit-exact |
 
 `corpus-parity.test.ts` is the strongest of these and the only one whose inputs nobody here chose:
-a 22-hour clinical polysomnogram from sleep-edfx, plus the teuniz generator files in EDF, EDF+ and
-24-bit BDF+. It needs the corpus, so it skips on a fresh clone:
+a 22-hour clinical polysomnogram from sleep-edfx and its scoring file, an hour of CHB-MIT scalp EEG,
+the EDF author's own calibration file, and the teuniz generator files in EDF, EDF+ and 24-bit BDF+
+— seven cases. It needs the corpus, so it skips on a fresh clone:
 
 ```bash
 npm run corpus:fetch
