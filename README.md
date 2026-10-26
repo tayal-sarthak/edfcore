@@ -81,7 +81,7 @@ for (const event of annotations) {
 }
 ```
 
-> **Status: 0.6.x, early.** edfcore runs 5,000+ tests on generated fixtures, and it's checked
+> **Status: 0.6.x, early.** edfcore runs 5,100+ tests on generated fixtures, and it's checked
 > against public corpora it didn't author: the EDF, EDF+ and 24-bit BDF+ test files from
 > teuniz.net, PhysioNet's sleep-edfx (a real 22-hour polysomnography recording and its
 > sleep-staging file) and CHB-MIT (pediatric scalp EEG), and the format author's own calibration

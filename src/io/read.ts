@@ -163,6 +163,23 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
       { requested: range, available },
     );
   }
+  /*
+   * A TIME WINDOW where the range belongs: the half of 0.6.88 this guard never had.
+   *
+   * `readRecords` refuses `{ startSeconds, durationSeconds }` in its selection guard, because the
+   * seconds route sits beside it in every listing. `readAnnotations` takes the range itself and
+   * never reaches that guard, so the same window arrived here as `{ start: undefined, count:
+   * undefined }` — a range nobody named, refused for not being inside the file.
+   */
+  const asWindow = records as { startSeconds?: unknown; start?: unknown } | null | undefined;
+  if (asWindow?.startSeconds !== undefined && asWindow.start === undefined) {
+    throw new EdfRangeError(
+      'that is a time window, not a record range: this call reads whole records and takes no ' +
+        'seconds. Next: resolveTimeWindow(recording.timeline, recording.index, startSeconds, ' +
+        'durationSeconds) answers with the records to pass here, one range per contiguous run.',
+      { requested: range, available },
+    );
+  }
   const startValid = Number.isSafeInteger(range.start) && range.start >= 0;
   const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
   if (startValid && countValid && range.start + range.count <= header.recordCount) return;
