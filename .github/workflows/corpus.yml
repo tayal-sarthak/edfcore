@@ -1,7 +1,7 @@
 # The tests `npm run check` cannot reach: 167 of them at 0.6.314, from 116 when this was written.
 #
 # `tests/corpus/` compares edfcore against bytes real hardware and real software produced —
-# EDFlib's generator, a PhysioNet polysomnogram, a CHB-MIT seizure recording — including the
+# EDFlib's generator, a PhysioNet polysomnogram, a CHB-MIT scalp EEG recording — including the
 # parity goldens generated from pyEDFlib and MNE. Every one of them skips when
 # `tests/corpus/files/` is empty, which is the right default: a plain `git clone && npm test`
 # must not reach the network, and the files are gitignored because one of them is a real
