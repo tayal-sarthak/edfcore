@@ -202,8 +202,9 @@ writeFileSync(
 // The bump is already on disk here, and everything below can fail. A run that stops now without
 // putting it back CONSUMES the number: the next run reads the bumped version and produces the one
 // after it. That is how 0.2.29, 0.2.36, 0.2.59 and 0.4.176 were lost, and each cost an entry in
-// the changelog explaining a hole rather than a release. Undoing the bump costs one git checkout
-// and leaves the number available for the run that fixes whatever failed.
+// the changelog explaining a hole rather than a release. Undoing the bump costs three writes from
+// the copies taken above — not a git checkout, which would take the work with it — and leaves the
+// number available for the run that fixes whatever failed.
 //
 // The lockfile sync is inside this too. It reaches the registry, so it fails for reasons that have
 // nothing to do with the code — and it runs after the bump, which is the only thing that matters
