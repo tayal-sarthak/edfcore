@@ -6,6 +6,23 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.319
+
+- **`readAnnotations` was sent to a call that returns samples.** Its range refusals are shared with
+  `readRecords` and `readRecordBytes`, and the route from seconds they named was `readWindow()` —
+  which reads samples, not annotations. A missing range now names `resolveTimeWindow()`, the call
+  that turns seconds into the records to pass back, alongside `readWindow()` for samples; an array
+  of ranges is told to make the call once per range, the step every one of the three can take.
+- **A time window handed to `readAnnotations` was refused as a range nobody wrote.**
+  `readRecords(recording, { signalIndices, startSeconds, durationSeconds })` has been named a time
+  window since 0.6.88, but `readAnnotations` takes the range itself and never reached that guard,
+  so `{ startSeconds, durationSeconds }` arrived as `records { start: undefined, count: undefined }
+  is not inside the N data records this file contains`. It is now refused as what it is, with
+  `resolveTimeWindow()` as the next step; `readRecordBytes` shares the guard and the sentence.
+- The suite's written-out cases passed the figure the README, `installation.md` and
+  `browser-safety.test.ts` give for them, so all three say 5,100+ now — the direction
+  `test-count-claims.test.ts` exists to catch.
+
 ## 0.6.318
 
 - **Redaction took the rule with a one-letter value.** `redactFields` removes every spelling of a
