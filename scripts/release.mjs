@@ -257,12 +257,15 @@ run('git', [
 try {
   run('git', ['push', 'origin', 'main']);
 } catch {
+  // Finished by hand, not by running this again: the version files already say `next`, so a re-run
+  // reaches for the number after it and stops at the changelog heading, which names this one.
   die(
     `${next} is committed here, and pushing main failed.\n\n` +
       '  Nothing is public, nothing is tagged and nothing has gone to npm. The commit exists\n' +
-      '  locally only, so this is safe to retry once the network is back:\n\n' +
+      '  locally only, so once the network is back, finish it by hand:\n\n' +
       '      git push origin main\n' +
-      `      npm run release -- -m "…"   # or finish by hand: git tag -a ${tag} -m ${tag}`,
+      '      gh run watch                # until CI on that commit is green\n' +
+      `      git tag -a ${tag} -m ${tag} && git push origin ${tag}`,
   );
 }
 
