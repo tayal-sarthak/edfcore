@@ -110,6 +110,10 @@ describe('formatAnnotations', () => {
     const recording = await opened();
     const result = await readAnnotations(recording, { start: 0, count: 4 });
     expect(refusal(() => formatAnnotations(asAnnotations(result)))).toContain('not an array');
+    // Told the field, not told to call what it had already called.
+    expect(refusal(() => formatAnnotations(asAnnotations(result)))).toContain(
+      'Next: pass its .annotations',
+    );
     expect(formatAnnotations(result.annotations)).not.toBe('');
   });
 

@@ -120,11 +120,19 @@ export function formatAnnotations(
    * 0.6.95).
    */
   if (!Array.isArray(annotations)) {
+    // The RESULT object holds the list one field down. "Pass the annotations from readAnnotations()"
+    // was said to a caller who had done exactly that; its three siblings already name the field.
+    const result = Array.isArray(
+      (annotations as { annotations?: unknown } | null | undefined)?.annotations,
+    );
     throw new RangeError(
       `formatAnnotations(): the annotations are ${describeValue(annotations)}, not an array — ` +
         "and '' is what this function returns for a recording with no events, so a wrong argument " +
-        'must not be able to produce it. Next: pass the annotations from ' +
-        'readAnnotations(recording, records).',
+        'must not be able to produce it. Next: ' +
+        (result
+          ? 'pass its .annotations — readAnnotations() resolves to a result object that carries ' +
+            'the list rather than being it.'
+          : 'pass the annotations from readAnnotations(recording, records).'),
     );
   }
   /*
