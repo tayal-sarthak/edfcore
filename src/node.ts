@@ -226,14 +226,19 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
      * as the bytes of a filename (0.6.297).
      */
     const pending = typeof (path as { then?: unknown } | null | undefined)?.then === 'function';
+    // A BLOB, which `fs.openAsBlob(path)` resolves to: the file already opened, by another adapter.
+    const blob = path as { size?: unknown; slice?: unknown } | null | undefined;
     throw new EdfSourceError(
       `fileSource() needs a path, and received ${describeValue(path)}. ` +
         (pending
           ? 'Next: await it — fs.realpath, fs.mkdtemp and fs.readdir from "node:fs/promises" ' +
             'all resolve to paths rather than returning them, and a resolved symlink is the usual ' +
             'way one arrives here.'
-          : 'Next: pass the path as a string, or byteSource(bytes) for a file you have already ' +
-            'read into memory — a Uint8Array here would be opened as the bytes of a filename.'),
+          : typeof blob?.size === 'number' && typeof blob.slice === 'function'
+            ? 'Next: that is a Blob — what fs.openAsBlob() resolves to — so pass it to ' +
+              'blobSource(blob) from "edfcore", or pass the path it was opened from here.'
+            : 'Next: pass the path as a string, or byteSource(bytes) for a file you have already ' +
+              'read into memory — a Uint8Array here would be opened as the bytes of a filename.'),
       { offset: 0, requestedLength: 0 },
     );
   }
