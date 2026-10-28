@@ -276,6 +276,12 @@ function adapterFor(source: unknown): string {
       'yourself and pass byteSource(bytes)'
     );
   }
+  // A URL OBJECT says which adapter by its scheme, and both of them take one as it is.
+  if (Object.prototype.toString.call(source) === '[object URL]') {
+    return (source as { protocol?: unknown }).protocol === 'file:'
+      ? 'that is a file: URL — use fileSource(url) from "edfcore/node"'
+      : 'that is an address — use httpSource(url)';
+  }
   const candidate = source as { size?: unknown; arrayBuffer?: unknown } | null;
   if (
     typeof candidate?.size === 'number' &&

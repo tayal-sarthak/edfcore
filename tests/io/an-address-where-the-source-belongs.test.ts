@@ -35,6 +35,16 @@ describe('an address passed where the source belongs', () => {
     expect(thrown.message).toContain('httpSource(url)');
   });
 
+  it('names the adapter a URL object belongs to by its scheme', async () => {
+    const remote = await refusal(() => openEdf(new URL('https://example.org/a.edf') as never));
+    expect(remote.message).toContain('that is an address — use httpSource(url)');
+    const local = await refusal(() => readHeader(new URL('file:///data/a.edf') as never));
+    expect(local.message).toContain(
+      'that is a file: URL — use fileSource(url) from "edfcore/node"',
+    );
+    expect(local.message).not.toContain('httpSource');
+  });
+
   it('keeps the path advice for a path', async () => {
     const thrown = await refusal(() => openEdf('/data/night.edf' as never));
     expect(thrown.message).toContain('that looks like a path');
