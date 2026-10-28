@@ -43,8 +43,13 @@ export function blobSource(blob: BlobLike): ByteSource {
             ? 'Next: that is a fetch Response, which carries the body rather than being one — ' +
               'pass await response.blob(), or httpSource(url) to read the file by range instead ' +
               'of downloading all of it.'
-            : 'Next: pass the File an <input type="file"> or a drop event hands you, or ' +
-              'byteSource(bytes) if you already have the bytes in memory.'),
+            : // A SOURCE already: what this call makes, handed back to it, as byteSource() names.
+              typeof (blob as { read?: unknown } | null | undefined)?.read === 'function' &&
+                typeof (blob as { byteLength?: unknown }).byteLength === 'number'
+              ? 'Next: that is a ByteSource — the object this call makes, not the Blob it makes ' +
+                'one from — so pass it to openEdf() as it is.'
+              : 'Next: pass the File an <input type="file"> or a drop event hands you, or ' +
+                'byteSource(bytes) if you already have the bytes in memory.'),
       { offset: 0, requestedLength: 0 },
     );
   }

@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { blobSource } from '../../src/io/blob.js';
 import { byteSource } from '../../src/io/bytes.js';
 
 describe('a ByteSource where the bytes belong', () => {
@@ -32,5 +33,11 @@ describe('a ByteSource where the bytes belong', () => {
     const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
     expect([...bytes]).toEqual([1, 2, 3, 4]);
     expect(byteSource(bytes).byteLength).toBe(4);
+  });
+
+  it('is named a ByteSource by blobSource too, the other adapter it reaches', () => {
+    const source = byteSource(new Uint8Array(8));
+    expect(() => blobSource(source as never)).toThrow('that is a ByteSource');
+    expect(() => blobSource(source as never)).toThrow('pass it to openEdf() as it is');
   });
 });
