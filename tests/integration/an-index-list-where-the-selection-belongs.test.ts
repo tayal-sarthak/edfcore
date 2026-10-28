@@ -74,7 +74,7 @@ const CALLS: ReadonlyArray<readonly [string, Call]> = [
   ['readTriggers', (recording, selection) => readTriggers(recording, selection as never)],
 ];
 
-describe.each(CALLS)('%s, given the signal indices as the selection', (_name, call) => {
+describe.each(CALLS)('%s, given the signal indices as the selection', (name, call) => {
   const refusal = async (selection: unknown): Promise<string> => {
     const recording = await opened();
     try {
@@ -88,7 +88,14 @@ describe.each(CALLS)('%s, given the signal indices as the selection', (_name, ca
   it('says the selection is an array and where signalIndices belongs', async () => {
     const message = await refusal([0]);
     expect(message).toContain('the selection is an array');
-    expect(message).toContain('signalIndices is a field on the selection');
+    if (name === 'readTriggers') {
+      // A TriggerSelection is the two bounds and nothing else, so there is no signalIndices to
+      // point at — the sentence the other five give would name a field this one does not have.
+      expect(message).toContain('the bounds are fields on the selection');
+      expect(message).not.toContain('signalIndices');
+    } else {
+      expect(message).toContain('signalIndices is a field on the selection');
+    }
   });
 
   it('names the shape this particular call takes', async () => {

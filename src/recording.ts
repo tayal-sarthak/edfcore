@@ -232,9 +232,13 @@ export function assertSelection(
    * wanted is precisely what they passed.
    */
   if (Array.isArray(selection)) {
+    // The signal indices, for the five calls whose selection holds some. `readTriggers`' holds only
+    // the two bounds, so the sentence named a field its selection does not have.
+    const field = shape.includes('signalIndices')
+      ? 'signalIndices is a field on the selection rather than being it'
+      : 'the bounds are fields on the selection rather than a list of them';
     throw new RangeError(
-      `${call}(): the selection is an array, and signalIndices is a field on the selection ` +
-        `rather than being it. Next: pass ${shape}.`,
+      `${call}(): the selection is an array, and ${field}. Next: pass ${shape}.`,
     );
   }
   /*
