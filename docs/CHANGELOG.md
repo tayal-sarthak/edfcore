@@ -6,6 +6,34 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.320
+
+Fifteen refusals that named the wrong thing, each for an argument a reader is likely to be holding.
+No accepted input changed, and no successful result is different.
+
+- **A crash with no `Next:`.** `validateRecording(inspection)` — what `inspectEdf()` resolves to —
+  threw V8's `Cannot read properties of undefined (reading 'diagnostics')`. It is now refused as an
+  inspection, with `validateHeader(inspection.header)` as the header-only route. `buildRecordIndex`
+  refused the same argument as "a ByteSource is needed … received nothing", and the seven reading
+  calls let it through `assertRecording` — it carries a `header` — so `readWindow` blamed
+  `resolveTimeWindow()`, a call the reader never made. All of them now say it is an inspection.
+- **Shapes refused by whichever field was read next.** A chunk passed back as a selection, to
+  re-read its span, and a bare `{ start, count }` passed as one, were told "signalIndices is
+  missing" or asked for buckets. A whole chunk handed to `trimToWindow` or `envelopeOfSamples` was
+  "an object with no signalIndex on it". A record range handed to `filterAnnotationsByTime` as its
+  window got the generic field sentence. Each is now named for what it is.
+- **Advice written for one caller, given to another.** `readTriggers` was told "signalIndices is a
+  field on the selection" — its selection has none. A `{ signalIndices, records }` selection handed
+  to `readAnnotations` was called a chunk. `formatAnnotations` told a caller holding the
+  `readAnnotations()` result to "pass the annotations from readAnnotations()", which they had; it
+  now names `.annotations`, as its three siblings do.
+- **The adapters, given what sits beside the bytes.** A fetch `Response` handed to `blobSource` was
+  "an object" sent to an `<input type="file">`; it is now pointed at `response.blob()` or
+  `httpSource(url)`. A `Request` handed to `httpSource` is refused as one, with `request.url` and
+  `options.fetch` for its headers — still refused, because unwrapping it would drop them. A
+  `ByteSource` handed back to `byteSource` or `blobSource` is told to go to `openEdf` as it is, and
+  a `DataView` is given `new Uint8Array(view.buffer, view.byteOffset, view.byteLength)`.
+
 ## 0.6.319
 
 - **`readAnnotations` was sent to a call that returns samples.** Its range refusals are shared with
