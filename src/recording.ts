@@ -330,6 +330,27 @@ export function assertRecording(
     | { header?: unknown; then?: unknown; signals?: unknown }
     | null
     | undefined;
+  /*
+   * An INSPECTION, which carries a `header` too and so walked straight through the check below.
+   *
+   * `inspectEdf` is the documented first call on an unknown file, and its result sits beside the
+   * recording in every listing, so it is the other object a reader holds here. It reads the header
+   * and nothing else — no source, no timeline, no index — and the read failed wherever one of those
+   * was first touched: `readWindow` blamed `resolveTimeWindow()`, a call nobody made, for a
+   * timeline nobody passed.
+   */
+  const inspection = given as { bytesRead?: unknown; headerBytes?: unknown; source?: unknown };
+  if (
+    typeof inspection?.bytesRead === 'number' &&
+    'headerBytes' in (inspection as object) &&
+    inspection.source === undefined
+  ) {
+    throw new RangeError(
+      `${call}(): that is an inspection — what inspectEdf() resolves to — not a recording. ` +
+        'Triage reads the header and nothing else, so it carries no source, timeline or index to ' +
+        'read with. Next: pass `await openEdf(source)`.',
+    );
+  }
   if (given != null && typeof given.header === 'object' && given.header !== null) return;
   /*
    * A header where a recording belongs, which is the one wrong first argument worth naming
