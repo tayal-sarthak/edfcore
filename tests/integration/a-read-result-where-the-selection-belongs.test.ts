@@ -72,3 +72,25 @@ describe.each(CALLS)('%s, given a chunk as the selection', (name, call) => {
     expect(message).not.toContain('no BioSemi Status channel');
   });
 });
+
+describe.each(CALLS)('%s, given a bare record range as the selection', (name, call) => {
+  const aRange = async () => ({ start: 0, count: 2 });
+
+  it('names it a record range rather than a selection missing a field', async () => {
+    const message = await refusal(call, aRange);
+    expect(message).toMatch(
+      new RegExp(`^${name}\\(\\): the selection is (a bare )?a? ?record range`),
+    );
+    expect(message).not.toContain('signalIndices is missing');
+    expect(message).not.toContain('buckets must be');
+    expect(message).not.toContain('secondsPerBucket must be');
+    expect(message).not.toContain('no BioSemi Status channel');
+  });
+
+  it('tells readRecords where the range goes, and the rest which call takes one', async () => {
+    const message = await refusal(call, aRange);
+    expect(message).toContain(
+      name === 'readRecords' ? 'with that range as records' : 'readRecords()',
+    );
+  });
+});

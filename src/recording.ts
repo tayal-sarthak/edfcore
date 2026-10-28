@@ -290,6 +290,26 @@ export function assertSelection(
         `Next: pass ${shape} — or call readWindow(), which is the one that takes seconds.`,
     );
   }
+  /*
+   * A BARE record range, `{ start, count }`, where a selection belongs: what `resolveTimeWindow`
+   * and `chunk.records` hand back, passed as the whole argument. It has neither `records` nor
+   * `startSeconds`, so it too fell to the next field read — "signalIndices is missing", or buckets.
+   */
+  const bare = selection as { start?: unknown; count?: unknown };
+  if (
+    bare.start !== undefined &&
+    bare.count !== undefined &&
+    given.records === undefined &&
+    given.startSeconds === undefined
+  ) {
+    throw new RangeError(
+      shape.includes('records')
+        ? `${call}(): the selection is a bare record range, and this call takes it on .records, ` +
+            `beside the signals to read. Next: pass ${shape}, with that range as records.`
+        : `${call}(): the selection is a record range, and this call takes a time window. ` +
+            `Next: pass ${shape} — ${recordsForm}`,
+    );
+  }
 }
 
 /**
