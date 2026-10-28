@@ -857,6 +857,18 @@ export async function validateRecording(
   options?: ValidateOptions,
 ): Promise<ValidationReport> {
   const given = recording as { header?: unknown; signals?: unknown } | null | undefined;
+  // An INSPECTION carries a header too, so it passed the check below and the sweep threw V8's
+  // "Cannot read properties of undefined (reading 'diagnostics')": no Next clause, no argument
+  // named, from the one call in the package whose output is a list of what is wrong.
+  const triage = given as { bytesRead?: unknown; source?: unknown } | null | undefined;
+  if (typeof triage?.bytesRead === 'number' && triage.source === undefined) {
+    throw new RangeError(
+      'validateRecording(): that is an inspection — what inspectEdf() resolves to — and this ' +
+        'sweep reads the records too, which triage never opened. Next: pass `await ' +
+        'openEdf(source)`, or call validateHeader(inspection.header) for the checks that need ' +
+        'only the header.',
+    );
+  }
   if (given == null || typeof given.header !== 'object' || given.header === null) {
     /*
      * A FORGOTTEN AWAIT, which the other two copies of this sentence both name and this one did not.

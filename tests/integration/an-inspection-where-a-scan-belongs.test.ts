@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { inspectEdf } from '../../src/inspect.js';
 import { byteSource } from '../../src/io/bytes.js';
 import { buildRecordIndex } from '../../src/record-index.js';
+import { validateHeader, validateRecording } from '../../src/validate.js';
 import { minimalEdfPlus } from '../support/writer.js';
 
 const inspected = () => inspectEdf(byteSource(minimalEdfPlus({ recordCount: 2 })));
@@ -27,5 +28,19 @@ describe('an inspection where a whole-file scan belongs', () => {
     const thrown = await refusal(() => buildRecordIndex(inspection as never));
     expect(thrown?.message).toContain('buildRecordIndex(): that is an inspection');
     expect(thrown?.message).not.toContain('a ByteSource is needed');
+  });
+
+  it('is named by validateRecording, rather than crashing on a field it lacks', async () => {
+    const inspection = await inspected();
+    const thrown = await refusal(() => validateRecording(inspection as never));
+    expect(thrown).toBeInstanceOf(RangeError);
+    expect(thrown?.message).toContain('validateRecording(): that is an inspection');
+    expect(thrown?.message).not.toContain('Cannot read properties');
+  });
+
+  it('points at the header check the inspection can still have', async () => {
+    const inspection = await inspected();
+    expect(inspection.header).toBeDefined();
+    expect(Array.isArray(validateHeader(inspection.header as never))).toBe(true);
   });
 });
