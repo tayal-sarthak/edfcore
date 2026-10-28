@@ -131,7 +131,17 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
    * Still an `EdfRangeError` carrying `requested` and `available`, so a handler written against
    * this guard branches the same way it always did.
    */
-  if (typeof (records as { records?: unknown } | null | undefined)?.records === 'object') {
+  const holder = records as { records?: unknown; signalIndices?: unknown } | null | undefined;
+  if (typeof holder?.records === 'object') {
+    // A `readRecords()` SELECTION carries its range on `.records` too, and it is no chunk: it is
+    // the sibling call's whole argument, so "that is a chunk" named something it was not.
+    if (Array.isArray(holder?.signalIndices)) {
+      throw new EdfRangeError(
+        'that is a readRecords() selection, not a record range: this call takes the range alone, ' +
+          'with no signal selection. Next: pass selection.records.',
+        { requested: range, available },
+      );
+    }
     throw new EdfRangeError(
       'that is a chunk, not a record range: a chunk carries its range on .records rather than ' +
         'being it, so no start and no count reached this call. Next: pass chunk.records, which ' +

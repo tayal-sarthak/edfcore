@@ -47,6 +47,16 @@ describe('a time window where a record range belongs', () => {
     expect(thrown.message).toContain('that is a time window, not a record range');
   });
 
+  it('names a readRecords() selection as one, not as a chunk', async () => {
+    // `{ signalIndices, records }` carries its range on .records, as a chunk does, and is the
+    // sibling call's argument rather than anything a read returned.
+    const recording = await openEdf(byteSource(minimalEdfPlus({ recordCount: 4 })));
+    const selection = { signalIndices: [0], records: { start: 0, count: 2 } };
+    const thrown = await refusal(() => readAnnotations(recording, selection as never));
+    expect(thrown.message).toContain('that is a readRecords() selection');
+    expect(thrown.message).not.toContain('that is a chunk');
+  });
+
   it('leaves a real range alone', async () => {
     const recording = await openEdf(byteSource(minimalEdfPlus({ recordCount: 4 })));
     const result = await readAnnotations(recording, { start: 0, count: 4 });
