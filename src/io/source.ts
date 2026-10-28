@@ -289,6 +289,17 @@ function adapterFor(source: unknown): string {
   ) {
     return 'that looks like a Blob or a File — use blobSource(file)';
   }
+  // A fetch RESPONSE, the object in hand on the line after `fetch()`. `blobSource` names it too.
+  if (
+    typeof candidate?.arrayBuffer === 'function' &&
+    typeof (source as { status?: unknown }).status === 'number'
+  ) {
+    return (
+      'that is a fetch Response, which carries the body rather than being one — use ' +
+      'httpSource(url) to read the file by range, or byteSource(new Uint8Array(await ' +
+      'response.arrayBuffer())) for the body it holds'
+    );
+  }
   /*
    * The RECORDING, which carries the source on `.source` rather than being it.
    *
