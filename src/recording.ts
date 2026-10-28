@@ -242,6 +242,20 @@ export function assertSelection(
     );
   }
   /*
+   * A CHUNK — what a read returns — handed back as what a read takes, which is how re-reading the
+   * same span with other signals gets written. It carries `records` AND `startSeconds`, so neither
+   * pair below fires, and it was refused by whichever field came next: `readWindow` said
+   * "signalIndices is missing" and `readEnvelope` asked for buckets, about an argument that held
+   * neither because it was never a selection.
+   */
+  if (Array.isArray((selection as { signals?: unknown }).signals)) {
+    throw new RangeError(
+      `${call}(): the selection is a chunk, which is what a read returns rather than what it ` +
+        `takes. Next: pass ${shape} — the chunk's .records, .startSeconds and .durationSeconds ` +
+        'are the bounds it was read with.',
+    );
+  }
+  /*
    * A record range where a window belongs, which is the one wrong SHAPE worth naming separately.
    * `readRecords` takes `{ records }` and `streamRecords` takes a window — and is called
    * streamRECORDS — so `streamRecords(recording, { records })` is the shape its own name and its
