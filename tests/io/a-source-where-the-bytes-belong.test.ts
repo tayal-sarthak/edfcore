@@ -21,4 +21,16 @@ describe('a ByteSource where the bytes belong', () => {
   it('still refuses a plain object as a plain object', () => {
     expect(() => byteSource({} as never)).toThrow('received a plain object');
   });
+
+  it('gives a DataView the view over its own bytes, rather than three ways to fetch them', () => {
+    const buffer = new Uint8Array([9, 9, 1, 2, 3, 4]).buffer;
+    const view = new DataView(buffer, 2, 4);
+    expect(() => byteSource(view as never)).toThrow(
+      'new Uint8Array(view.buffer, view.byteOffset, view.byteLength)',
+    );
+    // And that spelling really is the four bytes the DataView reads.
+    const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+    expect([...bytes]).toEqual([1, 2, 3, 4]);
+    expect(byteSource(bytes).byteLength).toBe(4);
+  });
 });

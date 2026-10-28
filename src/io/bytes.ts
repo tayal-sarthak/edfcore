@@ -89,11 +89,17 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
         { offset: 0, requestedLength: 0 },
       );
     }
+    // A DATAVIEW is the bytes already, behind a different interface — the common way a parser
+    // holds a buffer — and the three routes below are all routes to bytes the caller already had.
+    const view = Object.prototype.toString.call(bytes) === '[object DataView]';
     throw new EdfSourceError(
       `byteSource() needs an ArrayBuffer or a Uint8Array, received ${describe(bytes)}. ` +
-        'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or the ' +
-        'ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, so it ' +
-        'would pass every length check and then decode to fabricated sample values.',
+        (view
+          ? 'Next: pass new Uint8Array(view.buffer, view.byteOffset, view.byteLength) — the same ' +
+            'bytes the DataView reads, without a copy.'
+          : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or ' +
+            'the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, ' +
+            'so it would pass every length check and then decode to fabricated sample values.'),
       { offset: 0, requestedLength: 0 },
     );
   }
