@@ -536,6 +536,17 @@ export async function buildRecordIndex(
   // The mirror of the check in `buildTimeline`: this one takes the recording, and the header is
   // what a reader holding the other function's arguments reaches for.
   const given = recording as { header?: unknown; signals?: unknown } | null | undefined;
+  // An INSPECTION carries a header too, so it passed the check below and the scan failed on the
+  // missing source with "a ByteSource is needed … received nothing" — about an argument nobody
+  // left out. `assertRecording` names it for the five reading calls; this is its own copy.
+  const triage = given as { bytesRead?: unknown; source?: unknown } | null | undefined;
+  if (typeof triage?.bytesRead === 'number' && triage.source === undefined) {
+    throw new RangeError(
+      'buildRecordIndex(): that is an inspection — what inspectEdf() resolves to — and a full ' +
+        'scan needs the source and the timeline too, which triage never opened. Next: pass ' +
+        '`await openEdf(source)`.',
+    );
+  }
   if (given == null || typeof given.header !== 'object' || given.header === null) {
     /*
      * A FORGOTTEN AWAIT, which the other two copies of this sentence both name and this one did not.
