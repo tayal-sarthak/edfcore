@@ -79,6 +79,16 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
   // (see `assertExactRead`). Fabricated microvolts, with no error anywhere.
   const isBuffer = BUFFER_TAGS.has(Object.prototype.toString.call(bytes));
   if (!isBuffer && !isByteArray(bytes)) {
+    // A SOURCE, wrapped twice: the object this call makes, handed back to it, and refused as "a
+    // plain object" with advice to go and find bytes the caller was already past.
+    const source = bytes as { read?: unknown; byteLength?: unknown } | null | undefined;
+    if (typeof source?.read === 'function' && typeof source.byteLength === 'number') {
+      throw new EdfSourceError(
+        'byteSource() received a ByteSource — the object this call makes, not the bytes it makes ' +
+          'one from. Next: pass it to openEdf() as it is.',
+        { offset: 0, requestedLength: 0 },
+      );
+    }
     throw new EdfSourceError(
       `byteSource() needs an ArrayBuffer or a Uint8Array, received ${describe(bytes)}. ` +
         'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or the ' +
