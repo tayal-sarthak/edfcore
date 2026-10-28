@@ -124,6 +124,15 @@ export function fileHandleSource(handle: FileHandleLike, byteLength: number): Cl
       { offset: 0, requestedLength: 0 },
     );
   }
+  // A SOURCE has a read() and a close() too — `fileSource` returns one — and its read() takes an
+  // offset where a handle's takes a buffer, so the first read failed on arguments nobody passed.
+  if (typeof (handle as { byteLength?: unknown }).byteLength === 'number') {
+    throw new EdfSourceError(
+      'fileHandleSource() received a ByteSource — what fileSource() resolves to, already reading ' +
+        'the file — rather than the handle it wraps. Next: pass it to openEdf() as it is.',
+      { offset: 0, requestedLength: 0 },
+    );
+  }
   if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
     throw new EdfSourceError(
       `fileHandleSource() was given ${describeValue(byteLength)} as its byteLength, which is ` +
