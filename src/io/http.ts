@@ -160,12 +160,19 @@ function hrefOf(url: string | { readonly href: string }): string {
    * A property read, never a call: nothing here awaits, settles or subscribes to anything (0.6.296).
    */
   const pending = typeof (url as { then?: unknown } | null | undefined)?.then === 'function';
+  // A fetch REQUEST carries the address on `.url`, not `.href`. Refused rather than unwrapped: its
+  // headers and credentials would be dropped without a word, so the advice says where they go.
+  const asRequest = url as { url?: unknown; method?: unknown } | null | undefined;
+  const request = typeof asRequest?.url === 'string' && typeof asRequest.method === 'string';
   throw new EdfSourceError(
     `httpSource() needs a URL string or a URL object, and received ${describeValue(url)}. ` +
       (pending
         ? 'Next: await it — a signed or presigned address is minted by a call that resolves to ' +
           'one, and options.fetch is the hook for refreshing it once the source exists.'
-        : 'Next: pass the address as a string, or as new URL(address).'),
+        : request
+          ? 'Next: that is a fetch Request — pass request.url, and its headers through ' +
+            'options.fetch, since this adapter builds its own range requests and would drop them.'
+          : 'Next: pass the address as a string, or as new URL(address).'),
     { offset: 0, requestedLength: 0 },
   );
 }
