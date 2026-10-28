@@ -8,6 +8,7 @@
 
 import { openAsBlob } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { byteSource } from '../../src/index.js';
 import { fileSource } from '../../src/node.js';
 
 async function refusal(run: () => Promise<unknown>): Promise<Error> {
@@ -26,6 +27,12 @@ describe('a Blob passed to fileSource', () => {
     expect(thrown.message).toContain('that is a Blob — what fs.openAsBlob() resolves to');
     expect(thrown.message).toContain('blobSource(blob)');
     expect(thrown.message).not.toContain('pass the path as a string');
+  });
+
+  it('names a source handed back to it, as byteSource and blobSource do', async () => {
+    const thrown = await refusal(() => fileSource(byteSource(new Uint8Array(8)) as never));
+    expect(thrown.message).toContain('that is a ByteSource — the object this call makes');
+    expect(thrown.message).toContain('pass it to openEdf() as it is');
   });
 
   it('keeps the byteSource advice for bytes', async () => {

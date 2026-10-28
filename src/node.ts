@@ -237,8 +237,14 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
           : typeof blob?.size === 'number' && typeof blob.slice === 'function'
             ? 'Next: that is a Blob — what fs.openAsBlob() resolves to — so pass it to ' +
               'blobSource(blob) from "edfcore", or pass the path it was opened from here.'
-            : 'Next: pass the path as a string, or byteSource(bytes) for a file you have already ' +
-              'read into memory — a Uint8Array here would be opened as the bytes of a filename.'),
+            : // A SOURCE already, as `byteSource` and `blobSource` name when one is handed back.
+              typeof (path as { read?: unknown } | null | undefined)?.read === 'function' &&
+                typeof (path as { byteLength?: unknown }).byteLength === 'number'
+              ? 'Next: that is a ByteSource — the object this call makes, not the path it makes ' +
+                'one from — so pass it to openEdf() as it is.'
+              : 'Next: pass the path as a string, or byteSource(bytes) for a file you have ' +
+                'already read into memory — a Uint8Array here would be opened as the bytes of a ' +
+                'filename.'),
       { offset: 0, requestedLength: 0 },
     );
   }
