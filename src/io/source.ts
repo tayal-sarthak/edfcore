@@ -268,6 +268,9 @@ function adapterFor(source: unknown): string {
     return 'wrap them with byteSource(bytes)';
   }
   if (typeof source === 'string') {
+    // An ADDRESS is a string too, and "that looks like a path" sent it to the one adapter that
+    // reads a disk, where `fileSource` refuses an `https:` scheme and names `httpSource` itself.
+    if (/^https?:\/\//i.test(source)) return 'that is an address — use httpSource(url)';
     return (
       'that looks like a path — use fileSource(path) from "edfcore/node", or read the bytes ' +
       'yourself and pass byteSource(bytes)'
