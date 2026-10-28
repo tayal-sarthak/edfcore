@@ -300,6 +300,15 @@ function adapterFor(source: unknown): string {
       'response.arrayBuffer())) for the body it holds'
     );
   }
+  // An OPEN FILE HANDLE from `fs.open`, which has a read() but no byteLength: the adapter that takes
+  // one asks for the size beside it, because a handle does not carry its own.
+  const handle = source as { read?: unknown; fd?: unknown } | null | undefined;
+  if (typeof handle?.read === 'function' && typeof handle.fd === 'number') {
+    return (
+      'that is an open file handle — use fileHandleSource(handle, (await handle.stat()).size) ' +
+      'from "edfcore/node"'
+    );
+  }
   /*
    * The RECORDING, which carries the source on `.source` rather than being it.
    *
