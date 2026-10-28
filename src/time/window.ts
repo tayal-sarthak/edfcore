@@ -118,11 +118,16 @@ export function assertChunkSignal(chunkSignal: EdfChunkSignal, call: string, ver
     );
   }
   const headerSignal = typeof (chunkSignal as unknown as EdfSignal | undefined)?.index === 'number';
+  // The CHUNK, one level up: the object a reader holds, and the one whose `.signals` the next step
+  // names. It was "an object with no signalIndex on it", true and no help to someone holding it.
+  const chunk = Array.isArray((chunkSignal as unknown as { signals?: unknown } | null)?.signals);
   throw new RangeError(
     `${call}(): the signal is ${
       headerSignal
         ? `a header signal, which carries no samples to ${verb}`
-        : `${describeValue(chunkSignal)} with no signalIndex on it`
+        : chunk
+          ? 'a chunk, which carries one signal per element of .signals rather than being one'
+          : `${describeValue(chunkSignal)} with no signalIndex on it`
     }. Next: pass one element of chunk.signals — the array readWindow() and readRecords() fill.`,
   );
 }

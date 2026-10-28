@@ -83,13 +83,18 @@ describe('the other wrong second arguments', () => {
   it.each([
     ['missing', undefined],
     ['null', null],
-    ['the chunk itself rather than one of its signals', 'chunk'],
   ])('says %s has no signalIndex', async (_described, given) => {
-    const { header, chunkSignal } = await parts();
-    const value = given === 'chunk' ? { signals: [chunkSignal] } : given;
-    expect(refusal(() => trimToWindow(header, asChunkSignal(value), 0, 1))).toContain(
+    const { header } = await parts();
+    expect(refusal(() => trimToWindow(header, asChunkSignal(given), 0, 1))).toContain(
       'with no signalIndex on it',
     );
+  });
+
+  it('names the chunk itself as a chunk, rather than as an object with no signalIndex', async () => {
+    const { header, chunkSignal } = await parts();
+    expect(
+      refusal(() => trimToWindow(header, asChunkSignal({ signals: [chunkSignal] }), 0, 1)),
+    ).toContain('the signal is a chunk');
   });
 });
 
