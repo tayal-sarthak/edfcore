@@ -77,6 +77,13 @@ describe('the record ranges a window maps to, passed as the window', () => {
     expect(() => filter(list, [0, 2])).toThrow(/the window is an array/);
   });
 
+  it('names one of those ranges as a record range, not as a window missing a bound', async () => {
+    // `resolveTimeWindow(...)[0]`, or `chunk.records`: the array's element, one level down.
+    const list = await annotations();
+    expect(() => filter(list, { start: 0, count: 2 })).toThrow(/the window is a record range/);
+    expect(() => filter(list, { start: 0, count: 2 })).not.toThrow(/was undefined/);
+  });
+
   it('still filters by a real window', async () => {
     const list = await annotations();
     expect(() =>

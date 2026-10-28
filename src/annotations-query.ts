@@ -140,6 +140,20 @@ export function filterAnnotationsByTime(
         'an object.',
     );
   }
+  // ONE of those ranges — `resolveTimeWindow(…)[0]`, or `chunk.records` — is the same mistake one
+  // level down, and it fell to "window.startSeconds … was undefined", the generic field sentence.
+  const range = window as { start?: unknown; count?: unknown; startSeconds?: unknown } | null;
+  if (
+    range?.startSeconds === undefined &&
+    range?.start !== undefined &&
+    range.count !== undefined
+  ) {
+    throw new RangeError(
+      'filterAnnotationsByTime(): the window is a record range, and this call bounds events by ' +
+        'time rather than by record. Next: pass an object with startSeconds and ' +
+        'durationSeconds — a chunk carries both, for the span it was read with.',
+    );
+  }
   const from = secondsToTicks(window.startSeconds, 'window.startSeconds');
   const to = from + secondsToTicks(window.durationSeconds, 'window.durationSeconds');
   if (to <= from) return Object.freeze([]);
