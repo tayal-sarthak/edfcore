@@ -48,8 +48,14 @@ export function blobSource(blob: BlobLike): ByteSource {
                 typeof (blob as { byteLength?: unknown }).byteLength === 'number'
               ? 'Next: that is a ByteSource — the object this call makes, not the Blob it makes ' +
                 'one from — so pass it to openEdf() as it is.'
-              : 'Next: pass the File an <input type="file"> or a drop event hands you, or ' +
-                'byteSource(bytes) if you already have the bytes in memory.'),
+              : // A STRING: an address, or the file's NAME — `file.name` is one property from it.
+                typeof blob === 'string'
+                ? /^https?:\/\//i.test(blob)
+                  ? 'Next: that is an address — pass it to httpSource(url), which reads it by range.'
+                  : 'Next: pass the File itself rather than its name — or, in Node, pass the path ' +
+                    'to fileSource(path) from "edfcore/node".'
+                : 'Next: pass the File an <input type="file"> or a drop event hands you, or ' +
+                  'byteSource(bytes) if you already have the bytes in memory.'),
       { offset: 0, requestedLength: 0 },
     );
   }

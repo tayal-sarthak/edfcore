@@ -65,7 +65,6 @@ describe('a Blob the fetch had not awaited', () => {
     for (const [what, value] of [
       ['undefined', undefined],
       ['a number', 8],
-      ['a string', '/tmp/a.edf'],
       ['a plain object', { length: 8 }],
       ['a Uint8Array', new Uint8Array(8)],
     ] as ReadonlyArray<readonly [string, unknown]>) {
