@@ -104,9 +104,15 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
             typeof (bytes as { then?: unknown } | null | undefined)?.then === 'function'
             ? 'Next: await it — readFile from "node:fs/promises", blob.arrayBuffer() and ' +
               'response.arrayBuffer() all resolve to the bytes rather than returning them.'
-            : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or ' +
-              'the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, ' +
-              'so it would pass every length check and then decode to fabricated sample values.'),
+            : // A STRING names where the bytes are, and each kind of where has its own adapter.
+              typeof bytes === 'string'
+              ? /^https?:\/\//i.test(bytes)
+                ? 'Next: that is an address — pass it to httpSource(url), which reads it by range.'
+                : 'Next: that looks like a path — pass it to fileSource(path) from "edfcore/node", ' +
+                  'which reads it by range, or pass `await readFile(path)` here.'
+              : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or ' +
+                'the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, ' +
+                'so it would pass every length check and then decode to fabricated sample values.'),
       { offset: 0, requestedLength: 0 },
     );
   }

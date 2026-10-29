@@ -26,6 +26,16 @@ describe('byteSource names the object it was given', () => {
     expect(() => byteSource(pending as never)).toThrow('readFile from "node:fs/promises"');
   });
 
+  it('sends an address to httpSource and a path to fileSource', () => {
+    expect(() => byteSource('https://example.org/a.edf' as never)).toThrow(
+      'Next: that is an address — pass it to httpSource(url)',
+    );
+    expect(() => byteSource('https://example.org/a.edf' as never)).not.toThrow('readFile');
+    expect(() => byteSource('/data/night.edf' as never)).toThrow(
+      'Next: that looks like a path — pass it to fileSource(path) from "edfcore/node"',
+    );
+  });
+
   it('still calls a plain object one', () => {
     expect(() => byteSource({} as never)).toThrow('received a plain object.');
   });
