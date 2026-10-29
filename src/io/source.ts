@@ -358,6 +358,15 @@ function adapterFor(source: unknown): string {
       'both async, so both need awaiting; byteSource, blobSource and cachedSource do not'
     );
   }
+  // An INSPECTION, which advertises a byteLength and keeps no source: triage reads the header and
+  // hands back what it found, so the source it read is still the caller's to open.
+  const inspected = source as { bytesRead?: unknown } | null | undefined;
+  if (typeof inspected?.bytesRead === 'number' && 'headerBytes' in (source as object)) {
+    return (
+      'that is an inspection — what inspectEdf() resolves to, which keeps the header it read but ' +
+      'not the source — so pass the source you inspected'
+    );
+  }
   const opened = source as { source?: { read?: unknown }; header?: unknown } | null | undefined;
   if (typeof opened?.source?.read === 'function' && typeof opened.header === 'object') {
     return 'that is a recording — it carries the source on .source rather than being one, so pass recording.source';
