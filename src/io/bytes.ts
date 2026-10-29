@@ -27,6 +27,9 @@ function describe(value: unknown): string {
   if (value === undefined) return 'undefined';
   if (ArrayBuffer.isView(value)) return Object.prototype.toString.call(value).slice(8, -1);
   if (Array.isArray(value)) return 'a plain Array';
+  // A Blob, a Response, a URL and a Promise were all "a plain object", which none of them is.
+  const tag = Object.prototype.toString.call(value).slice(8, -1);
+  if (typeof value === 'object' && tag !== 'Object') return tag;
   return typeof value === 'object' ? 'a plain object' : `a ${typeof value}`;
 }
 
