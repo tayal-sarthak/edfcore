@@ -172,7 +172,12 @@ function hrefOf(url: string | { readonly href: string }): string {
         : request
           ? 'Next: that is a fetch Request — pass request.url, and its headers through ' +
             'options.fetch, since this adapter builds its own range requests and would drop them.'
-          : 'Next: pass the address as a string, or as new URL(address).'),
+          : // A BLOB is the file already in hand — a picked File, most often — with no address.
+            typeof (url as { size?: unknown } | null | undefined)?.size === 'number' &&
+              typeof (url as { slice?: unknown }).slice === 'function'
+            ? 'Next: that is a Blob, which holds the file rather than an address of one — pass it ' +
+              'to blobSource(file).'
+            : 'Next: pass the address as a string, or as new URL(address).'),
     { offset: 0, requestedLength: 0 },
   );
 }
