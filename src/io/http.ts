@@ -177,7 +177,12 @@ function hrefOf(url: string | { readonly href: string }): string {
               typeof (url as { slice?: unknown }).slice === 'function'
             ? 'Next: that is a Blob, which holds the file rather than an address of one — pass it ' +
               'to blobSource(file).'
-            : 'Next: pass the address as a string, or as new URL(address).'),
+            : // A SOURCE already, as every other adapter names when one is handed back to it.
+              typeof (url as { read?: unknown } | null | undefined)?.read === 'function' &&
+                typeof (url as { byteLength?: unknown }).byteLength === 'number'
+              ? 'Next: that is a ByteSource — the object this call makes, not the address it ' +
+                'makes one from — so pass it to openEdf() as it is.'
+              : 'Next: pass the address as a string, or as new URL(address).'),
     { offset: 0, requestedLength: 0 },
   );
 }

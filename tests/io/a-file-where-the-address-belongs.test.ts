@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { httpSource } from '../../src/index.js';
+import { byteSource, httpSource } from '../../src/index.js';
 
 // Offline: every refusal here comes before a request, and a stub proves none was made.
 const fetch = (() => {
@@ -22,6 +22,14 @@ describe('a Blob passed to httpSource', () => {
           'blobSource(file).',
       );
     }
+  });
+
+  it('names a source handed back to it, as every other adapter does', async () => {
+    const source = byteSource(new Uint8Array(4));
+    await expect(httpSource(source as never, { fetch })).rejects.toThrow(
+      'Next: that is a ByteSource — the object this call makes, not the address it makes one ' +
+        'from — so pass it to openEdf() as it is.',
+    );
   });
 
   it('keeps the generic advice for an object that is neither', async () => {
