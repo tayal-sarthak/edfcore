@@ -6,6 +6,33 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.321
+
+Fourteen refusals from the source adapters that sent a caller to the wrong adapter, or to none.
+One input that was accepted is now refused, and it never read: see the last item.
+
+- **`openEdf` and the other calls that take a source.** An `https://` string was told "that looks
+  like a path — use fileSource", which then refuses the scheme; it now names `httpSource(url)`. A
+  `URL` object, a fetch `Response`, a handle from `fs.open` and an `inspectEdf()` result all got
+  the four-adapter list, the handle and the inspection as "Object". Each is now named: a `URL` by
+  its scheme, a `Response` with `httpSource(url)` or its `arrayBuffer()`, a handle with
+  `fileHandleSource(handle, (await handle.stat()).size)`, and an inspection with the source that
+  was inspected.
+- **`byteSource`.** A Blob, a `Response`, a `URL` and a pending Promise were all "a plain object";
+  each is now called by its built-in tag. `byteSource(readFile(path))`, the Node line less an
+  `await`, is told to await it, and a string is sent to `httpSource` for an address or
+  `fileSource` for a path.
+- **`fileSource`, `httpSource` and `blobSource`, given each other's arguments.** A Blob from
+  `fs.openAsBlob()` handed to `fileSource`, and a File handed to `httpSource`, are sent to
+  `blobSource`. A `ByteSource` handed to either is told to go to `openEdf` as it is, as
+  `byteSource` and `blobSource` already said. A string handed to `blobSource` was sent to an
+  `<input type="file">`; an address now names `httpSource`, and any other string — `file.name`,
+  most often — asks for the File itself, or `fileSource(path)` in Node.
+- **`fileHandleSource` accepted a source.** What `fileSource` resolves to has a `read()` and a
+  `close()`, which was all the handle check looked for, so `fileHandleSource(await
+  fileSource(path), size)` built a source whose first read failed on "the read options are 4" —
+  arguments the caller never wrote. It is now refused at construction.
+
 ## 0.6.320
 
 Fifteen refusals that named the wrong thing, each for an argument a reader is likely to be holding.
