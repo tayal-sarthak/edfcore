@@ -20,6 +20,12 @@ describe('byteSource names the object it was given', () => {
     expect(() => byteSource(value as never)).not.toThrow('a plain object');
   });
 
+  it('tells a pending Promise to be awaited, which is the readFile() line less a keyword', () => {
+    const pending = Promise.resolve(new Uint8Array(4));
+    expect(() => byteSource(pending as never)).toThrow('received Promise. Next: await it');
+    expect(() => byteSource(pending as never)).toThrow('readFile from "node:fs/promises"');
+  });
+
   it('still calls a plain object one', () => {
     expect(() => byteSource({} as never)).toThrow('received a plain object.');
   });

@@ -100,9 +100,13 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
         (view
           ? 'Next: pass new Uint8Array(view.buffer, view.byteOffset, view.byteLength) — the same ' +
             'bytes the DataView reads, without a copy.'
-          : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or ' +
-            'the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, ' +
-            'so it would pass every length check and then decode to fabricated sample values.'),
+          : // A FORGOTTEN AWAIT: `byteSource(readFile(path))`, the Node quickstart less a keyword.
+            typeof (bytes as { then?: unknown } | null | undefined)?.then === 'function'
+            ? 'Next: await it — readFile from "node:fs/promises", blob.arrayBuffer() and ' +
+              'response.arrayBuffer() all resolve to the bytes rather than returning them.'
+            : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or ' +
+              'the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, ' +
+              'so it would pass every length check and then decode to fabricated sample values.'),
       { offset: 0, requestedLength: 0 },
     );
   }
