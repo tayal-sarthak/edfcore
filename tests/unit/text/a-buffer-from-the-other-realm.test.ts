@@ -64,7 +64,7 @@ describe('describeValue names a buffer from another realm', () => {
     // Accepted at the door: `byteSource` has used the tag since 0.3.20.
     expect(byteSource(buffer).byteLength).toBe(8);
     // And named at every guard that refuses one, whichever realm it came from.
-    expect(() => toPhysical(SIGNAL, buffer as never)).toThrow(/the samples are ArrayBuffer/);
+    expect(() => toPhysical(SIGNAL, buffer as never)).toThrow(/the samples are an ArrayBuffer/);
   });
 
   it('still names a view from another realm, which ArrayBuffer.isView already caught', () => {

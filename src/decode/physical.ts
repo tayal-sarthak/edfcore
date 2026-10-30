@@ -449,7 +449,10 @@ function assertSamples(digital: unknown, call: string): void {
         ? 'a chunk signal, which carries them on .digital rather than being them'
         : whole
           ? 'a chunk, which carries one signal per element of .signals, each with its own .digital'
-          : `${describeValue(digital)}, which has no length`
+          : // An ARRAYBUFFER, which is what transferring chunkSignal.digital to a worker delivers.
+            Object.prototype.toString.call(digital) === '[object ArrayBuffer]'
+            ? 'an ArrayBuffer — the bytes under them, which new Int32Array(buffer) views as samples'
+            : `${describeValue(digital)}, which has no length`
     }. Next: pass chunkSignal.digital — the Int32Array readWindow() and readRecords() fill.`,
   );
 }
