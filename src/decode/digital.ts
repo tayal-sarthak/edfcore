@@ -190,7 +190,10 @@ export function assertDecodable(header: EdfHeader, recordBytes: Uint8Array, call
       `${call}(): the record bytes are ${
         served
           ? 'a ByteSource, which serves them rather than holding them'
-          : describeValue(recordBytes)
+          : // An ARRAYBUFFER, which is what `response.arrayBuffer()` resolves to.
+            Object.prototype.toString.call(recordBytes) === '[object ArrayBuffer]'
+            ? 'an ArrayBuffer, which new Uint8Array(buffer) views without a copy'
+            : describeValue(recordBytes)
       }, not a Uint8Array. Next: pass what readRecordBytes(source, header, records) resolved to, ` +
         'unsliced.',
     );

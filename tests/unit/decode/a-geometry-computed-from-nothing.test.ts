@@ -76,7 +76,9 @@ describe.each(DECODERS)('%s', (name, call) => {
   it('names an ArrayBuffer as one, and where the bytes come from', async () => {
     const { header, recordBytes } = await parts();
     const message = refusal(() => call(header, loosely<Uint8Array>(recordBytes.slice().buffer)));
-    expect(message).toContain(`${name}(): the record bytes are ArrayBuffer, not a Uint8Array`);
+    expect(message).toContain(
+      `${name}(): the record bytes are an ArrayBuffer, which new Uint8Array(buffer) views`,
+    );
     expect(message).toContain('readRecordBytes(source, header, records)');
   });
 
