@@ -139,7 +139,10 @@ function assertDiagnostic(diagnostic: EdfDiagnostic, index: number): void {
     `formatDiagnostics(): the value at ${index} is ${
       typeof (diagnostic as unknown as { count?: unknown } | null | undefined)?.count === 'number'
         ? 'one row of a diagnostic summary, which counts a code rather than being a diagnostic'
-        : `${describeValue(diagnostic)}, which carries no message`
+        : // An ANNOTATION, from the other list a read hands back beside its diagnostics.
+          typeof (diagnostic as unknown as { onsetTicks?: unknown } | null)?.onsetTicks === 'bigint'
+          ? 'an annotation, which formatAnnotations() prints'
+          : `${describeValue(diagnostic)}, which carries no message`
     }. Next: pass header.diagnostics, or the diagnostics on the chunk or the report you have — ` +
       'summarizeDiagnostics() takes the same array and returns the counts.',
   );
