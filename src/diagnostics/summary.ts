@@ -90,6 +90,13 @@ function assertDiagnostic(diagnostic: EdfDiagnostic, index: number): void {
         'diagnostics off what they resolved to.',
     );
   }
+  // An ANNOTATION, from the other list a read hands back, which a summary row is not either.
+  if (typeof (diagnostic as { onsetTicks?: unknown } | null | undefined)?.onsetTicks === 'bigint') {
+    throw new RangeError(
+      `summarizeDiagnostics(): the value at ${index} is an annotation, not a diagnostic. Next: ` +
+        'count those with countAnnotationsByText(), or pass header.diagnostics.',
+    );
+  }
   throw new RangeError(
     `summarizeDiagnostics(): the value at ${index} carries no message, so it is not a ` +
       'diagnostic — a row of a by-code summary counts a code rather than being one, and counting ' +
