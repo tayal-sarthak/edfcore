@@ -337,6 +337,14 @@ export function assertSignal(signal: EdfSignal, call: string): void {
         'second argument, not the first.',
     );
   }
+  // The SAMPLES, in the two calls that take them second: the arguments the other way round.
+  if (ArrayBuffer.isView(signal) && (call === 'toPhysical' || call === 'clampToDigitalRange')) {
+    throw new RangeError(
+      `${call}(): the signal is ${describeValue(signal)} — samples, which this call takes ` +
+        'second, after the signal they are scaled by. Next: swap the two arguments, so the signal ' +
+        'from header.signals comes first.',
+    );
+  }
   const chunk = typeof (signal as unknown as EdfChunkSignal | undefined)?.signalIndex === 'number';
   // The HEADER, or the recording around it, which hold the signal rather than being it.
   const holder = signal as
