@@ -38,6 +38,15 @@ import type { EdfAnnotation, EdfAnnotationWindow } from './types.js';
  * 0.6.107).
  */
 function assertAnnotations(annotations: readonly EdfAnnotation[], call: string): void {
+  // A RECORDING, which is no result object: its events have not been read out of it yet.
+  const recording = (annotations as { header?: unknown } | null | undefined)?.header;
+  if (!Array.isArray(annotations) && typeof recording === 'object' && recording !== null) {
+    throw new RangeError(
+      `${call}(): the annotations are a recording, which holds the file rather than its events — ` +
+        'they are read out of it first. Next: pass the `annotations` field of what ' +
+        'readAnnotations(recording, records) resolves to.',
+    );
+  }
   if (!Array.isArray(annotations)) {
     throw new RangeError(
       `${call}(): the annotations are ${describeValue(annotations)}, not an array. Next: pass the ` +
