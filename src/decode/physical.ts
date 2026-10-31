@@ -413,11 +413,15 @@ function assertSamples(digital: unknown, call: string): void {
     );
   }
   const chunk = typeof (digital as EdfChunkSignal | undefined)?.signalIndex === 'number';
+  // A whole CHUNK, one level further out than a chunk signal, and "an object" said neither.
+  const whole = Array.isArray((digital as { signals?: unknown } | null | undefined)?.signals);
   throw new RangeError(
     `${call}(): the samples are ${
       chunk
         ? 'a chunk signal, which carries them on .digital rather than being them'
-        : `${describeValue(digital)}, which has no length`
+        : whole
+          ? 'a chunk, which carries one signal per element of .signals, each with its own .digital'
+          : `${describeValue(digital)}, which has no length`
     }. Next: pass chunkSignal.digital — the Int32Array readWindow() and readRecords() fill.`,
   );
 }
