@@ -6,6 +6,30 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.322
+
+Eight refusals from the helpers that take what a read hands back, each naming the wrong thing for
+an argument a caller is likely to be holding. No accepted input changed.
+
+- **`toPhysical` and `clampToDigitalRange`, given the wrong layer of a read.** A whole chunk passed
+  as the samples was "an object, which has no length", and the array `readWindow()` resolves to
+  was "the first of them is an object rather than a number". Both are now named, with
+  `chunkSignal.digital` as before. A header or a recording passed as the signal was "an object,
+  not one of header.signals"; each is now named for what it is (`physicalRangeOf` too). And
+  `toPhysical(digital, signal)` — the two arguments the other way round — now says so, rather than
+  calling the samples a signal that is not one of `header.signals`.
+- **`getSignal` and `findSignals`, given a signal.** The answer handed back as the question was
+  "an object" sent to `matchSignals` for a RegExp or a predicate. It is now told it is a signal
+  already, and that `signal.label` looks it up again.
+- **`parseHeader`, given a `ByteSource` or a recording.** It checks its second argument first, so
+  `parseHeader(source)` was told "sourceByteLength must be a non-negative safe integer, received
+  undefined". A source is now sent to `readHeader(source)`, and a recording to `recording.header`.
+- **The four annotation queries, given a recording.** `annotationsAt(recording, t)` was told to
+  pass the `annotations` field of the readAnnotations() result, "which is a result object" — an
+  object the caller did not have yet. A recording is now told its events are read out of it first.
+- **`formatStartTimeNaive`, given a recording.** It was told to pass `header.startTime`; a
+  recording's start is at `recording.header.startTime`, and the message now says that.
+
 ## 0.6.321
 
 Fourteen refusals from the source adapters that sent a caller to the wrong adapter, or to none.
