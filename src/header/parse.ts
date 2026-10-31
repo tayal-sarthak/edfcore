@@ -217,6 +217,22 @@ export function parseHeader(
   sourceByteLength: number,
   options?: ParseOptions,
 ): EdfHeader {
+  // A SOURCE or a RECORDING first, before the second argument is blamed for the first one's shape:
+  // `parseHeader(source)` was told that sourceByteLength is undefined.
+  const given = headerBytes as { read?: unknown; byteLength?: unknown; header?: unknown } | null;
+  if (typeof given?.read === 'function' && typeof given.byteLength === 'number') {
+    throw new RangeError(
+      'parseHeader(): the header bytes are a ByteSource, which serves the file rather than ' +
+        'holding it. Next: pass the source to readHeader(source), which reads the header and ' +
+        'parses it.',
+    );
+  }
+  if (typeof given?.header === 'object' && given.header !== null && !isByteArray(headerBytes)) {
+    throw new RangeError(
+      'parseHeader(): that is a recording, which carries its header already parsed. Next: use ' +
+        'recording.header.',
+    );
+  }
   // A caller bug, not a file defect, so it is a plain RangeError: EdfFormatError would claim the
   // bytes are wrong when what is wrong is the number describing them.
   if (!Number.isSafeInteger(sourceByteLength) || sourceByteLength < 0) {
