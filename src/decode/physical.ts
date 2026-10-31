@@ -338,11 +338,20 @@ export function assertSignal(signal: EdfSignal, call: string): void {
     );
   }
   const chunk = typeof (signal as unknown as EdfChunkSignal | undefined)?.signalIndex === 'number';
+  // The HEADER, or the recording around it, which hold the signal rather than being it.
+  const holder = signal as
+    | { signals?: unknown; recordCount?: unknown; header?: { signals?: unknown } }
+    | null
+    | undefined;
   throw new RangeError(
     `${call}(): the signal is ${
       chunk
         ? 'a chunk signal, which carries the samples rather than the declaration they are scaled by'
-        : `${describeValue(signal)}, not one of header.signals`
+        : Array.isArray(holder?.signals) && typeof holder.recordCount === 'number'
+          ? 'a header, which carries one signal per element of .signals rather than being one'
+          : Array.isArray(holder?.header?.signals)
+            ? 'a recording, whose header carries one signal per element of .signals'
+            : `${describeValue(signal)}, not one of header.signals`
     }. Next: pass header.signals[chunkSignal.signalIndex], or resolve it with ` +
       'getSignal(header, label).',
   );
