@@ -406,6 +406,14 @@ function assertSamples(digital: unknown, call: string): void {
      */
     const first = (digital as ArrayLike<unknown>)[0];
     if (length === 0 || typeof first === 'number') return;
+    // What `readWindow()` resolves to, which is a list too — of chunks, not of samples.
+    if (Array.isArray((first as { signals?: unknown } | null | undefined)?.signals)) {
+      throw new RangeError(
+        `${call}(): the samples are a list of chunks — what readWindow() resolves to — rather ` +
+          'than the samples of one signal. Next: pass chunkSignal.digital, one element of a ' +
+          "chunk's .signals at a time.",
+      );
+    }
     throw new RangeError(
       `${call}(): the samples have a length of ${length}, but the first of them is ` +
         `${describeValue(first)} rather than a number, so every value this produced would be ` +

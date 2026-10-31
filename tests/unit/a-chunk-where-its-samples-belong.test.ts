@@ -42,6 +42,17 @@ describe('a chunk passed where its samples belong', () => {
     expect(() => run(signal, chunk as never)).toThrow('Next: pass chunkSignal.digital');
   });
 
+  it.each([
+    ['toPhysical', toPhysical],
+    ['clampToDigitalRange', clampToDigitalRange],
+  ] as const)('%s() names the list readWindow() resolved to', async (call, run) => {
+    const { signal, chunk } = await firstChunk();
+    expect(() => run(signal, [chunk] as never)).toThrow(
+      `${call}(): the samples are a list of chunks — what readWindow() resolves to`,
+    );
+    expect(() => run(signal, [chunk] as never)).not.toThrow('would be NaN');
+  });
+
   it('still converts the samples the chunk carries', async () => {
     const { signal, chunk } = await firstChunk();
     const [series] = chunk.signals;
