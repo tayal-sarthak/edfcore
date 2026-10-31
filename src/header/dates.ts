@@ -555,10 +555,14 @@ export function formatStartTimeNaive(startTime: EdfStartTime): string | undefine
     );
   }
   if (typeof given?.clockSource !== 'string') {
+    // A RECORDING holds its start one level further in than the field this names for a header.
+    const holder = (given as { header?: { startTime?: unknown } } | null | undefined)?.header;
+    const field =
+      typeof holder?.startTime === 'object' ? 'recording.header.startTime' : 'header.startTime';
     throw new RangeError(
       'formatStartTimeNaive(): that is not a start time — it has no clockSource, and undefined is ' +
         'what this function returns for a file whose start cannot be resolved, so a wrong argument ' +
-        'must not be able to produce it. Next: pass header.startTime.',
+        `must not be able to produce it. Next: pass ${field}.`,
     );
   }
   const date = startTime.resolvedDate;

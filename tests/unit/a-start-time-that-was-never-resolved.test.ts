@@ -58,6 +58,12 @@ describe('formatStartTimeNaive', () => {
     expect(message).toContain('Next: pass header.startTime');
   });
 
+  it('names the start one level further in for a recording', async () => {
+    const recording = await opened();
+    const message = refusal(() => formatStartTimeNaive(loosely<EdfStartTime>(recording)));
+    expect(message).toContain('Next: pass recording.header.startTime.');
+  });
+
   it('says why undefined is not available as a refusal', async () => {
     const recording = await opened();
     expect(refusal(() => formatStartTimeNaive(loosely<EdfStartTime>(recording)))).toContain(
