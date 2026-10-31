@@ -79,6 +79,14 @@ function assertSelector(selector: unknown, call: string, accepts: string): void 
  */
 function assertLabel(label: unknown, call: string): void {
   if (typeof label === 'string') return;
+  // A SIGNAL, which is what this call resolves a label TO — the answer handed back as the question.
+  const signal = label as { label?: unknown; index?: unknown } | null | undefined;
+  if (typeof signal?.label === 'string' && typeof signal.index === 'number') {
+    throw new RangeError(
+      `${call}(): the selector is a signal already, which is what this call resolves a label to. ` +
+        'Next: use it as it is, or pass signal.label to look it up again.',
+    );
+  }
   throw new RangeError(
     `${call}(): the selector is ${describeValue(label)}, and this call matches on the label as ` +
       'written. Next: pass the label as a string, or matchSignals(header, pattern) for a RegExp ' +
