@@ -66,6 +66,12 @@ export function decodeHeaderLatin1(bytes: Uint8Array): string {
    * refuses exactly this pair at construction and says why; this is the same refusal one layer
    * down, where the bytes are actually read (fixed in 0.6.96).
    */
+  if (typeof bytes === 'string') {
+    throw new RangeError(
+      'decodeHeaderLatin1() received a string, which is text already — this turns header bytes ' +
+        'into one. Next: use the string as it is.',
+    );
+  }
   if (!isByteArray(bytes)) {
     throw new RangeError(
       'decodeHeaderLatin1() needs a Uint8Array. An ArrayBuffer has no length, so it decoded to ' +
