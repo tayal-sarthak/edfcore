@@ -31,9 +31,12 @@ export function isAnnotationLabel(label: string): boolean {
   // function" — an internal name, from the one function in this module that takes a plain string
   // (fixed in 0.6.108).
   if (typeof label !== 'string') {
+    // A SIGNAL already holds this answer: `kind` is this very check, made when the header was read.
+    const signal = typeof (label as { kind?: unknown } | null)?.kind === 'string';
     throw new RangeError(
       `isAnnotationLabel(): the label is ${describeValue(label)}, not a string. Next: pass ` +
-        'signal.label, which is the field this asks about.',
+        'signal.label, which is the field this asks about' +
+        (signal ? " — or read signal.kind === 'annotations', which is this answer already." : '.'),
     );
   }
   const trimmed = trimEdfField(label);
