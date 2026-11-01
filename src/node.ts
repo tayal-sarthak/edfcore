@@ -237,6 +237,15 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
     const pending = typeof (path as { then?: unknown } | null | undefined)?.then === 'function';
     // A BLOB, which `fs.openAsBlob(path)` resolves to: the file already opened, by another adapter.
     const blob = path as { size?: unknown; slice?: unknown } | null | undefined;
+    // An OPEN HANDLE, which `fs.open(path)` resolves to and `fileHandleSource` below wraps.
+    if (typeof (path as { fd?: unknown } | null | undefined)?.fd === 'number') {
+      throw new EdfSourceError(
+        `fileSource() needs a path, and received ${describeValue(path)}. Next: that is an open ` +
+          'file handle — pass it to fileHandleSource(handle, (await handle.stat()).size), or ' +
+          'pass the path it was opened from here.',
+        { offset: 0, requestedLength: 0 },
+      );
+    }
     throw new EdfSourceError(
       `fileSource() needs a path, and received ${describeValue(path)}. ` +
         (pending
