@@ -66,10 +66,14 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint, call: string
    * fields to use (fixed in 0.6.112).
    */
   if (typeof (signal as { kind?: unknown } | null | undefined)?.kind !== 'string') {
+    // Only a chunk signal is told about chunk signals: a recording or a header is neither.
+    const chunk = typeof (signal as { signalIndex?: unknown } | null)?.signalIndex === 'number';
     throw new RangeError(
-      `${call}(): the signal is ${describeValue(signal)}, not one of header.signals — a chunk ` +
-        'signal carries the samples rather than the grid they sit on. Next: pass ' +
-        'header.signals[chunkSignal.signalIndex], or resolve it with getSignal(header, label).',
+      `${call}(): the signal is ${describeValue(signal)}, not one of header.signals` +
+        (chunk
+          ? ' — a chunk signal carries the samples rather than the grid they sit on. Next: pass ' +
+            'header.signals[chunkSignal.signalIndex], or resolve it with getSignal(header, label).'
+          : '. Next: resolve it with getSignal(header, label).'),
     );
   }
   if (typeof recordDurationTicks !== 'bigint') {
