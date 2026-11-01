@@ -536,10 +536,12 @@ export function toPhysicalEnvelope(
   if (!ArrayBuffer.isView((envelope as { min?: unknown } | null | undefined)?.min)) {
     throw new RangeError(
       `toPhysicalEnvelope(): the envelope is ${
-        Array.isArray((envelope as unknown as EdfEnvelopeChunk | undefined)?.signals)
-          ? 'an envelope chunk, which carries one envelope per signal on .signals rather than ' +
-            'being one'
-          : `${describeValue(envelope)} with no min on it`
+        Array.isArray(envelope)
+          ? 'the array readEnvelope() resolves to, which holds one chunk per contiguous run'
+          : Array.isArray((envelope as unknown as EdfEnvelopeChunk | undefined)?.signals)
+            ? 'an envelope chunk, which carries one envelope per signal on .signals rather than ' +
+              'being one'
+            : `${describeValue(envelope)} with no min on it`
       }. Next: pass one element of chunk.signals — the array readEnvelope() fills.`,
     );
   }
