@@ -156,11 +156,15 @@ export function formatDiagnostics(
    * file nobody looked at (fixed in 0.6.95).
    */
   if (!Array.isArray(diagnostics)) {
+    // A RECORDING keeps them a field further down than the header the advice names.
+    const opened = typeof (diagnostics as { source?: { read?: unknown } } | null)?.source?.read;
     throw new RangeError(
       `formatDiagnostics(): the diagnostics are ${describeValue(diagnostics)}, not an array — ` +
         "and '' is what this function returns for a file with no problems, so a wrong argument " +
-        'must not be able to produce it. Next: pass header.diagnostics, or the diagnostics on the ' +
-        'chunk or the report you have.',
+        'must not be able to produce it. Next: pass header.diagnostics' +
+        (opened === 'function'
+          ? ' — that is a recording, so recording.header.diagnostics.'
+          : ', or the diagnostics on the chunk or the report you have.'),
     );
   }
   /*
