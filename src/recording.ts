@@ -386,6 +386,14 @@ export function assertRecording(
         'openEdf(source)`.',
     );
   }
+  // A SOURCE, which is what openEdf() reads rather than what it resolves to.
+  const read = given as { read?: unknown; byteLength?: unknown } | null | undefined;
+  if (typeof read?.read === 'function' && typeof read.byteLength === 'number') {
+    throw new RangeError(
+      `${call}(): the recording is a ByteSource — what openEdf() reads, not what it resolves ` +
+        'to. Next: pass `await openEdf(source)`.',
+    );
+  }
   throw new RangeError(
     `${call}(): the recording is ${describeSelection(recording)}, not the object openEdf() ` +
       'returns. Next: pass `await openEdf(source)`.',
