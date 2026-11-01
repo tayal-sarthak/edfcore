@@ -73,8 +73,12 @@ function assertGrid(signal: EdfSignal, recordDurationTicks: bigint, call: string
     );
   }
   if (typeof recordDurationTicks !== 'bigint') {
+    // The HEADER, which carries the ticks on the field this argument is named after.
+    const held = (recordDurationTicks as unknown as { recordDurationTicks?: unknown } | null)
+      ?.recordDurationTicks;
+    const given = typeof held === 'bigint' ? 'the header' : describeValue(recordDurationTicks);
     throw new RangeError(
-      `${call}(): recordDurationTicks is ${describeValue(recordDurationTicks)}, not a BigInt. ` +
+      `${call}(): recordDurationTicks is ${given}, not a BigInt. ` +
         'Next: pass header.recordDurationTicks — the seconds beside it on the same header are a ' +
         'float, and this family is exact on purpose.',
     );
