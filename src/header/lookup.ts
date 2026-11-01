@@ -87,6 +87,12 @@ function assertLabel(label: unknown, call: string): void {
         'Next: use it as it is, or pass signal.label to look it up again.',
     );
   }
+  if (typeof (label as { signalIndex?: unknown } | null)?.signalIndex === 'number') {
+    throw new RangeError(
+      `${call}(): the selector is a chunk signal, which carries samples rather than a label. ` +
+        'Next: use header.signals[chunkSignal.signalIndex], the signal they were read from.',
+    );
+  }
   throw new RangeError(
     `${call}(): the selector is ${describeValue(label)}, and this call matches on the label as ` +
       'written. Next: pass the label as a string, or matchSignals(header, pattern) for a RegExp ' +
