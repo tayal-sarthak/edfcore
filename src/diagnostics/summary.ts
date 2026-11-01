@@ -144,10 +144,14 @@ export function summarizeDiagnostics(diagnostics: readonly EdfDiagnostic[]): Edf
     );
   }
   if (!Array.isArray(diagnostics as unknown)) {
+    // A RECORDING keeps them a field further down than the header the advice names.
+    const opened = typeof (diagnostics as { source?: { read?: unknown } } | null)?.source?.read;
     throw new RangeError(
       'summarizeDiagnostics(): the diagnostics are not an array, so there is nothing to ' +
-        'summarise. Next: pass header.diagnostics, or the diagnostics on the chunk or the ' +
-        'report you have.',
+        'summarise. Next: pass header.diagnostics' +
+        (opened === 'function'
+          ? ' — that is a recording, so recording.header.diagnostics.'
+          : ', or the diagnostics on the chunk or the report you have.'),
     );
   }
   let errors = 0;
