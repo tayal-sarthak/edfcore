@@ -264,6 +264,14 @@ export function secondsToTicks(seconds: number, name: string): bigint {
   // value: "not finite" is about a number, and `NaN`, `Infinity` and `undefined` all read correctly
   // as themselves. A string or a BigInt does not.
   if (typeof seconds !== 'number' && seconds !== undefined) {
+    // A WINDOW where one of its bounds belongs, which "an object" was true of and did not say.
+    const window = seconds as { startSeconds?: unknown; durationSeconds?: unknown } | null;
+    if (typeof window?.startSeconds === 'number' && typeof window.durationSeconds === 'number') {
+      throw new RangeError(
+        `${name} must be a number of seconds, and was given a time window. Next: pass the field ` +
+          'you mean — window.startSeconds or window.durationSeconds — rather than the window.',
+      );
+    }
     throw new RangeError(
       `${name} must be a number of seconds, and was given ${describeSeconds(seconds)}. Next: ` +
         'convert it first — Number(text) for a string, and for a tick count the matching ' +
