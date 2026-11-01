@@ -118,9 +118,13 @@ function signalAt(header: EdfHeader, signalIndex: number): EdfSignal {
       ? `signalIndex ${index} is not one of the ${header.signals.length} signals in this header`
       : `signalIndex ${index} is not a whole number, so it falls between two signals rather ` +
         'than outside them';
+  // A SIGNAL where its index belongs — what getSignal() hands back — was sent to getSignal().
+  const held = (signalIndex as unknown as { index?: unknown } | null)?.index;
   throw new EdfChannelNotFoundError(
-    `${problem}. Next: pass an index taken from header.signals, or resolve one with ` +
-      'getSignal(header, label).',
+    `${problem}. Next: ` +
+      (typeof held === 'number'
+        ? `that is a signal already — pass signal.index, which is ${held}.`
+        : 'pass an index taken from header.signals, or resolve one with getSignal(header, label).'),
     { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
   );
 }
