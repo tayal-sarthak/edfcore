@@ -6,6 +6,46 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.323
+
+Nineteen refusals that named the wrong thing — or nothing — for an argument a caller is likely to
+be holding: a signal, a chunk signal, a header, an inspection, a recording, a source, a window or
+an open file handle, each handed one step from where it belongs. No accepted input changed.
+
+- **A signal where its index belongs.** `sampleAt`, `sampleStartTicksOf`, `sampleStartSecondsOf`
+  and `decodeDigital` called the result of `getSignal` "an object, not a number this header can be
+  indexed by" and sent it back to `getSignal`. They now say to pass `signal.index`, and give it.
+- **A chunk signal where a label belongs.** `getSignal(header, series)` and `findSignals` were told
+  to pass the label as a string, which a chunk signal does not carry. They now name
+  `header.signals[chunkSignal.signalIndex]`.
+- **A header where a source belongs.** `openEdf`, `readHeader`, `inspectEdf` and `buildTimeline`
+  with its two arguments swapped answered a header with the four-adapter list. It is now named,
+  and sent back to the source it was read from.
+- **A string handed to `decodeHeaderLatin1`.** It was told about ArrayBuffers and Int8Arrays. It
+  is now told the string is text already.
+- **The grid family.** The header passed as `recordDurationTicks` is now called the header rather
+  than "an object"; and a recording or a header passed as the signal is no longer described as a
+  chunk signal, which only a chunk signal is now told about.
+- **`formatDiagnostics` and `summarizeDiagnostics`, given a recording.** Both named
+  `header.diagnostics`; a recording is now pointed at `recording.header.diagnostics`.
+- **A `ByteSource` where the recording belongs.** The reading calls called it "an object, not the
+  object openEdf() returns". It is now named as what `openEdf()` reads.
+- **`isAnnotationLabel`, given a signal.** Still sent to `signal.label`, and now also told that
+  `signal.kind === 'annotations'` is this same check, already made when the header was read.
+- **`toPhysicalEnvelope`, given what `readEnvelope` resolved to.** The array was "an object with
+  no min on it"; it is now named.
+- **`mergeChunks`, given a recording.** "An object, not an array" is now "a recording, which has
+  not been read yet".
+- **A window where one of its bounds belongs.** `trimToWindow` and `resolveTimeWindow`, given
+  `{ startSeconds, durationSeconds }` as `startSeconds`, were told to convert it with
+  `Number(text)`. They now name the window and its two fields.
+- **`fileSource`, given an open file handle.** It was told to pass the path as a string. It is now
+  sent to `fileHandleSource(handle, size)`, the adapter in the same module that takes one.
+- **An inspection where a header belongs.** `getSignal`, `findSignals`, `matchSignals`,
+  `formatHeader`, `declaredDurationSeconds` and `getStatusSignal` all sent it to
+  `recording.header`, which a caller who only triaged the file does not have. Each now names
+  `inspection.header`.
+
 ## 0.6.322
 
 Eight refusals from the helpers that take what a read hands back, each naming the wrong thing for
