@@ -371,6 +371,11 @@ function adapterFor(source: unknown): string {
   if (typeof opened?.source?.read === 'function' && typeof opened.header === 'object') {
     return 'that is a recording — it carries the source on .source rather than being one, so pass recording.source';
   }
+  // A HEADER is what reading a source produces, and `buildTimeline(header, source)` swaps the two.
+  const read = source as { signals?: unknown; recordCount?: unknown } | null | undefined;
+  if (Array.isArray(read?.signals) && typeof read.recordCount === 'number') {
+    return 'that is a header — what reading a source produces — so pass the source it came from';
+  }
   return (
     'use byteSource(bytes) for bytes in memory, fileSource(path) from "edfcore/node" for a file, ' +
     'blobSource(file) for a File, or httpSource(url) for a URL'
