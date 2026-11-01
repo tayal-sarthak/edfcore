@@ -258,7 +258,10 @@ export function mergeChunks(chunks: readonly EdfChunk[]): EdfChunk {
       `mergeChunks: the chunks are ${
         typeof (chunks as unknown as EdfChunk | undefined)?.records === 'object'
           ? 'one chunk rather than an array of them'
-          : `${describeValue(chunks)}, not an array`
+          : typeof (chunks as unknown as { source?: { read?: unknown } } | null)?.source?.read ===
+              'function'
+            ? 'a recording, which has not been read yet'
+            : `${describeValue(chunks)}, not an array`
       }. Next: pass what readWindow() resolved to — it is the array this takes even on a ` +
         'continuous file, where it holds exactly one chunk.',
     );
