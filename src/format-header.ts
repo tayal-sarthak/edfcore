@@ -118,6 +118,13 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
           'resolves to the header this takes.',
       );
     }
+    // An INSPECTION keeps the header it read on `.header`, or `undefined` where it could not.
+    if (typeof (header as { bytesRead?: unknown } | null | undefined)?.bytesRead === 'number') {
+      throw new RangeError(
+        'formatHeader(): that is an inspection, not a header. Next: pass inspection.header — the ' +
+          'header triage read, which is undefined when it could not read one.',
+      );
+    }
     throw new RangeError(
       'formatHeader(): that is not a header — it has no signals. Next: pass recording.header, or ' +
         'what parseHeader(bytes, sourceByteLength) returned.',
