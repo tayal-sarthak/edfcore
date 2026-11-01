@@ -127,6 +127,13 @@ export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
           'readHeader(source) — it resolves to the header this takes.',
       );
     }
+    // An INSPECTION keeps the header it read on `.header`, or `undefined` where it could not.
+    if (typeof (header as { bytesRead?: unknown } | null | undefined)?.bytesRead === 'number') {
+      throw new RangeError(
+        'getStatusSignal(): that is an inspection, not a header. Next: pass inspection.header — ' +
+          'the header triage read, which is undefined when it could not read one.',
+      );
+    }
     throw new RangeError(
       'getStatusSignal(): that is not a header — it has no signals, and undefined is what this ' +
         'function returns for a file with no Status channel, so a wrong argument must not be able ' +
