@@ -92,9 +92,14 @@ function resolveSignal(recording: EdfRecording, signalIndex: number, call: strin
           `${recording.header.signals.length} signals this file declares`
         : `signalIndex ${index} is not a whole number, so it falls between two signals ` +
           'rather than outside them';
+    // A SIGNAL where its index belongs — what getSignal() hands back — was sent to getSignal().
+    const held = (signalIndex as unknown as { index?: unknown } | null)?.index;
     throw new EdfChannelNotFoundError(
-      `${problem}. Next: pass an index from ` +
-        'header.dataSignalIndices, or resolve one with getSignal(header, label).',
+      `${problem}. Next: ` +
+        (typeof held === 'number'
+          ? `that is a signal already — pass signal.index, which is ${held}.`
+          : 'pass an index from header.dataSignalIndices, or resolve one with ' +
+            'getSignal(header, label).'),
       {
         selector: signalIndex,
         availableLabels: recording.header.signals.map((s) => s.label),
