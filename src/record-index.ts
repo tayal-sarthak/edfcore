@@ -730,10 +730,13 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
   // NaN fails every comparison below, so the binary search would walk to an arbitrary segment and
   // return it. Refusing is the only honest answer for a time that is not a time.
   if (!Number.isFinite(seconds)) {
+    // An ANNOTATION, as in "which segment holds this event?", carries its time on the same axis.
+    const event = seconds as { onsetSecondsFromFirstRecord?: unknown } | null | undefined;
     throw new RangeError(
       `segmentAt() needs a finite time in seconds, received ${describeValue(seconds)}. ` +
-        `Next: pass a number, ` +
-        'not the result of dividing by a zero recordDurationSeconds.',
+        (typeof event?.onsetSecondsFromFirstRecord === 'number'
+          ? 'Next: that is an annotation — pass annotation.onsetSecondsFromFirstRecord.'
+          : 'Next: pass a number, not the result of dividing by a zero recordDurationSeconds.'),
     );
   }
 
