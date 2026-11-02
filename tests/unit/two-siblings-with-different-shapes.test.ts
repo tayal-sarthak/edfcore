@@ -86,7 +86,9 @@ describe('buildRecordIndex given the header', () => {
     const recording = await opened();
     const value = given === 'source' ? recording.source : given;
     expect(await refusal(() => buildRecordIndex(loosely<EdfRecording>(value)))).toContain(
-      'the recording is not the object openEdf() returns',
+      given === 'source'
+        ? 'the recording is a ByteSource — what openEdf() reads, not what it resolves to'
+        : 'the recording is not the object openEdf() returns',
     );
   });
 
