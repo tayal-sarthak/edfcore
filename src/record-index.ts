@@ -782,10 +782,14 @@ export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefine
     );
   }
   if (!Number.isFinite(seconds)) {
+    // An ANNOTATION, as in "did this event fall in a gap?", carries its time on the same axis.
+    const event = seconds as { onsetSecondsFromFirstRecord?: unknown } | null | undefined;
     throw new RangeError(
       `gapAt() needs a finite time in seconds, received ${describeValue(seconds)}. ` +
-        `Next: pass a number, the ` +
-        'way segmentAt() requires one — the two agree about every boundary.',
+        (typeof event?.onsetSecondsFromFirstRecord === 'number'
+          ? 'Next: that is an annotation — pass annotation.onsetSecondsFromFirstRecord.'
+          : 'Next: pass a number, the way segmentAt() requires one — the two agree about every ' +
+            'boundary.'),
     );
   }
 
