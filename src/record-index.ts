@@ -311,7 +311,9 @@ export async function buildTimeline(
    * properties of undefined`, naming the field rather than the argument, and saying nothing about
    * the two this call wants (fixed in 0.6.106).
    */
-  if (typeof (source as { header?: unknown } | null | undefined)?.header === 'object') {
+  // An INSPECTION carries a `.header` too, and `assertByteSource` below names it for what it is.
+  const held = source as { header?: unknown; bytesRead?: unknown } | null | undefined;
+  if (typeof held?.header === 'object' && typeof held.bytesRead !== 'number') {
     throw new RangeError(
       'buildTimeline(): that is a recording, and this call takes the source and the header ' +
         'separately — it is what builds a recording, so there is none yet. Next: pass ' +
