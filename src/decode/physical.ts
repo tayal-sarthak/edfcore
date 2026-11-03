@@ -351,6 +351,10 @@ export function assertSignal(signal: EdfSignal, call: string): void {
     | { signals?: unknown; recordCount?: unknown; header?: { signals?: unknown } }
     | null
     | undefined;
+  // An INDEX already names the element to pass, so the advice spells it rather than a chunk's.
+  const index = signal as unknown;
+  const at =
+    Number.isSafeInteger(index) && (index as number) >= 0 ? index : 'chunkSignal.signalIndex';
   throw new RangeError(
     `${call}(): the signal is ${
       chunk
@@ -360,8 +364,7 @@ export function assertSignal(signal: EdfSignal, call: string): void {
           : Array.isArray(holder?.header?.signals)
             ? 'a recording, whose header carries one signal per element of .signals'
             : `${describeValue(signal)}, not one of header.signals`
-    }. Next: pass header.signals[chunkSignal.signalIndex], or resolve it with ` +
-      'getSignal(header, label).',
+    }. Next: pass header.signals[${at}], or resolve it with getSignal(header, label).`,
   );
 }
 
