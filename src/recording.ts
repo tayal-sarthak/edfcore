@@ -248,7 +248,15 @@ export function assertSelection(
    * "signalIndices is missing" and `readEnvelope` asked for buckets, about an argument that held
    * neither because it was never a selection.
    */
-  if (Array.isArray((selection as { signals?: unknown }).signals)) {
+  const signals = (selection as { signals?: unknown }).signals;
+  // A chunk's signals are objects; INDICES there are the selection with its key misspelled.
+  if (Array.isArray(signals) && typeof signals[0] === 'number' && shape.includes('signalIndices')) {
+    throw new RangeError(
+      `${call}(): the selection holds its indices on \`signals\`, and the field is called ` +
+        `signalIndices. Next: pass ${shape}.`,
+    );
+  }
+  if (Array.isArray(signals)) {
     throw new RangeError(
       `${call}(): the selection is a chunk, which is what a read returns rather than what it ` +
         `takes. Next: pass ${shape} — the chunk's .records, .startSeconds and .durationSeconds ` +
