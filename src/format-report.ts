@@ -67,7 +67,12 @@ export function formatValidationReport(
       'formatValidationReport(): that is not a validation report — it has no `ok` and no ' +
         '`diagnostics` list. Next: pass what validateRecording(recording) resolved to, in whole: ' +
         'the verdict, the counts and the bytes read all come off the report, not off its ' +
-        'diagnostics.',
+        'diagnostics.' +
+        // A LIST is also what `validateHeader` returns, two exports up, with no report around it.
+        (Array.isArray(report)
+          ? ' A list from validateHeader() has none: print it with formatDiagnostics() from ' +
+            '"edfcore".'
+          : ''),
     );
   }
   /*
