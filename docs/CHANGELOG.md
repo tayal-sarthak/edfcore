@@ -6,6 +6,29 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.324
+
+Seven more refusals that named the wrong thing for an argument one step from where it belongs —
+three of them calling an inspection a recording, or sending it to one. No accepted input changed.
+
+- **An inspection called a recording.** `buildTimeline` and `parseHeader` recognised anything with
+  a `.header` as a recording, and an inspection has one. `buildTimeline` now leaves it to the
+  source check, which names an inspection; `parseHeader` sends it to `inspection.header`.
+- **`validateHeader`, given an inspection.** It was told to pass `recording.header`. It is now
+  sent to `inspection.header`, as `formatHeader` and the lookups already are.
+- **`validateHeader`, given a source.** Also told to pass `recording.header` — the object a
+  header-only check exists to avoid building. It is now sent to `await readHeader(source)`.
+- **A selection with its indices under `signals`.** `readWindow`, `readRecords`, `readEnvelope`,
+  `readEnvelopeAtResolution` and `streamRecords` called `{ signals: [0], … }` a chunk, because a
+  chunk has a `signals` array. A chunk's signals are objects; numbers there are now named as the
+  `signalIndices` field under another key.
+- **An index where the signal belongs.** `toPhysical(0, digital)` and the other scaling calls were
+  sent to `header.signals[chunkSignal.signalIndex]`. They now spell the element their own index
+  names: `header.signals[0]`.
+- **`formatValidationReport`, given what `validateHeader` returned.** The list was sent to the
+  report `validateRecording` makes, a sweep of every record. It is now also told that the list
+  prints with `formatDiagnostics()`.
+
 ## 0.6.323
 
 Nineteen refusals that named the wrong thing — or nothing — for an argument a caller is likely to
