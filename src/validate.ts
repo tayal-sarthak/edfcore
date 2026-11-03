@@ -534,6 +534,13 @@ export function validateHeader(header: EdfHeader): readonly EdfDiagnostic[] {
           'the header triage read, which is undefined when it could not read one.',
       );
     }
+    const source = header as { read?: unknown; byteLength?: unknown } | null | undefined;
+    if (typeof source?.read === 'function' && typeof source.byteLength === 'number') {
+      throw new RangeError(
+        'validateHeader(): that is a ByteSource, which the header is read from rather than one. ' +
+          'Next: pass `await readHeader(source)`.',
+      );
+    }
     throw new RangeError(
       'validateHeader(): that is not a header — it has no signals. Next: pass recording.header, ' +
         'or call validateRecording(recording) for the checks that need the bytes too.',
