@@ -228,9 +228,11 @@ export function parseHeader(
     );
   }
   if (typeof given?.header === 'object' && given.header !== null && !isByteArray(headerBytes)) {
+    // An INSPECTION carries the header triage parsed on the same field.
+    const held = typeof (given as { bytesRead?: unknown }).bytesRead === 'number';
     throw new RangeError(
-      'parseHeader(): that is a recording, which carries its header already parsed. Next: use ' +
-        'recording.header.',
+      `parseHeader(): that is ${held ? 'an inspection' : 'a recording'}, which carries its ` +
+        `header already parsed. Next: use ${held ? 'inspection' : 'recording'}.header.`,
     );
   }
   // A caller bug, not a file defect, so it is a plain RangeError: EdfFormatError would claim the
