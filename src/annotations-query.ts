@@ -228,8 +228,11 @@ export function filterAnnotationsByText(
             match,
             'filterAnnotationsByText',
             'a string matched verbatim, a RegExp, or a predicate on the text',
-            'pass the label as a string, or (text) => text.trim() === label for a file whose ' +
-              'vocabulary is padded',
+            // A LIST of labels — the sleep stages, say — is one predicate, not several matchers.
+            Array.isArray(match)
+              ? 'for a list of labels, pass (text) => labels.includes(text)'
+              : 'pass the label as a string, or (text) => text.trim() === label for a file whose ' +
+                  'vocabulary is padded',
           );
   /*
    * An ASYNC predicate, which keeps EVERYTHING.
