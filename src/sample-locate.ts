@@ -195,10 +195,13 @@ export function sampleAt(
 ): EdfSampleLocation | undefined {
   const signal = resolveSignal(recording, signalIndex, 'sampleAt');
   if (!Number.isFinite(seconds)) {
+    // An ANNOTATION, under a cursor placed on an event, carries its onset on this same axis.
+    const event = seconds as { onsetSecondsFromFirstRecord?: unknown } | null | undefined;
     throw new RangeError(
       `sampleAt(): seconds must be a finite number, received ${describeValue(seconds)}. ` +
-        `Next: pass a time on ` +
-        'the recording axis, where t = 0 is the start of record 0.',
+        (typeof event?.onsetSecondsFromFirstRecord === 'number'
+          ? 'Next: that is an annotation — pass annotation.onsetSecondsFromFirstRecord.'
+          : 'Next: pass a time on the recording axis, where t = 0 is the start of record 0.'),
     );
   }
 
