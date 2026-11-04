@@ -127,7 +127,10 @@ export function assertChunkSignal(chunkSignal: EdfChunkSignal, call: string, ver
         ? `a header signal, which carries no samples to ${verb}`
         : chunk
           ? 'a chunk, which carries one signal per element of .signals rather than being one'
-          : `${describeValue(chunkSignal)} with no signalIndex on it`
+          : // An ARRAY, one level further up — readWindow()'s chunks — or chunk.signals itself.
+            Array.isArray(chunkSignal)
+            ? "an array — readWindow()'s chunks, or a chunk's .signals — rather than one signal"
+            : `${describeValue(chunkSignal)} with no signalIndex on it`
     }. Next: pass one element of chunk.signals — the array readWindow() and readRecords() fill.`,
   );
 }
