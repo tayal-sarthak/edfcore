@@ -144,6 +144,13 @@ function assertHeaderSignals(header: EdfHeader, call: string): void {
           'header triage read, which is undefined when it could not read one.',
       );
     }
+    // The header's own SIGNALS, one field too far in: the list this call walks, not its owner.
+    if (Array.isArray(header) && typeof (header[0] as { label?: unknown })?.label === 'string') {
+      throw new RangeError(
+        `${call}(): that is header.signals, not the header — this call walks that list itself. ` +
+          'Next: pass the header, recording.header, rather than its signals.',
+      );
+    }
     throw new RangeError(
       `${call}(): that is not a header — it has no signals. Next: pass recording.header, or what ` +
         'parseHeader(bytes, sourceByteLength) returned.',
