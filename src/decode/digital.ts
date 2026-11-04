@@ -171,6 +171,13 @@ export function assertDecodable(header: EdfHeader, recordBytes: Uint8Array, call
           'resolves to the header this takes.',
       );
     }
+    // An INSPECTION keeps the header it read on `.header`, or `undefined` where it could not.
+    if (typeof (header as { bytesRead?: unknown } | null | undefined)?.bytesRead === 'number') {
+      throw new RangeError(
+        `${call}(): that is an inspection, not a header. Next: pass inspection.header — the ` +
+          'header triage read, which is undefined when it could not read one.',
+      );
+    }
     throw new RangeError(
       `${call}(): that is not a header — it has no recordByteLength, so there is no record size ` +
         'to measure the buffer against. Next: pass recording.header.',
