@@ -272,6 +272,14 @@ export function secondsToTicks(seconds: number, name: string): bigint {
           'you mean — window.startSeconds or window.durationSeconds — rather than the window.',
       );
     }
+    // An ANNOTATION, which is how a window gets centred on an event a reader clicked.
+    const event = seconds as { onsetSecondsFromFirstRecord?: unknown } | null;
+    if (typeof event?.onsetSecondsFromFirstRecord === 'number') {
+      throw new RangeError(
+        `${name} must be a number of seconds, and was given an annotation. Next: pass ` +
+          'annotation.onsetSecondsFromFirstRecord — the axis every read puts t = 0 on.',
+      );
+    }
     throw new RangeError(
       `${name} must be a number of seconds, and was given ${describeSeconds(seconds)}. Next: ` +
         'convert it first — Number(text) for a string, and for a tick count the matching ' +
