@@ -474,6 +474,14 @@ export function channelNotFound(header: EdfHeader, signalIndex: number): EdfChan
       { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
     );
   }
+  // A CHUNK SIGNAL from an earlier read, re-reading the same channels: its index is `signalIndex`.
+  if (typeof (signalIndex as { signalIndex?: unknown } | null)?.signalIndex === 'number') {
+    return new EdfChannelNotFoundError(
+      'signalIndices holds a chunk signal rather than an index. Next: pass ' +
+        'chunkSignal.signalIndex for each — chunk.signals.map((s) => s.signalIndex).',
+      { selector: signalIndex, availableLabels: header.signals.map((s) => s.label) },
+    );
+  }
   /*
    * WHY it was refused, in the third place this package resolves a signal by index.
    *
