@@ -190,6 +190,16 @@ function assertRecordRange(header: EdfHeader, records: RecordRange): void {
       { requested: range, available },
     );
   }
+  // A SIGNAL, as though this argument chose a channel — `readAnnotations(recording, tal)`.
+  const signal = records as { index?: unknown; label?: unknown } | null | undefined;
+  if (typeof signal?.index === 'number' && typeof signal.label === 'string') {
+    throw new EdfRangeError(
+      'that is a signal, not a record range: this argument chooses which records to read, not ' +
+        'which channel. Next: pass a start and a count — start 0, count ' +
+        `${header.recordCount} for the whole file.`,
+      { requested: range, available },
+    );
+  }
   const startValid = Number.isSafeInteger(range.start) && range.start >= 0;
   const countValid = Number.isSafeInteger(range.count) && range.count >= 0;
   if (startValid && countValid && range.start + range.count <= header.recordCount) return;
