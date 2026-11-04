@@ -184,9 +184,15 @@ export function assertDecodable(header: EdfHeader, recordBytes: Uint8Array, call
     );
   }
   if (!isByteArray(recordBytes)) {
+    // The SOURCE they are read from, one call early: the two are written on adjacent lines.
+    const served = typeof (recordBytes as { read?: unknown } | null)?.read === 'function';
     throw new RangeError(
-      `${call}(): the record bytes are ${describeValue(recordBytes)}, not a Uint8Array. Next: ` +
-        'pass what readRecordBytes(source, header, records) resolved to, unsliced.',
+      `${call}(): the record bytes are ${
+        served
+          ? 'a ByteSource, which serves them rather than holding them'
+          : describeValue(recordBytes)
+      }, not a Uint8Array. Next: pass what readRecordBytes(source, header, records) resolved to, ` +
+        'unsliced.',
     );
   }
 }
