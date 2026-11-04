@@ -541,7 +541,10 @@ export function toPhysicalEnvelope(
           : Array.isArray((envelope as unknown as EdfEnvelopeChunk | undefined)?.signals)
             ? 'an envelope chunk, which carries one envelope per signal on .signals rather than ' +
               'being one'
-            : `${describeValue(envelope)} with no min on it`
+            : // A CHUNK SIGNAL from readWindow(), whose samples have their own scaling call.
+              ArrayBuffer.isView((envelope as { digital?: unknown } | null | undefined)?.digital)
+              ? 'a chunk signal — samples, which toPhysical(signal, chunkSignal.digital) scales'
+              : `${describeValue(envelope)} with no min on it`
       }. Next: pass one element of chunk.signals — the array readEnvelope() fills.`,
     );
   }
