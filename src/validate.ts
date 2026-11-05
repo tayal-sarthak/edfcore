@@ -541,6 +541,13 @@ export function validateHeader(header: EdfHeader): readonly EdfDiagnostic[] {
           'Next: pass `await readHeader(source)`.',
       );
     }
+    // The header's own SIGNALS, one field too far in: the record size and dates are checked too.
+    if (Array.isArray(header) && typeof (header[0] as { label?: unknown })?.label === 'string') {
+      throw new RangeError(
+        'validateHeader(): that is header.signals, not the header — these checks read the ' +
+          'record size and the dates as well. Next: pass the header, recording.header.',
+      );
+    }
     throw new RangeError(
       'validateHeader(): that is not a header — it has no signals. Next: pass recording.header, ' +
         'or call validateRecording(recording) for the checks that need the bytes too.',
