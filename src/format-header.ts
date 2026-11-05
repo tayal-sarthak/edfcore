@@ -125,6 +125,13 @@ export function formatHeader(header: EdfHeader, options?: FormatHeaderOptions): 
           'header triage read, which is undefined when it could not read one.',
       );
     }
+    // The header's own SIGNALS, one field too far in: the summary prints the file around them.
+    if (Array.isArray(header) && typeof (header[0] as { label?: unknown })?.label === 'string') {
+      throw new RangeError(
+        'formatHeader(): that is header.signals, not the header — the summary prints the start ' +
+          'and the record layout too. Next: pass the header, recording.header.',
+      );
+    }
     throw new RangeError(
       'formatHeader(): that is not a header — it has no signals. Next: pass recording.header, or ' +
         'what parseHeader(bytes, sourceByteLength) returned.',
