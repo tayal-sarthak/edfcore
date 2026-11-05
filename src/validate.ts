@@ -906,7 +906,10 @@ export async function validateRecording(
       `validateRecording(): ${
         Array.isArray(given?.signals)
           ? 'that is a header, and this sweep reads the records too'
-          : 'the recording is not the object openEdf() returns'
+          : // The SOURCE, one call early: `openEdf(source)` is the line this one follows.
+            typeof (given as { read?: unknown } | null | undefined)?.read === 'function'
+            ? 'the recording is a ByteSource — what openEdf() reads, not what it resolves to'
+            : 'the recording is not the object openEdf() returns'
       }. Next: pass \`await openEdf(source)\`, or call validateHeader(header) for the checks that ` +
         'need only the header.',
     );
