@@ -318,6 +318,15 @@ export function assertSelection(
             `Next: pass ${shape} — ${recordsForm}`,
     );
   }
+  // An END where the length belongs, which is how a segment and a gap spell their bounds.
+  const ended = selection as { endSeconds?: unknown; durationSeconds?: unknown };
+  const windowed = shape.includes('durationSeconds');
+  if (windowed && ended.durationSeconds === undefined && typeof ended.endSeconds === 'number') {
+    throw new RangeError(
+      `${call}(): the selection has an endSeconds, and this call measures the window by its ` +
+        'length. Next: pass durationSeconds, which is endSeconds minus startSeconds.',
+    );
+  }
 }
 
 /**
