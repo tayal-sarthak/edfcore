@@ -350,13 +350,14 @@ export async function readRecordBytes(
      * The next step names `parseHeader`, which is synchronous — and the call a reader reaches for
      * when they have a SOURCE rather than bytes is `readHeader`, which is not. 0.6.217 made this
      * argument for the three lookups and 0.6.229 for `validateHeader`; this is the same sentence in
-     * the primitive that sits directly beside readHeader in this file, and it named nothing a reader could act on: "it has no recordByteLength" is true of a pending
-     * Promise, and true of almost everything else.
+     * the primitive that sits directly beside readHeader in this file, and it named nothing a
+     * reader could act on: "it has no recordByteLength" is true of a pending Promise, and true of
+     * almost everything else.
      */
     if (typeof (header as { then?: unknown } | null | undefined)?.then === 'function') {
       throw new RangeError(
-        'readRecordBytes(): that is a pending Promise, not a header. Next: await readHeader(source) — it ' +
-          'resolves to the header this takes.',
+        'readRecordBytes(): that is a pending Promise, not a header. Next: await ' +
+          'readHeader(source) — it resolves to the header this takes.',
       );
     }
     // An INSPECTION keeps the header it read on `.header`, or `undefined` where it could not.
