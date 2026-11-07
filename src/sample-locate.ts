@@ -301,9 +301,11 @@ export function sampleStartTicksOf(
   const signal = resolveSignal(recording, signalIndex, 'sampleStartTicksOf');
   if (!Number.isSafeInteger(sampleIndex)) {
     throw new RangeError(
-      `sampleIndex must be a whole number, received ${describeValue(sampleIndex)}. ` +
-        `Next: index by ` +
-        'samplesPerRecord rather than deriving one from a float sampleRateHz.',
+      `sampleIndex must be a whole number, received ${describeValue(sampleIndex)}. Next: ` +
+        // TEXT, or a BigInt: an index spelled as another type, not one derived from a rate.
+        (typeof sampleIndex === 'number'
+          ? 'index by samplesPerRecord rather than deriving one from a float sampleRateHz.'
+          : 'convert it with Number() first — an index from a form field or a URL is text.'),
     );
   }
 
