@@ -134,6 +134,13 @@ export function getStatusSignal(header: EdfHeader): EdfSignal | undefined {
           'the header triage read, which is undefined when it could not read one.',
       );
     }
+    // The header's own SIGNALS, one field too far in: the list this call searches, not its owner.
+    if (Array.isArray(header) && typeof (header[0] as { label?: unknown })?.label === 'string') {
+      throw new RangeError(
+        'getStatusSignal(): that is header.signals, not the header — this call searches that ' +
+          'list itself. Next: pass the header, recording.header.',
+      );
+    }
     throw new RangeError(
       'getStatusSignal(): that is not a header — it has no signals, and undefined is what this ' +
         'function returns for a file with no Status channel, so a wrong argument must not be able ' +
