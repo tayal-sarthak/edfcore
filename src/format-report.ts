@@ -63,9 +63,12 @@ export function formatValidationReport(
           'await validateRecording(recording) — it resolves to the report this prints.',
       );
     }
+    // A HEADER or a chunk carries a `diagnostics` list too, just no verdict over it.
+    const listed = Array.isArray(given?.diagnostics);
     throw new RangeError(
-      'formatValidationReport(): that is not a validation report — it has no `ok` and no ' +
-        '`diagnostics` list. Next: pass what validateRecording(recording) resolved to, in whole: ' +
+      'formatValidationReport(): that is not a validation report — it has no `ok` ' +
+        (listed ? 'over its `diagnostics`' : 'and no `diagnostics` list') +
+        '. Next: pass what validateRecording(recording) resolved to, in whole: ' +
         'the verdict, the counts and the bytes read all come off the report, not off its ' +
         'diagnostics.' +
         // A LIST is also what `validateHeader` returns, two exports up, with no report around it.
