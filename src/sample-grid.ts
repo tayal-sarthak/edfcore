@@ -174,8 +174,11 @@ function assertSampleIndex(sampleIndex: number, call: string): void {
   if (Number.isSafeInteger(sampleIndex)) return;
   throw new RangeError(
     `${call}(): sampleIndex must be a whole number, received ${describeValue(sampleIndex)}. ` +
-      "Next: pass a whole index; this family measures the signal's own grid, so a fractional " +
-      'one has no position on it.',
+      // TEXT, or a BigInt, is a whole index in another type rather than a fractional one.
+      (typeof sampleIndex === 'number'
+        ? "Next: pass a whole index; this family measures the signal's own grid, so a fractional " +
+          'one has no position on it.'
+        : 'Next: convert it with Number() first — an index from a form field or a URL is text.'),
   );
 }
 
