@@ -6,6 +6,66 @@ alone does not tell you whether you were affected.
 edfcore is pre-1.0. Patch releases have carried behaviour changes where the old behaviour was a
 defect; those are called out below.
 
+## 0.6.325
+
+Thirty refusals that named the wrong thing — mostly an inspection, an annotation, a source or a
+header's own signals, each handed one step from where it belongs. No accepted input changed.
+
+- **An inspection where a header belongs, in the low-level path.** `buildTimeline` (its second
+  argument), `readRecordBytes`, `decodeDigital` and `decodeAnnotations` sent it to
+  `recording.header`, which a caller working from triage never builds. All four now name it and
+  point at `inspection.header`.
+- **An annotation where a time belongs.** `readWindow`, `trimToWindow`, `resolveTimeWindow` and the
+  rest of the time-bounded calls were told to convert "an object" with `Number(text)`; `sampleAt`
+  to pass a time on the recording axis; `gapAt` and `segmentAt` to pass a number. All of them now
+  name the annotation and its `onsetSecondsFromFirstRecord`, which is that axis. `annotationsAt`
+  called one "a time window", because an annotation has a `durationSeconds`, and now reaches the
+  same sentence.
+- **An annotation as the window.** `filterAnnotationsByTime(annotations, annotation)` was told
+  `window.startSeconds` was undefined. It now names the annotation and says to pass its onset as
+  `startSeconds`, with the span to search as `durationSeconds`.
+- **Annotations handed to the diagnostics helpers.** `formatDiagnostics` said each was "an object,
+  which carries no message"; `summarizeDiagnostics` called it a by-code summary row. They now name
+  an annotation, and point at `formatAnnotations()` and `countAnnotationsByText()`.
+- **Chunk signals handed back as `signalIndices`.** Re-reading the channels of an earlier chunk was
+  refused as "an object, not a number" and sent to `getSignal`. It now points at
+  `chunkSignal.signalIndex`.
+- **A chunk signal handed to `toPhysicalEnvelope`.** "An object with no min on it" now names the
+  chunk signal and sends its samples to `toPhysical(signal, chunkSignal.digital)`.
+- **A list of labels handed to `filterAnnotationsByText`.** It was told to pass one label as a
+  string. It is now pointed at `(text) => labels.includes(text)`.
+- **An array where one chunk signal belongs.** `trimToWindow` and `envelopeOfSamples`, given
+  `readWindow()`'s chunks or a chunk's `.signals`, called it "an object with no signalIndex"; it is
+  now named as the array.
+- **A signal where `readAnnotations` takes its records.** It was refused as
+  `records { start: undefined, count: undefined }`. It is now named, and told this argument
+  chooses records rather than a channel.
+- **A source where the bytes or the recording belong.** The decoders said "an object, not a
+  Uint8Array", and `buildRecordIndex` and `validateRecording` "the recording is not the object
+  openEdf() returns". All four now name a ByteSource — what `readRecordBytes` and `openEdf` read
+  from, not what they return.
+- **An ArrayBuffer where a view belongs.** The decoders said "the record bytes are ArrayBuffer";
+  `toPhysical` said the samples were an ArrayBuffer "which has no length". Both now name it and
+  the view that reads it — `new Uint8Array(buffer)` for the bytes, `new Int32Array(buffer)` for
+  samples transferred from a worker.
+- **`endSeconds` on a window.** `{ startSeconds, endSeconds }`, the way segments and gaps state
+  their bounds, was told `durationSeconds` was undefined. It now names `endSeconds` and the length
+  to pass instead.
+- **`header.signals` handed where the header belongs.** `getSignal`, `findSignals`,
+  `matchSignals`, `validateHeader`, `formatHeader`, `getStatusSignal` and
+  `declaredDurationSeconds` said "that is not a header — it has no signals" (or no `recordCount`)
+  about a list of nothing but signals. It is now named, and sent back to the header that carries it.
+- **A header handed to `formatValidationReport`.** It was said to have "no `ok` and no
+  `diagnostics` list", and a header has that list. The sentence now says it has no `ok` over it.
+- **A sample index spelled as text.** `sampleStartTicksOf`, `sampleStartSecondsOf` and the grid
+  family answered `"12"` with advice about fractional indices. Text and BigInt are now sent to
+  `Number()`.
+
+Three source lines in `declaredDurationSeconds`, `readRecordBytes` and `formatHeader` had been
+joined past the 100-column limit, which the formatter does not wrap in comments or strings. They
+are rewrapped; the messages read exactly as before. So is the padding note in `bytes/latin1.ts`,
+whose list of the three modules that share the rule had two clauses spliced into one.
+
 ## 0.6.324
 
 Seven more refusals that named the wrong thing for an argument one step from where it belongs —
