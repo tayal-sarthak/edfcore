@@ -522,6 +522,13 @@ export function declaredDurationSeconds(header: EdfHeader): number {
           'read one.',
       );
     }
+    // The header's own SIGNALS, one field too far in: the count and the length are on the header.
+    if (Array.isArray(header) && typeof (header[0] as { label?: unknown })?.label === 'string') {
+      throw new RangeError(
+        'declaredDurationSeconds(): that is header.signals, not the header — the record count ' +
+          'and the record duration are fields of the header. Next: pass recording.header.',
+      );
+    }
     throw new RangeError(
       'declaredDurationSeconds(): that is not a header — it has no recordCount. Next: pass ' +
         'recording.header, or what parseHeader(bytes, sourceByteLength) returned. For the span of ' +
