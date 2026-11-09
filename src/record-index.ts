@@ -794,8 +794,12 @@ export function gapAt(index: EdfRecordIndex, seconds: number): EdfGap | undefine
       `gapAt() needs a finite time in seconds, received ${describeValue(seconds)}. ` +
         (typeof event?.onsetSecondsFromFirstRecord === 'number'
           ? 'Next: that is an annotation — pass annotation.onsetSecondsFromFirstRecord.'
-          : 'Next: pass a number, the way segmentAt() requires one — the two agree about every ' +
-            'boundary.'),
+          : // TEXT, or a tick count: a time spelled in another type rather than a computed one.
+            typeof (seconds as unknown) === 'string' || typeof (seconds as unknown) === 'bigint'
+            ? 'Next: convert it first — Number(text) for a string, and for a tick count the ' +
+              'matching *Seconds field beside it.'
+            : 'Next: pass a number, the way segmentAt() requires one — the two agree about every ' +
+              'boundary.'),
     );
   }
 
