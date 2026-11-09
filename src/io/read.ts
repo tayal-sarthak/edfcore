@@ -294,7 +294,8 @@ function assertWithinBudget(
   const advice =
     fits > 0
       ? `read at most ${pluralise(fits, 'record')} per call, or raise options.maxMaterializeBytes.`
-      : `one record of this file needs ${perRecord} bytes, so no count fits — raise options.maxMaterializeBytes.`;
+      : `one record of this file needs ${perRecord} bytes, so no count fits — raise ` +
+        'options.maxMaterializeBytes.';
   throw new EdfBudgetError(
     `Reading records ${describeRecordRange(records)} needs a ${requiredBytes}-byte buffer, above the ` +
       `${budgetBytes}-byte maxMaterializeBytes budget, so the read was refused before anything ` +
