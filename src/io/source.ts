@@ -369,7 +369,10 @@ function adapterFor(source: unknown): string {
   }
   const opened = source as { source?: { read?: unknown }; header?: unknown } | null | undefined;
   if (typeof opened?.source?.read === 'function' && typeof opened.header === 'object') {
-    return 'that is a recording — it carries the source on .source rather than being one, so pass recording.source';
+    return (
+      'that is a recording — it carries the source on .source rather than being one, so pass ' +
+      'recording.source'
+    );
   }
   // A HEADER is what reading a source produces, and `buildTimeline(header, source)` swaps the two.
   const read = source as { signals?: unknown; recordCount?: unknown } | null | undefined;
