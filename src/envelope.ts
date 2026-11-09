@@ -165,7 +165,8 @@ export async function readEnvelope(
     selection,
     'readEnvelope',
     '{ signalIndices, startSeconds, durationSeconds, buckets }',
-    'there is no records form of an envelope: readRecords() gives you those records as samples, and envelopeOfSamples() reduces each signal of them.',
+    'there is no records form of an envelope: readRecords() gives you those records as samples, ' +
+      'and envelopeOfSamples() reduces each signal of them.',
   );
   /*
    * And the SIBLING'S field, left on the selection.
