@@ -739,7 +739,11 @@ export function segmentAt(index: EdfRecordIndex, seconds: number): EdfSegment | 
       `segmentAt() needs a finite time in seconds, received ${describeValue(seconds)}. ` +
         (typeof event?.onsetSecondsFromFirstRecord === 'number'
           ? 'Next: that is an annotation — pass annotation.onsetSecondsFromFirstRecord.'
-          : 'Next: pass a number, not the result of dividing by a zero recordDurationSeconds.'),
+          : // TEXT, or a tick count: nobody divided by zero to get either.
+            typeof (seconds as unknown) === 'string' || typeof (seconds as unknown) === 'bigint'
+            ? 'Next: convert it first — Number(text) for a string, and for a tick count the ' +
+              'matching *Seconds field beside it.'
+            : 'Next: pass a number, not the result of dividing by a zero recordDurationSeconds.'),
     );
   }
 
