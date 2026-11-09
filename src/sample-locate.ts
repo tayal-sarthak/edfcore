@@ -201,7 +201,11 @@ export function sampleAt(
       `sampleAt(): seconds must be a finite number, received ${describeValue(seconds)}. ` +
         (typeof event?.onsetSecondsFromFirstRecord === 'number'
           ? 'Next: that is an annotation — pass annotation.onsetSecondsFromFirstRecord.'
-          : 'Next: pass a time on the recording axis, where t = 0 is the start of record 0.'),
+          : // TEXT, or a tick count: on the right axis, perhaps, but in another type.
+            typeof (seconds as unknown) === 'string' || typeof (seconds as unknown) === 'bigint'
+            ? 'Next: convert it first — Number(text) for a string, and for a tick count the ' +
+              'matching *Seconds field beside it.'
+            : 'Next: pass a time on the recording axis, where t = 0 is the start of record 0.'),
     );
   }
 
