@@ -176,8 +176,8 @@ export function assertReadOptions(options: unknown): void {
    */
   if (Array.isArray(options)) {
     throw new RangeError(
-      `the read options are an array, and maxMaterializeBytes and signal are fields on the options rather than ` +
-        'entries in a list. Next: pass them on an object.',
+      'the read options are an array, and maxMaterializeBytes and signal are fields on the ' +
+        'options rather than entries in a list. Next: pass them on an object.',
     );
   }
   /*
