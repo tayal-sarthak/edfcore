@@ -50,8 +50,10 @@ function assertWithinBudget(
   const fits = Math.floor(budgetBytes / bytesPerSample);
   const advice =
     fits > 0
-      ? `convert at most ${fits} samples per call, reuse an \`out\` array, or raise options.maxMaterializeBytes.`
-      : 'this budget does not fit one sample — reuse an `out` array, or raise options.maxMaterializeBytes.';
+      ? `convert at most ${fits} samples per call, reuse an \`out\` array, or raise ` +
+        'options.maxMaterializeBytes.'
+      : 'this budget does not fit one sample — reuse an `out` array, or raise ' +
+        'options.maxMaterializeBytes.';
   throw new EdfBudgetError(
     `Producing ${what} needs a ${requiredBytes}-byte array, above the ${budgetBytes}-byte ` +
       'maxMaterializeBytes budget, so the allocation was refused before it was attempted. ' +
