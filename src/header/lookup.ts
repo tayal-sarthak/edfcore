@@ -33,10 +33,16 @@ export function isAnnotationLabel(label: string): boolean {
   if (typeof label !== 'string') {
     // A SIGNAL already holds this answer: `kind` is this very check, made when the header was read.
     const signal = typeof (label as { kind?: unknown } | null)?.kind === 'string';
+    // A CHUNK SIGNAL carries no label at all: `chunk.signals.filter(isAnnotationLabel)`.
+    const read = typeof (label as { signalIndex?: unknown } | null)?.signalIndex === 'number';
     throw new RangeError(
       `isAnnotationLabel(): the label is ${describeValue(label)}, not a string. Next: pass ` +
-        'signal.label, which is the field this asks about' +
-        (signal ? " — or read signal.kind === 'annotations', which is this answer already." : '.'),
+        (read
+          ? 'header.signals[chunkSignal.signalIndex].label — a chunk signal carries no label.'
+          : 'signal.label, which is the field this asks about' +
+            (signal
+              ? " — or read signal.kind === 'annotations', which is this answer already."
+              : '.')),
     );
   }
   const trimmed = trimEdfField(label);
