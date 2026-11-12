@@ -129,9 +129,8 @@ export function parsePatientId(
         `"${PATIENT_GRAMMAR}": four space-separated subfields, sex written F or M, ` +
         'birthdate written dd-MMM-yyyy such as 02-AUG-1951, X for anything unknown, and no ' +
         `space inside a subfield. Found ${pluralise(subfields.length, 'subfield')}. EDF+ ` +
-        `additional ` +
-        'specification 3. Next: header.patient.raw keeps the text verbatim and every subfield edfcore ' +
-        'could read is still exposed; the rest are undefined.',
+        'additional specification 3. Next: header.patient.raw keeps the text verbatim and every ' +
+        'subfield edfcore could read is still exposed; the rest are undefined.',
       field: 'patientId',
       byteOffset: offset,
       byteLength: HEADER_FIELDS.patientId.length,
