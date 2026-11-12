@@ -248,11 +248,11 @@ export function parseHeader(
 
   /*
    * And the bytes, which no check in this function reached. Every size test below reads
-   * `headerBytes.length`, which is `undefined` on an `ArrayBuffer` — what `await response.arrayBuffer()`
-   * and `await blob.arrayBuffer()` both hand over — so every one of them compared false and the
-   * failure arrived as `bytes.subarray is not a function` from a field reader several checks later.
-   * `decodeHeaderLatin1` refuses the same pair one layer down (0.6.96); this is the entry point a
-   * reader is actually sent to (fixed in 0.6.121).
+   * `headerBytes.length`, which is `undefined` on an `ArrayBuffer` — what
+   * `await response.arrayBuffer()` and `await blob.arrayBuffer()` both hand over — so every one of
+   * them compared false and the failure arrived as `bytes.subarray is not a function` from a field
+   * reader several checks later. `decodeHeaderLatin1` refuses the same pair one layer down
+   * (0.6.96); this is the entry point a reader is actually sent to (fixed in 0.6.121).
    */
   if (!isByteArray(headerBytes)) {
     throw new RangeError(
