@@ -492,8 +492,8 @@ export function decodeDigitalCounted(
  * at record `records.start`; anything else throws `EdfRangeError`. `out` is reused when
  * supplied and long enough.
  *
- * The out-of-range tally reaches callers through `EdfChunkSignal.outOfDigitalRangeCount` — it is the same single
- * pass, so a caller never needs a second one to produce it.
+ * The out-of-range tally reaches callers through `EdfChunkSignal.outOfDigitalRangeCount` — it is
+ * the same single pass, so a caller never needs a second one to produce it.
  */
 export function decodeDigital(
   header: EdfHeader,
