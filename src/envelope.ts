@@ -326,11 +326,10 @@ async function reduceRange(
         'the samples do'
       : 'fewer buckets — a plot cannot show more of them than it has pixels';
     throw new EdfBudgetError(
-      `An envelope of ${pluralise(bucketCount, 'bucket')} over ${pluralise(signals.length, 'signal')} ` +
-        `needs a ` +
-        `${bucketBytes}-byte accumulator, above the ${budgetBytes}-byte maxMaterializeBytes ` +
-        `budget, so it was refused before anything was allocated. Next: ask for ${knob} — or ` +
-        'raise options.maxMaterializeBytes.',
+      `An envelope of ${pluralise(bucketCount, 'bucket')} over ` +
+        `${pluralise(signals.length, 'signal')} needs a ${bucketBytes}-byte accumulator, above ` +
+        `the ${budgetBytes}-byte maxMaterializeBytes budget, so it was refused before anything ` +
+        `was allocated. Next: ask for ${knob} — or raise options.maxMaterializeBytes.`,
       { requiredBytes: bucketBytes, budgetBytes },
     );
   }
