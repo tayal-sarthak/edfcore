@@ -297,9 +297,9 @@ function assertWithinBudget(
       : `one record of this file needs ${perRecord} bytes, so no count fits — raise ` +
         'options.maxMaterializeBytes.';
   throw new EdfBudgetError(
-    `Reading records ${describeRecordRange(records)} needs a ${requiredBytes}-byte buffer, above the ` +
-      `${budgetBytes}-byte maxMaterializeBytes budget, so the read was refused before anything ` +
-      `was allocated. Next: ${advice}`,
+    `Reading records ${describeRecordRange(records)} needs a ${requiredBytes}-byte buffer, ` +
+      `above the ${budgetBytes}-byte maxMaterializeBytes budget, so the read was refused before ` +
+      `anything was allocated. Next: ${advice}`,
     { requiredBytes, budgetBytes },
   );
 }
