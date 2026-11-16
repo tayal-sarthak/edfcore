@@ -355,7 +355,9 @@ function checkAnnotationSignalHeader(
     byteOffset: signalFieldOffset('label', input.signalCount, signalIndex),
     byteLength: SIGNAL_FIELD_WIDTHS.label,
     raw: raw.label,
-    expected: `digital range ${expectedMinimum}..${expectedMaximum}, blank transducer and prefiltering`,
+    expected:
+      `digital range ${expectedMinimum}..${expectedMaximum}, blank transducer and ` +
+      'prefiltering',
     actual: defects.join(', '),
     signalIndex,
     specReference: ANNOTATION_SPEC_REFERENCE,
