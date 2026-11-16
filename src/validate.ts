@@ -404,11 +404,12 @@ function checkDates(header: EdfHeader, into: EdfDiagnostic[]): void {
       createDiagnostic({
         code: 'DATE_FIELDS_DISAGREE',
         message:
-          `the startdate field states day ${String(yearEscape.day)}, month ${String(yearEscape.month)} ` +
-          `with the EDF+ "yy" year escape, but the recording identification Startdate says ` +
-          `${formatCalendarDate(recordingIdDate)}. EDF+ additional specification 4: the two state ` +
-          'the same day, and only the second can express a year outside 1985-2084. ' +
-          'Next: header.raw.startDate and header.recording.raw both keep their text verbatim.',
+          `the startdate field states day ${String(yearEscape.day)}, month ` +
+          `${String(yearEscape.month)} with the EDF+ "yy" year escape, but the recording ` +
+          `identification Startdate says ${formatCalendarDate(recordingIdDate)}. EDF+ additional ` +
+          'specification 4: the two state the same day, and only the second can express a year ' +
+          'outside 1985-2084. Next: header.raw.startDate and header.recording.raw both keep ' +
+          'their text verbatim.',
         field: 'startDate',
         byteOffset: 168,
         byteLength: 8,
