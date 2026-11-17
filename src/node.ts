@@ -287,8 +287,9 @@ export async function fileSource(path: string): Promise<ClosableByteSource> {
   if (scheme !== undefined && scheme !== 'file') {
     throw new EdfSourceError(
       `fileSource() reads a file on disk, and ${JSON.stringify(String(path))} is a ${scheme} ` +
-        'address. Next: use httpSource(url) from "edfcore" for one served over HTTP, blobSource(file) ' +
-        'for one a browser handed you, or pass the filesystem path with no scheme on it.',
+        'address. Next: use httpSource(url) from "edfcore" for one served over HTTP, ' +
+        'blobSource(file) for one a browser handed you, or pass the filesystem path with no ' +
+        'scheme on it.',
       { offset: 0, requestedLength: 0 },
     );
   }
