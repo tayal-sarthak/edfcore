@@ -110,9 +110,10 @@ export function byteSource(bytes: ArrayBuffer | Uint8Array): ByteSource {
                 ? 'Next: that is an address — pass it to httpSource(url), which reads it by range.'
                 : 'Next: that looks like a path — pass it to fileSource(path) from "edfcore/node", ' +
                   'which reads it by range, or pass `await readFile(path)` here.'
-              : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, or ' +
-                'the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per element, ' +
-                'so it would pass every length check and then decode to fabricated sample values.'),
+              : 'Next: pass `new Uint8Array(await blob.arrayBuffer())`, `await readFile(path)`, ' +
+                'or the ArrayBuffer itself. An Int8Array is not accepted — it has one byte per ' +
+                'element, so it would pass every length check and then decode to fabricated ' +
+                'sample values.'),
       { offset: 0, requestedLength: 0 },
     );
   }
