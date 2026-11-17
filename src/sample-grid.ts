@@ -21,11 +21,11 @@
  * number — which is why the distinction is easy to miss.
  *
  * ON A DISCONTINUOUS FILE THEY ARE NOT THE SAME. Samples are adjacent in the array across a gap
- * while their times are not, so `gridSampleStartSeconds(signal, 12, d)` answers 3 s for a sample whose
- * record truly begins at 10 s, and `gridSampleIndexAt(signal, 10, d)` answers with a record index past
- * the end of a six-record file. These functions receive a signal, a number and a record duration —
- * no index, no timeline — so they CANNOT detect a gap, cannot bound the answer by the record
- * count, and are not being modest about it: the information is not in their arguments.
+ * while their times are not, so `gridSampleStartSeconds(signal, 12, d)` answers 3 s for a sample
+ * whose record truly begins at 10 s, and `gridSampleIndexAt(signal, 10, d)` answers with a record
+ * index past the end of a six-record file. These functions receive a signal, a number and a record
+ * duration — no index, no timeline — so they CANNOT detect a gap, cannot bound the answer by the
+ * record count, and are not being modest about it: the information is not in their arguments.
  *
  * So the contract is stated rather than guessed at. For a file that may be discontinuous, use
  * `sampleAt` / `sampleStartTicksOf` / `sampleStartSecondsOf` from `sample-locate.ts`, which take
