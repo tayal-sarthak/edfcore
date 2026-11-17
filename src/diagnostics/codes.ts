@@ -137,7 +137,9 @@ const DISPOSITIONS: Readonly<Record<EdfKnownDiagnosticCode, EdfDiagnosticDisposi
   NON_ASCII_HEADER_FIELD: 'warning',
   /** A numeric field is right-justified; the spec requires left-justified. */
   NUMERIC_FIELD_NOT_LEFT_JUSTIFIED: 'warning',
-  /** Header startdate and the recording-id Startdate disagree. Both are exposed; we pick no winner. */
+  /**
+   * Header startdate and the recording-id Startdate disagree. Both are exposed; we pick no winner.
+   */
   DATE_FIELDS_DISAGREE: 'warning',
   /** The startdate could not be parsed at all. The CLOCK has its own code below. */
   DATE_UNPARSEABLE: 'warning',
