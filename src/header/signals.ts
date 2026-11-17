@@ -583,7 +583,9 @@ export function parseSignalHeaders(
       byteOffset: HEADER_FIELDS.reserved.offset,
       byteLength: HEADER_FIELDS.reserved.length,
       raw: reserved,
-      expected: `"${plus}C" or "${plus}D" in the reserved field at offset ${HEADER_FIELDS.reserved.offset}`,
+      expected:
+        `"${plus}C" or "${plus}D" in the reserved field at offset ` +
+        `${HEADER_FIELDS.reserved.offset}`,
       actual: 'no EDF+/BDF+ marker',
       signalIndex: first,
       specReference: 'EDF+ specification 2.1.1 (the EDF+ header)',
