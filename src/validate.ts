@@ -635,8 +635,8 @@ function assertIndexOption(index: unknown): void {
   throw new RangeError(
     `validateRecording(): options.index is ${describeValue(index)}, not a record index — it has ` +
       'no coverage, so this sweep would have silently rebuilt one and read the whole file again, ' +
-      'which is the cost the option exists to avoid. Next: pass `await buildRecordIndex(recording)`, ' +
-      'or recording.index, or omit it.',
+      'which is the cost the option exists to avoid. Next: pass ' +
+      '`await buildRecordIndex(recording)`, or recording.index, or omit it.',
   );
 }
 
