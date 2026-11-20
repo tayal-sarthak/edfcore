@@ -760,8 +760,8 @@ export async function httpSource(
         `Reading bytes ${offset}..${offset + length - 1} of ${href}: the server answered HTTP 416 ` +
           'Range Not Satisfiable, so it read the Range header and that range is past the end of ' +
           `the resource as it stands now — this source was built for ${byteLength} bytes. Next: ` +
-          'the resource was replaced or truncated since its length was probed, so build the source ' +
-          'again rather than clamping the read.',
+          'the resource was replaced or truncated since its length was probed, so build the ' +
+          'source again rather than clamping the read.',
         { offset, requestedLength: length },
       );
     }
