@@ -1010,7 +1010,8 @@ export async function validateRecording(
    * "each one names a different annotation that was lost".
    */
   const identity = (diagnostic: EdfDiagnostic): string =>
-    `${diagnostic.code}|${diagnostic.field ?? ''}|${diagnostic.signalIndex ?? ''}|${diagnostic.byteOffset ?? ''}`;
+    `${diagnostic.code}|${diagnostic.field ?? ''}|${diagnostic.signalIndex ?? ''}|` +
+    `${diagnostic.byteOffset ?? ''}`;
   const fromHeader = new Set(header.diagnostics.map(identity));
   const diagnostics: EdfDiagnostic[] = [
     ...header.diagnostics,
