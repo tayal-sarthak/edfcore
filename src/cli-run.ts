@@ -320,9 +320,8 @@ export async function runCli(args: Args, io: CliIo): Promise<number> {
   switch (command) {
     case 'header': {
       const recording = await open(io, file);
-      io.out(
-        `${formatHeader(recording.header, { includePatientId: args.patient, diagnosticsHint: false })}\n`,
-      );
+      const shown = { includePatientId: args.patient, diagnosticsHint: false };
+      io.out(`${formatHeader(recording.header, shown)}\n`);
       const limit = args.limit ?? DEFAULT_ITEM_LIMIT;
       /*
        * Both blocks are labelled, or neither is.
