@@ -280,11 +280,11 @@ export function parseHeader(
    */
   if (isByteArray(headerBytes) && sourceByteLength < headerBytes.length) {
     throw new RangeError(
-      `parseHeader(): sourceByteLength is ${sourceByteLength} but ${headerBytes.length} bytes were ` +
-        'handed in, and those bytes were read out of that source — so this pair describes no file, ' +
-        'and the size checks would have reported the file as truncated. Next: pass the length of ' +
-        'the whole file, not of the header — source.byteLength for a ByteSource, bytes.byteLength ' +
-        'for a file already in memory.',
+      `parseHeader(): sourceByteLength is ${sourceByteLength} but ${headerBytes.length} bytes ` +
+        'were handed in, and those bytes were read out of that source — so this pair describes ' +
+        'no file, and the size checks would have reported the file as truncated. Next: pass the ' +
+        'length of the whole file, not of the header — source.byteLength for a ByteSource, ' +
+        'bytes.byteLength for a file already in memory.',
     );
   }
 
